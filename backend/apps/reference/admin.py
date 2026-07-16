@@ -1,6 +1,17 @@
 from django.contrib import admin
 
-from .models import Country, Currency, Donor, GadmArea, Marker, RegionalHub, Sdg, SdgTarget, Sector
+from .models import (
+    Country,
+    CrossCuttingTheme,
+    Currency,
+    Donor,
+    GadmArea,
+    Marker,
+    RegionalHub,
+    Sdg,
+    SdgTarget,
+    Sector,
+)
 
 
 @admin.register(Currency)
@@ -47,4 +58,9 @@ class SdgTargetAdmin(admin.ModelAdmin):
 
 @admin.register(Marker)
 class MarkerAdmin(admin.ModelAdmin):
+    list_display = ("code", "name")
+
+
+@admin.register(CrossCuttingTheme)
+class CrossCuttingThemeAdmin(admin.ModelAdmin):
     list_display = ("code", "name")

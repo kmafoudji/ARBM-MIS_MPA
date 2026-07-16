@@ -17,7 +17,7 @@ Usage :
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.reference.models import Country, Currency, Donor, Marker, RegionalHub, Sdg, Sector
+from apps.reference.models import Country, CrossCuttingTheme, Currency, Donor, Marker, RegionalHub, Sdg, Sector
 
 
 DONORS = [
@@ -102,6 +102,16 @@ MARKERS = [
     ("disability_inclusion", "Inclusion du handicap (OECD-DAC)"),
 ]
 
+# Themes transversaux SF-2 (Module 1)
+CROSS_CUTTING_THEMES = [
+    ("climate", "Climat"),
+    ("fragility", "Fragilite"),
+    ("youth_employment", "Emploi jeunes"),
+    ("disability", "Handicap"),
+    ("migration", "Migration"),
+    ("digital_inclusion", "Inclusion numerique"),
+]
+
 
 class Command(BaseCommand):
     help = "Peuple les donnees de reference du portefeuille LLF2 (idempotent)."
@@ -148,6 +158,10 @@ class Command(BaseCommand):
         for code, name in MARKERS:
             Marker.objects.get_or_create(code=code, defaults={"name": name})
         self.stdout.write(self.style.SUCCESS(f"Marqueurs OECD-DAC : {len(MARKERS)} OK"))
+
+        for code, name in CROSS_CUTTING_THEMES:
+            CrossCuttingTheme.objects.get_or_create(code=code, defaults={"name": name})
+        self.stdout.write(self.style.SUCCESS(f"Themes transversaux : {len(CROSS_CUTTING_THEMES)} OK"))
 
         self.stdout.write(
             self.style.WARNING(

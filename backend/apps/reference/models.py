@@ -132,3 +132,16 @@ class Marker(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CrossCuttingTheme(models.Model):
+    """Themes transversaux SF-2 (Climat, Fragilite, Emploi jeunes, Handicap, Migration...)."""
+
+    code = models.SlugField(max_length=30, unique=True)
+    name = models.CharField(max_length=150)
+
+    class Meta:
+        db_table = "cross_cutting_theme"
+
+    def __str__(self):
+        return self.name
