@@ -118,6 +118,14 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
 )
 
+# CSRF - origines autorisees a soumettre des requetes non-safe (POST/PUT/DELETE).
+# Necessaire des que le frontend est appele via un nom d'hote/port different
+# de celui du backend (ex. tunnel SSH localhost:5173 -> proxy -> backend:8000).
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost:5173", "http://localhost:8000"],
+)
+
 # --- Microsoft Entra ID (Azure AD) ---
 # Ces valeurs viennent de l'App Registration cree dans le tenant
 # Microsoft Entra ID de MillenniumPromise. Voir .env.example.
