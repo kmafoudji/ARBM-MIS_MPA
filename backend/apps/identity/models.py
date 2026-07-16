@@ -165,6 +165,18 @@ class RoleAssignment(models.Model):
     class Meta:
         db_table = "role_assignment"
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        # Import local pour eviter l'import circulaire (services.py importe .models)
+        from .services import check_r26_separation_of_duties
+
+        if self.user_id and self.role_id and self.scope_type:
+            try:
+                check_r26_separation_of_duties(self.user, self.role, self.scope_type, self.scope_id)
+            except ValidationError as exc:
+                raise ValidationError({"role": exc.message})
+
     def __str__(self):
         return f"{self.user} -> {self.role} [{self.scope_type}:{self.scope_id or '-'}]"
 
