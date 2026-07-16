@@ -65,16 +65,27 @@ def callback_view(request):
     claims = result.get("id_token_claims", {})
     email = claims.get("preferred_username") or claims.get("email")
     name = claims.get("name", "")
+    subject = claims.get("sub", "")
 
     if not email:
         return JsonResponse(
             {"error": "Impossible de recuperer l'email depuis Entra ID."}, status=400
         )
 
-    user, _created = User.objects.get_or_create(
+    user, created = User.objects.get_or_create(
         username=email,
-        defaults={"email": email, "first_name": name},
+        defaults={
+            "email": email,
+            "first_name": name,
+            "auth_method": "sso",
+            "idp_subject": subject,
+        },
     )
+    if not created and user.idp_subject != subject:
+        user.idp_subject = subject
+        user.auth_method = "sso"
+        user.save(update_fields=["idp_subject", "auth_method"])
+
     login(request, user)
 
     return JsonResponse({"status": "authenticated", "email": email})

@@ -49,6 +49,23 @@ infra/               Docker Compose
 docs/                Documentation projet
 ```
 
+## Module 1 — Configuration & Contrôle d'accès (RBAC)
+
+Domaines posés : `identity` (RBAC, SSO/MFA, dérogations R26), `reference`
+(référentiels), `project` (squelette). Le modèle utilisateur Django par
+défaut a été remplacé par `identity.AppUser` — **cela nécessite de
+réinitialiser la base de données locale** si vous aviez déjà lancé les
+migrations avec l'ancien modèle :
+
+```bash
+docker compose -f infra/docker-compose.yml down -v   # supprime le volume Postgres
+docker compose -f infra/docker-compose.yml up --build
+docker compose -f infra/docker-compose.yml exec backend python manage.py migrate
+docker compose -f infra/docker-compose.yml exec backend python manage.py createsuperuser
+```
+
+Vous pourrez ensuite explorer les modèles via `http://<votre-ip>:8000/admin/`.
+
 ## Workflow de développement
 
 1. Le code est développé et poussé sur `main` (ou une branche de feature).

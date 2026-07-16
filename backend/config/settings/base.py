@@ -30,8 +30,13 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     # ARBM-MES apps
+    "apps.identity",
+    "apps.reference",
+    "apps.project",
     "apps.authentication",
 ]
+
+AUTH_USER_MODEL = "identity.AppUser"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
