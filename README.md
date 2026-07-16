@@ -1,7 +1,7 @@
-# Sentinelle (aRBM-MIS)
+# ARBM-MES (Adaptive Results-Based Management/Monitoring and Evaluation System)
 
-Adaptive Results-Based Management Information System pour le portefeuille
-LLF2 (Islamic Development Bank — Lives and Livelihoods Fund 2).
+Adaptive Results-Based Management/Monitoring and Evaluation System pour le
+portefeuille LLF2 (Islamic Development Bank — Lives and Livelihoods Fund 2).
 
 ## Stack technique
 

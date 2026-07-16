@@ -1,5 +1,5 @@
 """
-Settings de base pour Sentinelle (aRBM-MIS).
+Settings de base pour ARBM-MES (Adaptive Results-Based Management/Monitoring and Evaluation System).
 Communs a tous les environnements (local, docker, production Azure).
 Les valeurs sensibles/variables viennent des variables d'environnement (.env),
 jamais codees en dur ici (principe "configure, don't code").
@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
-    # Sentinelle apps
+    # ARBM-MES apps
     "apps.authentication",
 ]
 
@@ -69,9 +69,9 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": env("POSTGRES_DB", default="sentinelle"),
-        "USER": env("POSTGRES_USER", default="sentinelle"),
-        "PASSWORD": env("POSTGRES_PASSWORD", default="sentinelle"),
+        "NAME": env("POSTGRES_DB", default="arbm_mes"),
+        "USER": env("POSTGRES_USER", default="arbm_mes"),
+        "PASSWORD": env("POSTGRES_PASSWORD", default="arbm_mes"),
         "HOST": env("POSTGRES_HOST", default="db"),
         "PORT": env("POSTGRES_PORT", default="5432"),
     }
@@ -128,4 +128,4 @@ ENTRA_SCOPES = ["User.Read"]
 # Blob Storage (Azure) - utilise en production, S3-compatible en local si besoin
 AZURE_STORAGE_ACCOUNT_NAME = env("AZURE_STORAGE_ACCOUNT_NAME", default="")
 AZURE_STORAGE_ACCOUNT_KEY = env("AZURE_STORAGE_ACCOUNT_KEY", default="")
-AZURE_STORAGE_CONTAINER = env("AZURE_STORAGE_CONTAINER", default="sentinelle-media")
+AZURE_STORAGE_CONTAINER = env("AZURE_STORAGE_CONTAINER", default="arbm-mes-media")

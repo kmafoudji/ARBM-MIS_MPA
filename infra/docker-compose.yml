@@ -1,19 +1,19 @@
-name: sentinelle
+name: arbm-mes
 
 services:
   db:
     image: postgis/postgis:15-3.4
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-sentinelle}
-      POSTGRES_USER: ${POSTGRES_USER:-sentinelle}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinelle}
+      POSTGRES_DB: ${POSTGRES_DB:-arbm_mes}
+      POSTGRES_USER: ${POSTGRES_USER:-arbm_mes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arbm_mes}
     ports:
       - "5432:5432"
     volumes:
-      - sentinelle_pgdata:/var/lib/postgresql/data
+      - arbm_mes_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sentinelle}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arbm_mes}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -56,4 +56,4 @@ services:
       - backend
 
 volumes:
-  sentinelle_pgdata:
+  arbm_mes_pgdata:

@@ -28,8 +28,8 @@ export default function App() {
       <div style={{ fontSize: "2rem", color: LIME_GREEN, marginBottom: "0.5rem" }}>
         ◇
       </div>
-      <h1 style={{ fontFamily: "Sora, sans-serif" }}>Sentinelle</h1>
-      <p style={{ color: "#666" }}>aRBM-MIS — squelette applicatif</p>
+      <h1 style={{ fontFamily: "Sora, sans-serif" }}>ARBM-MES</h1>
+      <p style={{ color: "#666" }}>Adaptive RBM/M&amp;E System — squelette applicatif</p>
       <p>
         Statut backend : <strong>{status}</strong>
       </p>
