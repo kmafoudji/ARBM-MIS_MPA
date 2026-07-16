@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import ProjectList from "./pages/ProjectList.jsx";
+import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 
 const LIME_GREEN = "#A4C53F";
 const NAVY_BLUE = "#1B5A8C";
 
 export default function App() {
   const [status, setStatus] = useState("verification...");
+  const [view, setView] = useState("projects"); // "projects" | "create"
 
   useEffect(() => {
     fetch("/health/")
@@ -14,25 +17,32 @@ export default function App() {
   }, []);
 
   return (
-    <div
-      style={{
-        fontFamily: "Inter, sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100vh",
-        color: NAVY_BLUE,
-      }}
-    >
-      <div style={{ fontSize: "2rem", color: LIME_GREEN, marginBottom: "0.5rem" }}>
-        ◇
-      </div>
-      <h1 style={{ fontFamily: "Sora, sans-serif" }}>ARBM-MES</h1>
-      <p style={{ color: "#666" }}>Adaptive RBM/M&amp;E System — squelette applicatif</p>
-      <p>
-        Statut backend : <strong>{status}</strong>
-      </p>
+    <div style={{ fontFamily: "Inter, sans-serif", minHeight: "100vh" }}>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          padding: "1rem 2rem",
+          borderBottom: `3px solid ${LIME_GREEN}`,
+        }}
+      >
+        <span style={{ color: LIME_GREEN, fontSize: "1.5rem" }}>◇</span>
+        <h1 style={{ color: NAVY_BLUE, fontFamily: "Sora, sans-serif", fontSize: "1.4rem", margin: 0 }}>
+          ARBM-MES
+        </h1>
+        <span style={{ color: "#999", fontSize: "0.85rem", marginLeft: "auto" }}>
+          Statut backend : <strong>{status}</strong>
+        </span>
+      </header>
+
+      {view === "projects" && <ProjectList onCreateClick={() => setView("create")} />}
+      {view === "create" && (
+        <ProjectCreateForm
+          onCreated={() => setView("projects")}
+          onCancel={() => setView("projects")}
+        />
+      )}
     </div>
   );
 }
