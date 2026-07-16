@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 from .models import RBACException, RoleAssignment, RolePermission
 
 
-ENTRY_ACTIONS = {"create", "update"}
+ENTRY_ACTIONS = {"create", "update", "submit"}
 VALIDATION_ACTIONS = {"validate"}
 
 

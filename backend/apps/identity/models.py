@@ -108,6 +108,8 @@ class Permission(models.Model):
         ("read", "Consulter"),
         ("update", "Modifier"),
         ("delete", "Supprimer"),
+        ("submit", "Soumettre"),
+        ("review", "Reviser"),
         ("validate", "Valider"),
         ("export", "Exporter"),
         ("admin", "Administrer"),
@@ -145,6 +147,7 @@ class RoleAssignment(models.Model):
         ("fund", "Fonds (LLF2)"),
         ("hub", "Hub regional"),
         ("project", "Projet"),
+        ("donor", "Projets d'un bailleur"),
     ]
 
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="role_assignments")
