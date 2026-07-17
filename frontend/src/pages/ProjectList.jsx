@@ -55,9 +55,12 @@ export default function ProjectList({ onCreateClick }) {
           <tbody>
             {data.map((p) => (
               <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: "0.5rem" }}>{p.code}</td>
+                <td style={{ padding: "0.5rem" }}>{p.code || "—"}</td>
                 <td style={{ padding: "0.5rem" }}>{p.name}</td>
-                <td style={{ padding: "0.5rem" }}>{p.country_name}</td>
+                <td style={{ padding: "0.5rem" }}>
+                  {p.lead_country_name}
+                  {p.country_names?.length > 1 && ` (+${p.country_names.length - 1} autre${p.country_names.length > 2 ? "s" : ""})`}
+                </td>
                 <td style={{ padding: "0.5rem" }}>{p.sector_name}</td>
                 <td style={{ padding: "0.5rem" }}>{p.lifecycle_stage_display}</td>
                 <td style={{ padding: "0.5rem" }}>

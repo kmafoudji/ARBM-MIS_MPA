@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import Project, ProjectSdg, ProjectStageTransition
+from .models import Project, ProjectCountry, ProjectSdg, ProjectStageTransition
+
+
+class ProjectCountryInline(admin.TabularInline):
+    model = ProjectCountry
+    extra = 1
 
 
 class ProjectSdgInline(admin.TabularInline):
@@ -21,15 +26,15 @@ class ProjectStageTransitionInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "country", "sector", "lifecycle_stage", "created_by")
-    list_filter = ("lifecycle_stage", "country", "sector", "fragility_status", "risk_rating")
+    list_display = ("code", "name", "sector", "lifecycle_stage", "created_by")
+    list_filter = ("lifecycle_stage", "sector", "fragility_status", "risk_rating")
     search_fields = ("code", "name", "official_reference_number")
-    inlines = [ProjectSdgInline, ProjectStageTransitionInline]
+    inlines = [ProjectCountryInline, ProjectSdgInline, ProjectStageTransitionInline]
     fieldsets = (
         ("Identite de base (SF-1 Etape 1)", {
             "fields": (
                 "name", "code", "official_reference_number", "pad_reference_file",
-                "lifecycle_stage", "country",
+                "lifecycle_stage",
             )
         }),
         ("Classification (SF-2)", {
@@ -63,9 +68,7 @@ class ProjectStageTransitionAdmin(admin.ModelAdmin):
     readonly_fields = [f.name for f in ProjectStageTransition._meta.fields]
 
     def has_add_permission(self, request):
-        # Les transitions doivent passer par apps.project.services.transition_stage
-        # (validation SF-4), pas par une creation libre dans l'admin.
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return False  # piste d'audit immuable (RG-4.1)
+        return False

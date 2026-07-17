@@ -15,7 +15,45 @@ Regles appliquees (SFD Module 1) :
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import GATE_STAGES, LIFECYCLE_ORDER, ProjectStageTransition
+from .models import GATE_STAGES, LIFECYCLE_ORDER, Project, ProjectCountry, ProjectStageTransition
+
+
+@transaction.atomic
+def set_project_countries(project, country_ids, lead_country_id):
+    """
+    Remplace l'ensemble des pays d'un projet (R13 revisee : multi-pays,
+    un seul pays chef de file). Regenere le code projet a partir du pays
+    chef de file (POL-1.05) — le code n'est donc connu qu'une fois cette
+    fonction appelee au moins une fois.
+    """
+    country_ids = list(dict.fromkeys(country_ids))  # dedoublonne en gardant l'ordre
+    if not country_ids:
+        raise ValidationError("Un projet doit avoir au moins un pays.")
+    if lead_country_id not in country_ids:
+        raise ValidationError("Le pays chef de file doit faire partie des pays selectionnes.")
+
+    ProjectCountry.objects.filter(project=project).delete()
+    ProjectCountry.objects.bulk_create(
+        [
+            ProjectCountry(project=project, country_id=cid, is_lead=(cid == lead_country_id))
+            for cid in country_ids
+        ]
+    )
+    project.code = generate_project_code(project)
+    project.save(update_fields=["code"])
+    return project
+
+
+def generate_project_code(project):
+    """Code interne unique : <ISO3 pays chef de file>-<sequence 4 chiffres> (POL-1.05)."""
+    lead = project.lead_country
+    prefix = lead.iso3 if lead else "XXX"
+    existing = Project.objects.filter(code__startswith=f"{prefix}-").exclude(pk=project.pk).count()
+    candidate = f"{prefix}-{existing + 1:04d}"
+    while Project.objects.filter(code=candidate).exclude(pk=project.pk).exists():
+        existing += 1
+        candidate = f"{prefix}-{existing + 1:04d}"
+    return candidate
 
 
 def _stage_index(stage_code):

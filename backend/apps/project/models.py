@@ -119,9 +119,11 @@ RISK_RATING_CHOICES = [
 class Project(models.Model):
     # --- SF-1 Etape 1 : Identite de base (Core ID) ---
     name = models.CharField(max_length=255, help_text="Obligatoire des Concept Note.")
-    code = models.SlugField(
-        max_length=30, unique=True, blank=True,
-        help_text="Code projet interne — genere automatiquement si laisse vide (POL-1.05).",
+    code = models.CharField(
+        max_length=30, unique=True, null=True, blank=True,
+        help_text="Code projet interne — genere automatiquement a partir du pays chef "
+        "de file, une fois les pays du projet connus (POL-1.05). Voir "
+        "apps.project.services.generate_project_code().",
     )
     official_reference_number = models.CharField(
         max_length=50, unique=True, null=True, blank=True,
@@ -136,9 +138,11 @@ class Project(models.Model):
         max_length=30, choices=LIFECYCLE_STAGE_CHOICES, default="concept_note",
         help_text="13 etapes + 2 exceptions (SF-4).",
     )
-    country = models.ForeignKey(
-        Country, on_delete=models.PROTECT, related_name="projects",
-        help_text="Admin 0 (GADM). Obligatoire des Concept Note.",
+    countries = models.ManyToManyField(
+        Country, through="ProjectCountry", related_name="projects",
+        help_text="Admin 0 (GADM). Multi-pays autorise (R13 revisee) — le montant "
+        "financier n'est jamais ventile par pays (R20). Voir pays chef de file "
+        "sur ProjectCountry.is_lead.",
     )
 
     # --- SF-2 : Alignement strategique & classification ---
@@ -212,23 +216,39 @@ class Project(models.Model):
     class Meta:
         db_table = "project"
 
-    def save(self, *args, **kwargs):
-        if not self.code:
-            self.code = self._generate_code()
-        super().save(*args, **kwargs)
-
-    def _generate_code(self):
-        """Genere un code interne unique : <ISO3 pays>-<sequence 4 chiffres> (POL-1.05)."""
-        prefix = self.country.iso3 if self.country_id else "XXX"
-        existing = Project.objects.filter(code__startswith=f"{prefix}-").count()
-        candidate = f"{prefix}-{existing + 1:04d}"
-        while Project.objects.filter(code=candidate).exists():
-            existing += 1
-            candidate = f"{prefix}-{existing + 1:04d}"
-        return candidate
+    @property
+    def lead_country(self):
+        pc = self.project_countries.filter(is_lead=True).select_related("country").first()
+        return pc.country if pc else None
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.code or '(sans code)'} - {self.name}"
+
+
+class ProjectCountry(models.Model):
+    """
+    Table de jonction N..N project <-> country (R13 revisee : multi-pays
+    autorise, un seul pays chef de file pour l'affichage). Le montant
+    financier reste au niveau projet, jamais ventile par pays (R20).
+    """
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project_countries")
+    country = models.ForeignKey(Country, on_delete=models.PROTECT, related_name="project_countries")
+    is_lead = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "project_country"
+        unique_together = ("project", "country")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["project"],
+                condition=models.Q(is_lead=True),
+                name="unique_lead_country_per_project",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.project} - {self.country}" + (" (chef de file)" if self.is_lead else "")
 
 
 class ProjectSdg(models.Model):

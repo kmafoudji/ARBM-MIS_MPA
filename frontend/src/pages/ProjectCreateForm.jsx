@@ -19,7 +19,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     name: "",
-    country: "",
+    countryIds: [],
+    leadCountryId: "",
     sector: "",
     budget_amount: "",
     primary_sdg: "",
@@ -50,16 +51,30 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
+  function handleCountriesChange(e) {
+    const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
+    // si le chef de file actuel n'est plus dans la selection, on le reinitialise
+    const leadStillValid = selected.includes(Number(form.leadCountryId));
+    setForm({
+      ...form,
+      countryIds: selected,
+      leadCountryId: leadStillValid ? form.leadCountryId : (selected[0] || ""),
+    });
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     mutation.mutate({
       name: form.name,
-      country: Number(form.country),
+      country_ids: form.countryIds,
+      lead_country_id: Number(form.leadCountryId),
       sector: Number(form.sector),
       budget_amount: form.budget_amount || null,
       primary_sdg: form.primary_sdg ? Number(form.primary_sdg) : null,
     });
   }
+
+  const selectedCountries = (countries || []).filter((c) => form.countryIds.includes(c.id));
 
   return (
     <div style={{ padding: "2rem", maxWidth: 500, fontFamily: "Inter, sans-serif" }}>
@@ -68,6 +83,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       </h2>
       <p style={{ color: "#666", fontSize: "0.9rem" }}>
         SF-1, Etape 1 : sous-ensemble minimal exige au stade Concept Note (POL-1.08).
+        Multi-pays autorise (R13) — le budget n'est pas ventile par pays (R20).
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -83,9 +99,14 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         </label>
 
         <label>
-          Pays *
-          <select style={inputStyle} name="country" value={form.country} onChange={handleChange} required>
-            <option value="">-- Selectionner --</option>
+          Pays * (Ctrl/Cmd + clic pour en selectionner plusieurs)
+          <select
+            style={{ ...inputStyle, height: "6rem" }}
+            multiple
+            value={form.countryIds.map(String)}
+            onChange={handleCountriesChange}
+            required
+          >
             {countries?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -93,6 +114,25 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
             ))}
           </select>
         </label>
+
+        {selectedCountries.length > 1 && (
+          <label>
+            Pays chef de file *
+            <select
+              style={inputStyle}
+              name="leadCountryId"
+              value={form.leadCountryId}
+              onChange={handleChange}
+              required
+            >
+              {selectedCountries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label>
           Secteur *

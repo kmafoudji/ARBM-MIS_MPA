@@ -13,7 +13,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
     exposees via des endpoints dedies au fur et a mesure.
     """
 
-    queryset = Project.objects.select_related("country", "sector", "primary_sdg", "created_by").all()
+    queryset = Project.objects.select_related(
+        "sector", "primary_sdg", "created_by"
+    ).prefetch_related("project_countries__country").all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
