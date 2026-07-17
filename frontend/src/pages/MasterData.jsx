@@ -5,16 +5,38 @@ import Modal from "../components/Modal.jsx";
 import DataTable from "../components/DataTable.jsx";
 import Flag from "../components/Flag.jsx";
 import SectorIcon from "../components/SectorIcon.jsx";
+import {
+  IconEdit,
+  IconPlus,
+  IconDeactivate,
+  IconReactivate,
+  IconWarning,
+} from "../components/ActionIcons.jsx";
 
 const ICON_OPTIONS = [
-  ["health", "Sante (croix)"],
-  ["agriculture", "Agriculture (epi)"],
-  ["infrastructure", "Infrastructure (batiment)"],
-  ["gender", "Genre (Venus)"],
-  ["climate", "Climat (feuille)"],
-  ["water", "Eau (goutte)"],
-  ["education", "Education (livre)"],
-  ["generic", "Generique (losange)"],
+  ["health", "Sante — croix"],
+  ["hospital", "Sante — etablissement"],
+  ["maternal", "Sante — maternelle & infantile"],
+  ["nutrition", "Sante — nutrition"],
+  ["vaccine", "Sante — vaccination"],
+  ["agriculture", "Agriculture — cultures"],
+  ["livestock", "Agriculture — elevage"],
+  ["fishery", "Agriculture — peche"],
+  ["irrigation", "Agriculture — irrigation"],
+  ["forestry", "Agriculture — foresterie"],
+  ["infrastructure", "Infrastructure — batiment"],
+  ["water", "Infrastructure — eau"],
+  ["sanitation", "Infrastructure — assainissement"],
+  ["energy", "Infrastructure — energie"],
+  ["transport", "Infrastructure — transport"],
+  ["digital", "Infrastructure — numerique"],
+  ["gender", "Transversal — genre"],
+  ["climate", "Transversal — climat"],
+  ["education", "Transversal — education"],
+  ["employment", "Transversal — emploi"],
+  ["governance", "Transversal — gouvernance"],
+  ["fragility", "Transversal — fragilite"],
+  ["generic", "Generique — losange"],
 ];
 
 const DONOR_TYPES = [
@@ -31,6 +53,16 @@ const AGENCY_TYPES = [
   ["ngo", "ONG"],
   ["private", "Secteur prive"],
 ];
+
+const STATUS_FILTER = {
+  key: "is_active",
+  label: "Statut",
+  options: [["true", "Actifs"], ["false", "Desactives"]],
+};
+
+const LOGO_HELP =
+  "Chemin d'un logo fourni avec l'application (/logos/donors/isdb.png) ou URL " +
+  "complete. Laisser vide affiche un monogramme colore — aucune image n'est inventee.";
 
 const TABS = [
   {
@@ -75,8 +107,7 @@ const TABS = [
       { name: "donor_type", label: "Type", type: "select", options: DONOR_TYPES },
       { name: "origin_iso2", label: "Pays d'origine (ISO2)", type: "text", maxLength: 2,
         help: "Laisser vide pour une institution multilaterale — elle n'a pas de drapeau national." },
-      { name: "logo_url", label: "URL du logo officiel", type: "url",
-        help: "Lien vers le logo. A defaut, un monogramme colore est affiche." },
+      { name: "logo_url", label: "Logo", type: "text", help: LOGO_HELP },
       { name: "color", label: "Couleur institutionnelle", type: "color",
         help: "Utilisee pour le monogramme de repli." },
       { name: "committed_amount_usd", label: "Engagement (USD)", type: "number",
@@ -95,7 +126,7 @@ const TABS = [
       { name: "agency_type", label: "Type", type: "select", required: true, options: AGENCY_TYPES },
       { name: "country", label: "Pays", type: "select", optionsKey: "countries",
         help: "Laisser vide pour une agence internationale (ONU, ONG multi-pays)." },
-      { name: "logo_url", label: "URL du logo", type: "url" },
+      { name: "logo_url", label: "Logo", type: "text", help: LOGO_HELP },
     ],
   },
   {
@@ -107,7 +138,7 @@ const TABS = [
     fields: [
       { name: "name", label: "Nom du secteur", type: "text", required: true },
       { name: "code", label: "Code", type: "text", required: true },
-      { name: "icon", label: "Pictogramme", type: "select", options: ICON_OPTIONS },
+      { name: "icon", label: "Pictogramme", type: "icon-select", options: ICON_OPTIONS },
       { name: "color", label: "Couleur", type: "color" },
       { name: "parent", label: "Secteur parent", type: "select", optionsKey: "sectors",
         help: "Laisser vide pour un secteur de premier niveau." },
@@ -120,47 +151,45 @@ const TABS = [
     singular: "un ODD",
     sub: "Objectifs de developpement durable · Nations Unies",
     idField: "number",
+    // Referentiel ferme : les 17 ODD sont fixes par l'ONU. Ni ajout, ni
+    // desactivation — seul le libelle est modifiable (traduction).
+    closed: true,
     fields: [
-      { name: "number", label: "Numero", type: "number", required: true },
       { name: "name", label: "Intitule", type: "text", required: true },
       { name: "color", label: "Couleur officielle ONU", type: "color" },
     ],
   },
 ];
 
-function Monogram({ label, color, size = "sm" }) {
+function Monogram({ label, color }) {
   return (
-    <span className={size === "sm" ? "mono-sm" : "donor-mark"} style={{ "--mono-color": color || "var(--ink)", "--donor-color": color || "var(--ink)" }}>
+    <span className="mono-sm" style={{ "--mono-color": color || "var(--ink-soft)" }}>
       {label}
     </span>
   );
 }
 
-function LogoOrMono({ url, label, color, small }) {
-  if (url) {
-    return <img className={small ? "logo-img-sm" : "logo-img"} src={url} alt="" loading="lazy" />;
-  }
-  return <Monogram label={label} color={color} size={small ? "sm" : "lg"} />;
+function LogoOrMono({ url, label, color }) {
+  if (url) return <img className="logo-img-sm" src={url} alt="" loading="lazy" />;
+  return <Monogram label={label} color={color} />;
 }
 
 export default function MasterData({ canEdit }) {
   const [tabKey, setTabKey] = useState("countries");
   const [editing, setEditing] = useState(null);
+  const [confirming, setConfirming] = useState(null); // { row, next: bool }
   const queryClient = useQueryClient();
   const tab = TABS.find((t) => t.key === tabKey);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["ref", tabKey],
-    queryFn: () => apiFetch(tab.url),
-  });
+  const { data, isLoading } = useQuery({ queryKey: ["ref", tabKey], queryFn: () => apiFetch(tab.url) });
   const { data: hubs } = useQuery({ queryKey: ["ref", "hubs"], queryFn: () => apiFetch("/api/reference/hubs/") });
   const { data: countries } = useQuery({ queryKey: ["ref", "countries"], queryFn: () => apiFetch("/api/reference/countries/") });
   const { data: sectors } = useQuery({ queryKey: ["ref", "sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
 
   const optionSources = {
-    hubs: (hubs || []).map((h) => [h.id, h.name]),
-    countries: (countries || []).map((c) => [c.id, c.name]),
-    sectors: (sectors || []).filter((s) => !s.parent).map((s) => [s.id, s.name]),
+    hubs: (hubs || []).filter((h) => h.is_active).map((h) => [h.id, h.name]),
+    countries: (countries || []).filter((c) => c.is_active).map((c) => [c.id, c.name]),
+    sectors: (sectors || []).filter((s) => !s.parent && s.is_active).map((s) => [s.id, s.name]),
   };
 
   const idField = tab.idField || "id";
@@ -178,40 +207,87 @@ export default function MasterData({ canEdit }) {
     },
   });
 
+  // Desactivation : DELETE cote API, que le backend traduit en is_active=false
+  // (POL-1.07). Reactivation : simple PATCH.
+  const toggleActive = useMutation({
+    mutationFn: ({ row, next }) =>
+      next
+        ? apiFetch(`${tab.url}${row[idField]}/`, {
+            method: "PATCH",
+            body: JSON.stringify({ is_active: true }),
+          })
+        : apiFetch(`${tab.url}${row[idField]}/`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ref"] });
+      setConfirming(null);
+    },
+  });
+
   function submitForm(e) {
     e.preventDefault();
     const payload = {};
     for (const f of tab.fields) {
       let v = editing[f.name];
       if (f.type === "checkbox") v = Boolean(v);
-      else if (v === "" || v === undefined) v = ["select", "number"].includes(f.type) ? null : "";
+      else if (v === "" || v === undefined)
+        v = ["select", "icon-select", "number"].includes(f.type) ? null : "";
       payload[f.name] = v;
     }
     mutation.mutate(payload);
   }
 
-  const editCol = canEdit
-    ? [{
-        key: "_edit", label: "", width: 70,
-        render: (r) => (
-          <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setEditing(r); }}>
-            Editer
+  function actionsCol() {
+    if (!canEdit) return [];
+    return [{
+      key: "_actions",
+      label: "",
+      width: tab.closed ? 48 : 82,
+      render: (r) => (
+        <div className="row-actions">
+          <button
+            className="btn-square"
+            title="Editer"
+            aria-label={`Editer ${r.name}`}
+            onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+          >
+            <IconEdit />
           </button>
-        ),
-      }]
-    : [];
+          {!tab.closed && (
+            <button
+              className={`btn-square${r.is_active ? " danger" : ""}`}
+              title={r.is_active ? "Desactiver" : "Reactiver"}
+              aria-label={`${r.is_active ? "Desactiver" : "Reactiver"} ${r.name}`}
+              onClick={(e) => { e.stopPropagation(); setConfirming({ row: r, next: !r.is_active }); }}
+            >
+              {r.is_active ? <IconDeactivate /> : <IconReactivate />}
+            </button>
+          )}
+        </div>
+      ),
+    }];
+  }
+
+  const statusCol = tab.closed
+    ? []
+    : [{
+        key: "is_active",
+        label: "Statut",
+        width: 92,
+        render: (r) =>
+          r.is_active
+            ? <span className="badge badge-lime">Actif</span>
+            : <span className="badge badge-off">Desactive</span>,
+      }];
 
   const rows = data || [];
 
   const TABLES = {
     countries: {
       searchKeys: ["name", "iso2", "iso3", "hub_name"],
-      filters: [
-        { key: "hub_name", label: "Hub", options: (hubs || []).map((h) => [h.name, h.name]) },
-      ],
+      filters: [{ key: "hub_name", label: "Hub", options: (hubs || []).map((h) => [h.name, h.name]) }, STATUS_FILTER],
       columns: [
         { key: "flag", label: "", width: 44, render: (r) => <Flag iso2={r.iso2} title={r.name} /> },
-        { key: "iso3", label: "ISO3", width: 70, cellClass: "text-mono text-xs", sortable: true },
+        { key: "iso3", label: "ISO3", width: 66, cellClass: "text-mono text-xs", sortable: true },
         { key: "name", label: "Pays", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
         {
           key: "hub_name", label: "Hub regional", sortable: true,
@@ -222,17 +298,18 @@ export default function MasterData({ canEdit }) {
             </span>
           ) : <span className="text-muted text-xs">Non rattache</span>,
         },
-        { key: "is_fragile", label: "Fragilite", width: 90, render: (r) => r.is_fragile ? <span className="badge badge-rose">FCS</span> : "—" },
-        ...editCol,
+        { key: "is_fragile", label: "Fragilite", width: 84, render: (r) => r.is_fragile ? <span className="badge badge-rose">FCS</span> : "—" },
+        ...statusCol,
+        ...actionsCol(),
       ],
     },
     donors: {
       searchKeys: ["name", "short_name", "code"],
-      filters: [{ key: "donor_type", label: "Type", options: DONOR_TYPES }],
+      filters: [{ key: "donor_type", label: "Type", options: DONOR_TYPES }, STATUS_FILTER],
       columns: [
-        { key: "logo", label: "", width: 48, render: (r) => <LogoOrMono url={r.logo_url} label={r.short_name || r.code} color={r.color} small /> },
+        { key: "logo", label: "", width: 72, render: (r) => <LogoOrMono url={r.logo_url} label={r.short_name || r.code} color={r.color} /> },
         {
-          key: "short_name", label: "Sigle", width: 130, sortable: true,
+          key: "short_name", label: "Sigle", width: 128, sortable: true,
           render: (r) => (
             <span className="row" style={{ gap: 6 }}>
               <strong style={{ fontWeight: 600 }}>{r.short_name}</strong>
@@ -241,27 +318,28 @@ export default function MasterData({ canEdit }) {
           ),
         },
         { key: "name", label: "Denomination", sortable: true, cellClass: "text-muted" },
-        { key: "donor_type_display", label: "Type", width: 130, sortable: true, render: (r) => <span className="badge">{r.donor_type_display}</span> },
+        { key: "donor_type_display", label: "Type", width: 122, sortable: true, render: (r) => <span className="badge">{r.donor_type_display}</span> },
         {
-          key: "committed_amount_usd", label: "Engagement", width: 120,
+          key: "committed_amount_usd", label: "Engagement", width: 116,
           cellClass: "text-mono text-xs", sortable: true,
           sortValue: (r) => Number(r.committed_amount_usd || 0),
           render: (r) => r.committed_amount_usd
             ? `${(Number(r.committed_amount_usd) / 1_000_000).toFixed(0)}M USD`
             : <span className="text-muted">Non renseigne</span>,
         },
-        ...editCol,
+        ...statusCol,
+        ...actionsCol(),
       ],
     },
     agencies: {
       searchKeys: ["name", "code", "country_name"],
-      filters: [{ key: "agency_type", label: "Type", options: AGENCY_TYPES }],
+      filters: [{ key: "agency_type", label: "Type", options: AGENCY_TYPES }, STATUS_FILTER],
       columns: [
-        { key: "logo", label: "", width: 44, render: (r) => <LogoOrMono url={r.logo_url} label={r.name.slice(0, 2).toUpperCase()} color="var(--ink-soft)" small /> },
+        { key: "logo", label: "", width: 72, render: (r) => <LogoOrMono url={r.logo_url} label={r.name.slice(0, 3).toUpperCase()} color="var(--ink-soft)" /> },
         { key: "name", label: "Agence", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
-        { key: "agency_type_display", label: "Type", width: 160, sortable: true, render: (r) => <span className="badge">{r.agency_type_display}</span> },
+        { key: "agency_type_display", label: "Type", width: 148, sortable: true, render: (r) => <span className="badge">{r.agency_type_display}</span> },
         {
-          key: "country_name", label: "Pays", width: 180, sortable: true,
+          key: "country_name", label: "Pays", width: 168, sortable: true,
           render: (r) => r.country_name ? (
             <span className="row" style={{ gap: 7 }}>
               <Flag iso2={r.country_iso2} size={16} />
@@ -269,17 +347,20 @@ export default function MasterData({ canEdit }) {
             </span>
           ) : <span className="text-muted text-xs">International</span>,
         },
-        ...editCol,
+        ...statusCol,
+        ...actionsCol(),
       ],
     },
     sectors: {
       searchKeys: ["name", "code"],
+      filters: [STATUS_FILTER],
       columns: [
         { key: "icon", label: "", width: 52, render: (r) => <SectorIcon name={r.icon} color={r.color} /> },
         { key: "name", label: "Secteur", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
-        { key: "parent_name", label: "Rattache a", width: 200, render: (r) => r.parent_name || <span className="text-muted text-xs">Premier niveau</span> },
-        { key: "code", label: "Code", width: 200, cellClass: "text-mono text-xs", sortable: true },
-        ...editCol,
+        { key: "parent_name", label: "Rattache a", width: 184, render: (r) => r.parent_name || <span className="text-muted text-xs">Premier niveau</span> },
+        { key: "usage_count", label: "Projets", width: 78, cellClass: "text-mono text-xs", sortable: true },
+        ...statusCol,
+        ...actionsCol(),
       ],
     },
     sdgs: {
@@ -287,15 +368,8 @@ export default function MasterData({ canEdit }) {
       columns: [
         {
           key: "number", label: "", width: 64, sortable: true,
-          // Icone officielle ONU (open-sdg/sdg-translations, version FR).
-          // Le chemin se deduit du numero : les 17 ODD sont fixes.
           render: (r) => (
-            <img
-              className="sdg-icon"
-              src={`/logos/sdg/${r.number}.png`}
-              alt={`ODD ${r.number}`}
-              loading="lazy"
-            />
+            <img className="sdg-icon" src={`/logos/sdg/${r.number}.png`} alt={`ODD ${r.number}`} loading="lazy" />
           ),
         },
         {
@@ -307,7 +381,7 @@ export default function MasterData({ canEdit }) {
             </span>
           ),
         },
-        ...editCol,
+        ...actionsCol(),
       ],
     },
   };
@@ -325,9 +399,9 @@ export default function MasterData({ canEdit }) {
             reservee aux roles portant la gouvernance des classifications.
           </p>
         </div>
-        {canEdit && (
-          <button className="btn btn-primary" onClick={() => setEditing({})}>
-            + Ajouter {tab.singular}
+        {canEdit && !tab.closed && (
+          <button className="btn btn-primary btn-icon" onClick={() => setEditing({})}>
+            <IconPlus size={14} /> Ajouter {tab.singular}
           </button>
         )}
       </div>
@@ -370,13 +444,30 @@ export default function MasterData({ canEdit }) {
         {data && tab.layout === "hubs" && (
           <div className="grid grid-2" style={{ padding: "var(--s-4)" }}>
             {rows.map((h) => (
-              <div className="hub-card" key={h.id} style={{ "--hub-color": h.color || "var(--lime)" }}>
+              <div className="hub-card" key={h.id}
+                   style={{ "--hub-color": h.color || "var(--lime)", opacity: h.is_active ? 1 : 0.5 }}>
                 <div className="row row-between" style={{ alignItems: "flex-start" }}>
                   <div>
-                    <div className="hub-name">{h.name}</div>
+                    <div className="hub-name">
+                      {h.name}
+                      {!h.is_active && <span className="badge badge-off" style={{ marginLeft: 8 }}>Desactive</span>}
+                    </div>
                     <div className="hub-city">{h.city || "Ville non renseignee"}</div>
                   </div>
-                  {canEdit && <button className="btn btn-ghost btn-sm" onClick={() => setEditing(h)}>Editer</button>}
+                  {canEdit && (
+                    <div className="row-actions">
+                      <button className="btn-square" title="Editer" onClick={() => setEditing(h)}>
+                        <IconEdit />
+                      </button>
+                      <button
+                        className={`btn-square${h.is_active ? " danger" : ""}`}
+                        title={h.is_active ? "Desactiver" : "Reactiver"}
+                        onClick={() => setConfirming({ row: h, next: !h.is_active })}
+                      >
+                        {h.is_active ? <IconDeactivate /> : <IconReactivate />}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="country-chips">
                   {h.countries.length === 0 && <span className="text-muted text-xs">Aucun pays rattache.</span>}
@@ -388,7 +479,7 @@ export default function MasterData({ canEdit }) {
                   ))}
                 </div>
                 <div className="hub-meta">
-                  <span>{h.country_count} pays</span>
+                  <span>{h.country_count} pays · {h.usage_count} projets</span>
                   <span className="text-mono">{h.code}</span>
                 </div>
               </div>
@@ -402,8 +493,10 @@ export default function MasterData({ canEdit }) {
             columns={cfg.columns}
             searchKeys={cfg.searchKeys}
             filters={cfg.filters}
-            pageSize={cfg.pageSize || 10}
+            defaultFilters={tab.closed ? {} : { is_active: "true" }}
+            pageSize={10}
             rowKey={(r) => r[idField]}
+            rowClass={(r) => (r.is_active === false ? "row-inactive" : undefined)}
             emptyLabel="Ce referentiel est vide."
           />
         )}
@@ -415,7 +508,6 @@ export default function MasterData({ canEdit }) {
           pas charges : leur composition en pays n'est pas encore documentee.
         </p>
       )}
-
       {tabKey === "donors" && (
         <p className="text-xs text-muted mt-3">
           Les engagements ne sont pas pre-remplis : les chiffres publies varient selon la phase
@@ -423,16 +515,71 @@ export default function MasterData({ canEdit }) {
           saisis depuis les donnees officielles de la LLF MU.
         </p>
       )}
-
       {tabKey === "sdgs" && (
         <p className="text-xs text-muted mt-3">
-          Pictogrammes officiels des Nations Unies (version francaise), utilises conformement
-          aux lignes directrices de l'ONU — qui autorisent la reprise des 17 icones et de la
-          roue des couleurs. Seul le logo ODD portant l'embleme de l'ONU est reserve aux
-          entites du systeme des Nations Unies : il n'est pas utilise ici.
+          Referentiel ferme : les 17 ODD sont fixes par les Nations Unies — ni ajout, ni
+          desactivation. Seul l'intitule reste modifiable, pour la traduction. Pictogrammes
+          officiels ONU (version francaise), utilises conformement aux lignes directrices.
         </p>
       )}
 
+      {/* ---------- Confirmation de desactivation / reactivation ---------- */}
+      {confirming && (
+        <Modal
+          title={confirming.next ? "Reactiver cet element ?" : "Desactiver cet element ?"}
+          subtitle={confirming.row.name}
+          onClose={() => setConfirming(null)}
+          footer={
+            <>
+              <button className="btn btn-ghost" onClick={() => setConfirming(null)}>Annuler</button>
+              <button
+                className={confirming.next ? "btn btn-primary" : "btn btn-danger"}
+                onClick={() => toggleActive.mutate(confirming)}
+                disabled={toggleActive.isPending}
+              >
+                {toggleActive.isPending
+                  ? "En cours..."
+                  : confirming.next ? "Reactiver" : "Desactiver"}
+              </button>
+            </>
+          }
+        >
+          {confirming.next ? (
+            <p className="text-sm">
+              <strong>{confirming.row.name}</strong> redeviendra selectionnable dans les
+              formulaires de saisie.
+            </p>
+          ) : (
+            <>
+              {confirming.row.usage_count > 0 && (
+                <div className="notice notice-warn">
+                  <IconWarning size={16} />
+                  <span>
+                    Cet element est utilise par <strong>{confirming.row.usage_count} projet
+                    {confirming.row.usage_count > 1 ? "s" : ""}</strong>. Ces projets le
+                    conservent : la desactivation ne modifie aucune donnee existante.
+                  </span>
+                </div>
+              )}
+              <div className="notice notice-info">
+                <span>
+                  Conformement a POL-1.07, rien n'est supprime definitivement.
+                  <strong> {confirming.row.name}</strong> disparait des listes de selection
+                  pour les nouvelles saisies, mais reste attache aux donnees qui le
+                  referencent. L'operation est reversible a tout moment.
+                </span>
+              </div>
+            </>
+          )}
+          {toggleActive.isError && (
+            <div className="field-error">
+              {toggleActive.error?.detail?.detail || "L'operation a echoue."}
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* ---------- Creation / edition ---------- */}
       {editing && (
         <Modal
           title={isCreate ? `Ajouter ${tab.singular}` : `Editer ${editing.name || tab.singular}`}
@@ -470,7 +617,15 @@ export default function MasterData({ canEdit }) {
                     {f.label} {f.required && <span className="req">*</span>}
                   </label>
 
-                  {f.type === "select" ? (
+                  {f.type === "icon-select" ? (
+                    <div className="row" style={{ gap: 10 }}>
+                      <SectorIcon name={value || "generic"} color={editing.color} />
+                      <select id={`f-${f.name}`} className="field-select" value={value ?? ""}
+                        onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })}>
+                        {(options || []).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                    </div>
+                  ) : f.type === "select" ? (
                     <select id={`f-${f.name}`} className="field-select" value={value ?? ""} required={f.required}
                       onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })}>
                       <option value="">— Aucun —</option>

@@ -262,7 +262,13 @@ class ProjectSdg(models.Model):
     """Table de jonction N..N project <-> sdg (ODD contributifs)."""
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    sdg = models.ForeignKey(Sdg, on_delete=models.CASCADE)
+    sdg = models.ForeignKey(
+        Sdg,
+        on_delete=models.PROTECT,
+        help_text="PROTECT et non CASCADE : supprimer un ODD effacerait "
+        "silencieusement la classification des projets qui le portent en "
+        "contributif. Cf. POL-1.07 (pas de suppression definitive).",
+    )
 
     class Meta:
         db_table = "project_sdg"
@@ -273,7 +279,11 @@ class ProjectSector(models.Model):
     """Table de jonction N..N project <-> sector (secteurs contributifs)."""
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    sector = models.ForeignKey(Sector, on_delete=models.CASCADE)
+    sector = models.ForeignKey(
+        Sector,
+        on_delete=models.PROTECT,
+        help_text="PROTECT et non CASCADE : voir ProjectSdg.sdg.",
+    )
 
     class Meta:
         db_table = "project_sector"

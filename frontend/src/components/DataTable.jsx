@@ -14,13 +14,15 @@ export default function DataTable({
   columns,
   searchKeys,
   filters = [],
+  defaultFilters = {},
   pageSize = 15,
   emptyLabel = "Aucun resultat.",
   rowKey = (r) => r.id,
+  rowClass,
   onRowClick,
 }) {
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState({});
+  const [active, setActive] = useState(defaultFilters);
   const [sort, setSort] = useState(null); // { key, dir }
   const [page, setPage] = useState(1);
 
@@ -148,6 +150,7 @@ export default function DataTable({
           {pageRows.map((r) => (
             <tr
               key={rowKey(r)}
+              className={rowClass ? rowClass(r) : undefined}
               onClick={onRowClick ? () => onRowClick(r) : undefined}
               style={onRowClick ? { cursor: "pointer" } : undefined}
             >

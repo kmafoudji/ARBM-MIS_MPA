@@ -25,6 +25,12 @@ class RegionalHub(models.Model):
     color = models.CharField(
         max_length=7, blank=True, help_text="Couleur d'identification (#RRGGBB) pour les vues."
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="POL-1.07 : pas de suppression definitive. Un element desactive "
+        "reste attache aux donnees qui le referencent deja, mais n'est plus "
+        "proposable pour de nouvelles saisies.",
+    )
 
     class Meta:
         db_table = "regional_hub"
@@ -54,6 +60,12 @@ class Country(models.Model):
     )
     is_fragile = models.BooleanField(default=False, help_text="Contexte de fragilite (FCS).")
     geometry = gis_models.MultiPolygonField(null=True, blank=True, srid=4326)
+    is_active = models.BooleanField(
+        default=True,
+        help_text="POL-1.07 : pas de suppression definitive. Un element desactive "
+        "reste attache aux donnees qui le referencent deja, mais n'est plus "
+        "proposable pour de nouvelles saisies.",
+    )
 
     class Meta:
         db_table = "country"
@@ -130,6 +142,13 @@ class Donor(models.Model):
         "et melent subventions, prets concessionnels et waqf.",
     )
 
+    is_active = models.BooleanField(
+        default=True,
+        help_text="POL-1.07 : pas de suppression definitive. Un element desactive "
+        "reste attache aux donnees qui le referencent deja, mais n'est plus "
+        "proposable pour de nouvelles saisies.",
+    )
+
     class Meta:
         db_table = "donor"
         ordering = ["name"]
@@ -173,6 +192,13 @@ class ImplementingAgency(models.Model):
         help_text="Chemin ou URL du logo officiel. A defaut, un monogramme est affiche.",
     )
 
+    is_active = models.BooleanField(
+        default=True,
+        help_text="POL-1.07 : pas de suppression definitive. Un element desactive "
+        "reste attache aux donnees qui le referencent deja, mais n'est plus "
+        "proposable pour de nouvelles saisies.",
+    )
+
     class Meta:
         db_table = "implementing_agency"
         ordering = ["name"]
@@ -213,6 +239,13 @@ class Sector(models.Model):
     )
     color = models.CharField(
         max_length=7, blank=True, help_text="Couleur identitaire du secteur (#RRGGBB)."
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        help_text="POL-1.07 : pas de suppression definitive. Un element desactive "
+        "reste attache aux donnees qui le referencent deja, mais n'est plus "
+        "proposable pour de nouvelles saisies.",
     )
 
     class Meta:
