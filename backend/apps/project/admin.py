@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Project, ProjectCountry, ProjectSdg, ProjectStageTransition
+from .models import Project, ProjectCountry, ProjectSdg, ProjectSector, ProjectStageTransition
 
 
 class ProjectCountryInline(admin.TabularInline):
@@ -10,6 +10,11 @@ class ProjectCountryInline(admin.TabularInline):
 
 class ProjectSdgInline(admin.TabularInline):
     model = ProjectSdg
+    extra = 1
+
+
+class ProjectSectorInline(admin.TabularInline):
+    model = ProjectSector
     extra = 1
 
 
@@ -26,10 +31,10 @@ class ProjectStageTransitionInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "sector", "lifecycle_stage", "created_by")
-    list_filter = ("lifecycle_stage", "sector", "fragility_status", "risk_rating")
+    list_display = ("code", "name", "primary_sector", "lifecycle_stage", "created_by")
+    list_filter = ("lifecycle_stage", "primary_sector", "fragility_status", "risk_rating")
     search_fields = ("code", "name", "official_reference_number")
-    inlines = [ProjectCountryInline, ProjectSdgInline, ProjectStageTransitionInline]
+    inlines = [ProjectCountryInline, ProjectSectorInline, ProjectSdgInline, ProjectStageTransitionInline]
     fieldsets = (
         ("Identite de base (SF-1 Etape 1)", {
             "fields": (
@@ -39,7 +44,7 @@ class ProjectAdmin(admin.ModelAdmin):
         }),
         ("Classification (SF-2)", {
             "fields": (
-                "primary_sdg", "gender_marker",
+                "primary_sector", "primary_sdg", "gender_marker",
                 "rio_marker_mitigation", "rio_marker_adaptation",
                 "rio_marker_biodiversity", "rio_marker_desertification",
                 "cross_cutting_themes", "implementation_modality",
@@ -48,7 +53,7 @@ class ProjectAdmin(admin.ModelAdmin):
             )
         }),
         ("Portefeuille", {
-            "fields": ("hub", "sector", "donors", "budget_amount", "currency"),
+            "fields": ("hub", "donors", "budget_amount", "currency"),
         }),
         ("Cycle de vie (SF-1 Etape 3)", {
             "fields": ("start_date", "end_date"),

@@ -15,7 +15,15 @@ Regles appliquees (SFD Module 1) :
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import GATE_STAGES, LIFECYCLE_ORDER, Project, ProjectCountry, ProjectSdg, ProjectStageTransition
+from .models import (
+    GATE_STAGES,
+    LIFECYCLE_ORDER,
+    Project,
+    ProjectCountry,
+    ProjectSdg,
+    ProjectSector,
+    ProjectStageTransition,
+)
 
 
 @transaction.atomic
@@ -32,6 +40,25 @@ def set_project_sdgs(project, contributing_sdg_numbers):
     ProjectSdg.objects.filter(project=project).delete()
     ProjectSdg.objects.bulk_create(
         [ProjectSdg(project=project, sdg_id=n) for n in contributing_sdg_numbers]
+    )
+    return project
+
+
+@transaction.atomic
+def set_project_sectors(project, contributing_sector_ids):
+    """
+    Remplace l'ensemble des secteurs contributifs d'un projet, sur le
+    meme modele que les ODD contributifs. Le secteur primaire ne doit
+    pas apparaitre aussi comme contributif.
+    """
+    contributing_sector_ids = list(dict.fromkeys(contributing_sector_ids))
+    if project.primary_sector_id and project.primary_sector_id in contributing_sector_ids:
+        raise ValidationError(
+            "Le secteur primaire ne peut pas aussi etre selectionne comme secteur contributif."
+        )
+    ProjectSector.objects.filter(project=project).delete()
+    ProjectSector.objects.bulk_create(
+        [ProjectSector(project=project, sector_id=sid) for sid in contributing_sector_ids]
     )
     return project
 

@@ -14,8 +14,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Project.objects.select_related(
-        "sector", "primary_sdg", "created_by"
-    ).prefetch_related("project_countries__country").all()
+        "primary_sector", "primary_sdg", "created_by"
+    ).prefetch_related("project_countries__country", "contributing_sectors", "contributing_sdgs").all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):

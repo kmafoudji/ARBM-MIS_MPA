@@ -61,7 +61,10 @@ export default function ProjectList({ onCreateClick }) {
                   {p.lead_country_name}
                   {p.country_names?.length > 1 && ` (+${p.country_names.length - 1} autre${p.country_names.length > 2 ? "s" : ""})`}
                 </td>
-                <td style={{ padding: "0.5rem" }}>{p.sector_name}</td>
+                <td style={{ padding: "0.5rem" }}>
+                  {p.primary_sector_name}
+                  {p.contributing_sector_count > 0 && ` (+${p.contributing_sector_count} contributif${p.contributing_sector_count > 1 ? "s" : ""})`}
+                </td>
                 <td style={{ padding: "0.5rem" }}>{p.lifecycle_stage_display}</td>
                 <td style={{ padding: "0.5rem" }}>
                   {p.budget_amount ? `${p.budget_amount}` : "-"}

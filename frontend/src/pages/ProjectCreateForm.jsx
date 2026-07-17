@@ -21,8 +21,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
     name: "",
     countryIds: [],
     leadCountryId: "",
-    sector: "",
-    subSector: "",
+    primarySector: "",
+    contributingSectorIds: [],
     budget_amount: "",
     primary_sdg: "",
     contributingSdgIds: [],
@@ -50,18 +50,17 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   });
 
   function handleChange(e) {
-    const { name, value } = e.target;
-    if (name === "sector") {
-      // changer de secteur parent reinitialise le sous-secteur eventuellement choisi
-      setForm({ ...form, sector: value, subSector: "" });
-      return;
-    }
-    setForm({ ...form, [name]: value });
+    setForm({ ...form, [e.target.name]: e.target.value });
   }
 
   function handleContributingSdgsChange(e) {
     const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
     setForm({ ...form, contributingSdgIds: selected });
+  }
+
+  function handleContributingSectorsChange(e) {
+    const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
+    setForm({ ...form, contributingSectorIds: selected });
   }
 
   function handleCountriesChange(e) {
@@ -81,7 +80,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       name: form.name,
       country_ids: form.countryIds,
       lead_country_id: Number(form.leadCountryId),
-      sector: Number(form.subSector || form.sector),
+      primary_sector: Number(form.primarySector),
+      contributing_sector_ids: form.contributingSectorIds,
       budget_amount: form.budget_amount || null,
       primary_sdg: form.primary_sdg ? Number(form.primary_sdg) : null,
       contributing_sdg_ids: form.contributingSdgIds,
@@ -89,8 +89,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   }
 
   const selectedCountries = (countries || []).filter((c) => form.countryIds.includes(c.id));
-  const parentSectors = (sectors || []).filter((s) => !s.parent);
-  const subSectors = (sectors || []).filter((s) => s.parent === Number(form.sector));
+  const contributingSectorChoices = (sectors || []).filter(
+    (s) => String(s.id) !== String(form.primarySector)
+  );
   const contributingSdgChoices = (sdgs || []).filter(
     (s) => String(s.number) !== String(form.primary_sdg)
   );
@@ -154,10 +155,16 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         )}
 
         <label>
-          Secteur *
-          <select style={inputStyle} name="sector" value={form.sector} onChange={handleChange} required>
+          Secteur primaire *
+          <select
+            style={inputStyle}
+            name="primarySector"
+            value={form.primarySector}
+            onChange={handleChange}
+            required
+          >
             <option value="">-- Selectionner --</option>
-            {parentSectors.map((s) => (
+            {sectors?.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -165,19 +172,21 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           </select>
         </label>
 
-        {subSectors.length > 0 && (
-          <label>
-            Sous-secteur (optionnel)
-            <select style={inputStyle} name="subSector" value={form.subSector} onChange={handleChange}>
-              <option value="">-- Aucun --</option>
-              {subSectors.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <label>
+          Secteurs contributifs (optionnel, Ctrl/Cmd + clic pour plusieurs)
+          <select
+            style={{ ...inputStyle, height: "6rem" }}
+            multiple
+            value={form.contributingSectorIds.map(String)}
+            onChange={handleContributingSectorsChange}
+          >
+            {contributingSectorChoices.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <label>
           Budget indicatif (USD)

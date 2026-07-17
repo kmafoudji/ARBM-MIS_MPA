@@ -197,7 +197,14 @@ class Project(models.Model):
     hub = models.ForeignKey(
         RegionalHub, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects"
     )
-    sector = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name="projects")
+    primary_sector = models.ForeignKey(
+        Sector, on_delete=models.PROTECT, null=True, blank=True, related_name="projects_as_primary",
+        help_text="Secteur primaire (obligatoire des Concept Note).",
+    )
+    contributing_sectors = models.ManyToManyField(
+        Sector, through="ProjectSector", related_name="projects", blank=True,
+        help_text="Secteurs contributifs (0 ou plus), sur le meme modele que les ODD.",
+    )
     donors = models.ManyToManyField(Donor, related_name="projects", blank=True)
 
     budget_amount = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
@@ -260,6 +267,17 @@ class ProjectSdg(models.Model):
     class Meta:
         db_table = "project_sdg"
         unique_together = ("project", "sdg")
+
+
+class ProjectSector(models.Model):
+    """Table de jonction N..N project <-> sector (secteurs contributifs)."""
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    sector = models.ForeignKey(Sector, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "project_sector"
+        unique_together = ("project", "sector")
 
 
 class ProjectStageTransition(models.Model):
