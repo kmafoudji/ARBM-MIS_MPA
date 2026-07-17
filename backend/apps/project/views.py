@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,7 +13,9 @@ from .serializers import (
     ProjectStageTransitionSerializer,
     StageTransitionRequestSerializer,
 )
-from .services import transition_stage
+from apps.identity.permissions import ReadOnlyOrHasModulePermission
+
+from .services import check_transition_authorization, transition_stage
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -26,7 +29,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.select_related(
         "primary_sector", "primary_sdg", "created_by"
     ).prefetch_related("project_countries__country", "contributing_sectors", "contributing_sdgs").all()
-    permission_classes = [IsAuthenticated]
+
+    # Lecture ouverte a tout compte authentifie ; ecriture soumise au RBAC.
+    #
+    # PORTEE : ce controle est module-large. Le filtrage par perimetre
+    # (un PMU ne voit que ses projets, un hub que sa region) n'est pas
+    # implemente — il releve du row-level security, encore absent. Tout
+    # compte authentifie voit donc l'integralite du portefeuille.
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -34,6 +45,20 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return ProjectListSerializer
         return ProjectDetailSerializer
+
+    def perform_create(self, serializer):
+        """
+        Enregistrer un projet, c'est le faire entrer a l'etape Concept Note :
+        la meme regle SF-4 s'applique donc. Sans ce controle, un PMU Project
+        Manager ou un Implementing Partner pourrait creer un projet — ils
+        portent `create` sur m1_config_access — alors que le SFD reserve
+        l'enregistrement au LLFMU Portfolio Analyst / aRBM Specialist.
+        """
+        try:
+            check_transition_authorization(self.request.user, "concept_note")
+        except ValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        serializer.save()
 
     @action(detail=False, methods=["get"], url_path="stage-choices")
     def stage_choices(self, request):

@@ -105,3 +105,23 @@ def user_has_permission(user, module, action):
     """Vrai si l'utilisateur detient `action` sur `module` (ou est superuser)."""
     perms = get_user_permissions(user)
     return "*" in perms or f"{module}:{action}" in perms
+
+
+def get_user_role_codes(user):
+    """
+    Codes des roles actifs de l'utilisateur, tous perimetres confondus.
+
+    Distinct de get_user_permissions() : certaines regles du SFD designent
+    des ROLES nommes (« Concept Note -> LLFMU Portfolio Analyst ») et non des
+    couples module x action. La matrice module x action est trop grossiere
+    pour les exprimer — elle ne sait pas distinguer « creer un projet » de
+    « creer un pays », les deux etant des `create` sur m1_config_access.
+    """
+    if not user or not user.is_authenticated:
+        return set()
+
+    return set(
+        RoleAssignment.objects.filter(user=user, revoked_at__isnull=True).values_list(
+            "role__code", flat=True
+        )
+    )

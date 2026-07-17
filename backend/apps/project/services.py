@@ -128,6 +128,11 @@ def transition_stage(
     if from_stage == to_stage:
         raise ValidationError("Le projet est deja a cette etape.")
 
+    # Qui a le droit de declencher cette transition (SF-4). Le controle vit
+    # ici, dans le service, et non dans la vue : toute autre voie d'appel
+    # (commande de gestion, tache Celery, script) y est soumise aussi.
+    check_transition_authorization(actor, to_stage, dual_authorized_by)
+
     from_idx = _stage_index(from_stage)
     to_idx = _stage_index(to_stage)
 
@@ -190,3 +195,110 @@ def _check_bed_approved_classification_complete(project):
             "POL-1.10 : classification incomplete, BED Approved bloque. "
             "Champs manquants : " + ", ".join(missing)
         )
+
+
+# ---------------------------------------------------------------------------
+# SF-4 : autorisation de transition par etape
+# ---------------------------------------------------------------------------
+# Transcription de la table SF-4 du SFD (colonne « Autorisation transition »).
+#
+# Pourquoi une table en code plutot que la matrice RBAC en base : le SFD
+# designe ici des ROLES NOMMES (« Concept Note -> LLFMU Portfolio Analyst »),
+# pas des couples module x action. La matrice ne sait pas distinguer « creer
+# un projet » de « creer un pays » — les deux sont un `create` sur
+# m1_config_access. C'est d'ailleurs pour cela que PMU Project Manager et
+# Implementing Partner, qui portent `create` sur ce module, pourraient sans
+# ce controle enregistrer un projet : ce que le SFD leur interdit.
+#
+# LACUNE DE SPECIFICATION SIGNALEE : la table SF-4 nomme trois roles qui
+# n'existent pas parmi les 11 acteurs definis au §2 du meme document —
+# « Pipeline Manager », « Director » et « System Admin ». Faute de definition,
+# les etapes concernees retombent sur le palier LLFMU (choix restrictif et
+# documente, jamais silencieux). A trancher au niveau metier.
+
+LLFMU_TIER = {
+    "llfmu_manager",
+    "llfmu_arbm_specialist",
+    "llfmu_portfolio_analyst",
+    "data_digital_analyst",
+}
+PMU_TIER = {"pmu_project_manager", "pmu_me_officer"}
+HUB_TIER = {"regional_hub"}
+
+# Etape visee -> roles autorises a la declencher
+STAGE_ACTORS = {
+    "concept_note": {"llfmu_portfolio_analyst", "llfmu_arbm_specialist"},
+    "pipeline_taskforce_review": {"llfmu_portfolio_analyst"},
+    # SFD : « Pipeline Manager » — role non defini au §2.
+    "pipeline_taskforce_approved": LLFMU_TIER,
+    "preparation_identification": {"llfmu_arbm_specialist"},
+    "trc_endorsed": {"llfmu_arbm_specialist"},
+    # SFD : « Double » sans preciser les roles.
+    "ic_approved": LLFMU_TIER,
+    "appraisal": {"llfmu_arbm_specialist"},
+    # SFD : « Double (Pipeline Mgr + Director) » — roles non definis au §2.
+    "bed_approved": LLFMU_TIER,
+    "effective": LLFMU_TIER,
+    "implementing": PMU_TIER | LLFMU_TIER,
+    "mid_term_review": LLFMU_TIER,
+    "substantially_complete": LLFMU_TIER,
+    "closed": LLFMU_TIER,
+    # SFD : « System Admin / LLFMU » — System Admin non defini au §2.
+    "suspended": LLFMU_TIER,
+    "cancelled": LLFMU_TIER,
+}
+
+# Etape visee -> roles admissibles comme SECOND approbateur (autorisation double)
+STAGE_DUAL_ACTORS = {
+    "trc_endorsed": HUB_TIER,   # SFD : Specialist + Hub OTL
+    "appraisal": HUB_TIER,      # SFD : Specialist + Hub OTL
+    "ic_approved": LLFMU_TIER,
+    "bed_approved": LLFMU_TIER,
+}
+
+
+def _role_labels(codes):
+    from apps.identity.models import Role
+
+    labels = Role.objects.filter(code__in=codes).values_list("label", flat=True)
+    return ", ".join(sorted(labels)) or ", ".join(sorted(codes))
+
+
+def check_transition_authorization(actor, to_stage, dual_authorized_by=None):
+    """
+    Verifie que `actor` porte un role habilite a faire entrer un projet dans
+    `to_stage`, et que le second approbateur (le cas echeant) porte lui aussi
+    un role admissible.
+
+    Sans ce controle, tout compte authentifie pouvait franchir un gate BED.
+    """
+    from apps.identity.services import get_user_role_codes
+
+    # Compte technique d'exploitation : hors RBAC applicatif, comme partout
+    # ailleurs (cf. identity.services.get_user_permissions).
+    if actor and actor.is_superuser:
+        return
+
+    allowed = STAGE_ACTORS.get(to_stage, LLFMU_TIER)
+    actor_roles = get_user_role_codes(actor)
+
+    if not actor_roles:
+        raise ValidationError(
+            "Aucun role ne vous est attribue : transition refusee (RG-3.1, "
+            "deny-by-default)."
+        )
+    if not (actor_roles & allowed):
+        raise ValidationError(
+            f"Votre role ne permet pas de faire passer un projet a l'etape "
+            f"« {dict(LIFECYCLE_STAGE_CHOICES).get(to_stage, to_stage)} ». "
+            f"Roles habilites : {_role_labels(allowed)}."
+        )
+
+    needed_dual = STAGE_DUAL_ACTORS.get(to_stage)
+    if needed_dual and dual_authorized_by is not None:
+        dual_roles = get_user_role_codes(dual_authorized_by)
+        if not dual_authorized_by.is_superuser and not (dual_roles & needed_dual):
+            raise ValidationError(
+                f"Le second approbateur n'a pas un role admissible pour ce gate. "
+                f"Roles attendus : {_role_labels(needed_dual)}."
+            )
