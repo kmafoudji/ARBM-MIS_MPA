@@ -74,6 +74,14 @@ SECTORS = [
     ("climate", "Climat (transversal)", None),
 ]
 
+# Sous-secteurs confirmes dans les specifications anterieures. Liste NON
+# exhaustive — seuls deux exemples ont ete formellement observes ; a
+# completer via l'admin une fois la liste officielle LLF2 disponible.
+SUB_SECTORS = [
+    ("general_agriculture", "General Agriculture", "agriculture"),
+    ("sewerage_solid_waste", "Sewerage & Solid Waste Management", "infrastructure"),
+]
+
 SDGS = [
     (1, "Pas de pauvrete"),
     (2, "Faim 'zero'"),
@@ -150,6 +158,13 @@ class Command(BaseCommand):
         for code, name, parent_code in SECTORS:
             Sector.objects.get_or_create(code=code, defaults={"name": name, "parent": None})
         self.stdout.write(self.style.SUCCESS(f"Secteurs : {len(SECTORS)} OK"))
+
+        sub_sector_count = 0
+        for code, name, parent_code in SUB_SECTORS:
+            parent = Sector.objects.filter(code=parent_code).first()
+            Sector.objects.get_or_create(code=code, defaults={"name": name, "parent": parent})
+            sub_sector_count += 1
+        self.stdout.write(self.style.SUCCESS(f"Sous-secteurs : {sub_sector_count} OK (liste non exhaustive)"))
 
         for number, name in SDGS:
             Sdg.objects.get_or_create(number=number, defaults={"name": name})

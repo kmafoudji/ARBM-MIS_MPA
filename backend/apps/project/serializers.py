@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from apps.reference.models import Country
+from apps.reference.models import Country, Sdg
 
 from .models import Project
-from .services import set_project_countries
+from .services import set_project_countries, set_project_sdgs
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
@@ -43,14 +43,21 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     lead_country_id = serializers.PrimaryKeyRelatedField(
         queryset=Country.objects.all(), write_only=True
     )
+    contributing_sdg_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Sdg.objects.all(), many=True, write_only=True, required=False
+    )
 
     class Meta:
         model = Project
-        fields = ["name", "country_ids", "lead_country_id", "sector", "budget_amount", "primary_sdg"]
+        fields = [
+            "name", "country_ids", "lead_country_id", "sector", "budget_amount",
+            "primary_sdg", "contributing_sdg_ids",
+        ]
 
     def create(self, validated_data):
         country_ids = [c.id for c in validated_data.pop("country_ids")]
         lead_country_id = validated_data.pop("lead_country_id").id
+        contributing_sdg_ids = [s.number for s in validated_data.pop("contributing_sdg_ids", [])]
         validated_data["lifecycle_stage"] = "concept_note"
         request = self.context.get("request")
         if request and request.user.is_authenticated:
@@ -58,6 +65,8 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 
         project = Project.objects.create(**validated_data)
         set_project_countries(project, country_ids, lead_country_id)
+        if contributing_sdg_ids:
+            set_project_sdgs(project, contributing_sdg_ids)
         return project
 
 
@@ -66,6 +75,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     country_names = serializers.SerializerMethodField()
     sector_name = serializers.CharField(source="sector.name", read_only=True)
     primary_sdg_name = serializers.CharField(source="primary_sdg.name", read_only=True)
+    contributing_sdg_names = serializers.SerializerMethodField()
     lifecycle_stage_display = serializers.CharField(
         source="get_lifecycle_stage_display", read_only=True
     )
@@ -78,7 +88,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "lifecycle_stage", "lifecycle_stage_display",
             "lead_country_name", "country_names",
             "sector", "sector_name",
-            "primary_sdg", "primary_sdg_name",
+            "primary_sdg", "primary_sdg_name", "contributing_sdg_names",
             "gender_marker", "implementation_modality",
             "geographic_typology", "fragility_status", "risk_rating",
             "budget_amount", "currency",
@@ -93,3 +103,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     def get_country_names(self, obj):
         return [pc.country.name for pc in obj.project_countries.select_related("country")]
+
+    def get_contributing_sdg_names(self, obj):
+        return [f"ODD {s.number} - {s.name}" for s in obj.contributing_sdgs.all()]

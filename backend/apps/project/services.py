@@ -15,7 +15,25 @@ Regles appliquees (SFD Module 1) :
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import GATE_STAGES, LIFECYCLE_ORDER, Project, ProjectCountry, ProjectStageTransition
+from .models import GATE_STAGES, LIFECYCLE_ORDER, Project, ProjectCountry, ProjectSdg, ProjectStageTransition
+
+
+@transaction.atomic
+def set_project_sdgs(project, contributing_sdg_numbers):
+    """
+    Remplace l'ensemble des ODD contributifs d'un projet (SF-2). L'ODD
+    primaire ne doit pas apparaitre aussi comme contributif.
+    """
+    contributing_sdg_numbers = list(dict.fromkeys(contributing_sdg_numbers))
+    if project.primary_sdg_id and project.primary_sdg_id in contributing_sdg_numbers:
+        raise ValidationError(
+            "L'ODD primaire ne peut pas aussi etre selectionne comme ODD contributif."
+        )
+    ProjectSdg.objects.filter(project=project).delete()
+    ProjectSdg.objects.bulk_create(
+        [ProjectSdg(project=project, sdg_id=n) for n in contributing_sdg_numbers]
+    )
+    return project
 
 
 @transaction.atomic

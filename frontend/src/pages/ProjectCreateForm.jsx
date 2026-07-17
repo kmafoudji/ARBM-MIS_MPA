@@ -22,8 +22,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
     countryIds: [],
     leadCountryId: "",
     sector: "",
+    subSector: "",
     budget_amount: "",
     primary_sdg: "",
+    contributingSdgIds: [],
   });
 
   const { data: countries } = useQuery({
@@ -48,7 +50,18 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   });
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "sector") {
+      // changer de secteur parent reinitialise le sous-secteur eventuellement choisi
+      setForm({ ...form, sector: value, subSector: "" });
+      return;
+    }
+    setForm({ ...form, [name]: value });
+  }
+
+  function handleContributingSdgsChange(e) {
+    const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
+    setForm({ ...form, contributingSdgIds: selected });
   }
 
   function handleCountriesChange(e) {
@@ -68,13 +81,19 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       name: form.name,
       country_ids: form.countryIds,
       lead_country_id: Number(form.leadCountryId),
-      sector: Number(form.sector),
+      sector: Number(form.subSector || form.sector),
       budget_amount: form.budget_amount || null,
       primary_sdg: form.primary_sdg ? Number(form.primary_sdg) : null,
+      contributing_sdg_ids: form.contributingSdgIds,
     });
   }
 
   const selectedCountries = (countries || []).filter((c) => form.countryIds.includes(c.id));
+  const parentSectors = (sectors || []).filter((s) => !s.parent);
+  const subSectors = (sectors || []).filter((s) => s.parent === Number(form.sector));
+  const contributingSdgChoices = (sdgs || []).filter(
+    (s) => String(s.number) !== String(form.primary_sdg)
+  );
 
   return (
     <div style={{ padding: "2rem", maxWidth: 500, fontFamily: "Inter, sans-serif" }}>
@@ -138,13 +157,27 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           Secteur *
           <select style={inputStyle} name="sector" value={form.sector} onChange={handleChange} required>
             <option value="">-- Selectionner --</option>
-            {sectors?.map((s) => (
+            {parentSectors.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
           </select>
         </label>
+
+        {subSectors.length > 0 && (
+          <label>
+            Sous-secteur (optionnel)
+            <select style={inputStyle} name="subSector" value={form.subSector} onChange={handleChange}>
+              <option value="">-- Aucun --</option>
+              {subSectors.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label>
           Budget indicatif (USD)
@@ -162,6 +195,22 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <select style={inputStyle} name="primary_sdg" value={form.primary_sdg} onChange={handleChange}>
             <option value="">-- Selectionner --</option>
             {sdgs?.map((s) => (
+              <option key={s.number} value={s.number}>
+                ODD {s.number} - {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          ODD contributifs (optionnel, Ctrl/Cmd + clic pour plusieurs)
+          <select
+            style={{ ...inputStyle, height: "6rem" }}
+            multiple
+            value={form.contributingSdgIds.map(String)}
+            onChange={handleContributingSdgsChange}
+          >
+            {contributingSdgChoices.map((s) => (
               <option key={s.number} value={s.number}>
                 ODD {s.number} - {s.name}
               </option>
