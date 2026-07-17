@@ -1,106 +1,156 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-import { COLOR, FONT } from "../theme";
 
 export default function Rbac() {
   const [tab, setTab] = useState("roles");
 
-  const { data: roles } = useQuery({
-    queryKey: ["roles"],
-    queryFn: () => apiFetch("/api/identity/roles/"),
-  });
+  const { data: roles } = useQuery({ queryKey: ["roles"], queryFn: () => apiFetch("/api/identity/roles/") });
   const { data: assignments } = useQuery({
     queryKey: ["role-assignments"],
     queryFn: () => apiFetch("/api/identity/role-assignments/"),
   });
+  const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
 
   return (
-    <div style={{ padding: "2rem", fontFamily: FONT.body }}>
-      <h2 style={{ color: COLOR.navy, fontFamily: FONT.display }}>RBAC & utilisateurs</h2>
-      <p style={{ color: COLOR.muted, marginTop: 0 }}>
-        11 acteurs (SFD Module 1). Separation des taches R26/RG-3.5 appliquee automatiquement
-        a toute nouvelle attribution.
-      </p>
+    <div className="view">
+      <div className="view-header">
+        <div className="view-eyebrow">Systeme</div>
+        <h1 className="view-title">Utilisateurs &amp; roles</h1>
+        <p className="view-lead">
+          Onze acteurs de la hierarchie LLFMU → Hub regional → PMU → Partenaires. Le principe du
+          moindre privilege et la separation des taches sont appliques automatiquement a toute
+          attribution.
+        </p>
+      </div>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: `1px solid ${COLOR.rule}` }}>
-        {[
-          ["roles", "Roles (acteurs)"],
-          ["assignments", "Attributions"],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            style={{
-              background: "none",
-              border: "none",
-              borderBottom: tab === key ? `2px solid ${COLOR.lime}` : "2px solid transparent",
-              color: tab === key ? COLOR.navy : COLOR.muted,
-              fontWeight: tab === key ? 600 : 500,
-              padding: "0.6rem 0.9rem",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="tabs">
+        <button className={`tab${tab === "roles" ? " active" : ""}`} onClick={() => setTab("roles")}>
+          Roles
+          {tab === "roles" && roles && <span className="tab-count">{roles.length}</span>}
+        </button>
+        <button
+          className={`tab${tab === "assignments" ? " active" : ""}`}
+          onClick={() => setTab("assignments")}
+        >
+          Attributions
+          {tab === "assignments" && assignments && <span className="tab-count">{assignments.length}</span>}
+        </button>
+        <button className={`tab${tab === "users" ? " active" : ""}`} onClick={() => setTab("users")}>
+          Comptes
+          {tab === "users" && users && <span className="tab-count">{users.length}</span>}
+        </button>
       </div>
 
       {tab === "roles" && (
-        <table style={{ width: "100%", borderCollapse: "collapse", background: COLOR.paper }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: `2px solid ${COLOR.navy}` }}>
-              <th style={{ padding: "0.6rem" }}>Acteur</th>
-              <th style={{ padding: "0.6rem" }}>Description</th>
-              <th style={{ padding: "0.6rem" }}>Systeme</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles?.map((r) => (
-              <tr key={r.id} style={{ borderBottom: `1px solid ${COLOR.rule}` }}>
-                <td style={{ padding: "0.6rem", fontWeight: 600, color: COLOR.navy }}>{r.label}</td>
-                <td style={{ padding: "0.6rem", color: COLOR.inkSoft, fontSize: "0.85rem" }}>
-                  {r.description}
-                </td>
-                <td style={{ padding: "0.6rem" }}>{r.is_system ? "Oui" : "—"}</td>
+        <div className="card card-flush">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Acteurs</h2>
+              <div className="card-sub">Habilitations fonctionnelles par persona</div>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th style={{ width: 240 }}>Acteur</th>
+                <th>Role dans le systeme</th>
+                <th style={{ width: 90 }}>Type</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {roles?.map((r) => (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 500 }}>{r.label}</td>
+                  <td className="text-muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                    {r.description}
+                  </td>
+                  <td>
+                    {r.is_system ? (
+                      <span className="badge badge-violet">Systeme</span>
+                    ) : (
+                      <span className="badge">Metier</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {tab === "assignments" && (
-        <table style={{ width: "100%", borderCollapse: "collapse", background: COLOR.paper }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: `2px solid ${COLOR.navy}` }}>
-              <th style={{ padding: "0.6rem" }}>Utilisateur</th>
-              <th style={{ padding: "0.6rem" }}>Role</th>
-              <th style={{ padding: "0.6rem" }}>Perimetre</th>
-              <th style={{ padding: "0.6rem" }}>Attribue le</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assignments?.length === 0 && (
+        <div className="card card-flush">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Attributions actives</h2>
+              <div className="card-sub">Utilisateur × role × perimetre</div>
+            </div>
+          </div>
+          {assignments?.length === 0 ? (
+            <div className="empty">
+              <div className="empty-title">Aucune attribution</div>
+              <p className="text-sm">
+                Les attributions se font pour l'instant via la console d'administration Django.
+              </p>
+            </div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Utilisateur</th>
+                  <th>Role</th>
+                  <th>Perimetre</th>
+                  <th style={{ width: 120 }}>Attribue le</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments?.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.user_email}</td>
+                    <td style={{ fontWeight: 500 }}>{a.role_label}</td>
+                    <td>
+                      <span className="badge badge-lime">
+                        {a.scope_type_display}
+                        {a.scope_id ? ` #${a.scope_id}` : ""}
+                      </span>
+                    </td>
+                    <td className="text-mono text-xs">
+                      {new Date(a.granted_at).toLocaleDateString("fr-FR")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === "users" && (
+        <div className="card card-flush">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Comptes</h2>
+              <div className="card-sub">Provisionnes via Microsoft Entra ID</div>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
               <tr>
-                <td colSpan={4} style={{ padding: "0.6rem", color: COLOR.muted }}>
-                  Aucune attribution — a faire via l'admin Django pour l'instant.
-                </td>
+                <th>Email</th>
+                <th>Nom</th>
               </tr>
-            )}
-            {assignments?.map((a) => (
-              <tr key={a.id} style={{ borderBottom: `1px solid ${COLOR.rule}` }}>
-                <td style={{ padding: "0.6rem" }}>{a.user_email}</td>
-                <td style={{ padding: "0.6rem" }}>{a.role_label}</td>
-                <td style={{ padding: "0.6rem" }}>
-                  {a.scope_type_display}
-                  {a.scope_id ? ` #${a.scope_id}` : ""}
-                </td>
-                <td style={{ padding: "0.6rem" }}>{new Date(a.granted_at).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users?.map((u) => (
+                <tr key={u.id}>
+                  <td className="text-mono text-xs">{u.email}</td>
+                  <td>{[u.first_name, u.last_name].filter(Boolean).join(" ") || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

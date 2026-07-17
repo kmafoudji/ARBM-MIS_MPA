@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AppShell from "./components/AppShell.jsx";
 import Login from "./pages/Login.jsx";
 import Overview from "./pages/Overview.jsx";
@@ -7,68 +8,70 @@ import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
-import { COLOR, FONT } from "./theme";
+import { apiFetch } from "./api";
 
 export default function App() {
-  const [authState, setAuthState] = useState("checking"); // "checking" | "authenticated" | "anonymous"
+  const [authState, setAuthState] = useState("checking");
   const [user, setUser] = useState(null);
   const [nav, setNav] = useState("overview");
-  const [projectSubView, setProjectSubView] = useState("list"); // "list" | "create" | "detail"
   const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   useEffect(() => {
     fetch("/auth/me/", { credentials: "include" })
-      .then((res) => {
-        if (res.status === 401) {
-          setAuthState("anonymous");
-          return null;
-        }
-        return res.json();
-      })
+      .then((res) => (res.status === 401 ? null : res.json()))
       .then((data) => {
         if (data) {
           setUser(data);
           setAuthState("authenticated");
+        } else {
+          setAuthState("anonymous");
         }
       })
       .catch(() => setAuthState("anonymous"));
   }, []);
 
-  function goToProjects() {
-    setNav("projects");
-    setProjectSubView("list");
-  }
+  const authed = authState === "authenticated";
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => apiFetch("/api/projects/"),
+    enabled: authed,
+  });
+  const { data: users } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => apiFetch("/api/identity/users/"),
+    enabled: authed,
+  });
 
   if (authState === "checking") {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT.body, color: COLOR.muted }}>
-        Verification de la session...
+      <div className="loading-wrap">
+        <span className="spinner" /> Verification de la session...
       </div>
     );
   }
 
-  if (authState === "anonymous") {
-    return <Login />;
-  }
+  if (authState === "anonymous") return <Login />;
+
+  const counts = { projects: projects?.length, users: users?.length };
 
   return (
-    <AppShell view={nav} onNavigate={(key) => { setNav(key); if (key === "projects") setProjectSubView("list"); }} user={user}>
+    <AppShell view={nav} onNavigate={setNav} user={user} counts={counts}>
       {nav === "overview" && <Overview user={user} />}
 
-      {nav === "projects" && projectSubView === "list" && (
+      {nav === "projects" && (
         <ProjectList
-          onCreateClick={() => setProjectSubView("create")}
+          onCreateClick={() => setNav("new-project")}
           onProjectClick={(id) => {
             setSelectedProjectId(id);
-            setProjectSubView("detail");
+            setNav("project-detail");
           }}
         />
       )}
-      {nav === "projects" && projectSubView === "create" && (
-        <ProjectCreateForm onCreated={goToProjects} onCancel={goToProjects} />
+      {nav === "new-project" && (
+        <ProjectCreateForm onCreated={() => setNav("projects")} onCancel={() => setNav("projects")} />
       )}
-      {nav === "projects" && projectSubView === "detail" && (
-        <ProjectDetail projectId={selectedProjectId} onBack={goToProjects} />
+      {nav === "project-detail" && (
+        <ProjectDetail projectId={selectedProjectId} onBack={() => setNav("projects")} />
       )}
 
       {nav === "masterdata" && <MasterData />}

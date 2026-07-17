@@ -1,84 +1,134 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 
-const NAVY = "#1B5A8C";
-const LIME = "#A4C53F";
+const STAGE_BADGE = {
+  concept_note: "badge",
+  pipeline_taskforce_review: "badge",
+  pipeline_taskforce_approved: "badge badge-violet",
+  preparation_identification: "badge badge-violet",
+  trc_endorsed: "badge badge-orange",
+  ic_approved: "badge badge-orange",
+  bed_approved: "badge badge-orange",
+  appraisal: "badge badge-blue",
+  effective: "badge badge-lime",
+  implementing: "badge badge-lime",
+  mid_term_review: "badge badge-lime",
+  substantially_complete: "badge badge-green",
+  closed: "badge badge-green",
+  suspended: "badge badge-rose",
+  cancelled: "badge badge-rose",
+};
+
+function formatBudget(value) {
+  if (!value) return "—";
+  const n = Number(value);
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
+  return n.toLocaleString("fr-FR");
+}
 
 export default function ProjectList({ onCreateClick, onProjectClick }) {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["projects"],
     queryFn: () => apiFetch("/api/projects/"),
   });
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Inter, sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ color: NAVY, fontFamily: "Sora, sans-serif" }}>Projets</h2>
-        <button
-          onClick={onCreateClick}
-          style={{
-            background: LIME,
-            color: NAVY,
-            border: "none",
-            borderRadius: 6,
-            padding: "0.6rem 1.2rem",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          + Nouveau projet (Concept Note)
+    <div className="view">
+      <div className="row row-between mb-4" style={{ alignItems: "flex-end" }}>
+        <div className="view-header" style={{ marginBottom: 0 }}>
+          <div className="view-eyebrow">Projets &amp; suivi</div>
+          <h1 className="view-title">Portefeuille</h1>
+          <p className="view-lead">
+            Projets enregistres dans le systeme, du Concept Note a la cloture.
+            Selectionnez un projet pour consulter sa fiche et son cycle de vie.
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={onCreateClick}>
+          + Nouveau projet
         </button>
       </div>
 
-      {isLoading && <p>Chargement...</p>}
-      {isError && (
-        <p style={{ color: "crimson" }}>
-          Erreur : {error.detail?.detail || "impossible de charger les projets."}
-          {error.message?.includes("401") && " (connectez-vous via /auth/login/)"}
-        </p>
+      {isLoading && (
+        <div className="loading-wrap" style={{ minHeight: 200 }}>
+          <span className="spinner" /> Chargement du portefeuille...
+        </div>
       )}
 
-      {data && data.length === 0 && <p>Aucun projet enregistre pour le moment.</p>}
+      {isError && (
+        <div className="card">
+          <div className="field-error">
+            Impossible de charger les projets. Verifiez votre session et reessayez.
+          </div>
+        </div>
+      )}
 
-      {data && data.length > 0 && (
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: `2px solid ${NAVY}` }}>
-              <th style={{ padding: "0.5rem" }}>Code</th>
-              <th style={{ padding: "0.5rem" }}>Nom</th>
-              <th style={{ padding: "0.5rem" }}>Pays</th>
-              <th style={{ padding: "0.5rem" }}>Secteur</th>
-              <th style={{ padding: "0.5rem" }}>Etape</th>
-              <th style={{ padding: "0.5rem" }}>Budget</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((p) => (
-              <tr
-                key={p.id}
-                onClick={() => onProjectClick(p.id)}
-                style={{ borderBottom: "1px solid #eee", cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <td style={{ padding: "0.5rem" }}>{p.code || "—"}</td>
-                <td style={{ padding: "0.5rem" }}>{p.name}</td>
-                <td style={{ padding: "0.5rem" }}>
-                  {p.lead_country_name}
-                  {p.country_names?.length > 1 && ` (+${p.country_names.length - 1} autre${p.country_names.length > 2 ? "s" : ""})`}
-                </td>
-                <td style={{ padding: "0.5rem" }}>
-                  {p.primary_sector_name}
-                  {p.contributing_sector_count > 0 && ` (+${p.contributing_sector_count} contributif${p.contributing_sector_count > 1 ? "s" : ""})`}
-                </td>
-                <td style={{ padding: "0.5rem" }}>{p.lifecycle_stage_display}</td>
-                <td style={{ padding: "0.5rem" }}>
-                  {p.budget_amount ? `${p.budget_amount}` : "-"}
-                </td>
+      {data?.length === 0 && (
+        <div className="card">
+          <div className="empty">
+            <div className="empty-title">Aucun projet enregistre</div>
+            <p className="text-sm mb-3">
+              Commencez par enregistrer un Concept Note — seuls le nom, le pays et le secteur
+              sont requis a ce stade.
+            </p>
+            <button className="btn btn-primary" onClick={onCreateClick}>
+              Enregistrer un projet
+            </button>
+          </div>
+        </div>
+      )}
+
+      {data?.length > 0 && (
+        <div className="card card-flush">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Projets</h2>
+              <div className="card-sub">{data.length} enregistrement{data.length > 1 ? "s" : ""}</div>
+            </div>
+          </div>
+          <table className="table table-hover">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Projet</th>
+                <th>Pays</th>
+                <th>Secteur</th>
+                <th>Etape</th>
+                <th style={{ textAlign: "right" }}>Budget USD</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.map((p) => (
+                <tr key={p.id} onClick={() => onProjectClick(p.id)}>
+                  <td className="text-mono text-xs">{p.code || "—"}</td>
+                  <td style={{ fontWeight: 500 }}>{p.name}</td>
+                  <td>
+                    {p.lead_country_name}
+                    {p.country_names?.length > 1 && (
+                      <span className="badge mt-1" style={{ marginLeft: 6 }}>
+                        +{p.country_names.length - 1}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {p.primary_sector_name}
+                    {p.contributing_sector_count > 0 && (
+                      <span className="text-muted text-xs"> +{p.contributing_sector_count}</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={STAGE_BADGE[p.lifecycle_stage] || "badge"}>
+                      {p.lifecycle_stage_display}
+                    </span>
+                  </td>
+                  <td className="text-mono text-xs" style={{ textAlign: "right" }}>
+                    {formatBudget(p.budget_amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
