@@ -30,7 +30,7 @@ function Dt({ term, children }) {
   );
 }
 
-export default function ProjectDetail({ projectId, onBack }) {
+export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
@@ -293,6 +293,17 @@ export default function ProjectDetail({ projectId, onBack }) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* SF-6 — Enveloppe financiere */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Enveloppe financiere</h2>
+            <div className="card-sub">SF-6 · Financement mixte LLF2 · Indicatif — detail au Module 9</div>
+          </div>
+        </div>
+        <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
       </div>
     </div>
   );

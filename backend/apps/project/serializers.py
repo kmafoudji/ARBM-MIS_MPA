@@ -162,3 +162,134 @@ class StageTransitionRequestSerializer(serializers.Serializer):
     dual_authorized_by = serializers.PrimaryKeyRelatedField(
         queryset=AppUser.objects.all(), required=False, allow_null=True
     )
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Enveloppe financière
+# ---------------------------------------------------------------------------
+from .models import (  # noqa: E402 (imports groupes en bas pour eviter circulaire)
+    ComponentAllocation,
+    FinancingSource,
+    ProjectFinancialEnvelope,
+    FINANCING_SOURCE_CHOICES,
+    FINANCING_INSTRUMENT_CHOICES,
+    COMPONENT_CHOICES,
+)
+
+
+class FinancingSourceSerializer(serializers.ModelSerializer):
+    source_display = serializers.CharField(source="get_source_display", read_only=True)
+    instrument_display = serializers.CharField(source="get_instrument_display", read_only=True)
+    donor_name = serializers.CharField(source="donor.short_name", read_only=True)
+    currency_code = serializers.CharField(source="currency.code", read_only=True)
+
+    class Meta:
+        model = FinancingSource
+        fields = [
+            "id", "source", "source_display", "instrument", "instrument_display",
+            "donor", "donor_name", "amount", "currency", "currency_code",
+            "amount_usd", "exchange_rate_date", "label", "order",
+        ]
+
+
+class ComponentAllocationSerializer(serializers.ModelSerializer):
+    component_display = serializers.CharField(source="get_component_display", read_only=True)
+
+    class Meta:
+        model = ComponentAllocation
+        fields = ["id", "component", "component_display", "amount_usd"]
+
+
+class ProjectFinancialEnvelopeSerializer(serializers.ModelSerializer):
+    financing_sources = FinancingSourceSerializer(many=True, read_only=True)
+    component_allocations = ComponentAllocationSerializer(many=True, read_only=True)
+    total_amount_usd = serializers.DecimalField(
+        max_digits=16, decimal_places=2, read_only=True
+    )
+    # Vocabulaires pour peupler les selects cote frontend
+    source_choices = serializers.SerializerMethodField()
+    instrument_choices = serializers.SerializerMethodField()
+    component_choices = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectFinancialEnvelope
+        fields = [
+            "id", "project", "notes", "total_amount_usd",
+            "financing_sources", "component_allocations",
+            "source_choices", "instrument_choices", "component_choices",
+            "created_at", "updated_at",
+        ]
+
+    def get_source_choices(self, obj):
+        return [{"value": v, "label": l} for v, l in FINANCING_SOURCE_CHOICES]
+
+    def get_instrument_choices(self, obj):
+        return [{"value": v, "label": l} for v, l in FINANCING_INSTRUMENT_CHOICES]
+
+    def get_component_choices(self, obj):
+        return [{"value": v, "label": l} for v, l in COMPONENT_CHOICES]
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Enveloppe financière
+# ---------------------------------------------------------------------------
+from .models import (
+    ComponentAllocation,
+    FinancingSource,
+    ProjectFinancialEnvelope,
+    FINANCING_SOURCE_CHOICES,
+    FINANCING_INSTRUMENT_CHOICES,
+    COMPONENT_CHOICES,
+)
+
+
+class FinancingSourceSerializer(serializers.ModelSerializer):
+    source_display = serializers.CharField(source="get_source_display", read_only=True)
+    instrument_display = serializers.CharField(source="get_instrument_display", read_only=True)
+    donor_name = serializers.CharField(source="donor.short_name", read_only=True)
+    currency_code = serializers.CharField(source="currency.code", read_only=True)
+
+    class Meta:
+        model = FinancingSource
+        fields = [
+            "id", "source", "source_display", "instrument", "instrument_display",
+            "donor", "donor_name", "amount", "currency", "currency_code",
+            "amount_usd", "exchange_rate_date", "label", "order",
+        ]
+
+
+class ComponentAllocationSerializer(serializers.ModelSerializer):
+    component_display = serializers.CharField(source="get_component_display", read_only=True)
+
+    class Meta:
+        model = ComponentAllocation
+        fields = ["id", "component", "component_display", "amount_usd"]
+
+
+class ProjectFinancialEnvelopeSerializer(serializers.ModelSerializer):
+    financing_sources = FinancingSourceSerializer(many=True, read_only=True)
+    component_allocations = ComponentAllocationSerializer(many=True, read_only=True)
+    total_amount_usd = serializers.DecimalField(
+        max_digits=16, decimal_places=2, read_only=True
+    )
+    source_choices = serializers.SerializerMethodField()
+    instrument_choices = serializers.SerializerMethodField()
+    component_choices = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectFinancialEnvelope
+        fields = [
+            "id", "project", "notes", "total_amount_usd",
+            "financing_sources", "component_allocations",
+            "source_choices", "instrument_choices", "component_choices",
+            "created_at", "updated_at",
+        ]
+
+    def get_source_choices(self, obj):
+        return [{"value": v, "label": l} for v, l in FINANCING_SOURCE_CHOICES]
+
+    def get_instrument_choices(self, obj):
+        return [{"value": v, "label": l} for v, l in FINANCING_INSTRUMENT_CHOICES]
+
+    def get_component_choices(self, obj):
+        return [{"value": v, "label": l} for v, l in COMPONENT_CHOICES]

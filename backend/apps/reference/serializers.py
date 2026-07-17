@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from .models import Country, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
+from .models import Country, Currency, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
+
+
+class CurrencySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Currency
+        fields = ["code", "name"]
 
 
 class CountrySerializer(serializers.ModelSerializer):

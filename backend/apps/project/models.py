@@ -320,3 +320,195 @@ class ProjectStageTransition(models.Model):
 
     def __str__(self):
         return f"{self.project.code} : {self.from_stage} -> {self.to_stage}"
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Enveloppe financière (financement mixte)
+# ---------------------------------------------------------------------------
+# Le LLF combine des sources heterogenes (prets IsDB, dons de bailleurs,
+# contreparties gouvernementales) dans un seul fonds fiduciaire.
+# Un champ budget_amount plat ne peut pas representer cette structure —
+# c'est precisement la lacune qui rendait les chiffres du portefeuille
+# ambigus ("IsDB 1.0B" confondait prets et dons).
+#
+# Architecture : chaque ligne FinancingSource capture une source/instrument,
+# les lignes sont sommees par ProjectFinancialEnvelope.total_amount_usd.
+# Le budget d'execution detaille reste au Module 9 ; ici on capture
+# l'enveloppe indicative a la configuration (BRQ-1.31).
+# ---------------------------------------------------------------------------
+
+FINANCING_SOURCE_CHOICES = [
+    ("isdb_oc",       "IsDB Ordinary Capital"),
+    ("llf",           "LLF (fonds fiduciaire multi-donateurs)"),
+    ("government",    "Gouvernement / contrepartie nationale"),
+    ("co_financing",  "Co-financement"),
+]
+
+FINANCING_INSTRUMENT_CHOICES = [
+    ("loan",          "Pret"),
+    ("grant",         "Don"),
+    ("counterpart",   "Contrepartie"),
+    ("co_financing",  "Co-financement"),
+]
+
+COMPONENT_CHOICES = [
+    ("works",         "Travaux"),
+    ("consulting",    "Conseil"),
+    ("goods",         "Biens"),
+    ("training",      "Formation"),
+    ("operating",     "Fonctionnement"),
+]
+
+
+class ProjectFinancialEnvelope(models.Model):
+    """
+    Enveloppe financiere globale d'un projet (SF-6).
+
+    Relation 1:1 avec Project : creee automatiquement au passage a
+    l'etape IC Approved, ou plus tot si le LLFMU saisit les donnees
+    en anticipation.
+
+    Le champ total_amount_usd est CALCULE (propriete Python) plutot
+    que stocke : il reflete en temps reel la somme des FinancingSource
+    et ne peut pas diverger. Jamais ventile par pays (R20/R21).
+    """
+
+    project = models.OneToOneField(
+        "Project",
+        on_delete=models.CASCADE,
+        related_name="financial_envelope",
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Remarques libres sur la structure de financement.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        AppUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="envelopes_updated",
+    )
+
+    class Meta:
+        db_table = "project_financial_envelope"
+
+    @property
+    def total_amount_usd(self):
+        """Somme des lignes de financement en USD. Calcule, jamais stocke."""
+        from django.db.models import Sum
+        result = self.financing_sources.aggregate(total=Sum("amount_usd"))
+        return result["total"] or 0
+
+    def __str__(self):
+        return f"Enveloppe {self.project.code}"
+
+
+class FinancingSource(models.Model):
+    """
+    Une ligne de financement : source x instrument x montant x devise.
+
+    La conversion vers USD (amount_usd) est effectuee au moment de la
+    saisie. En l'absence d'un flux de taux de change en temps reel,
+    la valeur est saisie par l'utilisateur avec la date de reference.
+    Un service de conversion automatique pourra etre branche ulterieurement
+    sans changer le schema (le champ amount_usd reste la valeur cible).
+    """
+
+    envelope = models.ForeignKey(
+        ProjectFinancialEnvelope,
+        on_delete=models.CASCADE,
+        related_name="financing_sources",
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=FINANCING_SOURCE_CHOICES,
+        help_text="Source de financement selon le vocabulaire LLF2.",
+    )
+    instrument = models.CharField(
+        max_length=20,
+        choices=FINANCING_INSTRUMENT_CHOICES,
+        help_text="Type d'instrument financier.",
+    )
+    donor = models.ForeignKey(
+        "reference.Donor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="financing_contributions",
+        help_text="Bailleur associe, si applicable (optionnel pour les lignes IsDB OC).",
+    )
+    amount = models.DecimalField(
+        max_digits=16,
+        decimal_places=2,
+        help_text="Montant dans la devise d'origine.",
+    )
+    currency = models.ForeignKey(
+        "reference.Currency",
+        on_delete=models.PROTECT,
+        help_text="Devise d'origine.",
+    )
+    amount_usd = models.DecimalField(
+        max_digits=16,
+        decimal_places=2,
+        help_text="Equivalent USD. Saisi manuellement avec la date de reference "
+        "tant qu'aucun flux de taux de change n'est branche.",
+    )
+    exchange_rate_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date a laquelle le taux de change a ete applique.",
+    )
+    label = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Libelle libre, ex. 'Pret IsDB tranche 1'.",
+    )
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Ordre d'affichage dans le tableau de financement.",
+    )
+
+    class Meta:
+        db_table = "financing_source"
+        ordering = ["order", "pk"]
+
+    def __str__(self):
+        return f"{self.get_source_display()} / {self.get_instrument_display()} — {self.amount_usd:,.0f} USD"
+
+
+class ComponentAllocation(models.Model):
+    """
+    Allocation indicative par composante (SF-6, champ optionnel).
+
+    Travaux / Conseil / Biens / Formation / Fonctionnement.
+    Indicatif uniquement — le detail reste au Module 9.
+    La somme des allocations DOIT etre egale a total_amount_usd
+    (controle applicatif, pas de contrainte DB car les valeurs sont
+    indicatives et peuvent etre saisies progressivement).
+    """
+
+    envelope = models.ForeignKey(
+        ProjectFinancialEnvelope,
+        on_delete=models.CASCADE,
+        related_name="component_allocations",
+    )
+    component = models.CharField(
+        max_length=20,
+        choices=COMPONENT_CHOICES,
+    )
+    amount_usd = models.DecimalField(
+        max_digits=16,
+        decimal_places=2,
+        help_text="Allocation indicative en USD.",
+    )
+
+    class Meta:
+        db_table = "component_allocation"
+        unique_together = ("envelope", "component")
+        ordering = ["component"]
+
+    def __str__(self):
+        return f"{self.get_component_display()} : {self.amount_usd:,.0f} USD"

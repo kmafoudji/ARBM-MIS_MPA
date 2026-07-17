@@ -78,7 +78,11 @@ export default function App() {
         <ProjectCreateForm onCreated={() => setNav("projects")} onCancel={() => setNav("projects")} />
       )}
       {nav === "project-detail" && (
-        <ProjectDetail projectId={selectedProjectId} onBack={() => setNav("projects")} />
+        <ProjectDetail
+          projectId={selectedProjectId}
+          onBack={() => setNav("projects")}
+          canEdit={canEditReference}
+        />
       )}
 
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}

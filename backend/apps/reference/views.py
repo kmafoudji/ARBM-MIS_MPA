@@ -18,8 +18,9 @@ from rest_framework.response import Response
 
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
 
-from .models import Country, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
+from .models import Country, Currency, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
 from .serializers import (
+    CurrencySerializer,
     CountrySerializer,
     DonorSerializer,
     ImplementingAgencySerializer,
@@ -73,6 +74,13 @@ class ImplementingAgencyViewSet(ReferenceViewSet):
 class SectorViewSet(ReferenceViewSet):
     queryset = Sector.objects.all().order_by("name")
     serializer_class = SectorSerializer
+
+
+class CurrencyViewSet(ReferenceViewSet):
+    queryset = Currency.objects.all().order_by("code")
+    serializer_class = CurrencySerializer
+    # Les devises ne se desactivent pas — liste stable
+    http_method_names = ["get", "head", "options"]
 
 
 class SdgViewSet(ReferenceViewSet):
