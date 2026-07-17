@@ -1,61 +1,78 @@
 import { useEffect, useState } from "react";
+import AppShell from "./components/AppShell.jsx";
+import Login from "./pages/Login.jsx";
+import Overview from "./pages/Overview.jsx";
 import ProjectList from "./pages/ProjectList.jsx";
 import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
-
-const LIME_GREEN = "#A4C53F";
-const NAVY_BLUE = "#1B5A8C";
+import MasterData from "./pages/MasterData.jsx";
+import Rbac from "./pages/Rbac.jsx";
+import { COLOR, FONT } from "./theme";
 
 export default function App() {
-  const [status, setStatus] = useState("verification...");
-  const [view, setView] = useState("projects"); // "projects" | "create" | "detail"
+  const [authState, setAuthState] = useState("checking"); // "checking" | "authenticated" | "anonymous"
+  const [user, setUser] = useState(null);
+  const [nav, setNav] = useState("overview");
+  const [projectSubView, setProjectSubView] = useState("list"); // "list" | "create" | "detail"
   const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   useEffect(() => {
-    fetch("/health/")
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status === "ok" ? "backend connecte" : "erreur"))
-      .catch(() => setStatus("backend injoignable"));
+    fetch("/auth/me/", { credentials: "include" })
+      .then((res) => {
+        if (res.status === 401) {
+          setAuthState("anonymous");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) {
+          setUser(data);
+          setAuthState("authenticated");
+        }
+      })
+      .catch(() => setAuthState("anonymous"));
   }, []);
 
-  return (
-    <div style={{ fontFamily: "Inter, sans-serif", minHeight: "100vh" }}>
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          padding: "1rem 2rem",
-          borderBottom: `3px solid ${LIME_GREEN}`,
-        }}
-      >
-        <span style={{ color: LIME_GREEN, fontSize: "1.5rem" }}>◇</span>
-        <h1 style={{ color: NAVY_BLUE, fontFamily: "Sora, sans-serif", fontSize: "1.4rem", margin: 0 }}>
-          ARBM-MES
-        </h1>
-        <span style={{ color: "#999", fontSize: "0.85rem", marginLeft: "auto" }}>
-          Statut backend : <strong>{status}</strong>
-        </span>
-      </header>
+  function goToProjects() {
+    setNav("projects");
+    setProjectSubView("list");
+  }
 
-      {view === "projects" && (
+  if (authState === "checking") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT.body, color: COLOR.muted }}>
+        Verification de la session...
+      </div>
+    );
+  }
+
+  if (authState === "anonymous") {
+    return <Login />;
+  }
+
+  return (
+    <AppShell view={nav} onNavigate={(key) => { setNav(key); if (key === "projects") setProjectSubView("list"); }} user={user}>
+      {nav === "overview" && <Overview user={user} />}
+
+      {nav === "projects" && projectSubView === "list" && (
         <ProjectList
-          onCreateClick={() => setView("create")}
+          onCreateClick={() => setProjectSubView("create")}
           onProjectClick={(id) => {
             setSelectedProjectId(id);
-            setView("detail");
+            setProjectSubView("detail");
           }}
         />
       )}
-      {view === "create" && (
-        <ProjectCreateForm
-          onCreated={() => setView("projects")}
-          onCancel={() => setView("projects")}
-        />
+      {nav === "projects" && projectSubView === "create" && (
+        <ProjectCreateForm onCreated={goToProjects} onCancel={goToProjects} />
       )}
-      {view === "detail" && (
-        <ProjectDetail projectId={selectedProjectId} onBack={() => setView("projects")} />
+      {nav === "projects" && projectSubView === "detail" && (
+        <ProjectDetail projectId={selectedProjectId} onBack={goToProjects} />
       )}
-    </div>
+
+      {nav === "masterdata" && <MasterData />}
+      {nav === "rbac" && <Rbac />}
+    </AppShell>
   );
 }

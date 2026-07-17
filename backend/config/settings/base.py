@@ -126,6 +126,10 @@ CSRF_TRUSTED_ORIGINS = env.list(
     default=["http://localhost:5173", "http://localhost:8000"],
 )
 
+# URL du frontend — utilisee pour rediriger l'utilisateur ici apres une
+# connexion Entra ID reussie (voir apps.authentication.views.callback_view).
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+
 # --- Microsoft Entra ID (Azure AD) ---
 # Ces valeurs viennent de l'App Registration cree dans le tenant
 # Microsoft Entra ID de MillenniumPromise. Voir .env.example.

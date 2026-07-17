@@ -12,7 +12,7 @@ Flow :
 """
 import msal
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -87,8 +87,7 @@ def callback_view(request):
         user.save(update_fields=["idp_subject", "auth_method"])
 
     login(request, user)
-
-    return JsonResponse({"status": "authenticated", "email": email})
+    return redirect(settings.FRONTEND_URL)
 
 
 def me_view(request):
@@ -101,3 +100,9 @@ def me_view(request):
             "name": request.user.first_name,
         }
     )
+
+
+def logout_view(request):
+    """Termine la session locale (revocation immediate, RG-3.3)."""
+    logout(request)
+    return redirect(settings.FRONTEND_URL)
