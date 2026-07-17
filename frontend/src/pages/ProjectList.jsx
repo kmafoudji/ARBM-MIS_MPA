@@ -4,7 +4,7 @@ import { apiFetch } from "../api";
 const NAVY = "#1B5A8C";
 const LIME = "#A4C53F";
 
-export default function ProjectList({ onCreateClick }) {
+export default function ProjectList({ onCreateClick, onProjectClick }) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["projects"],
     queryFn: () => apiFetch("/api/projects/"),
@@ -54,7 +54,13 @@ export default function ProjectList({ onCreateClick }) {
           </thead>
           <tbody>
             {data.map((p) => (
-              <tr key={p.id} style={{ borderBottom: "1px solid #eee" }}>
+              <tr
+                key={p.id}
+                onClick={() => onProjectClick(p.id)}
+                style={{ borderBottom: "1px solid #eee", cursor: "pointer" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
                 <td style={{ padding: "0.5rem" }}>{p.code || "—"}</td>
                 <td style={{ padding: "0.5rem" }}>{p.name}</td>
                 <td style={{ padding: "0.5rem" }}>

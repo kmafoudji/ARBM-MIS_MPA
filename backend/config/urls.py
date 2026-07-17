@@ -10,4 +10,5 @@ urlpatterns = [
     path("auth/", include("apps.authentication.urls")),
     path("api/", include("apps.project.urls")),
     path("api/reference/", include("apps.reference.urls")),
+    path("api/identity/", include("apps.identity.urls")),
 ]

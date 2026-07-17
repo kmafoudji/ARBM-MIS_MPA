@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import ProjectList from "./pages/ProjectList.jsx";
 import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
+import ProjectDetail from "./pages/ProjectDetail.jsx";
 
 const LIME_GREEN = "#A4C53F";
 const NAVY_BLUE = "#1B5A8C";
 
 export default function App() {
   const [status, setStatus] = useState("verification...");
-  const [view, setView] = useState("projects"); // "projects" | "create"
+  const [view, setView] = useState("projects"); // "projects" | "create" | "detail"
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
   useEffect(() => {
     fetch("/health/")
@@ -36,12 +38,23 @@ export default function App() {
         </span>
       </header>
 
-      {view === "projects" && <ProjectList onCreateClick={() => setView("create")} />}
+      {view === "projects" && (
+        <ProjectList
+          onCreateClick={() => setView("create")}
+          onProjectClick={(id) => {
+            setSelectedProjectId(id);
+            setView("detail");
+          }}
+        />
+      )}
       {view === "create" && (
         <ProjectCreateForm
           onCreated={() => setView("projects")}
           onCancel={() => setView("projects")}
         />
+      )}
+      {view === "detail" && (
+        <ProjectDetail projectId={selectedProjectId} onBack={() => setView("projects")} />
       )}
     </div>
   );

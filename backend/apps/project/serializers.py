@@ -1,8 +1,9 @@
 from rest_framework import serializers
 
+from apps.identity.models import AppUser
 from apps.reference.models import Country, Sdg, Sector
 
-from .models import Project
+from .models import LIFECYCLE_STAGE_CHOICES, Project, ProjectStageTransition
 from .services import set_project_countries, set_project_sdgs, set_project_sectors
 
 
@@ -123,3 +124,32 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     def get_contributing_sdg_names(self, obj):
         return [f"ODD {s.number} - {s.name}" for s in obj.contributing_sdgs.all()]
+
+
+class ProjectStageTransitionSerializer(serializers.ModelSerializer):
+    from_stage_display = serializers.CharField(source="get_from_stage_display", read_only=True)
+    to_stage_display = serializers.CharField(source="get_to_stage_display", read_only=True)
+    transitioned_by_email = serializers.CharField(source="transitioned_by.email", read_only=True)
+    dual_authorized_by_email = serializers.CharField(
+        source="dual_authorized_by.email", read_only=True
+    )
+
+    class Meta:
+        model = ProjectStageTransition
+        fields = [
+            "id", "from_stage", "from_stage_display", "to_stage", "to_stage_display",
+            "transitioned_by_email", "transitioned_at", "justification",
+            "document_reference", "dual_authorized_by_email",
+        ]
+        read_only_fields = fields
+
+
+class StageTransitionRequestSerializer(serializers.Serializer):
+    """Payload pour POST /api/projects/{id}/transitions/ (SF-4)."""
+
+    to_stage = serializers.ChoiceField(choices=LIFECYCLE_STAGE_CHOICES)
+    justification = serializers.CharField(required=False, allow_blank=True, default="")
+    document_reference = serializers.CharField(required=False, allow_blank=True, default="")
+    dual_authorized_by = serializers.PrimaryKeyRelatedField(
+        queryset=AppUser.objects.all(), required=False, allow_null=True
+    )
