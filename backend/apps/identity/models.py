@@ -180,7 +180,15 @@ class RoleAssignment(models.Model):
 
         if self.user_id and self.role_id and self.scope_type:
             try:
-                check_r26_separation_of_duties(self.user, self.role, self.scope_type, self.scope_id)
+                check_r26_separation_of_duties(
+                    self.user,
+                    self.role,
+                    self.scope_type,
+                    self.scope_id,
+                    # self.pk vaut None a la creation : rien a exclure. En
+                    # modification, evite que la ligne se bloque elle-meme.
+                    exclude_pk=self.pk,
+                )
             except ValidationError as exc:
                 raise ValidationError({"role": exc.message})
 

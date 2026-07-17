@@ -17,22 +17,29 @@ ENTRY_ACTIONS = {"create", "update", "submit"}
 VALIDATION_ACTIONS = {"validate"}
 
 
-def _has_action_on_scope(user, scope_type, scope_id, actions):
+def _has_action_on_scope(user, scope_type, scope_id, actions, exclude_pk=None):
     assignments = RoleAssignment.objects.filter(
         user=user, scope_type=scope_type, scope_id=scope_id, revoked_at__isnull=True
     )
+    if exclude_pk is not None:
+        # Lors d'une MODIFICATION, la ligne editee ne doit pas etre confrontee a
+        # elle-meme : sinon changer un role Validation -> Saisie declenche R26
+        # alors que l'ancien role disparait justement au profit du nouveau.
+        assignments = assignments.exclude(pk=exclude_pk)
     role_ids = assignments.values_list("role_id", flat=True)
     return RolePermission.objects.filter(
         role_id__in=role_ids, permission__action__in=actions
     ).exists()
 
 
-def check_r26_separation_of_duties(user, new_role, scope_type, scope_id):
+def check_r26_separation_of_duties(user, new_role, scope_type, scope_id, exclude_pk=None):
     """
     Leve une ValidationError si l'attribution de `new_role` a `user` sur ce
     perimetre creerait un cumul Saisie+Validation non derogue.
 
-    A appeler AVANT de sauvegarder un nouveau RoleAssignment.
+    A appeler AVANT de sauvegarder un RoleAssignment. Lors d'une modification,
+    passer `exclude_pk=instance.pk` pour que la ligne editee ne compte pas
+    comme une attribution concurrente d'elle-meme.
     """
     new_role_actions = set(
         RolePermission.objects.filter(role=new_role).values_list("permission__action", flat=True)
@@ -41,9 +48,11 @@ def check_r26_separation_of_duties(user, new_role, scope_type, scope_id):
     would_add_entry = bool(new_role_actions & ENTRY_ACTIONS)
     would_add_validation = bool(new_role_actions & VALIDATION_ACTIONS)
 
-    has_entry = would_add_entry or _has_action_on_scope(user, scope_type, scope_id, ENTRY_ACTIONS)
+    has_entry = would_add_entry or _has_action_on_scope(
+        user, scope_type, scope_id, ENTRY_ACTIONS, exclude_pk
+    )
     has_validation = would_add_validation or _has_action_on_scope(
-        user, scope_type, scope_id, VALIDATION_ACTIONS
+        user, scope_type, scope_id, VALIDATION_ACTIONS, exclude_pk
     )
 
     if has_entry and has_validation:
