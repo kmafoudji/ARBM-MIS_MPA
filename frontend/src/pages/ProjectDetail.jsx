@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import FinancialEnvelope from "../components/FinancialEnvelope";
 
 const STAGE_BADGE = {
   concept_note: "badge",
