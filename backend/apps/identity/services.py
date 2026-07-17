@@ -72,8 +72,13 @@ def get_user_permissions(user):
     if not user or not user.is_authenticated:
         return set()
 
-    # Le superuser Django est un compte technique d'exploitation : il court-circuite
-    # le RBAC applicatif (utile en POC pour l'amorcage, avant toute attribution).
+    # Le superuser est un COMPTE TECHNIQUE d'exploitation (acces de secours a
+    # l'admin Django), pas une personne : il court-circuite le RBAC applicatif.
+    #
+    # Consequence a connaitre : attribuer un role metier a un superuser n'a
+    # AUCUN effet restrictif — il conserve toutes les permissions. Un superuser
+    # n'est donc pas un persona testable : pour eprouver les limites d'un profil
+    # (PMU, Regional Hub...), il faut un compte non-superuser.
     if user.is_superuser:
         return {"*"}
 

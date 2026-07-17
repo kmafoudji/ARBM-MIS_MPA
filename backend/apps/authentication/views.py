@@ -75,16 +75,25 @@ def callback_view(request):
             {"error": "Impossible de recuperer l'email depuis Entra ID."}, status=400
         )
 
-    user, created = User.objects.get_or_create(
-        username=email,
-        defaults={
-            "email": email,
-            "first_name": name,
-            "auth_method": "sso",
-            "idp_subject": subject,
-        },
-    )
-    if not created and user.idp_subject != subject:
+    # Rattachement par EMAIL et non par username. Chercher par username creait
+    # un doublon des qu'un compte local existait deja pour la meme personne
+    # (createsuperuser "mafoudji.kande" vs SSO "mafoudji.kande@..."), avec deux
+    # enregistrements portant la meme adresse et des droits differents.
+    # L'email est desormais unique (AppUser.email), ce rattachement est donc sur.
+    user = User.objects.filter(email__iexact=email).first()
+    created = user is None
+
+    if created:
+        user = User.objects.create(
+            username=email,
+            email=email,
+            first_name=name,
+            auth_method="sso",
+            idp_subject=subject,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+    elif user.idp_subject != subject:
         user.idp_subject = subject
         user.auth_method = "sso"
         user.save(update_fields=["idp_subject", "auth_method"])

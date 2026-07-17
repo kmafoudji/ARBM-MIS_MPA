@@ -53,6 +53,13 @@ class AppUser(AbstractUser):
     ]
 
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default="internal")
+    email = models.EmailField(
+        unique=True,
+        help_text="Identifiant fonctionnel de l'utilisateur, unique. Django "
+        "n'impose pas cette unicite par defaut : sans elle, un compte local et "
+        "son jumeau SSO peuvent porter la meme adresse, ce qui rend impossible "
+        "de savoir sous quelle identite on agit.",
+    )
     auth_method = models.CharField(max_length=10, choices=AUTH_METHOD_CHOICES, default="sso")
     identity_provider = models.ForeignKey(
         IdentityProvider, on_delete=models.SET_NULL, null=True, blank=True, related_name="users"
