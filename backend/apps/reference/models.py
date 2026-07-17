@@ -115,11 +115,13 @@ class Donor(models.Model):
         max_length=7, blank=True, help_text="Couleur institutionnelle (#RRGGBB), "
         "utilisee en repli quand aucun logo n'est fourni."
     )
-    logo_url = models.URLField(
+    logo_url = models.CharField(
+        max_length=300,
         blank=True,
-        help_text="URL du logo officiel (Blob Storage ou site du bailleur). "
-        "Conformement au principe du projet, aucune image n'est stockee en "
-        "base64 — uniquement des URL. A defaut, un monogramme colore est affiche.",
+        help_text="Chemin ou URL du logo officiel. Accepte un asset servi par "
+        "l'application (/logos/donors/isdb.png) ou une URL absolue (Blob "
+        "Storage). Conformement au principe du projet, aucune image n'est "
+        "stockee en base64. A defaut, un monogramme colore est affiche.",
     )
     committed_amount_usd = models.DecimalField(
         max_digits=16, decimal_places=2, null=True, blank=True,
@@ -165,9 +167,10 @@ class ImplementingAgency(models.Model):
         related_name="implementing_agencies",
         help_text="Vide pour les agences internationales (ONU, ONG multi-pays).",
     )
-    logo_url = models.URLField(
+    logo_url = models.CharField(
+        max_length=300,
         blank=True,
-        help_text="URL du logo officiel. A defaut, un monogramme est affiche.",
+        help_text="Chemin ou URL du logo officiel. A defaut, un monogramme est affiche.",
     )
 
     class Meta:

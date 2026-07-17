@@ -284,13 +284,29 @@ export default function MasterData({ canEdit }) {
     },
     sdgs: {
       searchKeys: ["name"],
-      pageSize: 20,
       columns: [
         {
-          key: "number", label: "", width: 52, sortable: true,
-          render: (r) => <span className="sdg-tile" style={{ "--sdg-color": r.color }}>{String(r.number).padStart(2, "0")}</span>,
+          key: "number", label: "", width: 64, sortable: true,
+          // Icone officielle ONU (open-sdg/sdg-translations, version FR).
+          // Le chemin se deduit du numero : les 17 ODD sont fixes.
+          render: (r) => (
+            <img
+              className="sdg-icon"
+              src={`/logos/sdg/${r.number}.png`}
+              alt={`ODD ${r.number}`}
+              loading="lazy"
+            />
+          ),
         },
-        { key: "name", label: "Objectif de developpement durable", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
+        {
+          key: "name", label: "Objectif de developpement durable", sortable: true,
+          render: (r) => (
+            <span className="row" style={{ gap: 8 }}>
+              <span className="sdg-dot" style={{ background: r.color }} />
+              <strong style={{ fontWeight: 500 }}>{r.name}</strong>
+            </span>
+          ),
+        },
         ...editCol,
       ],
     },
@@ -386,7 +402,7 @@ export default function MasterData({ canEdit }) {
             columns={cfg.columns}
             searchKeys={cfg.searchKeys}
             filters={cfg.filters}
-            pageSize={cfg.pageSize || 15}
+            pageSize={cfg.pageSize || 10}
             rowKey={(r) => r[idField]}
             emptyLabel="Ce referentiel est vide."
           />
@@ -410,9 +426,10 @@ export default function MasterData({ canEdit }) {
 
       {tabKey === "sdgs" && (
         <p className="text-xs text-muted mt-3">
-          Les tuiles reprennent les couleurs officielles des Nations Unies. Les pictogrammes
-          officiels des ODD sont des marques de l'ONU soumises a des regles d'usage : ils ne
-          sont pas reproduits ici.
+          Pictogrammes officiels des Nations Unies (version francaise), utilises conformement
+          aux lignes directrices de l'ONU — qui autorisent la reprise des 17 icones et de la
+          roue des couleurs. Seul le logo ODD portant l'embleme de l'ONU est reserve aux
+          entites du systeme des Nations Unies : il n'est pas utilise ici.
         </p>
       )}
 

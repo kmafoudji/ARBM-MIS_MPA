@@ -89,7 +89,7 @@ COUNTRIES = [
     ("MV", "MDV", "Maldives", "dhaka"),
 ]
 
-# (code, sigle, nom, type, iso2 d'origine, couleur)
+# (code, sigle, nom, type, iso2 d'origine, couleur, chemin du logo)
 # origin_iso2 vide = institution multilaterale, pas de drapeau national.
 #
 # MONTANTS VOLONTAIREMENT ABSENTS. Une version anterieure de ce seed portait
@@ -103,12 +103,12 @@ COUNTRIES = [
 # Les engagements doivent etre saisis depuis les chiffres officiels de la
 # LLF MU via l'ecran Donnees de base.
 DONORS = [
-    ("adfd", "ADFD", "Abu Dhabi Fund for Development", "bilateral", "AE", "#C8102E"),
-    ("gates", "GF", "Bill & Melinda Gates Foundation", "foundation", "US", "#222A35"),
-    ("isdb", "IsDB", "Islamic Development Bank", "multilateral", "", "#0B5C3A"),
-    ("isfd", "ISFD", "Islamic Solidarity Fund for Development", "multilateral", "", "#1B4F8C"),
-    ("ksrelief", "KSRelief", "King Salman Humanitarian Aid Centre", "humanitarian", "SA", "#006C35"),
-    ("qffd", "QFFD", "Qatar Fund for Development", "bilateral", "QA", "#8A1538"),
+    ("adfd", "ADFD", "Abu Dhabi Fund for Development", "bilateral", "AE", "#C8102E", "/logos/donors/adfd.png"),
+    ("gates", "GF", "Bill & Melinda Gates Foundation", "foundation", "US", "#222A35", "/logos/donors/gates.png"),
+    ("isdb", "IsDB", "Islamic Development Bank", "multilateral", "", "#0B5C3A", "/logos/donors/isdb.png"),
+    ("isfd", "ISFD", "Islamic Solidarity Fund for Development", "multilateral", "", "#1B4F8C", "/logos/donors/isfd.png"),
+    ("ksrelief", "KSRelief", "King Salman Humanitarian Aid Centre", "humanitarian", "SA", "#006C35", "/logos/donors/ksrelief.png"),
+    ("qffd", "QFFD", "Qatar Fund for Development", "bilateral", "QA", "#8A1538", "/logos/donors/qffd.png"),
 ]
 
 # (code, nom, type, iso2 du pays ou None si international)
@@ -221,7 +221,7 @@ class Command(BaseCommand):
             countries[iso2] = country
         self.stdout.write(self.style.SUCCESS(f"Pays : {len(countries)} OK"))
 
-        for code, short_name, name, donor_type, origin, color in DONORS:
+        for code, short_name, name, donor_type, origin, color, logo in DONORS:
             donor, created = Donor.objects.get_or_create(
                 code=code,
                 defaults={
@@ -230,14 +230,17 @@ class Command(BaseCommand):
                     "donor_type": donor_type,
                     "origin_iso2": origin,
                     "color": color,
+                    "logo_url": logo,
                 },
             )
-            if not created and not donor.short_name:
-                donor.short_name = short_name
-                donor.name = name
-                donor.donor_type = donor_type
-                donor.origin_iso2 = origin
-                donor.color = color
+            # Complete les bailleurs seedes avant l'arrivee des logos, sans
+            # ecraser un logo saisi manuellement.
+            if not created and not donor.logo_url:
+                donor.short_name = donor.short_name or short_name
+                donor.donor_type = donor.donor_type or donor_type
+                donor.origin_iso2 = donor.origin_iso2 or origin
+                donor.color = donor.color or color
+                donor.logo_url = logo
                 donor.save()
         self.stdout.write(
             self.style.SUCCESS(f"Bailleurs : {len(DONORS)} OK (montants non renseignes)")

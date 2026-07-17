@@ -29,14 +29,26 @@ const NAV_GROUPS = [
   },
 ];
 
-const CRUMB_LABELS = {
-  overview: "Tableau de bord",
-  masterdata: "Donnees de base",
-  projects: "Projets",
-  "new-project": "Nouveau projet",
-  "project-detail": "Fiche projet",
-  rbac: "Utilisateurs & roles",
+// Chaine du fil d'Ariane : chaque vue declare son parent, ce qui permet de
+// reconstruire un chemin cliquable jusqu'au tableau de bord.
+const CRUMBS = {
+  overview: { label: "Tableau de bord", parent: null },
+  masterdata: { label: "Donnees de base", parent: "overview" },
+  projects: { label: "Projets", parent: "overview" },
+  "new-project": { label: "Nouveau projet", parent: "projects" },
+  "project-detail": { label: "Fiche projet", parent: "projects" },
+  rbac: { label: "Utilisateurs & roles", parent: "overview" },
 };
+
+function crumbTrail(view) {
+  const trail = [];
+  let key = view;
+  while (key) {
+    trail.unshift({ key, ...CRUMBS[key] });
+    key = CRUMBS[key]?.parent;
+  }
+  return trail;
+}
 
 const API_PATHS = {
   overview: "/api/overview",
@@ -116,12 +128,24 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
 
       <div className="main">
         <div className="topbar">
-          <div className="crumb">
+          <nav className="crumb" aria-label="Fil d'Ariane">
             <span className="diamond" />
-            <span>ARBM-MES</span>
-            <span>›</span>
-            <span className="crumb-main">{CRUMB_LABELS[view]}</span>
-          </div>
+            {crumbTrail(view).map((c, i, arr) => {
+              const isLast = i === arr.length - 1;
+              return (
+                <span key={c.key} className="row" style={{ gap: "var(--s-2)" }}>
+                  {isLast ? (
+                    <span className="crumb-main" aria-current="page">{c.label}</span>
+                  ) : (
+                    <button className="crumb-link" onClick={() => onNavigate(c.key)}>
+                      {c.label}
+                    </button>
+                  )}
+                  {!isLast && <span aria-hidden="true">›</span>}
+                </span>
+              );
+            })}
+          </nav>
           <div className="topbar-actions">
             <span className="api-pill">{API_PATHS[view]}</span>
             <span className="env-tag">POC</span>
