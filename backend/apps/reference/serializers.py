@@ -46,30 +46,33 @@ class DonorSerializer(serializers.ModelSerializer):
         model = Donor
         fields = [
             "id", "code", "short_name", "name", "donor_type", "donor_type_display",
-            "origin_iso2", "flag", "color", "committed_amount_usd",
+            "origin_iso2", "flag", "color", "logo_url", "committed_amount_usd",
         ]
 
 
 class ImplementingAgencySerializer(serializers.ModelSerializer):
     flag = serializers.CharField(read_only=True)
     country_name = serializers.CharField(source="country.name", read_only=True)
+    country_iso2 = serializers.CharField(source="country.iso2", read_only=True)
     agency_type_display = serializers.CharField(source="get_agency_type_display", read_only=True)
 
     class Meta:
         model = ImplementingAgency
         fields = [
             "id", "code", "name", "agency_type", "agency_type_display",
-            "country", "country_name", "flag",
+            "country", "country_name", "country_iso2", "flag", "logo_url",
         ]
 
 
 class SectorSerializer(serializers.ModelSerializer):
+    parent_name = serializers.CharField(source="parent.name", read_only=True)
+
     class Meta:
         model = Sector
-        fields = ["id", "code", "name", "parent"]
+        fields = ["id", "code", "name", "parent", "parent_name", "icon", "color"]
 
 
 class SdgSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sdg
-        fields = ["number", "name"]
+        fields = ["number", "name", "color"]

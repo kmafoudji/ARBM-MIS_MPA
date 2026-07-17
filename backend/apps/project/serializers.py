@@ -9,8 +9,11 @@ from .services import set_project_countries, set_project_sdgs, set_project_secto
 
 class ProjectListSerializer(serializers.ModelSerializer):
     lead_country_name = serializers.SerializerMethodField()
+    lead_country_iso2 = serializers.SerializerMethodField()
     country_names = serializers.SerializerMethodField()
     primary_sector_name = serializers.CharField(source="primary_sector.name", read_only=True)
+    primary_sector_icon = serializers.CharField(source="primary_sector.icon", read_only=True)
+    primary_sector_color = serializers.CharField(source="primary_sector.color", read_only=True)
     contributing_sector_count = serializers.SerializerMethodField()
     lifecycle_stage_display = serializers.CharField(
         source="get_lifecycle_stage_display", read_only=True
@@ -19,8 +22,10 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "id", "code", "name", "lead_country_name", "country_names",
-            "primary_sector", "primary_sector_name", "contributing_sector_count",
+            "id", "code", "name",
+            "lead_country_name", "lead_country_iso2", "country_names",
+            "primary_sector", "primary_sector_name", "primary_sector_icon",
+            "primary_sector_color", "contributing_sector_count",
             "lifecycle_stage", "lifecycle_stage_display",
             "budget_amount", "created_at",
         ]
@@ -28,6 +33,10 @@ class ProjectListSerializer(serializers.ModelSerializer):
     def get_lead_country_name(self, obj):
         lead = obj.lead_country
         return lead.name if lead else None
+
+    def get_lead_country_iso2(self, obj):
+        lead = obj.lead_country
+        return lead.iso2 if lead else None
 
     def get_country_names(self, obj):
         return [pc.country.name for pc in obj.project_countries.select_related("country")]

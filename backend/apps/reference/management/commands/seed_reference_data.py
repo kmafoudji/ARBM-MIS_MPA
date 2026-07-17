@@ -89,15 +89,26 @@ COUNTRIES = [
     ("MV", "MDV", "Maldives", "dhaka"),
 ]
 
-# (code, sigle, nom, type, iso2 d'origine, couleur, engagement USD)
+# (code, sigle, nom, type, iso2 d'origine, couleur)
 # origin_iso2 vide = institution multilaterale, pas de drapeau national.
+#
+# MONTANTS VOLONTAIREMENT ABSENTS. Une version anterieure de ce seed portait
+# des montants (ADFD 500M, Gates 200M, IsDB 1.0B...) repris de la demo
+# statique, ou ils n'etaient qu'illustratifs. Ils sont faux :
+#   - ils confondaient les 2 Md USD de FINANCEMENT IsDB (prets) avec une
+#     subvention de bailleur, alors que la structure du fonds est
+#     2 Md de prets IsDB + 500 M de subventions des bailleurs ;
+#   - les engagements publies sont par phase (LLF1 / LLF2) et melent
+#     subventions, prets concessionnels et waqf.
+# Les engagements doivent etre saisis depuis les chiffres officiels de la
+# LLF MU via l'ecran Donnees de base.
 DONORS = [
-    ("adfd", "ADFD", "Abu Dhabi Fund for Development", "bilateral", "AE", "#C8102E", 500_000_000),
-    ("gates", "GF", "Bill & Melinda Gates Foundation", "foundation", "US", "#222A35", 200_000_000),
-    ("isdb", "IsDB", "Islamic Development Bank", "multilateral", "", "#0B5C3A", 1_000_000_000),
-    ("isfd", "ISFD", "Islamic Solidarity Fund for Development", "multilateral", "", "#1B4F8C", 100_000_000),
-    ("ksrelief", "KSRelief", "King Salman Humanitarian Aid Centre", "humanitarian", "SA", "#006C35", 150_000_000),
-    ("qffd", "QFFD", "Qatar Fund for Development", "bilateral", "QA", "#8A1538", 100_000_000),
+    ("adfd", "ADFD", "Abu Dhabi Fund for Development", "bilateral", "AE", "#C8102E"),
+    ("gates", "GF", "Bill & Melinda Gates Foundation", "foundation", "US", "#222A35"),
+    ("isdb", "IsDB", "Islamic Development Bank", "multilateral", "", "#0B5C3A"),
+    ("isfd", "ISFD", "Islamic Solidarity Fund for Development", "multilateral", "", "#1B4F8C"),
+    ("ksrelief", "KSRelief", "King Salman Humanitarian Aid Centre", "humanitarian", "SA", "#006C35"),
+    ("qffd", "QFFD", "Qatar Fund for Development", "bilateral", "QA", "#8A1538"),
 ]
 
 # (code, nom, type, iso2 du pays ou None si international)
@@ -115,40 +126,45 @@ AGENCIES = [
 ]
 
 # 3 piliers LLF2 + 2 themes transversaux
+# (code, nom, icone, couleur) — couleurs reprises de la demo Sentinelle.
 SECTORS = [
-    ("health", "Sante primaire", None),
-    ("agriculture", "Agriculture", None),
-    ("infrastructure", "Infrastructure de base", None),
-    ("gender", "Genre (transversal)", None),
-    ("climate", "Climat (transversal)", None),
+    ("health", "Sante primaire", "health", "#E84A5F"),
+    ("agriculture", "Agriculture", "agriculture", "#A4C53F"),
+    ("infrastructure", "Infrastructure de base", "infrastructure", "#3F6CC5"),
+    ("gender", "Genre (transversal)", "gender", "#C97FB0"),
+    ("climate", "Climat (transversal)", "climate", "#5BB39F"),
 ]
 
 # Sous-secteurs confirmes dans les specifications anterieures. Liste NON
 # exhaustive — seuls deux exemples ont ete formellement observes ; a
 # completer via l'admin une fois la liste officielle LLF2 disponible.
 SUB_SECTORS = [
-    ("general_agriculture", "General Agriculture", "agriculture"),
-    ("sewerage_solid_waste", "Sewerage & Solid Waste Management", "infrastructure"),
+    ("general_agriculture", "General Agriculture", "agriculture", "agriculture", "#A4C53F"),
+    ("sewerage_solid_waste", "Sewerage & Solid Waste Management", "infrastructure", "water", "#3F6CC5"),
 ]
 
+# (numero, nom, couleur officielle ONU)
+# Les pictogrammes officiels des ODD sont des marques de l'ONU soumises a des
+# regles d'usage : le systeme affiche une tuile numerotee a la couleur
+# officielle plutot que de reproduire le pictogramme.
 SDGS = [
-    (1, "Pas de pauvrete"),
-    (2, "Faim 'zero'"),
-    (3, "Bonne sante et bien-etre"),
-    (4, "Education de qualite"),
-    (5, "Egalite entre les sexes"),
-    (6, "Eau propre et assainissement"),
-    (7, "Energie propre et d'un cout abordable"),
-    (8, "Travail decent et croissance economique"),
-    (9, "Industrie, innovation et infrastructure"),
-    (10, "Inegalites reduites"),
-    (11, "Villes et communautes durables"),
-    (12, "Consommation et production responsables"),
-    (13, "Mesures relatives a la lutte contre les changements climatiques"),
-    (14, "Vie aquatique"),
-    (15, "Vie terrestre"),
-    (16, "Paix, justice et institutions efficaces"),
-    (17, "Partenariats pour la realisation des objectifs"),
+    (1, "Pas de pauvrete", "#E5243B"),
+    (2, "Faim 'zero'", "#DDA63A"),
+    (3, "Bonne sante et bien-etre", "#4C9F38"),
+    (4, "Education de qualite", "#C5192D"),
+    (5, "Egalite entre les sexes", "#FF3A21"),
+    (6, "Eau propre et assainissement", "#26BDE2"),
+    (7, "Energie propre et d'un cout abordable", "#FCC30B"),
+    (8, "Travail decent et croissance economique", "#A21942"),
+    (9, "Industrie, innovation et infrastructure", "#FD6925"),
+    (10, "Inegalites reduites", "#DD1367"),
+    (11, "Villes et communautes durables", "#FD9D24"),
+    (12, "Consommation et production responsables", "#BF8B2E"),
+    (13, "Mesures relatives a la lutte contre les changements climatiques", "#3F7E44"),
+    (14, "Vie aquatique", "#0A97D9"),
+    (15, "Vie terrestre", "#56C02B"),
+    (16, "Paix, justice et institutions efficaces", "#00689D"),
+    (17, "Partenariats pour la realisation des objectifs", "#19486A"),
 ]
 
 MARKERS = [
@@ -205,7 +221,7 @@ class Command(BaseCommand):
             countries[iso2] = country
         self.stdout.write(self.style.SUCCESS(f"Pays : {len(countries)} OK"))
 
-        for code, short_name, name, donor_type, origin, color, amount in DONORS:
+        for code, short_name, name, donor_type, origin, color in DONORS:
             donor, created = Donor.objects.get_or_create(
                 code=code,
                 defaults={
@@ -214,7 +230,6 @@ class Command(BaseCommand):
                     "donor_type": donor_type,
                     "origin_iso2": origin,
                     "color": color,
-                    "committed_amount_usd": amount,
                 },
             )
             if not created and not donor.short_name:
@@ -223,9 +238,10 @@ class Command(BaseCommand):
                 donor.donor_type = donor_type
                 donor.origin_iso2 = origin
                 donor.color = color
-                donor.committed_amount_usd = amount
                 donor.save()
-        self.stdout.write(self.style.SUCCESS(f"Bailleurs : {len(DONORS)} OK"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Bailleurs : {len(DONORS)} OK (montants non renseignes)")
+        )
 
         for code, name, agency_type, iso2 in AGENCIES:
             ImplementingAgency.objects.get_or_create(
@@ -238,19 +254,33 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Agences d'implementation : {len(AGENCIES)} OK"))
 
-        for code, name, _parent in SECTORS:
-            Sector.objects.get_or_create(code=code, defaults={"name": name, "parent": None})
+        for code, name, icon, color in SECTORS:
+            sector, _ = Sector.objects.get_or_create(
+                code=code, defaults={"name": name, "parent": None, "icon": icon, "color": color}
+            )
+            # Complete les secteurs seedes avant l'ajout des champs icone/couleur.
+            if not sector.color:
+                sector.icon, sector.color = icon, color
+                sector.save(update_fields=["icon", "color"])
         self.stdout.write(self.style.SUCCESS(f"Secteurs : {len(SECTORS)} OK"))
 
-        for code, name, parent_code in SUB_SECTORS:
+        for code, name, parent_code, icon, color in SUB_SECTORS:
             parent = Sector.objects.filter(code=parent_code).first()
-            Sector.objects.get_or_create(code=code, defaults={"name": name, "parent": parent})
+            sector, _ = Sector.objects.get_or_create(
+                code=code, defaults={"name": name, "parent": parent, "icon": icon, "color": color}
+            )
+            if not sector.color:
+                sector.icon, sector.color = icon, color
+                sector.save(update_fields=["icon", "color"])
         self.stdout.write(
             self.style.SUCCESS(f"Sous-secteurs : {len(SUB_SECTORS)} OK (liste non exhaustive)")
         )
 
-        for number, name in SDGS:
-            Sdg.objects.get_or_create(number=number, defaults={"name": name})
+        for number, name, color in SDGS:
+            sdg, _ = Sdg.objects.get_or_create(number=number, defaults={"name": name, "color": color})
+            if not sdg.color:
+                sdg.color = color
+                sdg.save(update_fields=["color"])
         self.stdout.write(self.style.SUCCESS(f"ODD : {len(SDGS)} OK"))
 
         for code, name in MARKERS:

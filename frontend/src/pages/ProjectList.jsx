@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import Flag from "../components/Flag.jsx";
+import SectorIcon from "../components/SectorIcon.jsx";
 
 const STAGE_BADGE = {
   concept_note: "badge",
@@ -103,18 +105,22 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
                   <td className="text-mono text-xs">{p.code || "—"}</td>
                   <td style={{ fontWeight: 500 }}>{p.name}</td>
                   <td>
-                    {p.lead_country_name}
-                    {p.country_names?.length > 1 && (
-                      <span className="badge mt-1" style={{ marginLeft: 6 }}>
-                        +{p.country_names.length - 1}
-                      </span>
-                    )}
+                    <span className="row" style={{ gap: 7 }}>
+                      <Flag iso2={p.lead_country_iso2} size={16} title={p.lead_country_name} />
+                      {p.lead_country_name}
+                      {p.country_names?.length > 1 && (
+                        <span className="badge">+{p.country_names.length - 1}</span>
+                      )}
+                    </span>
                   </td>
                   <td>
-                    {p.primary_sector_name}
-                    {p.contributing_sector_count > 0 && (
-                      <span className="text-muted text-xs"> +{p.contributing_sector_count}</span>
-                    )}
+                    <span className="row" style={{ gap: 7 }}>
+                      <SectorIcon name={p.primary_sector_icon} color={p.primary_sector_color} size={22} />
+                      {p.primary_sector_name}
+                      {p.contributing_sector_count > 0 && (
+                        <span className="text-muted text-xs">+{p.contributing_sector_count}</span>
+                      )}
+                    </span>
                   </td>
                   <td>
                     <span className={STAGE_BADGE[p.lifecycle_stage] || "badge"}>

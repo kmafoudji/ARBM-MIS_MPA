@@ -112,11 +112,20 @@ class Donor(models.Model):
         "n'ont pas de drapeau national.",
     )
     color = models.CharField(
-        max_length=7, blank=True, help_text="Couleur institutionnelle (#RRGGBB)."
+        max_length=7, blank=True, help_text="Couleur institutionnelle (#RRGGBB), "
+        "utilisee en repli quand aucun logo n'est fourni."
+    )
+    logo_url = models.URLField(
+        blank=True,
+        help_text="URL du logo officiel (Blob Storage ou site du bailleur). "
+        "Conformement au principe du projet, aucune image n'est stockee en "
+        "base64 — uniquement des URL. A defaut, un monogramme colore est affiche.",
     )
     committed_amount_usd = models.DecimalField(
         max_digits=16, decimal_places=2, null=True, blank=True,
-        help_text="Engagement annonce au LLF2.",
+        help_text="Engagement au LLF2, en USD. A renseigner depuis les chiffres "
+        "officiels de la LLF MU : les engagements publies varient selon la phase "
+        "et melent subventions, prets concessionnels et waqf.",
     )
 
     class Meta:
@@ -156,6 +165,10 @@ class ImplementingAgency(models.Model):
         related_name="implementing_agencies",
         help_text="Vide pour les agences internationales (ONU, ONG multi-pays).",
     )
+    logo_url = models.URLField(
+        blank=True,
+        help_text="URL du logo officiel. A defaut, un monogramme est affiche.",
+    )
 
     class Meta:
         db_table = "implementing_agency"
@@ -173,10 +186,30 @@ class ImplementingAgency(models.Model):
 class Sector(models.Model):
     """Secteurs LLF2 (Sante, Agriculture, Infrastructure), hierarchique."""
 
+    ICON_CHOICES = [
+        ("health", "Sante (croix medicale)"),
+        ("agriculture", "Agriculture (epi)"),
+        ("infrastructure", "Infrastructure (batiment)"),
+        ("gender", "Genre (symbole Venus)"),
+        ("climate", "Climat (feuille)"),
+        ("water", "Eau (goutte)"),
+        ("education", "Education (livre)"),
+        ("generic", "Generique (losange)"),
+    ]
+
     code = models.SlugField(max_length=30, unique=True)
     name = models.CharField(max_length=150)
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
+    )
+    icon = models.CharField(
+        max_length=20, choices=ICON_CHOICES, default="generic",
+        help_text="Pictogramme illustratif. Rendu en SVG cote frontend plutot "
+        "qu'en emoji : les emojis ne s'affichent pas de maniere fiable selon "
+        "le systeme d'exploitation.",
+    )
+    color = models.CharField(
+        max_length=7, blank=True, help_text="Couleur identitaire du secteur (#RRGGBB)."
     )
 
     class Meta:
@@ -191,6 +224,13 @@ class Sdg(models.Model):
 
     number = models.PositiveSmallIntegerField(primary_key=True)
     name = models.CharField(max_length=200)
+    color = models.CharField(
+        max_length=7, blank=True,
+        help_text="Couleur officielle ONU de l'ODD (#RRGGBB). Le systeme affiche "
+        "une tuile numerotee a cette couleur : les pictogrammes officiels des ODD "
+        "sont des marques de l'ONU soumises a des regles d'usage, ils ne sont donc "
+        "pas reproduits ici.",
+    )
 
     class Meta:
         db_table = "sdg"
