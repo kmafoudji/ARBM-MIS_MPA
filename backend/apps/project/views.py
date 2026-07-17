@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from .models import LIFECYCLE_STAGE_CHOICES, Project
 from .serializers import (
+    ProjectClassificationUpdateSerializer,
     ProjectCreateSerializer,
     ProjectDetailSerializer,
     ProjectListSerializer,
@@ -46,6 +47,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             return ProjectCreateSerializer
         if self.action == "list":
             return ProjectListSerializer
+        if self.action in ("update", "partial_update"):
+            return ProjectClassificationUpdateSerializer
         return ProjectDetailSerializer
 
     def perform_create(self, serializer):
@@ -62,10 +65,49 @@ class ProjectViewSet(viewsets.ModelViewSet):
             raise DRFValidationError({"detail": exc.messages})
         serializer.save()
 
+    def update(self, request, *args, **kwargs):
+        """
+        PATCH sert aujourd'hui exclusivement l'edition de la classification
+        SF-2 (nom, pays, budget n'ont pas encore de formulaire d'edition
+        dedie). La reponse renvoie toujours la fiche complete, pas seulement
+        les champs modifies.
+        """
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ProjectDetailSerializer(instance).data)
+
     @action(detail=False, methods=["get"], url_path="stage-choices")
     def stage_choices(self, request):
         """Liste des 13+2 etapes du cycle de vie (SF-4), pour peupler un select."""
         return Response([{"value": v, "label": l} for v, l in LIFECYCLE_STAGE_CHOICES])
+
+    @action(detail=False, methods=["get"], url_path="classification-choices")
+    def classification_choices(self, request):
+        """Vocabulaires SF-2, pour peupler les selects du formulaire de classification."""
+        from apps.reference.models import CrossCuttingTheme
+        from .models import (
+            FRAGILITY_STATUS_CHOICES,
+            GENDER_MARKER_CHOICES,
+            GEOGRAPHIC_TYPOLOGY_CHOICES,
+            IMPLEMENTATION_MODALITY_CHOICES,
+            RISK_RATING_CHOICES,
+        )
+        return Response({
+            "gender_marker": [{"value": v, "label": l} for v, l in GENDER_MARKER_CHOICES],
+            "implementation_modality": [{"value": v, "label": l} for v, l in IMPLEMENTATION_MODALITY_CHOICES],
+            "geographic_typology": [{"value": v, "label": l} for v, l in GEOGRAPHIC_TYPOLOGY_CHOICES],
+            "fragility_status": [{"value": v, "label": l} for v, l in FRAGILITY_STATUS_CHOICES],
+            "risk_rating": [{"value": v, "label": l} for v, l in RISK_RATING_CHOICES],
+            # Pas de soft-delete sur CrossCuttingTheme (contrairement a Country/
+            # Sector/Donor) — a ajouter si POL-1.07 doit s'y appliquer aussi.
+            "cross_cutting_themes": [
+                {"value": t.id, "label": t.name}
+                for t in CrossCuttingTheme.objects.all()
+            ],
+        })
 
     @action(detail=True, methods=["get", "post"])
     def transitions(self, request, pk=None):

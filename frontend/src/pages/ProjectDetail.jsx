@@ -39,6 +39,15 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
     document_reference: "",
     dual_authorized_by: "",
   });
+  const [showClassificationForm, setShowClassificationForm] = useState(false);
+  const [cForm, setCForm] = useState({
+    gender_marker: "",
+    implementation_modality: "",
+    geographic_typology: "",
+    fragility_status: "",
+    risk_rating: "",
+    cross_cutting_theme_ids: [],
+  });
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -51,6 +60,10 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
   const { data: stageChoices } = useQuery({
     queryKey: ["stage-choices"],
     queryFn: () => apiFetch("/api/projects/stage-choices/"),
+  });
+  const { data: classificationChoices } = useQuery({
+    queryKey: ["classification-choices"],
+    queryFn: () => apiFetch("/api/projects/classification-choices/"),
   });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
 
@@ -65,6 +78,45 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
       setTForm({ to_stage: "", justification: "", document_reference: "", dual_authorized_by: "" });
     },
   });
+
+  const classificationMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/`, { method: "PATCH", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setShowClassificationForm(false);
+    },
+  });
+
+  function openClassificationForm() {
+    setCForm({
+      gender_marker: project.gender_marker || "",
+      implementation_modality: project.implementation_modality || "",
+      geographic_typology: project.geographic_typology || "",
+      fragility_status: project.fragility_status || "",
+      risk_rating: project.risk_rating || "",
+      cross_cutting_theme_ids: project.cross_cutting_theme_ids || [],
+    });
+    setShowClassificationForm(true);
+  }
+
+  function handleClassificationSubmit(e) {
+    e.preventDefault();
+    classificationMutation.mutate({
+      gender_marker: cForm.gender_marker || null,
+      implementation_modality: cForm.implementation_modality || null,
+      geographic_typology: cForm.geographic_typology || null,
+      fragility_status: cForm.fragility_status || null,
+      risk_rating: cForm.risk_rating || null,
+      cross_cutting_theme_ids: cForm.cross_cutting_theme_ids,
+    });
+  }
+
+  function handleThemesChange(e) {
+    const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
+    setCForm({ ...cForm, cross_cutting_theme_ids: selected });
+  }
 
   if (isLoading) {
     return (
@@ -127,23 +179,140 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
               <h2 className="card-title">Classification</h2>
               <div className="card-sub">SF-2 · requise au gate BED Approved</div>
             </div>
+            {!showClassificationForm && (
+              <button className="btn btn-primary btn-sm" onClick={openClassificationForm}>
+                Modifier
+              </button>
+            )}
           </div>
           <div className="card-body">
-            <div className="dl">
-              <Dt term="Secteur primaire">{project.primary_sector_name}</Dt>
-              <Dt term="Secteurs contributifs">
-                {project.contributing_sector_names?.join(", ") || "—"}
-              </Dt>
-              <Dt term="ODD primaire">
-                {project.primary_sdg ? `ODD ${project.primary_sdg} — ${project.primary_sdg_name}` : "—"}
-              </Dt>
-              <Dt term="ODD contributifs">{project.contributing_sdg_names?.join(", ") || "—"}</Dt>
-              <Dt term="Marqueur genre">{project.gender_marker || "—"}</Dt>
-              <Dt term="Modalite">{project.implementation_modality || "—"}</Dt>
-              <Dt term="Typologie geographique">{project.geographic_typology || "—"}</Dt>
-              <Dt term="Fragilite">{project.fragility_status || "—"}</Dt>
-              <Dt term="Notation de risque">{project.risk_rating || "—"}</Dt>
-            </div>
+            {showClassificationForm ? (
+              <form onSubmit={handleClassificationSubmit}>
+                <div className="grid grid-2">
+                  <div className="field">
+                    <label className="field-label" htmlFor="genderMarker">Marqueur genre</label>
+                    <select
+                      id="genderMarker"
+                      className="field-select"
+                      value={cForm.gender_marker}
+                      onChange={(e) => setCForm({ ...cForm, gender_marker: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {classificationChoices?.gender_marker.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="modality">Modalite de mise en oeuvre</label>
+                    <select
+                      id="modality"
+                      className="field-select"
+                      value={cForm.implementation_modality}
+                      onChange={(e) => setCForm({ ...cForm, implementation_modality: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {classificationChoices?.implementation_modality.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="typology">Typologie geographique</label>
+                    <select
+                      id="typology"
+                      className="field-select"
+                      value={cForm.geographic_typology}
+                      onChange={(e) => setCForm({ ...cForm, geographic_typology: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {classificationChoices?.geographic_typology.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="fragility">Statut de fragilite</label>
+                    <select
+                      id="fragility"
+                      className="field-select"
+                      value={cForm.fragility_status}
+                      onChange={(e) => setCForm({ ...cForm, fragility_status: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {classificationChoices?.fragility_status.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="risk">Notation de risque</label>
+                    <select
+                      id="risk"
+                      className="field-select"
+                      value={cForm.risk_rating}
+                      onChange={(e) => setCForm({ ...cForm, risk_rating: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {classificationChoices?.risk_rating.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="themes">Themes transversaux</label>
+                    <select
+                      id="themes"
+                      className="field-select field-multi"
+                      multiple
+                      value={cForm.cross_cutting_theme_ids.map(String)}
+                      onChange={handleThemesChange}
+                    >
+                      {classificationChoices?.cross_cutting_themes.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {classificationMutation.isError && (
+                  <div className="field-error mb-3">
+                    {JSON.stringify(classificationMutation.error.detail)}
+                  </div>
+                )}
+
+                <div className="row">
+                  <button className="btn btn-primary" type="submit" disabled={classificationMutation.isPending}>
+                    {classificationMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  </button>
+                  <button className="btn btn-ghost" type="button" onClick={() => setShowClassificationForm(false)}>
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="dl">
+                <Dt term="Secteur primaire">{project.primary_sector_name}</Dt>
+                <Dt term="Secteurs contributifs">
+                  {project.contributing_sector_names?.join(", ") || "—"}
+                </Dt>
+                <Dt term="ODD primaire">
+                  {project.primary_sdg ? `ODD ${project.primary_sdg} — ${project.primary_sdg_name}` : "—"}
+                </Dt>
+                <Dt term="ODD contributifs">{project.contributing_sdg_names?.join(", ") || "—"}</Dt>
+                <Dt term="Marqueur genre">{project.gender_marker_display || "—"}</Dt>
+                <Dt term="Modalite">{project.implementation_modality_display || "—"}</Dt>
+                <Dt term="Typologie geographique">{project.geographic_typology_display || "—"}</Dt>
+                <Dt term="Themes transversaux">{project.cross_cutting_theme_names?.join(", ") || "—"}</Dt>
+                <Dt term="Fragilite">{project.fragility_status_display || "—"}</Dt>
+                <Dt term="Notation de risque">{project.risk_rating_display || "—"}</Dt>
+              </div>
+            )}
           </div>
         </div>
       </div>

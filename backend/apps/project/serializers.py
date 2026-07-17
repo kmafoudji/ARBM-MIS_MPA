@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.identity.models import AppUser
-from apps.reference.models import Country, Sdg, Sector
+from apps.reference.models import Country, CrossCuttingTheme, Sdg, Sector
 
 from .models import LIFECYCLE_STAGE_CHOICES, Project, ProjectStageTransition
 from .services import set_project_countries, set_project_sdgs, set_project_sectors
@@ -105,6 +105,20 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     )
     created_by_email = serializers.CharField(source="created_by.email", read_only=True)
 
+    # SF-2 — labels lisibles (le front n'affichait que le code brut, ex.
+    # "2" au lieu de "Categorie 2 - Principal")
+    gender_marker_display = serializers.CharField(source="get_gender_marker_display", read_only=True)
+    implementation_modality_display = serializers.CharField(
+        source="get_implementation_modality_display", read_only=True
+    )
+    geographic_typology_display = serializers.CharField(
+        source="get_geographic_typology_display", read_only=True
+    )
+    fragility_status_display = serializers.CharField(source="get_fragility_status_display", read_only=True)
+    risk_rating_display = serializers.CharField(source="get_risk_rating_display", read_only=True)
+    cross_cutting_theme_ids = serializers.SerializerMethodField()
+    cross_cutting_theme_names = serializers.SerializerMethodField()
+
     class Meta:
         model = Project
         fields = [
@@ -113,8 +127,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "lead_country_name", "country_names",
             "primary_sector", "primary_sector_name", "contributing_sector_names",
             "primary_sdg", "primary_sdg_name", "contributing_sdg_names",
-            "gender_marker", "implementation_modality",
-            "geographic_typology", "fragility_status", "risk_rating",
+            "gender_marker", "gender_marker_display",
+            "implementation_modality", "implementation_modality_display",
+            "geographic_typology", "geographic_typology_display",
+            "fragility_status", "fragility_status_display",
+            "risk_rating", "risk_rating_display",
+            "cross_cutting_theme_ids", "cross_cutting_theme_names",
             "budget_amount", "currency",
             "start_date", "end_date",
             "created_by_email", "created_at", "updated_at",
@@ -133,6 +151,32 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     def get_contributing_sdg_names(self, obj):
         return [f"ODD {s.number} - {s.name}" for s in obj.contributing_sdgs.all()]
+
+    def get_cross_cutting_theme_ids(self, obj):
+        return list(obj.cross_cutting_themes.values_list("id", flat=True))
+
+    def get_cross_cutting_theme_names(self, obj):
+        return [t.name for t in obj.cross_cutting_themes.all()]
+
+
+class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
+    """
+    SF-2 — ecriture des champs de classification strategique. Serializer
+    dedie car ProjectDetailSerializer est entierement read_only : le PATCH
+    /api/projects/{id}/ route ici via ProjectViewSet.get_serializer_class().
+    """
+
+    cross_cutting_theme_ids = serializers.PrimaryKeyRelatedField(
+        queryset=CrossCuttingTheme.objects.all(), many=True, required=False,
+        source="cross_cutting_themes",
+    )
+
+    class Meta:
+        model = Project
+        fields = [
+            "gender_marker", "implementation_modality", "geographic_typology",
+            "fragility_status", "risk_rating", "cross_cutting_theme_ids",
+        ]
 
 
 class ProjectStageTransitionSerializer(serializers.ModelSerializer):
