@@ -11,6 +11,12 @@ __pycache__/
 venv/
 staticfiles/
 
+# Fichiers televerses en developpement.
+# Ils persistent via le bind mount ../backend:/app du docker-compose : un
+# volume nomme serait redondant. En production, ils vont sur Azure Blob
+# Storage (le systeme de fichiers d'Azure Container Apps est ephemere).
+backend/media/
+
 # Node
 node_modules/
 dist/

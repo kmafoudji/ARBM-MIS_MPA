@@ -5,6 +5,7 @@ import Modal from "../components/Modal.jsx";
 import DataTable from "../components/DataTable.jsx";
 import Flag from "../components/Flag.jsx";
 import SectorIcon from "../components/SectorIcon.jsx";
+import LogoField from "../components/LogoField.jsx";
 import {
   IconEdit,
   IconPlus,
@@ -61,8 +62,8 @@ const STATUS_FILTER = {
 };
 
 const LOGO_HELP =
-  "Chemin d'un logo fourni avec l'application (/logos/donors/isdb.png) ou URL " +
-  "complete. Laisser vide affiche un monogramme colore — aucune image n'est inventee.";
+  "PNG, JPEG ou WebP, 2 Mo maximum. Le SVG est refuse : il peut embarquer du " +
+  "code executable. Laisser vide affiche un monogramme colore.";
 
 const TABS = [
   {
@@ -107,7 +108,7 @@ const TABS = [
       { name: "donor_type", label: "Type", type: "select", options: DONOR_TYPES },
       { name: "origin_iso2", label: "Pays d'origine (ISO2)", type: "text", maxLength: 2,
         help: "Laisser vide pour une institution multilaterale — elle n'a pas de drapeau national." },
-      { name: "logo_url", label: "Logo", type: "text", help: LOGO_HELP },
+      { name: "logo_url", label: "Logo", type: "logo", help: LOGO_HELP },
       { name: "color", label: "Couleur institutionnelle", type: "color",
         help: "Utilisee pour le monogramme de repli." },
       { name: "committed_amount_usd", label: "Engagement (USD)", type: "number",
@@ -126,7 +127,7 @@ const TABS = [
       { name: "agency_type", label: "Type", type: "select", required: true, options: AGENCY_TYPES },
       { name: "country", label: "Pays", type: "select", optionsKey: "countries",
         help: "Laisser vide pour une agence internationale (ONU, ONG multi-pays)." },
-      { name: "logo_url", label: "Logo", type: "text", help: LOGO_HELP },
+      { name: "logo_url", label: "Logo", type: "logo", help: LOGO_HELP },
     ],
   },
   {
@@ -617,7 +618,14 @@ export default function MasterData({ canEdit }) {
                     {f.label} {f.required && <span className="req">*</span>}
                   </label>
 
-                  {f.type === "icon-select" ? (
+                  {f.type === "logo" ? (
+                    <LogoField
+                      value={value}
+                      color={editing.color}
+                      fallback={editing.short_name || (editing.name || "").slice(0, 3).toUpperCase()}
+                      onChange={(v) => setEditing({ ...editing, [f.name]: v })}
+                    />
+                  ) : f.type === "icon-select" ? (
                     <div className="row" style={{ gap: 10 }}>
                       <SectorIcon name={value || "generic"} color={editing.color} />
                       <select id={`f-${f.name}`} className="field-select" value={value ?? ""}

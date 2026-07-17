@@ -8,3 +8,7 @@ redis==5.0.4
 msal==1.28.0
 gunicorn==22.0.0
 whitenoise==6.6.0
+# Backend de stockage Azure Blob : indispensable en production, le systeme de
+# fichiers d'Azure Container Apps etant ephemere (tout televersement ecrit sur
+# le disque local disparait au redemarrage du conteneur).
+django-storages[azure]==1.14.4

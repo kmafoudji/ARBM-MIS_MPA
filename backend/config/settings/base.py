@@ -97,6 +97,23 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# --- Fichiers televerses (logos, PAD, pieces jointes) ---
+# En local : ecrits sur le disque, servis par Django quand DEBUG=True.
+# En production : bascules vers Azure Blob Storage via le backend de stockage
+# (voir settings/production.py). Le code applicatif ne change pas — il passe
+# toujours par default_storage, jamais par des chemins en dur.
+#
+# Azure Container Apps a un systeme de fichiers EPHEMERE : MEDIA_ROOT n'est
+# viable qu'en developpement. Sans Blob Storage, toute production perdrait
+# ses fichiers a chaque redemarrage de conteneur.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# Taille maximale acceptee pour un televersement (5 Mo). Au-dela, Django
+# rejette la requete avant meme d'atteindre la vue.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {

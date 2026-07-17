@@ -1133,3 +1133,41 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .btn-danger:hover { background: #8C1D18; border-color: #8C1D18; }
 .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Champ logo */
+.logo-field {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+}
+.logo-preview {
+  width: 84px; height: 56px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-preview-mono {
+  width: 100%; height: 100%;
+  border-radius: var(--r-1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+}
+.logo-field-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

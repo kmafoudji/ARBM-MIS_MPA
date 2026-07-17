@@ -19,6 +19,15 @@ export default defineConfig({
         target: "http://backend:8000",
         changeOrigin: true,
       },
+      // Fichiers televerses. Django les sert lui-meme en developpement
+      // (DEBUG=True) ; sans ce proxy, un logo televerse renvoie un 404 car
+      // Vite chercherait /media/... dans ses propres assets statiques.
+      // En production, ce chemin pointe vers Azure Blob Storage et ne passe
+      // ni par Vite ni par Django.
+      "/media": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
     },
   },
 });
