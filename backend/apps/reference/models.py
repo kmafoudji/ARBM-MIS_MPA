@@ -21,12 +21,28 @@ class Currency(models.Model):
 class RegionalHub(models.Model):
     code = models.SlugField(max_length=20, unique=True)
     name = models.CharField(max_length=150)
+    city = models.CharField(max_length=100, blank=True, help_text="Ville d'implantation du hub.")
+    color = models.CharField(
+        max_length=7, blank=True, help_text="Couleur d'identification (#RRGGBB) pour les vues."
+    )
 
     class Meta:
         db_table = "regional_hub"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
+
+
+def iso2_to_flag(iso2):
+    """
+    Convertit un code ISO 3166-1 alpha-2 en emoji drapeau, en mappant chaque
+    lettre vers son symbole indicateur regional Unicode (A -> U+1F1E6).
+    Derive plutot que stocke : toujours coherent avec l'ISO2, zero maintenance.
+    """
+    if not iso2 or len(iso2) != 2 or not iso2.isalpha():
+        return ""
+    return "".join(chr(0x1F1E6 + ord(c) - ord("A")) for c in iso2.upper())
 
 
 class Country(models.Model):
@@ -42,6 +58,11 @@ class Country(models.Model):
     class Meta:
         db_table = "country"
         verbose_name_plural = "countries"
+        ordering = ["name"]
+
+    @property
+    def flag(self):
+        return iso2_to_flag(self.iso2)
 
     def __str__(self):
         return self.name
@@ -68,11 +89,82 @@ class GadmArea(models.Model):
 class Donor(models.Model):
     """Les 6 donateurs du LLF2 : ADFD, Gates Foundation, IsDB, ISFD, KSRelief, QFFD."""
 
+    DONOR_TYPE_CHOICES = [
+        ("bilateral", "Bilateral"),
+        ("multilateral", "Multilateral"),
+        ("foundation", "Fondation"),
+        ("humanitarian", "Humanitaire"),
+    ]
+
     code = models.SlugField(max_length=20, unique=True)
+    short_name = models.CharField(max_length=20, blank=True, help_text="Sigle, ex. KSRelief.")
     name = models.CharField(max_length=150)
+    donor_type = models.CharField(
+        max_length=15, choices=DONOR_TYPE_CHOICES, null=True, blank=True
+    )
+    origin_iso2 = models.CharField(
+        max_length=2,
+        blank=True,
+        help_text="Code ISO2 du pays d'origine (ex. AE, SA, QA, US). Champ libre et "
+        "non FK : les pays d'origine des bailleurs ne sont pas des pays du "
+        "portefeuille et n'ont rien a faire dans le referentiel country. "
+        "Laisser vide pour les institutions multilaterales (IsDB, ISFD), qui "
+        "n'ont pas de drapeau national.",
+    )
+    color = models.CharField(
+        max_length=7, blank=True, help_text="Couleur institutionnelle (#RRGGBB)."
+    )
+    committed_amount_usd = models.DecimalField(
+        max_digits=16, decimal_places=2, null=True, blank=True,
+        help_text="Engagement annonce au LLF2.",
+    )
 
     class Meta:
         db_table = "donor"
+        ordering = ["name"]
+
+    @property
+    def flag(self):
+        return iso2_to_flag(self.origin_iso2)
+
+    def __str__(self):
+        return self.name
+
+
+class ImplementingAgency(models.Model):
+    """
+    Agences d'execution / de mise en oeuvre des projets (ministeres,
+    agences nationales, agences ONU, ONG).
+    """
+
+    AGENCY_TYPE_CHOICES = [
+        ("government", "Gouvernement"),
+        ("national_agency", "Agence nationale"),
+        ("un_agency", "Agence ONU"),
+        ("ngo", "ONG"),
+        ("private", "Secteur prive"),
+    ]
+
+    code = models.SlugField(max_length=40, unique=True)
+    name = models.CharField(max_length=200)
+    agency_type = models.CharField(max_length=20, choices=AGENCY_TYPE_CHOICES)
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="implementing_agencies",
+        help_text="Vide pour les agences internationales (ONU, ONG multi-pays).",
+    )
+
+    class Meta:
+        db_table = "implementing_agency"
+        ordering = ["name"]
+        verbose_name_plural = "implementing agencies"
+
+    @property
+    def flag(self):
+        return self.country.flag if self.country else ""
 
     def __str__(self):
         return self.name

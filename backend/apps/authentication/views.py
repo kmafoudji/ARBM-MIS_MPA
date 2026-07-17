@@ -17,6 +17,9 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import redirect
 
+from apps.identity.models import RoleAssignment
+from apps.identity.services import get_user_permissions
+
 User = get_user_model()
 
 
@@ -91,13 +94,28 @@ def callback_view(request):
 
 
 def me_view(request):
-    """Retourne l'utilisateur actuellement connecte (ou 401)."""
+    """
+    Retourne l'utilisateur connecte, ses roles et ses permissions effectives.
+    Le frontend s'en sert pour n'afficher que les actions reellement
+    autorisees (les vues DRF re-verifient cote serveur — l'UI n'est jamais
+    la barriere de securite).
+    """
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Non authentifie."}, status=401)
+
+    roles = list(
+        RoleAssignment.objects.filter(user=request.user, revoked_at__isnull=True)
+        .select_related("role")
+        .values_list("role__label", flat=True)
+    )
+
     return JsonResponse(
         {
             "email": request.user.email,
             "name": request.user.first_name,
+            "is_superuser": request.user.is_superuser,
+            "roles": roles,
+            "permissions": sorted(get_user_permissions(request.user)),
         }
     )
 

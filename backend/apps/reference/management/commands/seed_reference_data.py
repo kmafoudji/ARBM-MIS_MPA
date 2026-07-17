@@ -1,13 +1,19 @@
 """
 Peuple les donnees de reference du portefeuille LLF2 : devises, hubs
-regionaux, pays, donateurs, secteurs, ODD, marqueurs OECD-DAC.
+regionaux, pays, donateurs, agences d'implementation, secteurs, ODD,
+marqueurs OECD-DAC, themes transversaux.
 
-Source : donnees reelles du portefeuille LLF2 confirmees dans les
-specifications fonctionnelles anterieures (newsletters LLF, 6 donateurs
-confirmes). La liste des pays et le rattachement complet aux 8 hubs
-regionaux ne sont PAS exhaustifs ici — seuls les rattachements certains
-sont renseignes ; le reste est a completer/corriger via l'admin Django
-une fois les donnees officielles LLF2 disponibles.
+Source : demo statique Sentinelle (sentinelle-admin.html), qui portait les
+donnees de portefeuille les plus completes disponibles, croisee avec les
+specifications fonctionnelles anterieures.
+
+LIMITES CONNUES (a lever avec les donnees officielles LLF2) :
+  - 5 hubs sur 8. Le portefeuille compte 8 hubs (Abuja, Almaty, Ankara,
+    Dakar, Dhaka, Jakarta, Kampala, Rabat) ; seuls 5 sont documentes avec
+    leur composition pays. Almaty, Ankara et Jakarta sont absents faute de
+    savoir quels pays leur rattacher.
+  - Les drapeaux ne sont pas stockes : ils sont derives du code ISO2
+    (voir reference.models.iso2_to_flag).
 
 Idempotent : peut etre relancee sans creer de doublons (get_or_create).
 
@@ -17,36 +23,36 @@ Usage :
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.reference.models import Country, CrossCuttingTheme, Currency, Donor, Marker, RegionalHub, Sdg, Sector
+from apps.reference.models import (
+    Country,
+    CrossCuttingTheme,
+    Currency,
+    Donor,
+    ImplementingAgency,
+    Marker,
+    RegionalHub,
+    Sdg,
+    Sector,
+)
 
-
-DONORS = [
-    ("adfd", "Abu Dhabi Fund for Development (ADFD)"),
-    ("gates", "Gates Foundation"),
-    ("isdb", "Islamic Development Bank (IsDB)"),
-    ("isfd", "Islamic Solidarity Fund for Development (ISFD)"),
-    ("ksrelief", "King Salman Humanitarian Aid and Relief Center (KSRelief)"),
-    ("qffd", "Qatar Fund For Development (QFFD)"),
-]
 
 CURRENCIES = [
     ("USD", "Dollar americain"),
     ("EUR", "Euro"),
 ]
 
-# Hubs regionaux confirmes (noms de ville-siege). Le portefeuille LLF2
-# compte 8 hubs au total ; seuls ceux nommes explicitement dans les
-# specifications anterieures sont charges ici.
+# (code, nom, ville, couleur)
 HUBS = [
-    ("dakar", "Hub Senegal (Dakar)"),
-    ("abuja", "Hub Nigeria (Abuja)"),
-    ("rabat", "Hub Maroc (Rabat)"),
-    ("kampala", "Hub Ouganda (Kampala)"),
-    ("dhaka", "Hub Asie du Sud (Dhaka)"),
+    ("dakar", "Hub Senegal", "Dakar", "#A4C53F"),
+    ("abuja", "Hub Nigeria", "Abuja", "#3F6CC5"),
+    ("kampala", "Hub Afrique de l'Est", "Kampala", "#5BB39F"),
+    ("rabat", "Hub Maghreb", "Rabat", "#C97FB0"),
+    ("dhaka", "Hub Asie", "Dhaka", "#7B68C7"),
 ]
 
-# (iso2, iso3, nom, code_hub ou None si non confirme)
+# (iso2, iso3, nom, code_hub)
 COUNTRIES = [
+    # Hub Senegal (Dakar)
     ("SN", "SEN", "Senegal", "dakar"),
     ("GM", "GMB", "Gambie", "dakar"),
     ("CI", "CIV", "Cote d'Ivoire", "dakar"),
@@ -54,15 +60,58 @@ COUNTRIES = [
     ("ML", "MLI", "Mali", "dakar"),
     ("SL", "SLE", "Sierra Leone", "dakar"),
     ("GW", "GNB", "Guinee-Bissau", "dakar"),
+    # Hub Nigeria (Abuja)
     ("NG", "NGA", "Nigeria", "abuja"),
-    ("BF", "BFA", "Burkina Faso", None),
-    ("NE", "NER", "Niger", None),
-    ("CM", "CMR", "Cameroun", None),
-    ("BJ", "BEN", "Benin", None),
-    ("TD", "TCD", "Tchad", None),
-    ("MA", "MAR", "Maroc", "rabat"),
+    ("BJ", "BEN", "Benin", "abuja"),
+    ("TG", "TGO", "Togo", "abuja"),
+    ("NE", "NER", "Niger", "abuja"),
+    ("TD", "TCD", "Tchad", "abuja"),
+    ("CM", "CMR", "Cameroun", "abuja"),
+    ("BF", "BFA", "Burkina Faso", "abuja"),
+    # Hub Afrique de l'Est (Kampala)
     ("UG", "UGA", "Ouganda", "kampala"),
-    ("PK", "PAK", "Pakistan", None),
+    ("RW", "RWA", "Rwanda", "kampala"),
+    ("BI", "BDI", "Burundi", "kampala"),
+    ("MZ", "MOZ", "Mozambique", "kampala"),
+    ("SD", "SDN", "Soudan", "kampala"),
+    ("SS", "SSD", "Soudan du Sud", "kampala"),
+    # Hub Maghreb (Rabat)
+    ("MA", "MAR", "Maroc", "rabat"),
+    ("MR", "MRT", "Mauritanie", "rabat"),
+    ("EG", "EGY", "Egypte", "rabat"),
+    ("YE", "YEM", "Yemen", "rabat"),
+    ("DJ", "DJI", "Djibouti", "rabat"),
+    # Hub Asie (Dhaka)
+    ("BD", "BGD", "Bangladesh", "dhaka"),
+    ("PK", "PAK", "Pakistan", "dhaka"),
+    ("ID", "IDN", "Indonesie", "dhaka"),
+    ("TJ", "TJK", "Tadjikistan", "dhaka"),
+    ("MV", "MDV", "Maldives", "dhaka"),
+]
+
+# (code, sigle, nom, type, iso2 d'origine, couleur, engagement USD)
+# origin_iso2 vide = institution multilaterale, pas de drapeau national.
+DONORS = [
+    ("adfd", "ADFD", "Abu Dhabi Fund for Development", "bilateral", "AE", "#C8102E", 500_000_000),
+    ("gates", "GF", "Bill & Melinda Gates Foundation", "foundation", "US", "#222A35", 200_000_000),
+    ("isdb", "IsDB", "Islamic Development Bank", "multilateral", "", "#0B5C3A", 1_000_000_000),
+    ("isfd", "ISFD", "Islamic Solidarity Fund for Development", "multilateral", "", "#1B4F8C", 100_000_000),
+    ("ksrelief", "KSRelief", "King Salman Humanitarian Aid Centre", "humanitarian", "SA", "#006C35", 150_000_000),
+    ("qffd", "QFFD", "Qatar Fund for Development", "bilateral", "QA", "#8A1538", 100_000_000),
+]
+
+# (code, nom, type, iso2 du pays ou None si international)
+AGENCIES = [
+    ("minsan-sn", "Ministere de la Sante & de l'Action sociale", "government", "SN"),
+    ("minsan-ml", "Ministere de la Sante", "government", "ML"),
+    ("minsan-bf", "Ministere de la Sante", "government", "BF"),
+    ("minsan-gn", "Ministere de la Sante & de l'Hygiene publique", "government", "GN"),
+    ("minagri-ng", "Kano State Ministry of Agriculture", "government", "NG"),
+    ("knarda", "KNARDA", "national_agency", "NG"),
+    ("unicef", "UNICEF", "un_agency", None),
+    ("unfpa", "UNFPA", "un_agency", None),
+    ("who", "OMS", "un_agency", None),
+    ("sos-sahel", "SOS Sahel International", "ngo", None),
 ]
 
 # 3 piliers LLF2 + 2 themes transversaux
@@ -126,45 +175,79 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
-        currencies = {
-            code: Currency.objects.get_or_create(code=code, defaults={"name": name})[0]
-            for code, name in CURRENCIES
-        }
-        self.stdout.write(self.style.SUCCESS(f"Devises : {len(currencies)} OK"))
+        for code, name in CURRENCIES:
+            Currency.objects.get_or_create(code=code, defaults={"name": name})
+        self.stdout.write(self.style.SUCCESS(f"Devises : {len(CURRENCIES)} OK"))
 
-        hubs = {
-            code: RegionalHub.objects.get_or_create(code=code, defaults={"name": name})[0]
-            for code, name in HUBS
-        }
-        self.stdout.write(self.style.SUCCESS(f"Hubs regionaux : {len(hubs)} OK"))
+        hubs = {}
+        for code, name, city, color in HUBS:
+            hub, _ = RegionalHub.objects.get_or_create(
+                code=code, defaults={"name": name, "city": city, "color": color}
+            )
+            # Met a jour les hubs deja crees par une version anterieure du seed
+            # (qui n'avait ni ville ni couleur).
+            if hub.city != city or hub.color != color or hub.name != name:
+                hub.name, hub.city, hub.color = name, city, color
+                hub.save(update_fields=["name", "city", "color"])
+            hubs[code] = hub
+        self.stdout.write(self.style.SUCCESS(f"Hubs regionaux : {len(hubs)} OK (sur 8 au portefeuille)"))
 
-        country_count = 0
+        countries = {}
         for iso2, iso3, name, hub_code in COUNTRIES:
-            Country.objects.get_or_create(
-                iso2=iso2,
+            country, _ = Country.objects.get_or_create(
+                iso3=iso3,
+                defaults={"iso2": iso2, "name": name, "hub": hubs.get(hub_code)},
+            )
+            # Rattache les pays seedes precedemment sans hub.
+            if country.hub_id is None and hub_code:
+                country.hub = hubs[hub_code]
+                country.save(update_fields=["hub"])
+            countries[iso2] = country
+        self.stdout.write(self.style.SUCCESS(f"Pays : {len(countries)} OK"))
+
+        for code, short_name, name, donor_type, origin, color, amount in DONORS:
+            donor, created = Donor.objects.get_or_create(
+                code=code,
                 defaults={
-                    "iso3": iso3,
+                    "short_name": short_name,
                     "name": name,
-                    "hub": hubs.get(hub_code) if hub_code else None,
+                    "donor_type": donor_type,
+                    "origin_iso2": origin,
+                    "color": color,
+                    "committed_amount_usd": amount,
                 },
             )
-            country_count += 1
-        self.stdout.write(self.style.SUCCESS(f"Pays : {country_count} OK"))
+            if not created and not donor.short_name:
+                donor.short_name = short_name
+                donor.name = name
+                donor.donor_type = donor_type
+                donor.origin_iso2 = origin
+                donor.color = color
+                donor.committed_amount_usd = amount
+                donor.save()
+        self.stdout.write(self.style.SUCCESS(f"Bailleurs : {len(DONORS)} OK"))
 
-        for code, name in DONORS:
-            Donor.objects.get_or_create(code=code, defaults={"name": name})
-        self.stdout.write(self.style.SUCCESS(f"Donateurs : {len(DONORS)} OK"))
+        for code, name, agency_type, iso2 in AGENCIES:
+            ImplementingAgency.objects.get_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "agency_type": agency_type,
+                    "country": countries.get(iso2) if iso2 else None,
+                },
+            )
+        self.stdout.write(self.style.SUCCESS(f"Agences d'implementation : {len(AGENCIES)} OK"))
 
-        for code, name, parent_code in SECTORS:
+        for code, name, _parent in SECTORS:
             Sector.objects.get_or_create(code=code, defaults={"name": name, "parent": None})
         self.stdout.write(self.style.SUCCESS(f"Secteurs : {len(SECTORS)} OK"))
 
-        sub_sector_count = 0
         for code, name, parent_code in SUB_SECTORS:
             parent = Sector.objects.filter(code=parent_code).first()
             Sector.objects.get_or_create(code=code, defaults={"name": name, "parent": parent})
-            sub_sector_count += 1
-        self.stdout.write(self.style.SUCCESS(f"Sous-secteurs : {sub_sector_count} OK (liste non exhaustive)"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Sous-secteurs : {len(SUB_SECTORS)} OK (liste non exhaustive)")
+        )
 
         for number, name in SDGS:
             Sdg.objects.get_or_create(number=number, defaults={"name": name})
@@ -176,14 +259,16 @@ class Command(BaseCommand):
 
         for code, name in CROSS_CUTTING_THEMES:
             CrossCuttingTheme.objects.get_or_create(code=code, defaults={"name": name})
-        self.stdout.write(self.style.SUCCESS(f"Themes transversaux : {len(CROSS_CUTTING_THEMES)} OK"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Themes transversaux : {len(CROSS_CUTTING_THEMES)} OK")
+        )
 
         self.stdout.write(
             self.style.WARNING(
-                "\nRappel : cette liste de pays/hubs n'est pas exhaustive "
-                "(portefeuille LLF2 = 22+ pays, 8 hubs). Les rattachements "
-                "pays->hub non confirmes sont laisses vides (None) — a "
-                "completer via l'admin Django une fois les donnees "
-                "officielles disponibles."
+                "\nLimites connues : 5 hubs sur les 8 du portefeuille sont charges "
+                "(Almaty, Ankara et Jakarta manquent — composition pays inconnue). "
+                "Les sous-secteurs ne sont pas exhaustifs. A completer via "
+                "l'ecran Donnees de base une fois les donnees officielles LLF2 "
+                "disponibles."
             )
         )

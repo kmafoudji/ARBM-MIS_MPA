@@ -54,6 +54,13 @@ export default function App() {
 
   const counts = { projects: projects?.length, users: users?.length };
 
+  // Le backend re-verifie systematiquement : masquer un bouton n'est qu'un
+  // confort d'usage, jamais la barriere de securite.
+  const perms = user?.permissions || [];
+  const canEditReference =
+    perms.includes("*") ||
+    (perms.includes("m1_config_access:create") && perms.includes("m1_config_access:update"));
+
   return (
     <AppShell view={nav} onNavigate={setNav} user={user} counts={counts}>
       {nav === "overview" && <Overview user={user} />}
@@ -74,7 +81,7 @@ export default function App() {
         <ProjectDetail projectId={selectedProjectId} onBack={() => setNav("projects")} />
       )}
 
-      {nav === "masterdata" && <MasterData />}
+      {nav === "masterdata" && <MasterData canEdit={canEditReference} />}
       {nav === "rbac" && <Rbac />}
     </AppShell>
   );

@@ -99,7 +99,13 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
             <div className="user-avatar">{initials(user)}</div>
             <div className="user-meta">
               <div className="user-name">{user?.name || user?.email}</div>
-              <div className="user-role">{user?.email}</div>
+              <div className="user-role" title={user?.roles?.join(", ")}>
+                {user?.roles?.length
+                  ? user.roles.join(" · ")
+                  : user?.is_superuser
+                  ? "Superutilisateur"
+                  : "Aucun role attribue"}
+              </div>
             </div>
           </div>
           <a className="user-signout" href="/auth/logout/">

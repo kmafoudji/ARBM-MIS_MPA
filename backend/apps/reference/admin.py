@@ -6,6 +6,7 @@ from .models import (
     Currency,
     Donor,
     GadmArea,
+    ImplementingAgency,
     Marker,
     RegionalHub,
     Sdg,
@@ -21,13 +22,14 @@ class CurrencyAdmin(admin.ModelAdmin):
 
 @admin.register(RegionalHub)
 class RegionalHubAdmin(admin.ModelAdmin):
-    list_display = ("code", "name")
+    list_display = ("code", "name", "city", "color")
 
 
 @admin.register(Country)
 class CountryAdmin(admin.ModelAdmin):
-    list_display = ("iso3", "name", "hub", "is_fragile")
+    list_display = ("flag", "iso3", "name", "hub", "is_fragile")
     list_filter = ("hub", "is_fragile")
+    search_fields = ("name", "iso2", "iso3")
 
 
 @admin.register(GadmArea)
@@ -38,7 +40,15 @@ class GadmAreaAdmin(admin.ModelAdmin):
 
 @admin.register(Donor)
 class DonorAdmin(admin.ModelAdmin):
-    list_display = ("code", "name")
+    list_display = ("flag", "short_name", "name", "donor_type", "committed_amount_usd")
+    list_filter = ("donor_type",)
+
+
+@admin.register(ImplementingAgency)
+class ImplementingAgencyAdmin(admin.ModelAdmin):
+    list_display = ("flag", "name", "agency_type", "country")
+    list_filter = ("agency_type", "country")
+    search_fields = ("name", "code")
 
 
 @admin.register(Sector)

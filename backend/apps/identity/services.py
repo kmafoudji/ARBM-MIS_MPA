@@ -56,3 +56,38 @@ def check_r26_separation_of_duties(user, new_role, scope_type, scope_id):
                 "sur ce perimetre. Creez une derogation documentee (RBACException) "
                 "avant d'attribuer ce role, ou choisissez un autre perimetre/role."
             )
+
+
+def get_user_permissions(user):
+    """
+    Retourne l'ensemble des codes "module:action" detenus par l'utilisateur,
+    tous perimetres confondus (RG-3.1 : deny-by-default — un utilisateur sans
+    RoleAssignment actif n'a aucune permission).
+
+    Note de portee : cette fonction agrege les permissions sans filtrer par
+    perimetre. Elle convient aux referentiels, qui sont globaux par nature.
+    Pour les objets rattaches a un projet/hub, il faudra un controle
+    supplementaire au niveau de l'objet (row-level security).
+    """
+    if not user or not user.is_authenticated:
+        return set()
+
+    # Le superuser Django est un compte technique d'exploitation : il court-circuite
+    # le RBAC applicatif (utile en POC pour l'amorcage, avant toute attribution).
+    if user.is_superuser:
+        return {"*"}
+
+    role_ids = RoleAssignment.objects.filter(
+        user=user, revoked_at__isnull=True
+    ).values_list("role_id", flat=True)
+
+    return {
+        f"{rp.permission.module}:{rp.permission.action}"
+        for rp in RolePermission.objects.filter(role_id__in=role_ids).select_related("permission")
+    }
+
+
+def user_has_permission(user, module, action):
+    """Vrai si l'utilisateur detient `action` sur `module` (ou est superuser)."""
+    perms = get_user_permissions(user)
+    return "*" in perms or f"{module}:{action}" in perms
