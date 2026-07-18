@@ -157,7 +157,7 @@ def transition_stage(
             "de la transition (RG-3.5 / RG-4.1)."
         )
     if to_stage == "bed_approved":
-        _check_bed_approved_classification_complete(project)
+        _check_bed_approved_prerequisites_complete(project)
 
     ProjectStageTransition.objects.create(
         project=project,
@@ -173,9 +173,17 @@ def transition_stage(
     return project
 
 
-def _check_bed_approved_classification_complete(project):
-    """POL-1.10 : le franchissement de BED Approved est bloque tant que la
-    classification (SF-2) n'est pas complete."""
+def _check_bed_approved_prerequisites_complete(project):
+    """
+    Le franchissement de BED Approved est bloque tant que :
+    - la classification (SF-2) n'est pas complete (POL-1.10) ;
+    - les dates de debut/fin (SF-1 Etape 3) ne sont pas renseignees. Le SFD
+      les qualifie de "Requises a partir de l'approbation ; duree indicative
+      acceptee en pre-pipeline" — BED Approved est le seul gate impose
+      ailleurs dans le code (POL-1.10), donc c'est ce point qui sert ici de
+      lecture de "l'approbation". A ajuster si le metier vise un stade plus
+      precoce (ex. Pipeline Taskforce Approved).
+    """
     missing = []
     if not project.primary_sdg_id:
         missing.append("ODD primaire")
@@ -189,10 +197,14 @@ def _check_bed_approved_classification_complete(project):
         missing.append("Statut de fragilite")
     if not project.risk_rating:
         missing.append("Notation de risque composite")
+    if not project.start_date:
+        missing.append("Date de debut")
+    if not project.end_date:
+        missing.append("Date de fin")
 
     if missing:
         raise ValidationError(
-            "POL-1.10 : classification incomplete, BED Approved bloque. "
+            "POL-1.10 : prerequis incomplets, BED Approved bloque. "
             "Champs manquants : " + ", ".join(missing)
         )
 

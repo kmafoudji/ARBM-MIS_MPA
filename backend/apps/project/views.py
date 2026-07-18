@@ -392,3 +392,21 @@ class ProjectReportingConfigView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ProjectDetailSerializer(project).data)
+
+
+class ProjectDatesView(APIView):
+    """
+    PATCH /api/projects/{pk}/dates/  — SF-1 Etape 3 (dates de debut/fin)
+    """
+
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
+
+    def patch(self, request, pk):
+        from .models import Project
+        from .serializers import ProjectDatesUpdateSerializer
+        project = Project.objects.get(pk=pk)
+        serializer = ProjectDatesUpdateSerializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ProjectDetailSerializer(project).data)

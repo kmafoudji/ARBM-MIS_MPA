@@ -196,6 +196,34 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, canEdit = 
     });
   }
 
+  const [showDatesForm, setShowDatesForm] = useState(false);
+  const [datesForm, setDatesForm] = useState({ start_date: "", end_date: "" });
+
+  const datesMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/dates/`, { method: "PATCH", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      setShowDatesForm(false);
+    },
+  });
+
+  function openDatesForm() {
+    setDatesForm({
+      start_date: project.start_date || "",
+      end_date: project.end_date || "",
+    });
+    setShowDatesForm(true);
+  }
+
+  function handleDatesSubmit(e) {
+    e.preventDefault();
+    datesMutation.mutate({
+      start_date: datesForm.start_date || null,
+      end_date: datesForm.end_date || null,
+    });
+  }
+
   if (isLoading) {
     return (
       <div className="loading-wrap">
@@ -523,6 +551,78 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, canEdit = 
         </div>
 
         <div className="card-body">
+          <div
+            style={{
+              background: "var(--paper)",
+              border: "1px solid var(--rule)",
+              borderRadius: "var(--r-3)",
+              padding: "var(--s-3)",
+              marginBottom: "var(--s-4)",
+            }}
+          >
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div className="card-sub" style={{ marginBottom: 8 }}>
+                  Dates de debut / fin · duree indicative acceptee en pre-pipeline, requises a partir
+                  de BED Approved
+                </div>
+                {!showDatesForm && (
+                  <div className="dl">
+                    <Dt term="Date de debut">
+                      {project.start_date ? new Date(project.start_date).toLocaleDateString("fr-FR") : "—"}
+                    </Dt>
+                    <Dt term="Date de fin">
+                      {project.end_date ? new Date(project.end_date).toLocaleDateString("fr-FR") : "—"}
+                    </Dt>
+                  </div>
+                )}
+              </div>
+              {!showDatesForm && (
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={openDatesForm}>
+                  <Icon name="pencil" size={14} /> Modifier
+                </button>
+              )}
+            </div>
+
+            {showDatesForm && (
+              <form onSubmit={handleDatesSubmit} className="mt-2">
+                <div className="grid grid-2">
+                  <div className="field">
+                    <label className="field-label" htmlFor="startDate">Date de debut</label>
+                    <input
+                      id="startDate"
+                      className="field-input"
+                      type="date"
+                      value={datesForm.start_date}
+                      onChange={(e) => setDatesForm({ ...datesForm, start_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="field-label" htmlFor="endDate">Date de fin</label>
+                    <input
+                      id="endDate"
+                      className="field-input"
+                      type="date"
+                      value={datesForm.end_date}
+                      onChange={(e) => setDatesForm({ ...datesForm, end_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+                {datesMutation.isError && (
+                  <div className="field-error mb-3">{JSON.stringify(datesMutation.error.detail)}</div>
+                )}
+                <div className="row">
+                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={datesMutation.isPending}>
+                    <Icon name="check" size={14} /> {datesMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  </button>
+                  <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setShowDatesForm(false)}>
+                    <Icon name="x" size={14} /> Annuler
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
           {showForm && (
             <form
               onSubmit={(e) => {

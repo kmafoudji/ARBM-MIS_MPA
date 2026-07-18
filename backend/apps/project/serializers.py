@@ -265,6 +265,16 @@ class ReportingConfigUpdateSerializer(serializers.ModelSerializer):
         fields = ["reporting_frequency", "next_reporting_due"]
 
 
+class ProjectDatesUpdateSerializer(serializers.ModelSerializer):
+    """SF-1 Etape 3 — dates de debut/fin. Duree indicative avant pipeline,
+    obligatoires a partir de BED Approved (cf. services._check_bed_approved_
+    prerequisites_complete)."""
+
+    class Meta:
+        model = Project
+        fields = ["start_date", "end_date"]
+
+
 class ProjectStageTransitionSerializer(serializers.ModelSerializer):
     from_stage_display = serializers.CharField(source="get_from_stage_display", read_only=True)
     to_stage_display = serializers.CharField(source="get_to_stage_display", read_only=True)
