@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import Icon from "../components/Icon";
 
 const LEVELS = [
-  { key: "activity", label: "Activites", parentKey: null },
-  { key: "output", label: "Produits", parentKey: "activity" },
-  { key: "immediate_outcome", label: "Effets immediats", parentKey: "output" },
-  { key: "intermediate_outcome", label: "Effets intermediaires", parentKey: "immediate_outcome" },
+  { key: "activity", label: "Activites", parentKey: null, icon: "zap" },
+  { key: "output", label: "Produits", parentKey: "activity", icon: "package" },
+  { key: "immediate_outcome", label: "Effets immediats", parentKey: "output", icon: "trending-up" },
+  { key: "intermediate_outcome", label: "Effets intermediaires", parentKey: "immediate_outcome", icon: "layers" },
 ];
 
 const EMPTY_NODE_FORM = {
@@ -70,7 +71,7 @@ function NodeCard({ node, onSaved, onDeleted }) {
           <span className="text-mono badge">{node.code}</span>
           <span>{node.statement}</span>
         </div>
-        <span className="text-muted text-sm">{expanded ? "▲" : "▼"}</span>
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "var(--muted)" }} />
       </div>
 
       {expanded && !editing && (
@@ -100,16 +101,17 @@ function NodeCard({ node, onSaved, onDeleted }) {
             <div className="dl-desc">{node.gender_climate_tag || "—"}</div>
           </div>
           <div className="row mt-2">
-            <button className="btn btn-ghost btn-sm" type="button" onClick={startEdit}>
-              Modifier
+            <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={startEdit}>
+              <Icon name="pencil" size={14} /> Modifier
             </button>
             <button
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm row"
+              style={{ gap: 6 }}
               type="button"
               disabled={deleteMutation.isPending}
               onClick={() => deleteMutation.mutate()}
             >
-              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
             </button>
           </div>
         </div>
@@ -193,7 +195,7 @@ function NodeCard({ node, onSaved, onDeleted }) {
   );
 }
 
-function LevelSection({ level, nodes, parentOptions, projectId, onChanged }) {
+function LevelSection({ level, nodes, parentOptions, projectId, onChanged, collapsed, onToggleCollapse }) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY_NODE_FORM);
 
@@ -228,16 +230,43 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged }) {
   return (
     <div className="card card-flush mb-3">
       <div className="card-header">
-        <div>
-          <h2 className="card-title">{level.label}</h2>
-          <div className="card-sub">{nodes.length} noeud{nodes.length !== 1 ? "s" : ""}</div>
+        <div className="row" style={{ gap: 10, alignItems: "center", cursor: "pointer" }} onClick={onToggleCollapse}>
+          <span
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--lime-dark)",
+            }}
+          >
+            <Icon name={level.icon} size={18} />
+          </span>
+          <div>
+            <h2 className="card-title">{level.label}</h2>
+            <div className="card-sub">{nodes.length} noeud{nodes.length !== 1 ? "s" : ""}</div>
+          </div>
         </div>
-        {!adding && (
-          <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>
-            + Ajouter
+        <div className="row" style={{ gap: 8 }}>
+          {!adding && (
+            <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAdding(true)}>
+              <Icon name="plus" size={14} /> Ajouter
+            </button>
+          )}
+          <button
+            className="btn btn-ghost btn-sm"
+            type="button"
+            aria-label={collapsed ? "Deplier" : "Replier"}
+            onClick={onToggleCollapse}
+          >
+            <Icon name={collapsed ? "chevron-down" : "chevron-up"} size={16} />
           </button>
-        )}
+        </div>
       </div>
+      {!collapsed && (
       <div className="card-body">
         {nodes.length === 0 && !adding && (
           <p className="text-muted text-sm" style={{ margin: 0 }}>Aucun noeud a ce niveau.</p>
@@ -325,6 +354,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged }) {
           </form>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -333,6 +363,11 @@ export default function TheoryOfChange({ projectId, onBack }) {
   const queryClient = useQueryClient();
   const [editingFrame, setEditingFrame] = useState(false);
   const [frameForm, setFrameForm] = useState({ problem_statement: "", ultimate_outcome: "", status: "draft" });
+  const [collapsedSections, setCollapsedSections] = useState({});
+
+  function toggleSection(key) {
+    setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   const { data: toc, isLoading } = useQuery({
     queryKey: ["toc", projectId],
@@ -392,16 +427,43 @@ export default function TheoryOfChange({ projectId, onBack }) {
 
       <div className="card card-flush mb-3">
         <div className="card-header">
-          <div>
-            <h2 className="card-title">Cadre</h2>
-            <div className="card-sub">Enonce du probleme et effet ultime (sommet de la chaine)</div>
+          <div className="row" style={{ gap: 10, alignItems: "center", cursor: "pointer" }} onClick={() => toggleSection("frame")}>
+            <span
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--lime-dark)",
+              }}
+            >
+              <Icon name="target" size={18} />
+            </span>
+            <div>
+              <h2 className="card-title">Cadre</h2>
+              <div className="card-sub">Enonce du probleme et effet ultime (sommet de la chaine)</div>
+            </div>
           </div>
-          {!editingFrame && (
-            <button className="btn btn-primary btn-sm" onClick={openFrameEdit}>
-              Modifier
+          <div className="row" style={{ gap: 8 }}>
+            {!editingFrame && (
+              <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openFrameEdit}>
+                <Icon name="pencil" size={14} /> Modifier
+              </button>
+            )}
+            <button
+              className="btn btn-ghost btn-sm"
+              type="button"
+              aria-label={collapsedSections.frame ? "Deplier" : "Replier"}
+              onClick={() => toggleSection("frame")}
+            >
+              <Icon name={collapsedSections.frame ? "chevron-down" : "chevron-up"} size={16} />
             </button>
-          )}
+          </div>
         </div>
+        {!collapsedSections.frame && (
         <div className="card-body">
           {editingFrame ? (
             <form
@@ -462,6 +524,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {LEVELS.map((level) => (
@@ -474,6 +537,8 @@ export default function TheoryOfChange({ projectId, onBack }) {
           }
           projectId={projectId}
           onChanged={onChanged}
+          collapsed={!!collapsedSections[level.key]}
+          onToggleCollapse={() => toggleSection(level.key)}
         />
       ))}
     </div>
