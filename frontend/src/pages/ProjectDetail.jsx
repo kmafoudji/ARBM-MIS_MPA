@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "../api";
+import { apiFetch, apiUpload } from "../api";
 import SectorIcon from "../components/SectorIcon";
 import FinancialEnvelope from "../components/FinancialEnvelope";
 
@@ -140,6 +140,30 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
   const contributingSdgChoices = (sdgs || []).filter(
     (s) => String(s.number) !== String(cForm.primary_sdg)
   );
+
+  const padUploadMutation = useMutation({
+    mutationFn: (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiUpload(`/api/projects/${projectId}/pad/`, formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+
+  const padDeleteMutation = useMutation({
+    mutationFn: () => apiFetch(`/api/projects/${projectId}/pad/`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+
+  function handlePadFileChange(e) {
+    const file = e.target.files?.[0];
+    if (file) padUploadMutation.mutate(file);
+    e.target.value = "";
+  }
 
   if (isLoading) {
     return (
@@ -594,6 +618,68 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* SF-1 Etape 1 — Reference PAD */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Document PAD</h2>
+            <div className="card-sub">
+              SF-1 · Reference documentaire — l'extraction IA (BRQ-1.14) n'est pas encore active
+            </div>
+          </div>
+        </div>
+        <div className="card-body">
+          {project.pad_reference_url ? (
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <a
+                className="text-mono text-sm"
+                href={project.pad_reference_url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {project.pad_reference_name}
+              </a>
+              <div className="row">
+                <label className="btn btn-ghost btn-sm" style={{ cursor: "pointer" }}>
+                  {padUploadMutation.isPending ? "Televersement..." : "Remplacer"}
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handlePadFileChange}
+                    style={{ display: "none" }}
+                  />
+                </label>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  type="button"
+                  disabled={padDeleteMutation.isPending}
+                  onClick={() => padDeleteMutation.mutate()}
+                >
+                  {padDeleteMutation.isPending ? "Retrait..." : "Retirer"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
+              {padUploadMutation.isPending ? "Televersement..." : "Televerser le PAD (PDF)"}
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handlePadFileChange}
+                style={{ display: "none" }}
+              />
+            </label>
+          )}
+          {(padUploadMutation.isError || padDeleteMutation.isError) && (
+            <div className="field-error mt-2">
+              {JSON.stringify(
+                (padUploadMutation.error || padDeleteMutation.error)?.detail
+              )}
             </div>
           )}
         </div>

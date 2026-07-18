@@ -6,6 +6,7 @@ from .views import (
     FinancingSourceDetailView,
     FinancingSourceListView,
     ProjectFinancialEnvelopeView,
+    ProjectPadView,
     ProjectViewSet,
 )
 
@@ -21,4 +22,5 @@ urlpatterns = router.urls + [
          FinancingSourceDetailView.as_view(), name="project-envelope-source-detail"),
     path("projects/<int:pk>/envelope/allocations/",
          ComponentAllocationView.as_view(), name="project-envelope-allocations"),
+    path("projects/<int:pk>/pad/", ProjectPadView.as_view(), name="project-pad"),
 ]

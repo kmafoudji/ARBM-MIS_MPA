@@ -123,6 +123,8 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     risk_rating_display = serializers.CharField(source="get_risk_rating_display", read_only=True)
     cross_cutting_theme_ids = serializers.SerializerMethodField()
     cross_cutting_theme_names = serializers.SerializerMethodField()
+    pad_reference_url = serializers.SerializerMethodField()
+    pad_reference_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -141,6 +143,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "fragility_status", "fragility_status_display",
             "risk_rating", "risk_rating_display",
             "cross_cutting_theme_ids", "cross_cutting_theme_names",
+            "pad_reference_url", "pad_reference_name",
             "budget_amount", "currency",
             "start_date", "end_date",
             "created_by_email", "created_at", "updated_at",
@@ -195,6 +198,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     def get_cross_cutting_theme_names(self, obj):
         return [t.name for t in obj.cross_cutting_themes.all()]
+
+    def get_pad_reference_url(self, obj):
+        return obj.pad_reference_file.url if obj.pad_reference_file else None
+
+    def get_pad_reference_name(self, obj):
+        return obj.pad_reference_file.name.rsplit("/", 1)[-1] if obj.pad_reference_file else None
 
 
 class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):

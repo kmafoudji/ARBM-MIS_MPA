@@ -297,3 +297,80 @@ class ComponentAllocationView(APIView):
         envelope.updated_by = request.user
         envelope.save(update_fields=["updated_by", "updated_at"])
         return Response(ComponentAllocationSerializer(alloc).data, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# SF-1 Etape 1 — Reference PAD (BRQ-1.14 : le pipeline d'extraction IA est
+# hors perimetre de cette passe, seul le televersement/telechargement du
+# document est couvert).
+# ---------------------------------------------------------------------------
+from pathlib import Path as _Path
+from uuid import uuid4 as _uuid4
+
+from django.core.files.storage import default_storage
+from rest_framework.parsers import MultiPartParser
+
+PAD_MAX_BYTES = 25 * 1024 * 1024  # 25 Mo : les PAD sont des documents longs
+PAD_MAGIC = b"%PDF-"
+
+
+class ProjectPadView(APIView):
+    """
+    POST   /api/projects/{pk}/pad/   (multipart : champ `file`, PDF uniquement)
+    DELETE /api/projects/{pk}/pad/   — retire la reference sans supprimer le
+                                        fichier stocke (meme choix que les
+                                        logos : nettoyage differe si besoin)
+    """
+
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk):
+        from .models import Project
+        project = Project.objects.get(pk=pk)
+
+        upload = request.FILES.get("file")
+        if upload is None:
+            return Response(
+                {"detail": "Aucun fichier recu (champ attendu : `file`)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if upload.size > PAD_MAX_BYTES:
+            return Response(
+                {
+                    "detail": f"Fichier trop volumineux ({upload.size / 1024 / 1024:.1f} Mo). "
+                    f"Maximum : {PAD_MAX_BYTES // 1024 // 1024} Mo."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        content_type = (upload.content_type or "").split(";")[0].strip().lower()
+        head = upload.read(len(PAD_MAGIC))
+        upload.seek(0)
+        # Meme logique de defense en profondeur que LogoUploadView (voir
+        # core/uploads.py) : le Content-Type declare par le client n'est
+        # pas fiable, on verifie la signature binaire reelle du fichier.
+        if content_type != "application/pdf" or not head.startswith(PAD_MAGIC):
+            return Response(
+                {"detail": "Format non accepte. Seul le PDF est autorise pour le PAD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        stem = _Path(upload.name).stem[:60]
+        safe_stem = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in stem).strip("-")
+        filename = f"pad/{safe_stem or 'pad'}-{_uuid4().hex[:8]}.pdf"
+
+        # L'ancien fichier (s'il existe) devient orphelin — meme choix que
+        # pour les logos, pas de suppression physique automatique.
+        project.pad_reference_file.save(filename, upload, save=True)
+
+        return Response(ProjectDetailSerializer(project).data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        from .models import Project
+        project = Project.objects.get(pk=pk)
+        project.pad_reference_file.delete(save=False)
+        project.pad_reference_file = None
+        project.save(update_fields=["pad_reference_file"])
+        return Response(ProjectDetailSerializer(project).data)
