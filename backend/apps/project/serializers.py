@@ -125,6 +125,9 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     cross_cutting_theme_names = serializers.SerializerMethodField()
     pad_reference_url = serializers.SerializerMethodField()
     pad_reference_name = serializers.SerializerMethodField()
+    reporting_frequency_display = serializers.CharField(
+        source="get_reporting_frequency_display", read_only=True
+    )
 
     class Meta:
         model = Project
@@ -144,6 +147,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "risk_rating", "risk_rating_display",
             "cross_cutting_theme_ids", "cross_cutting_theme_names",
             "pad_reference_url", "pad_reference_name",
+            "reporting_frequency", "reporting_frequency_display", "next_reporting_due",
             "budget_amount", "currency",
             "start_date", "end_date",
             "created_by_email", "created_at", "updated_at",
@@ -251,6 +255,14 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
         if contributing_sdg_ids is not None:
             set_project_sdgs(instance, [s.number for s in contributing_sdg_ids])
         return instance
+
+
+class ReportingConfigUpdateSerializer(serializers.ModelSerializer):
+    """SF-1 Etape 5 — perimetre reduit (cf. models.py) : frequence + premiere echeance."""
+
+    class Meta:
+        model = Project
+        fields = ["reporting_frequency", "next_reporting_due"]
 
 
 class ProjectStageTransitionSerializer(serializers.ModelSerializer):

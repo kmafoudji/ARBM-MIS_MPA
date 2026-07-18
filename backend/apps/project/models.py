@@ -214,6 +214,24 @@ class Project(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
 
+    # --- SF-1 Etape 5 : Reporting (renvoie SF-5) ---
+    # Perimetre volontairement reduit a ce qui est non ambigu dans le SFD.
+    # La "chaine d'approbation" mentionnee par le SFD ("selection du cycle,
+    # configuration des echeances et de la chaine d'approbation") releve du
+    # RBAC/workflow (SF-3 / Module 7), pas d'un champ simple sur le projet —
+    # laisse en question ouverte plutot que de deviner une structure.
+    REPORTING_FREQUENCY_CHOICES = [
+        ("quarterly", "Trimestrielle"),
+        ("semi_annual", "Semestrielle"),
+        ("annual", "Annuelle"),
+    ]
+    reporting_frequency = models.CharField(
+        max_length=15, choices=REPORTING_FREQUENCY_CHOICES, null=True, blank=True
+    )
+    next_reporting_due = models.DateField(
+        null=True, blank=True, help_text="Premiere echeance de reporting."
+    )
+
     created_by = models.ForeignKey(
         AppUser, on_delete=models.SET_NULL, null=True, related_name="projects_created"
     )

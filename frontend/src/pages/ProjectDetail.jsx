@@ -32,7 +32,7 @@ function Dt({ term, children }) {
   );
 }
 
-export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
+export default function ProjectDetail({ projectId, onBack, onOpenToC, canEdit = false }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
@@ -163,6 +163,37 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
     const file = e.target.files?.[0];
     if (file) padUploadMutation.mutate(file);
     e.target.value = "";
+  }
+
+  const [showReportingForm, setShowReportingForm] = useState(false);
+  const [rForm, setRForm] = useState({ reporting_frequency: "", next_reporting_due: "" });
+
+  const reportingMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/reporting-config/`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      setShowReportingForm(false);
+    },
+  });
+
+  function openReportingForm() {
+    setRForm({
+      reporting_frequency: project.reporting_frequency || "",
+      next_reporting_due: project.next_reporting_due || "",
+    });
+    setShowReportingForm(true);
+  }
+
+  function handleReportingSubmit(e) {
+    e.preventDefault();
+    reportingMutation.mutate({
+      reporting_frequency: rForm.reporting_frequency || null,
+      next_reporting_due: rForm.next_reporting_due || null,
+    });
   }
 
   if (isLoading) {
@@ -680,6 +711,92 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
               {JSON.stringify(
                 (padUploadMutation.error || padDeleteMutation.error)?.detail
               )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* SF-1 Etape 2 — Theorie du Changement */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Theorie du Changement</h2>
+            <div className="card-sub">
+              SF-1 · Etape 2 · BRQ-1.35 — obligatoire des Pipeline Taskforce Approved
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
+            Ouvrir
+          </button>
+        </div>
+      </div>
+
+      {/* SF-1 Etape 5 — Reporting */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Reporting</h2>
+            <div className="card-sub">
+              SF-1 · Etape 5 · Chaine d'approbation — question ouverte, hors perimetre pour l'instant
+            </div>
+          </div>
+          {!showReportingForm && (
+            <button className="btn btn-primary btn-sm" onClick={openReportingForm}>
+              Modifier
+            </button>
+          )}
+        </div>
+        <div className="card-body">
+          {showReportingForm ? (
+            <form onSubmit={handleReportingSubmit}>
+              <div className="grid grid-2">
+                <div className="field">
+                  <label className="field-label" htmlFor="reportingFreq">Frequence</label>
+                  <select
+                    id="reportingFreq"
+                    className="field-select"
+                    value={rForm.reporting_frequency}
+                    onChange={(e) => setRForm({ ...rForm, reporting_frequency: e.target.value })}
+                  >
+                    <option value="">Selectionner</option>
+                    <option value="quarterly">Trimestrielle</option>
+                    <option value="semi_annual">Semestrielle</option>
+                    <option value="annual">Annuelle</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label" htmlFor="nextDue">Premiere echeance</label>
+                  <input
+                    id="nextDue"
+                    className="field-input"
+                    type="date"
+                    value={rForm.next_reporting_due}
+                    onChange={(e) => setRForm({ ...rForm, next_reporting_due: e.target.value })}
+                  />
+                </div>
+              </div>
+              {reportingMutation.isError && (
+                <div className="field-error mb-3">
+                  {JSON.stringify(reportingMutation.error.detail)}
+                </div>
+              )}
+              <div className="row">
+                <button className="btn btn-primary" type="submit" disabled={reportingMutation.isPending}>
+                  {reportingMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                </button>
+                <button className="btn btn-ghost" type="button" onClick={() => setShowReportingForm(false)}>
+                  Annuler
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="dl">
+              <Dt term="Frequence">{project.reporting_frequency_display || "—"}</Dt>
+              <Dt term="Premiere echeance">
+                {project.next_reporting_due
+                  ? new Date(project.next_reporting_due).toLocaleDateString("fr-FR")
+                  : "—"}
+              </Dt>
             </div>
           )}
         </div>

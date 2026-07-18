@@ -6,6 +6,7 @@ import Overview from "./pages/Overview.jsx";
 import ProjectList from "./pages/ProjectList.jsx";
 import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
+import TheoryOfChange from "./pages/TheoryOfChange.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
 import { apiFetch } from "./api";
@@ -81,8 +82,12 @@ export default function App() {
         <ProjectDetail
           projectId={selectedProjectId}
           onBack={() => setNav("projects")}
+          onOpenToC={() => setNav("project-toc")}
           canEdit={canEditReference}
         />
+      )}
+      {nav === "project-toc" && (
+        <TheoryOfChange projectId={selectedProjectId} onBack={() => setNav("project-detail")} />
       )}
 
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}

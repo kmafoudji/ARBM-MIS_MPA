@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.identity",
     "apps.reference",
     "apps.project",
+    "apps.results",
     "apps.authentication",
 ]
 

@@ -374,3 +374,21 @@ class ProjectPadView(APIView):
         project.pad_reference_file = None
         project.save(update_fields=["pad_reference_file"])
         return Response(ProjectDetailSerializer(project).data)
+
+
+class ProjectReportingConfigView(APIView):
+    """
+    PATCH /api/projects/{pk}/reporting-config/  — SF-1 Etape 5 (perimetre reduit)
+    """
+
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
+
+    def patch(self, request, pk):
+        from .models import Project
+        from .serializers import ReportingConfigUpdateSerializer
+        project = Project.objects.get(pk=pk)
+        serializer = ReportingConfigUpdateSerializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ProjectDetailSerializer(project).data)
