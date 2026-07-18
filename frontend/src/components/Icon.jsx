@@ -49,6 +49,30 @@ const PATHS = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  x: <path d="M18 6L6 18M6 6l12 12" />,
+  check: <path d="M20 6L9 17l-5-5" />,
+  bold: (
+    <>
+      <path d="M6 4h5a3.5 3.5 0 0 1 0 7H6z" />
+      <path d="M6 11h6a3.5 3.5 0 0 1 0 7H6z" />
+    </>
+  ),
+  italic: <path d="M19 4h-9M14 20H5M15 4L9 20" />,
+  underline: (
+    <>
+      <path d="M6 3v7a6 6 0 0 0 12 0V3" />
+      <path d="M4 21h16" />
+    </>
+  ),
+  "align-center": <path d="M4 6h16M8 12h8M6 18h12" />,
+  list: (
+    <>
+      <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
+      <path d="M9 6h11M9 12h11M9 18h11" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 16, strokeWidth = 1.8, style }) {

@@ -448,6 +448,21 @@ input, select, textarea { font: inherit; color: inherit; }
   box-shadow: 0 0 0 3px var(--lime-soft);
 }
 .field-help { font-size: 11px; color: var(--muted); }
+
+/* Editeur riche (RichTextEditor) : contentEditable stylise comme un
+   field-textarea, avec placeholder simule (aucun attribut natif pour
+   les div contentEditable). */
+.richtext-editable {
+  overflow-y: auto;
+}
+.richtext-editable:empty::before {
+  content: attr(data-placeholder);
+  color: var(--subtle);
+}
+.richtext-editable ul {
+  margin: 0;
+  padding-left: 20px;
+}
 .field-error {
   font-size: 12px;
   color: var(--rose);
