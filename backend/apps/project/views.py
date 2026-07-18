@@ -76,7 +76,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        try:
+            serializer.save()
+        except ValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
         return Response(ProjectDetailSerializer(instance).data)
 
     @action(detail=False, methods=["get"], url_path="stage-choices")

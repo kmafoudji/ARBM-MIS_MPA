@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import SectorIcon from "../components/SectorIcon";
 import FinancialEnvelope from "../components/FinancialEnvelope";
 
 const STAGE_BADGE = {
@@ -42,6 +43,10 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
   });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
+    primary_sector: "",
+    contributing_sector_ids: [],
+    primary_sdg: "",
+    contributing_sdg_ids: [],
     gender_marker: "",
     implementation_modality: "",
     geographic_typology: "",
@@ -66,6 +71,8 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
     queryKey: ["classification-choices"],
     queryFn: () => apiFetch("/api/projects/classification-choices/"),
   });
+  const { data: sectors } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
+  const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
 
   const mutation = useMutation({
@@ -92,6 +99,10 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
 
   function openClassificationForm() {
     setCForm({
+      primary_sector: project.primary_sector || "",
+      contributing_sector_ids: project.contributing_sectors_detail?.map((s) => s.id) || [],
+      primary_sdg: project.primary_sdg || "",
+      contributing_sdg_ids: project.contributing_sdgs_detail?.map((s) => s.number) || [],
       gender_marker: project.gender_marker || "",
       implementation_modality: project.implementation_modality || "",
       geographic_typology: project.geographic_typology || "",
@@ -105,6 +116,10 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
   function handleClassificationSubmit(e) {
     e.preventDefault();
     classificationMutation.mutate({
+      primary_sector: cForm.primary_sector ? Number(cForm.primary_sector) : null,
+      contributing_sector_ids: cForm.contributing_sector_ids,
+      primary_sdg: cForm.primary_sdg ? Number(cForm.primary_sdg) : null,
+      contributing_sdg_ids: cForm.contributing_sdg_ids,
       gender_marker: cForm.gender_marker || null,
       implementation_modality: cForm.implementation_modality || null,
       geographic_typology: cForm.geographic_typology || null,
@@ -114,10 +129,17 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
     });
   }
 
-  function handleThemesChange(e) {
+  function handleMultiSelect(field, e) {
     const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
-    setCForm({ ...cForm, cross_cutting_theme_ids: selected });
+    setCForm({ ...cForm, [field]: selected });
   }
+
+  const contributingSectorChoices = (sectors || []).filter(
+    (s) => String(s.id) !== String(cForm.primary_sector)
+  );
+  const contributingSdgChoices = (sdgs || []).filter(
+    (s) => String(s.number) !== String(cForm.primary_sdg)
+  );
 
   if (isLoading) {
     return (
@@ -129,7 +151,9 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
   if (!project) return <div className="view">Projet introuvable.</div>;
 
   const otherStages = (stageChoices || []).filter((s) => s.value !== project.lifecycle_stage);
-  const otherCountries = project.country_names?.filter((c) => c !== project.lead_country_name) || [];
+  const countries = project.countries_detail || [];
+  const leadCountry = countries.find((c) => c.is_lead);
+  const otherCountries = countries.filter((c) => !c.is_lead);
 
   return (
     <div className="view">
@@ -145,8 +169,9 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
             {project.lifecycle_stage_display}
           </span>
           <span className="text-muted text-sm">
-            {project.lead_country_name}
-            {otherCountries.length > 0 && ` + ${otherCountries.join(", ")}`}
+            {leadCountry && `${leadCountry.flag} ${leadCountry.name}`}
+            {otherCountries.length > 0 &&
+              ` + ${otherCountries.map((c) => `${c.flag} ${c.name}`).join(", ")}`}
           </span>
         </div>
       </div>
@@ -162,8 +187,15 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
                 <span className="text-mono">{project.code}</span>
               </Dt>
               <Dt term="Reference officielle">{project.official_reference_number}</Dt>
-              <Dt term="Pays chef de file">{project.lead_country_name}</Dt>
-              <Dt term="Autres pays">{otherCountries.join(", ") || "—"}</Dt>
+              <Dt term="Pays chef de file">
+                {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : "—"}
+              </Dt>
+              <Dt term="Autres pays">
+                {otherCountries.length > 0
+                  ? otherCountries.map((c) => `${c.flag} ${c.name}`).join(", ")
+                  : "—"}
+              </Dt>
+              <Dt term="Hub regional">{project.hub_name || "—"}</Dt>
               <Dt term="Budget indicatif">
                 {project.budget_amount
                   ? `${Number(project.budget_amount).toLocaleString("fr-FR")} USD`
@@ -190,6 +222,66 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
             {showClassificationForm ? (
               <form onSubmit={handleClassificationSubmit}>
                 <div className="grid grid-2">
+                  <div className="field">
+                    <label className="field-label" htmlFor="cPrimarySector">Secteur primaire</label>
+                    <select
+                      id="cPrimarySector"
+                      className="field-select"
+                      value={cForm.primary_sector}
+                      onChange={(e) => setCForm({ ...cForm, primary_sector: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {sectors?.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="cContribSectors">Secteurs contributifs</label>
+                    <select
+                      id="cContribSectors"
+                      className="field-select field-multi"
+                      multiple
+                      value={cForm.contributing_sector_ids.map(String)}
+                      onChange={(e) => handleMultiSelect("contributing_sector_ids", e)}
+                    >
+                      {contributingSectorChoices.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="cPrimarySdg">ODD primaire</label>
+                    <select
+                      id="cPrimarySdg"
+                      className="field-select"
+                      value={cForm.primary_sdg}
+                      onChange={(e) => setCForm({ ...cForm, primary_sdg: e.target.value })}
+                    >
+                      <option value="">Selectionner</option>
+                      {sdgs?.map((s) => (
+                        <option key={s.number} value={s.number}>ODD {s.number} — {s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="field-label" htmlFor="cContribSdgs">ODD contributifs</label>
+                    <select
+                      id="cContribSdgs"
+                      className="field-select field-multi"
+                      multiple
+                      value={cForm.contributing_sdg_ids.map(String)}
+                      onChange={(e) => handleMultiSelect("contributing_sdg_ids", e)}
+                    >
+                      {contributingSdgChoices.map((s) => (
+                        <option key={s.number} value={s.number}>ODD {s.number} — {s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="field">
                     <label className="field-label" htmlFor="genderMarker">Marqueur genre</label>
                     <select
@@ -272,7 +364,7 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
                       className="field-select field-multi"
                       multiple
                       value={cForm.cross_cutting_theme_ids.map(String)}
-                      onChange={handleThemesChange}
+                      onChange={(e) => handleMultiSelect("cross_cutting_theme_ids", e)}
                     >
                       {classificationChoices?.cross_cutting_themes.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
@@ -298,14 +390,56 @@ export default function ProjectDetail({ projectId, onBack, canEdit = false }) {
               </form>
             ) : (
               <div className="dl">
-                <Dt term="Secteur primaire">{project.primary_sector_name}</Dt>
+                <Dt term="Secteur primaire">
+                  {project.primary_sector_name ? (
+                    <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                      <SectorIcon name={project.primary_sector_icon} color={project.primary_sector_color} size={24} />
+                      {project.primary_sector_name}
+                    </span>
+                  ) : "—"}
+                </Dt>
                 <Dt term="Secteurs contributifs">
-                  {project.contributing_sector_names?.join(", ") || "—"}
+                  {project.contributing_sectors_detail?.length ? (
+                    <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+                      {project.contributing_sectors_detail.map((s) => (
+                        <span key={s.id} className="row" style={{ gap: 6, alignItems: "center" }}>
+                          <SectorIcon name={s.icon} color={s.color} size={20} />
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : "—"}
                 </Dt>
                 <Dt term="ODD primaire">
-                  {project.primary_sdg ? `ODD ${project.primary_sdg} — ${project.primary_sdg_name}` : "—"}
+                  {project.primary_sdg ? (
+                    <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                      <img
+                        className="sdg-icon"
+                        src={`/logos/sdg/${project.primary_sdg}.png`}
+                        alt={`ODD ${project.primary_sdg}`}
+                        style={{ width: 24, height: 24 }}
+                      />
+                      {`ODD ${project.primary_sdg} — ${project.primary_sdg_name}`}
+                    </span>
+                  ) : "—"}
                 </Dt>
-                <Dt term="ODD contributifs">{project.contributing_sdg_names?.join(", ") || "—"}</Dt>
+                <Dt term="ODD contributifs">
+                  {project.contributing_sdgs_detail?.length ? (
+                    <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+                      {project.contributing_sdgs_detail.map((s) => (
+                        <span key={s.number} className="row" style={{ gap: 6, alignItems: "center" }}>
+                          <img
+                            className="sdg-icon"
+                            src={`/logos/sdg/${s.number}.png`}
+                            alt={`ODD ${s.number}`}
+                            style={{ width: 20, height: 20 }}
+                          />
+                          {`ODD ${s.number} — ${s.name}`}
+                        </span>
+                      ))}
+                    </div>
+                  ) : "—"}
+                </Dt>
                 <Dt term="Marqueur genre">{project.gender_marker_display || "—"}</Dt>
                 <Dt term="Modalite">{project.implementation_modality_display || "—"}</Dt>
                 <Dt term="Typologie geographique">{project.geographic_typology_display || "—"}</Dt>
