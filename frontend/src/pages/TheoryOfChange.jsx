@@ -109,7 +109,17 @@ function NodeCard({ node, onSaved, onDeleted }) {
               style={{ gap: 6 }}
               type="button"
               disabled={deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate()}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Supprimer le noeud ${node.code} ("${node.statement.slice(0, 60)}") ? ` +
+                      "Tous les noeuds rattaches en dessous (enfants directs et indirects) " +
+                      "seront supprimes avec lui. Cette action est irreversible."
+                  )
+                ) {
+                  deleteMutation.mutate();
+                }
+              }}
             >
               <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
             </button>
@@ -324,6 +334,32 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
                 required
               />
             </div>
+            <div className="grid grid-2">
+              <div className="field">
+                <label className="field-label">Indicateur cle de resultat</label>
+                <input
+                  className="field-input"
+                  value={form.key_result_indicator}
+                  onChange={(e) => setForm({ ...form, key_result_indicator: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label className="field-label">Tag genre / climat</label>
+                <input
+                  className="field-input"
+                  value={form.gender_climate_tag}
+                  onChange={(e) => setForm({ ...form, gender_climate_tag: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label className="field-label">Moyens de verification</label>
+              <textarea
+                className="field-textarea"
+                value={form.means_of_verification}
+                onChange={(e) => setForm({ ...form, means_of_verification: e.target.value })}
+              />
+            </div>
             <div className="field">
               <label className="field-label">Hypotheses</label>
               <textarea
@@ -331,6 +367,22 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
                 value={form.assumptions}
                 onChange={(e) => setForm({ ...form, assumptions: e.target.value })}
                 placeholder="Conditions supposees pour que le pathway causal tienne."
+              />
+            </div>
+            <div className="field">
+              <label className="field-label">Mitigation des risques</label>
+              <textarea
+                className="field-textarea"
+                value={form.risks_mitigation}
+                onChange={(e) => setForm({ ...form, risks_mitigation: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label className="field-label">Strategie d'adaptation</label>
+              <textarea
+                className="field-textarea"
+                value={form.adaptation_strategy}
+                onChange={(e) => setForm({ ...form, adaptation_strategy: e.target.value })}
               />
             </div>
             {createMutation.isError && (
