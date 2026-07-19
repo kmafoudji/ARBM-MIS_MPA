@@ -50,12 +50,32 @@ class IndicatorListView(APIView):
 
 
 class IndicatorDetailView(APIView):
-    """GET /api/results/indicators/{id}/ — fiche IRS complete."""
+    """GET /api/results/indicators/{id}/ — fiche IRS complete.
+    PATCH /api/results/indicators/{id}/ — mise a jour (LLFMU uniquement)."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         ind = Indicator.objects.prefetch_related("related_sdgs").get(pk=pk)
+        return Response(IndicatorDetailSerializer(ind).data)
+
+    def patch(self, request, pk):
+        ind = Indicator.objects.prefetch_related("related_sdgs").get(pk=pk)
+        # Champs editables directement via le serializer de detail
+        editable = [
+            "code", "subsector", "name", "indicator_type", "direction",
+            "definition", "unit", "numerator", "denominator",
+            "calculation_method", "formula", "disaggregation",
+            "data_source", "collection_method", "reporting_frequency",
+            "means_of_verification", "responsible",
+            "assumptions", "limitations", "is_active",
+        ]
+        data = {k: v for k, v in request.data.items() if k in editable}
+        for field, value in data.items():
+            setattr(ind, field, value)
+        ind.save()
+        # Rechargement propre pour renvoyer la fiche complete
+        ind.refresh_from_db()
         return Response(IndicatorDetailSerializer(ind).data)
 
 
