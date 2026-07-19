@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiUpload } from "../api";
 import SectorIcon from "../components/SectorIcon";
 import FinancialEnvelope from "../components/FinancialEnvelope";
+import Icon from "../components/Icon";
 
 const STAGE_BADGE = {
   concept_note: "badge",

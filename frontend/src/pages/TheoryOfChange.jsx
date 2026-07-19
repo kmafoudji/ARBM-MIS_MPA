@@ -25,7 +25,6 @@ const EMPTY_NODE_FORM = {
 };
 
 function NodeCard({ node, onSaved, onDeleted }) {
-  const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(node);
