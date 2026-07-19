@@ -16,7 +16,7 @@ const LEVELS = [
 const EMPTY_NODE_FORM = {
   parent: "",
   statement: "",
-  key_result_indicator: "",
+  logframe_row: "",
   means_of_verification: "",
   assumptions: "",
   risks_mitigation: "",
@@ -24,7 +24,40 @@ const EMPTY_NODE_FORM = {
   gender_climate_tag: "",
 };
 
-function NodeCard({ node, onSaved, onDeleted }) {
+/**
+ * Select des lignes logframe d'un projet — recharge uniquement quand le
+ * formulaire est ouvert (enabled: true par defaut ici car ce composant
+ * n'est monté que dans ce cas).
+ */
+function LogframeRowSelect({ projectId, value, onChange }) {
+  const { data: rows, isLoading } = useQuery({
+    queryKey: ["logframe", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/`),
+  });
+
+  if (isLoading) return <div className="field-input text-muted text-sm">Chargement...</div>;
+
+  if (!rows || rows.length === 0) {
+    return (
+      <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>
+        Aucune ligne dans le logframe — ajoutez des indicateurs via "Cadre logique" d'abord.
+      </div>
+    );
+  }
+
+  return (
+    <select className="field-select" value={value || ""} onChange={(e) => onChange(e.target.value || null)}>
+      <option value="">Aucun indicateur lie</option>
+      {rows.map((r) => (
+        <option key={r.id} value={r.id}>
+          {r.indicator_code} — {r.indicator_name.slice(0, 55)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function NodeCard({ node, projectId, onSaved, onDeleted }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(node);
@@ -55,7 +88,11 @@ function NodeCard({ node, onSaved, onDeleted }) {
 
   function submitEdit(e) {
     e.preventDefault();
-    const { parent, chain_level, code, id, toc, created_at, updated_at, chain_level_display, ...payload } = form;
+    const { parent, chain_level, code, id, toc, created_at, updated_at, chain_level_display,
+            logframe_row_id, logframe_indicator_code, logframe_indicator_name,
+            logframe_indicator_unit, logframe_baseline_value, logframe_baseline_year,
+            ...payload } = form;
+    payload.logframe_row = form.logframe_row_id || null;
     updateMutation.mutate(payload);
   }
 
@@ -79,8 +116,21 @@ function NodeCard({ node, onSaved, onDeleted }) {
       {expanded && !editing && (
         <div className="dl mt-2">
           <div>
-            <div className="dl-term">Indicateur cle de resultat</div>
-            <div className="dl-desc">{node.key_result_indicator || "—"}</div>
+            <div className="dl-term">Indicateur (logframe)</div>
+            <div className="dl-desc">
+              {node.logframe_indicator_code ? (
+                <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                  <span className="text-mono badge" style={{ fontSize: 11 }}>{node.logframe_indicator_code}</span>
+                  <span>{node.logframe_indicator_name}</span>
+                  {node.logframe_baseline_value != null && (
+                    <span className="text-muted text-sm">
+                      baseline : {Number(node.logframe_baseline_value).toLocaleString("fr-FR")} {node.logframe_indicator_unit}
+                      {node.logframe_baseline_year ? ` (${node.logframe_baseline_year})` : ""}
+                    </span>
+                  )}
+                </span>
+              ) : "—"}
+            </div>
           </div>
           <div>
             <div className="dl-term">Moyens de verification</div>
@@ -148,11 +198,11 @@ function NodeCard({ node, onSaved, onDeleted }) {
           </div>
           <div className="grid grid-2">
             <div className="field">
-              <label className="field-label">Indicateur cle de resultat</label>
-              <input
-                className="field-input"
-                value={form.key_result_indicator}
-                onChange={(e) => setForm({ ...form, key_result_indicator: e.target.value })}
+              <label className="field-label">Indicateur (logframe)</label>
+              <LogframeRowSelect
+                projectId={projectId}
+                value={form.logframe_row_id || ""}
+                onChange={(v) => setForm({ ...form, logframe_row_id: v })}
               />
             </div>
             <div className="field">
@@ -232,7 +282,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
       chain_level: level.key,
       parent: form.parent || null,
       statement: form.statement,
-      key_result_indicator: form.key_result_indicator,
+      logframe_row: form.logframe_row || null,
       means_of_verification: form.means_of_verification,
       assumptions: form.assumptions,
       risks_mitigation: form.risks_mitigation,
@@ -287,7 +337,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
         )}
         <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
           {nodes.map((n) => (
-            <NodeCard key={n.id} node={n} onSaved={onChanged} onDeleted={onChanged} />
+            <NodeCard key={n.id} node={n} projectId={projectId} onSaved={onChanged} onDeleted={onChanged} />
           ))}
         </div>
 
@@ -338,11 +388,11 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
             </div>
             <div className="grid grid-2">
               <div className="field">
-                <label className="field-label">Indicateur cle de resultat</label>
-                <input
-                  className="field-input"
-                  value={form.key_result_indicator}
-                  onChange={(e) => setForm({ ...form, key_result_indicator: e.target.value })}
+                <label className="field-label">Indicateur (logframe)</label>
+                <LogframeRowSelect
+                  projectId={projectId}
+                  value={form.logframe_row}
+                  onChange={(v) => setForm({ ...form, logframe_row: v })}
                 />
               </div>
               <div className="field">
