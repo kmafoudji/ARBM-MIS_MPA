@@ -49,6 +49,70 @@ class IndicatorListView(APIView):
         return Response(IndicatorListSerializer(qs, many=True).data)
 
 
+# Valeurs normalisees extraites du handbook Agriculture (doublons fusionnes,
+# points finaux supprimes). Health et Infra viendront completer ces listes.
+UNIT_CHOICES = [
+    "Hectares",
+    "Kilometres (km)",
+    "Litres",
+    "Metric tons (MT)",
+    "Number",
+    "Number of beneficiaries",
+    "Number of biogas systems",
+    "Number of drying floors",
+    "Number of farmer associations",
+    "Number of farmer cooperatives",
+    "Number of farmers",
+    "Number of female beneficiaries",
+    "Number of female farmers",
+    "Number of female individuals",
+    "Number of female jobs",
+    "Number of financial instruments",
+    "Number of financing facilities",
+    "Number of groups",
+    "Number of individuals",
+    "Number of jobs",
+    "Number of people",
+    "Number of training sessions",
+    "Number of warehouses",
+    "Number of women",
+    "Number of youth",
+    "Percentage (%)",
+    "Other",
+]
+
+DISAGGREGATION_CHOICES = [
+    "Not applicable",
+    "Sex (Male/Female)",
+    "Sex (Male/Female) and by age group",
+    "Sex (Male/Female) and by type",
+    "By region / geographic area",
+    "By beneficiary category",
+    "Other",
+]
+
+RESPONSIBLE_CHOICES = [
+    "Project Manager and M&E Unit",
+    "M&E Manager and Agricultural Specialist",
+    "Extension officers and Project Manager",
+    "N/A",
+    "Other",
+]
+
+
+class IndicatorChoicesView(APIView):
+    """GET /api/results/indicator-choices/ — listes deroulantes normalisees."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "units": UNIT_CHOICES,
+            "disaggregations": DISAGGREGATION_CHOICES,
+            "responsibles": RESPONSIBLE_CHOICES,
+        })
+
+
 class IndicatorDetailView(APIView):
     """GET /api/results/indicators/{id}/ — fiche IRS complete.
     PATCH /api/results/indicators/{id}/ — mise a jour (LLFMU uniquement)."""

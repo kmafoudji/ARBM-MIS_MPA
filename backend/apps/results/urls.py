@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    IndicatorChoicesView,
     IndicatorDetailView,
     IndicatorListView,
     LogframeChoicesView,
@@ -15,6 +16,7 @@ from .views import (
 # Routes du catalogue (independantes du projet)
 indicator_urlpatterns = [
     path("indicators/", IndicatorListView.as_view(), name="indicator-list"),
+    path("indicators/choices/", IndicatorChoicesView.as_view(), name="indicator-choices"),
     path("indicators/<int:pk>/", IndicatorDetailView.as_view(), name="indicator-detail"),
 ]
 

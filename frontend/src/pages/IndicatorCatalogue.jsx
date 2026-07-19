@@ -14,21 +14,53 @@ const TYPE_COLOR = {
   impact: "badge badge-lime",
 };
 
+// Champs texte/textarea generiques dans la fiche IRS
 const FIELD_ROWS = [
   { key: "definition", label: "Definition", textarea: true },
-  { key: "unit", label: "Unite de mesure" },
   { key: "numerator", label: "Numerateur", textarea: true },
   { key: "denominator", label: "Denominateur", textarea: true },
   { key: "formula", label: "Formule", textarea: true },
   { key: "calculation_method", label: "Methode de calcul", textarea: true },
-  { key: "disaggregation", label: "Desagregation", textarea: true },
   { key: "data_source", label: "Sources de donnees", textarea: true },
   { key: "collection_method", label: "Methode de collecte", textarea: true },
   { key: "means_of_verification", label: "Moyens de verification", textarea: true },
-  { key: "responsible", label: "Responsable" },
   { key: "assumptions", label: "Hypotheses", textarea: true },
   { key: "limitations", label: "Limites", textarea: true },
 ];
+// unit, disaggregation, responsible -> ComboField (liste deroulante + champ libre)
+
+/**
+ * Liste deroulante + champ libre si "Other" est selectionne.
+ * choices : tableau de strings. value/onChange : valeur courante.
+ */
+function ComboField({ label, choices, value, onChange, textarea }) {
+  const isOther = value && !choices.includes(value);
+  const selectVal = isOther ? "Other" : (value || "");
+
+  return (
+    <div className="field">
+      <label className="field-label">{label}</label>
+      <select className="field-select"
+        value={selectVal}
+        onChange={(e) => {
+          if (e.target.value === "Other") onChange("");
+          else onChange(e.target.value);
+        }}>
+        <option value="">Selectionner...</option>
+        {choices.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
+      {(selectVal === "Other" || isOther) && (
+        <input
+          className="field-input"
+          style={{ marginTop: 4 }}
+          placeholder="Saisir une valeur personnalisee..."
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Ligne expandable : fiche IRS en lecture + formulaire d'edition inline
@@ -39,11 +71,16 @@ function IndicatorRow({ ind, isLast, canEdit }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
 
-  // Charger la fiche complete uniquement quand expandee
   const { data: detail, isLoading } = useQuery({
     queryKey: ["indicator", ind.id],
     queryFn: () => apiFetch(`/api/results/indicators/${ind.id}/`),
     enabled: expanded,
+  });
+
+  const { data: choices } = useQuery({
+    queryKey: ["indicator-choices"],
+    queryFn: () => apiFetch("/api/results/indicators/choices/"),
+    enabled: editing,
   });
 
   const updateMutation = useMutation({
@@ -133,6 +170,24 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                     </div>
                   ) : null
                 )}
+                {detail.unit && (
+                  <div>
+                    <div className="dl-term">Unite de mesure</div>
+                    <div className="dl-desc">{detail.unit}</div>
+                  </div>
+                )}
+                {detail.disaggregation && (
+                  <div>
+                    <div className="dl-term">Desagregation</div>
+                    <div className="dl-desc">{detail.disaggregation}</div>
+                  </div>
+                )}
+                {detail.responsible && (
+                  <div>
+                    <div className="dl-term">Responsable</div>
+                    <div className="dl-desc">{detail.responsible}</div>
+                  </div>
+                )}
                 {detail.reporting_frequency_display && (
                   <div>
                     <div className="dl-term">Frequence de reporting</div>
@@ -201,6 +256,13 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                   onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
 
+              <ComboField
+                label="Unite de mesure"
+                choices={choices?.units || []}
+                value={form.unit || ""}
+                onChange={(v) => setForm({ ...form, unit: v })}
+              />
+
               {FIELD_ROWS.map(({ key, label, textarea }) => (
                 <div key={key} className="field">
                   <label className="field-label">{label}</label>
@@ -213,6 +275,20 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                   )}
                 </div>
               ))}
+
+              <ComboField
+                label="Desagregation"
+                choices={choices?.disaggregations || []}
+                value={form.disaggregation || ""}
+                onChange={(v) => setForm({ ...form, disaggregation: v })}
+              />
+
+              <ComboField
+                label="Responsable"
+                choices={choices?.responsibles || []}
+                value={form.responsible || ""}
+                onChange={(v) => setForm({ ...form, responsible: v })}
+              />
 
               {updateMutation.isError && (
                 <div className="field-error mb-3">{JSON.stringify(updateMutation.error.detail)}</div>
