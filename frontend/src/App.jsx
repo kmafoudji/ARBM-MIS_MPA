@@ -8,6 +8,7 @@ import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 import TheoryOfChange from "./pages/TheoryOfChange.jsx";
 import Logframe from "./pages/Logframe.jsx";
+import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
 import { apiFetch } from "./api";
@@ -96,6 +97,7 @@ export default function App() {
       )}
 
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}
+      {nav === "indicator-catalogue" && <IndicatorCatalogue />}
       {nav === "rbac" && <Rbac />}
     </AppShell>
   );

@@ -1,5 +1,6 @@
 import {
   BrandMark,
+  IconCatalogue,
   IconDashboard,
   IconMasterData,
   IconNewProject,
@@ -21,6 +22,7 @@ const NAV_GROUPS = [
     items: [
       { key: "projects", label: "Projets", Icon: IconProjects, badgeKey: "projects" },
       { key: "new-project", label: "Nouveau projet", Icon: IconNewProject },
+      { key: "indicator-catalogue", label: "Catalogue d'indicateurs", Icon: IconCatalogue },
     ],
   },
   {
@@ -37,6 +39,7 @@ const CRUMBS = {
   projects: { label: "Projets", parent: "overview" },
   "new-project": { label: "Nouveau projet", parent: "projects" },
   "project-detail": { label: "Fiche projet", parent: "projects" },
+  "indicator-catalogue": { label: "Catalogue d'indicateurs", parent: "overview" },
   rbac: { label: "Utilisateurs & roles", parent: "overview" },
 };
 
@@ -56,6 +59,7 @@ const API_PATHS = {
   projects: "/api/projects",
   "new-project": "/api/projects",
   "project-detail": "/api/projects/:id",
+  "indicator-catalogue": "/api/results/indicators",
   rbac: "/api/identity/roles",
 };
 
