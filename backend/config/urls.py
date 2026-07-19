@@ -5,6 +5,7 @@ from django.urls import include, path
 
 from core.uploads import LogoUploadView
 from core.views import csrf_bootstrap, health_check
+from apps.results.urls import indicator_urlpatterns
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -15,10 +16,9 @@ urlpatterns = [
     path("api/", include("apps.project.urls")),
     path("api/reference/", include("apps.reference.urls")),
     path("api/identity/", include("apps.identity.urls")),
+    # Catalogue indicateurs (routes independantes du projet)
+    path("api/results/", include((indicator_urlpatterns, "results"))),
 ]
 
-# En developpement, Django sert lui-meme les fichiers televerses. En
-# production ce role revient a Azure Blob Storage / au CDN : Django ne doit
-# jamais servir de media, c'est lent et non securise (cf. doc Django).
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,571 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "../api";
+import Icon from "../components/Icon";
+
+const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
+const CHAIN_LEVEL_LABEL = {
+  impact: "Impact",
+  intermediate_outcome: "Effet intermediaire",
+  immediate_outcome: "Effet immediat",
+  output: "Produit",
+  activity: "Activite",
+};
+const CHAIN_LEVEL_ICON = {
+  impact: "target",
+  intermediate_outcome: "layers",
+  immediate_outcome: "trending-up",
+  output: "package",
+  activity: "zap",
+};
+
+// ---------------------------------------------------------------------------
+// Composant : fiche cible
+// ---------------------------------------------------------------------------
+function TargetCard({ target, rowId, projectId, onChanged }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(target);
+
+  const updateMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/logframe/${rowId}/targets/${target.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => { setEditing(false); onChanged(); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/projects/${projectId}/logframe/${rowId}/targets/${target.id}/`, {
+        method: "DELETE",
+      }),
+    onSuccess: onChanged,
+  });
+
+  if (editing) {
+    return (
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <input className="field-input" style={{ width: 120 }} type="number" step="any"
+          value={form.target_value}
+          onChange={(e) => setForm({ ...form, target_value: e.target.value })} />
+        <input className="field-input" style={{ width: 140 }} type="date"
+          value={form.target_date}
+          onChange={(e) => setForm({ ...form, target_date: e.target.value })} />
+        <input className="field-input" style={{ width: 120 }} placeholder="Libelle (ex. T1 2025)"
+          value={form.label}
+          onChange={(e) => setForm({ ...form, label: e.target.value })} />
+        <button className="btn btn-primary btn-sm row" style={{ gap: 4 }}
+          onClick={() => updateMutation.mutate({ target_value: form.target_value, target_date: form.target_date, label: form.label })}
+          disabled={updateMutation.isPending}>
+          <Icon name="check" size={12} /> Sauver
+        </button>
+        <button className="btn btn-ghost btn-sm row" style={{ gap: 4 }} onClick={() => setEditing(false)}>
+          <Icon name="x" size={12} /> Annuler
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <span
+      className="badge"
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "default" }}
+    >
+      {target.label && <span className="text-mono" style={{ fontSize: 11 }}>{target.label}</span>}
+      <strong>{Number(target.target_value).toLocaleString("fr-FR")}</strong>
+      <span style={{ color: "var(--muted)", fontSize: 11 }}>
+        {new Date(target.target_date).toLocaleDateString("fr-FR")}
+      </span>
+      <button type="button" onClick={() => { setForm(target); setEditing(true); }}
+        style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "inherit" }}>
+        <Icon name="pencil" size={11} />
+      </button>
+      <button type="button"
+        onClick={() => window.confirm("Supprimer cette cible ?") && deleteMutation.mutate()}
+        disabled={deleteMutation.isPending}
+        style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "inherit" }}>
+        <Icon name="x" size={11} />
+      </button>
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Composant : formulaire d'ajout de cible
+// ---------------------------------------------------------------------------
+function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
+  const [form, setForm] = useState({ target_value: "", target_date: "", label: "", disaggregation_note: "" });
+
+  const mutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/logframe/${rowId}/targets/`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => { onAdded(); setForm({ target_value: "", target_date: "", label: "", disaggregation_note: "" }); },
+  });
+
+  return (
+    <div style={{ marginTop: 8, padding: "var(--s-2)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--r-2)" }}>
+      <div className="grid grid-2" style={{ gap: 8 }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="field-label">Valeur cible ({unit})</label>
+          <input className="field-input" type="number" step="any"
+            value={form.target_value}
+            onChange={(e) => setForm({ ...form, target_value: e.target.value })} required />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="field-label">Date d'echeance</label>
+          <input className="field-input" type="date"
+            value={form.target_date}
+            onChange={(e) => setForm({ ...form, target_date: e.target.value })} required />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="field-label">Libelle (ex. T1 2025)</label>
+          <input className="field-input" placeholder="T1 2025, Mi-parcours, Fin projet..."
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })} />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="field-label">Note de desagregation</label>
+          <input className="field-input" placeholder="Ex. 60% femmes, 40% hommes"
+            value={form.disaggregation_note}
+            onChange={(e) => setForm({ ...form, disaggregation_note: e.target.value })} />
+        </div>
+      </div>
+      {mutation.isError && <div className="field-error mt-2">{JSON.stringify(mutation.error.detail)}</div>}
+      <div className="row mt-2">
+        <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+          onClick={() => mutation.mutate(form)} disabled={mutation.isPending || !form.target_value || !form.target_date}>
+          <Icon name="plus" size={13} /> {mutation.isPending ? "Ajout..." : "Ajouter la cible"}
+        </button>
+        <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
+          <Icon name="x" size={13} /> Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Composant : ligne logframe
+// ---------------------------------------------------------------------------
+function LogframeRowCard({ row, projectId, onChanged }) {
+  const [expanded, setExpanded] = useState(false);
+  const [addingTarget, setAddingTarget] = useState(false);
+  const [editingBaseline, setEditingBaseline] = useState(false);
+  const [baselineForm, setBaselineForm] = useState({
+    baseline_value: row.baseline_value ?? "",
+    baseline_year: row.baseline_year ?? "",
+    baseline_source: row.baseline_source ?? "",
+    measurement_frequency: row.measurement_frequency ?? "",
+    notes: row.notes ?? "",
+  });
+
+  const baselineMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/logframe/${row.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => { setEditingBaseline(false); onChanged(); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/projects/${projectId}/logframe/${row.id}/`, { method: "DELETE" }),
+    onSuccess: onChanged,
+  });
+
+  const directionIcon = row.indicator_direction === "increase" ? "↑" : row.indicator_direction === "decrease" ? "↓" : "→";
+
+  return (
+    <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--r-3)", padding: "var(--s-3)" }}>
+      <div className="row" style={{ justifyContent: "space-between", cursor: "pointer" }}
+        onClick={() => setExpanded(!expanded)}>
+        <div className="row" style={{ gap: 10, alignItems: "flex-start", flex: 1 }}>
+          <span className="text-mono badge" style={{ fontSize: 11 }}>{row.indicator_code}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 500 }}>{row.indicator_name}</div>
+            <div className="text-muted text-sm row" style={{ gap: 8, marginTop: 2 }}>
+              <span>{row.indicator_unit}</span>
+              <span>{directionIcon}</span>
+              {row.baseline_value != null && (
+                <span>Baseline : <strong>{Number(row.baseline_value).toLocaleString("fr-FR")}</strong>
+                  {row.baseline_year && ` (${row.baseline_year})`}
+                </span>
+              )}
+              {row.targets?.length > 0 && (
+                <span>{row.targets.length} cible{row.targets.length > 1 ? "s" : ""}</span>
+              )}
+              {row.toc_node_code && (
+                <span className="text-mono" style={{ fontSize: 10 }}>ToC: {row.toc_node_code}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "var(--muted)", flexShrink: 0 }} />
+      </div>
+
+      {expanded && (
+        <div style={{ marginTop: "var(--s-3)" }}>
+          {/* Baseline */}
+          <div style={{ marginBottom: "var(--s-3)" }}>
+            <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}>
+              <span className="card-sub">Valeur de reference (baseline)</span>
+              {!editingBaseline && (
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(true)}>
+                  <Icon name="pencil" size={13} /> Modifier
+                </button>
+              )}
+            </div>
+            {editingBaseline ? (
+              <div>
+                <div className="grid grid-2" style={{ gap: 8 }}>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label className="field-label">Valeur baseline ({row.indicator_unit})</label>
+                    <input className="field-input" type="number" step="any"
+                      value={baselineForm.baseline_value}
+                      onChange={(e) => setBaselineForm({ ...baselineForm, baseline_value: e.target.value })} />
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label className="field-label">Annee de reference</label>
+                    <input className="field-input" type="number" min="2000" max="2050"
+                      value={baselineForm.baseline_year}
+                      onChange={(e) => setBaselineForm({ ...baselineForm, baseline_year: e.target.value })} />
+                  </div>
+                  <div className="field" style={{ marginBottom: 0, gridColumn: "span 2" }}>
+                    <label className="field-label">Source de la baseline</label>
+                    <input className="field-input"
+                      value={baselineForm.baseline_source}
+                      onChange={(e) => setBaselineForm({ ...baselineForm, baseline_source: e.target.value })} />
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label className="field-label">Frequence de mesure</label>
+                    <select className="field-select"
+                      value={baselineForm.measurement_frequency}
+                      onChange={(e) => setBaselineForm({ ...baselineForm, measurement_frequency: e.target.value })}>
+                      <option value="">Selectionner</option>
+                      <option value="quarterly">Trimestrielle</option>
+                      <option value="semi_annual">Semestrielle</option>
+                      <option value="annual">Annuelle</option>
+                      <option value="end_of_project">Fin de projet</option>
+                    </select>
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label className="field-label">Notes</label>
+                    <input className="field-input"
+                      value={baselineForm.notes}
+                      onChange={(e) => setBaselineForm({ ...baselineForm, notes: e.target.value })} />
+                  </div>
+                </div>
+                {baselineMutation.isError && <div className="field-error mt-2">{JSON.stringify(baselineMutation.error.detail)}</div>}
+                <div className="row mt-2">
+                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+                    onClick={() => baselineMutation.mutate({
+                      baseline_value: baselineForm.baseline_value || null,
+                      baseline_year: baselineForm.baseline_year || null,
+                      baseline_source: baselineForm.baseline_source,
+                      measurement_frequency: baselineForm.measurement_frequency || null,
+                      notes: baselineForm.notes,
+                    })} disabled={baselineMutation.isPending}>
+                    <Icon name="check" size={13} /> {baselineMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  </button>
+                  <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(false)}>
+                    <Icon name="x" size={13} /> Annuler
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="dl">
+                <div><div className="dl-term">Valeur</div>
+                  <div className="dl-desc">{row.baseline_value != null ? `${Number(row.baseline_value).toLocaleString("fr-FR")} ${row.indicator_unit}` : "—"}</div>
+                </div>
+                <div><div className="dl-term">Annee</div><div className="dl-desc">{row.baseline_year || "—"}</div></div>
+                <div><div className="dl-term">Source</div><div className="dl-desc">{row.baseline_source || "—"}</div></div>
+                <div><div className="dl-term">Frequence</div><div className="dl-desc">{row.measurement_frequency_display || "—"}</div></div>
+              </div>
+            )}
+          </div>
+
+          {/* Cibles */}
+          <div>
+            <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+              <span className="card-sub">Cibles</span>
+              {!addingTarget && (
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setAddingTarget(true)}>
+                  <Icon name="plus" size={13} /> Ajouter une cible
+                </button>
+              )}
+            </div>
+            {row.targets?.length === 0 && !addingTarget && (
+              <p className="text-muted text-sm" style={{ margin: 0 }}>Aucune cible definie.</p>
+            )}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {row.targets?.map((t) => (
+                <TargetCard key={t.id} target={t} rowId={row.id} projectId={projectId} onChanged={onChanged} />
+              ))}
+            </div>
+            {addingTarget && (
+              <AddTargetForm
+                rowId={row.id} projectId={projectId} unit={row.indicator_unit}
+                onAdded={() => { setAddingTarget(false); onChanged(); }}
+                onCancel={() => setAddingTarget(false)}
+              />
+            )}
+          </div>
+
+          {/* Supprimer la ligne */}
+          <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--rule)", paddingTop: "var(--s-2)" }}>
+            <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "var(--rose, #E84A5F)" }}
+              onClick={() => window.confirm(`Supprimer la ligne "${row.indicator_code}" du logframe ? Les cibles seront perdues.`) && deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}>
+              <Icon name="trash" size={13} /> {deleteMutation.isPending ? "Suppression..." : "Retirer du logframe"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Composant : formulaire d'ajout d'une ligne logframe
+// ---------------------------------------------------------------------------
+function AddRowForm({ projectId, onAdded, onCancel }) {
+  const [search, setSearch] = useState("");
+  const [selectedIndicator, setSelectedIndicator] = useState(null);
+  const [chainLevel, setChainLevel] = useState("");
+  const [sectorFilter, setSectorFilter] = useState("");
+
+  const { data: indicators, isLoading } = useQuery({
+    queryKey: ["indicators", search, sectorFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (search) params.set("q", search);
+      if (sectorFilter) params.set("sector", sectorFilter);
+      return apiFetch(`/api/results/indicators/?${params}`);
+    },
+  });
+
+  const { data: sectors } = useQuery({
+    queryKey: ["sectors"],
+    queryFn: () => apiFetch("/api/reference/sectors/"),
+  });
+
+  const { data: choices } = useQuery({
+    queryKey: ["logframe-choices", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/choices/`),
+  });
+
+  const mutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/logframe/`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => { onAdded(); },
+  });
+
+  return (
+    <div className="card card-flush mb-3">
+      <div className="card-header">
+        <div>
+          <h2 className="card-title">Ajouter un indicateur au logframe</h2>
+          <div className="card-sub">Catalogue LLF2 — Agriculture</div>
+        </div>
+        <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
+          <Icon name="x" size={14} /> Annuler
+        </button>
+      </div>
+      <div className="card-body">
+        <div className="grid grid-2" style={{ gap: 8, marginBottom: 12 }}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="field-label">Rechercher un indicateur</label>
+            <input className="field-input" placeholder="Code (A001.1) ou mot-cle..."
+              value={search} onChange={(e) => { setSearch(e.target.value); setSelectedIndicator(null); }} />
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="field-label">Filtrer par secteur</label>
+            <select className="field-select" value={sectorFilter}
+              onChange={(e) => { setSectorFilter(e.target.value); setSelectedIndicator(null); }}>
+              <option value="">Tous les secteurs</option>
+              {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Liste des indicateurs */}
+        <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--rule)", borderRadius: "var(--r-2)", marginBottom: 12 }}>
+          {isLoading && <div className="text-muted text-sm" style={{ padding: 12 }}>Chargement...</div>}
+          {!isLoading && indicators?.length === 0 && (
+            <div className="text-muted text-sm" style={{ padding: 12 }}>Aucun indicateur trouve.</div>
+          )}
+          {indicators?.map((ind) => (
+            <div
+              key={ind.id}
+              onClick={() => { setSelectedIndicator(ind); if (!chainLevel) setChainLevel(ind.indicator_type === "impact" ? "impact" : ind.indicator_type === "outcome" ? "intermediate_outcome" : "output"); }}
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                borderBottom: "1px solid var(--rule-soft)",
+                background: selectedIndicator?.id === ind.id ? "var(--lime-pale)" : "transparent",
+                display: "flex", gap: 10, alignItems: "flex-start",
+              }}
+            >
+              <span className="text-mono badge" style={{ fontSize: 10, flexShrink: 0 }}>{ind.code}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: selectedIndicator?.id === ind.id ? 600 : 400 }}>{ind.name}</div>
+                <div className="text-muted" style={{ fontSize: 11 }}>
+                  {ind.sector_name} · {ind.indicator_type_display} · {ind.unit}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {selectedIndicator && (
+          <div style={{ padding: "var(--s-2)", background: "var(--lime-pale)", borderRadius: "var(--r-2)", marginBottom: 12 }}>
+            <strong>{selectedIndicator.code}</strong> — {selectedIndicator.name}
+            <div className="text-muted text-sm">{selectedIndicator.unit} · {selectedIndicator.indicator_type_display}</div>
+          </div>
+        )}
+
+        <div className="field">
+          <label className="field-label">Niveau dans la chaine <span className="req">*</span></label>
+          <select className="field-select" value={chainLevel} onChange={(e) => setChainLevel(e.target.value)} required>
+            <option value="">Selectionner</option>
+            {choices?.chain_levels?.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+          <span className="field-help">Pre-rempli selon le type de l'indicateur, modifiable.</span>
+        </div>
+
+        {mutation.isError && <div className="field-error mb-3">{JSON.stringify(mutation.error.detail)}</div>}
+
+        <div className="row">
+          <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+            onClick={() => mutation.mutate({ indicator: selectedIndicator?.id, chain_level: chainLevel })}
+            disabled={!selectedIndicator || !chainLevel || mutation.isPending}>
+            <Icon name="plus" size={13} /> {mutation.isPending ? "Ajout..." : "Ajouter au logframe"}
+          </button>
+          <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
+            <Icon name="x" size={13} /> Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page principale Logframe
+// ---------------------------------------------------------------------------
+export default function Logframe({ projectId, onBack }) {
+  const queryClient = useQueryClient();
+  const [addingRow, setAddingRow] = useState(false);
+
+  const { data: rows, isLoading } = useQuery({
+    queryKey: ["logframe", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/`),
+  });
+
+  const { data: project } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/`),
+  });
+
+  function onChanged() {
+    queryClient.invalidateQueries({ queryKey: ["logframe", projectId] });
+  }
+
+  if (isLoading) {
+    return (
+      <div className="loading-wrap">
+        <span className="spinner" /> Chargement du logframe...
+      </div>
+    );
+  }
+
+  // Grouper les lignes par niveau
+  const grouped = {};
+  CHAIN_LEVEL_ORDER.forEach((level) => { grouped[level] = []; });
+  (rows || []).forEach((row) => {
+    if (grouped[row.chain_level]) grouped[row.chain_level].push(row);
+    else grouped[row.chain_level] = [row];
+  });
+
+  return (
+    <div className="view">
+      <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
+        ← Fiche projet
+      </button>
+
+      <div className="view-header">
+        <div className="view-eyebrow text-mono">{project?.code}</div>
+        <h1 className="view-title">Cadre logique</h1>
+        <div className="row mt-2">
+          <span className="badge">{(rows || []).length} indicateur{rows?.length !== 1 ? "s" : ""}</span>
+          <span className="text-muted text-sm">{project?.name}</span>
+        </div>
+      </div>
+
+      {addingRow ? (
+        <AddRowForm
+          projectId={projectId}
+          onAdded={() => { setAddingRow(false); onChanged(); }}
+          onCancel={() => setAddingRow(false)}
+        />
+      ) : (
+        <div className="row mb-3">
+          <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAddingRow(true)}>
+            <Icon name="plus" size={14} /> Ajouter un indicateur
+          </button>
+        </div>
+      )}
+
+      {(rows || []).length === 0 && !addingRow && (
+        <div className="card card-flush">
+          <div className="card-body">
+            <p className="text-muted text-sm" style={{ margin: 0 }}>
+              Aucun indicateur dans le logframe. Cliquez sur "Ajouter un indicateur" pour
+              selectionner un indicateur du catalogue LLF2.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {CHAIN_LEVEL_ORDER.map((level) => {
+        const levelRows = grouped[level] || [];
+        if (levelRows.length === 0) return null;
+        return (
+          <div key={level} className="card card-flush mb-3">
+            <div className="card-header">
+              <div className="row" style={{ gap: 10, alignItems: "center" }}>
+                <span style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  color: "var(--lime-dark)", flexShrink: 0,
+                }}>
+                  <Icon name={CHAIN_LEVEL_ICON[level] || "target"} size={18} />
+                </span>
+                <div>
+                  <h2 className="card-title">{CHAIN_LEVEL_LABEL[level] || level}</h2>
+                  <div className="card-sub">{levelRows.length} indicateur{levelRows.length !== 1 ? "s" : ""}</div>
+                </div>
+              </div>
+            </div>
+            <div className="card-body">
+              <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
+                {levelRows.map((row) => (
+                  <LogframeRowCard key={row.id} row={row} projectId={projectId} onChanged={onChanged} />
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

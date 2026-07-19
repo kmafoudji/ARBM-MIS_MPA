@@ -33,7 +33,7 @@ function Dt({ term, children }) {
   );
 }
 
-export default function ProjectDetail({ projectId, onBack, onOpenToC, canEdit = false }) {
+export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogframe, canEdit = false }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
@@ -827,6 +827,21 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, canEdit = 
             </div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
+            Ouvrir
+          </button>
+        </div>
+      </div>
+
+      {/* Module 2 — Cadre logique */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Cadre logique (Logframe)</h2>
+            <div className="card-sub">
+              Module 2 · Indicateurs du catalogue LLF2 · Baseline et cibles
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
             Ouvrir
           </button>
         </div>

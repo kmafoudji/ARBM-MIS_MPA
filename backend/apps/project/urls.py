@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from apps.results.urls import project_urlpatterns as results_project_urls
 from apps.results.views import TheoryOfChangeView, ToCNodeDetailView, ToCNodeListView
 
 from .views import (
@@ -30,8 +31,7 @@ urlpatterns = router.urls + [
     path("projects/<int:pk>/reporting-config/",
          ProjectReportingConfigView.as_view(), name="project-reporting-config"),
     path("projects/<int:pk>/dates/", ProjectDatesView.as_view(), name="project-dates"),
-    path("projects/<int:pk>/toc/", TheoryOfChangeView.as_view(), name="project-toc"),
-    path("projects/<int:pk>/toc/nodes/", ToCNodeListView.as_view(), name="project-toc-nodes"),
-    path("projects/<int:pk>/toc/nodes/<int:node_pk>/",
-         ToCNodeDetailView.as_view(), name="project-toc-node-detail"),
+] + [
+    path(f"projects/<int:pk>/{pattern.pattern}", pattern.callback, name=pattern.name)
+    for pattern in results_project_urls
 ]
