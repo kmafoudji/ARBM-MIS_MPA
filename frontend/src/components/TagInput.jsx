@@ -72,7 +72,7 @@ export default function TagInput({ value, onChange, placeholder }) {
           style={{ border: "none", outline: "none", flex: 1, minWidth: 100, background: "transparent" }}
         />
       </div>
-      <span className="field-help">Separez chaque tag par une virgule ou la touche Entree.</span>
+      <span className="field-help">Separate each tag with a comma or the Enter key.</span>
     </div>
   );
 }

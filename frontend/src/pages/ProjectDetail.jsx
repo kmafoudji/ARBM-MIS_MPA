@@ -298,7 +298,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </div>
             {!showClassificationForm && (
               <button className="btn btn-primary btn-sm" onClick={openClassificationForm}>
-                Modifier
+                Edit
               </button>
             )}
           </div>
@@ -412,7 +412,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="fragility">Statut de fragilite</label>
+                    <label className="field-label" htmlFor="fragility">Fragility Status</label>
                     <select
                       id="fragility"
                       className="field-select"
@@ -468,7 +468,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     {classificationMutation.isPending ? "Saving..." : "Save"}
                   </button>
                   <button className="btn btn-ghost" type="button" onClick={() => setShowClassificationForm(false)}>
-                    Annuler
+                    Cancel
                   </button>
                 </div>
               </form>
@@ -546,7 +546,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           </div>
           {!showForm && (
             <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
-              Changer d'etape
+              Change stage
             </button>
           )}
         </div>
@@ -564,8 +564,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <div className="card-sub" style={{ marginBottom: 8 }}>
-                  Dates de debut / fin · duree indicative acceptee en pre-pipeline, requises a partir
-                  de BED Approved
+                  Start / end dates · indicative duration accepted pre-pipeline, required from
+                  BED Approved
                 </div>
                 {!showDatesForm && (
                   <div className="dl">
@@ -580,7 +580,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               </div>
               {!showDatesForm && (
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={openDatesForm}>
-                  <Icon name="pencil" size={14} /> Modifier
+                  <Icon name="pencil" size={14} /> Edit
                 </button>
               )}
             </div>
@@ -617,7 +617,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     <Icon name="check" size={14} /> {datesMutation.isPending ? "Saving..." : "Save"}
                   </button>
                   <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setShowDatesForm(false)}>
-                    <Icon name="x" size={14} /> Annuler
+                    <Icon name="x" size={14} /> Cancel
                   </button>
                 </div>
               </form>
@@ -641,7 +641,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <div className="grid grid-2">
                 <div className="field">
                   <label className="field-label" htmlFor="toStage">
-                    Nouvelle etape <span className="req">*</span>
+                    New stage <span className="req">*</span>
                   </label>
                   <select
                     id="toStage"
@@ -677,7 +677,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     ))}
                   </select>
                   <span className="field-help">
-                    Requis aux gates TRC / IC / BED et pour tout retour arriere.
+                    Required at the TRC / IC / BED gates and for any rollback.
                   </span>
                 </div>
               </div>
@@ -719,7 +719,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   {mutation.isPending ? "Saving..." : "Confirm Change"}
                 </button>
                 <button className="btn btn-ghost" type="button" onClick={() => setShowForm(false)}>
-                  Annuler
+                  Cancel
                 </button>
               </div>
             </form>
@@ -727,7 +727,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
           {transitions?.length === 0 && (
             <p className="text-muted text-sm" style={{ margin: 0 }}>
-              Aucune transition enregistree — le projet est a son etape initiale.
+              No transition recorded — the project is at its initial stage.
             </p>
           )}
 
@@ -823,11 +823,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           <div>
             <h2 className="card-title">Theory of Change</h2>
             <div className="card-sub">
-              SF-1 · Etape 2 · BRQ-1.35 — obligatoire des Pipeline Taskforce Approved
+              SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
             </div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
-            Ouvrir
+            Open
           </button>
         </div>
       </div>
@@ -838,11 +838,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           <div>
             <h2 className="card-title">Logical Framework (Logframe)</h2>
             <div className="card-sub">
-              Module 2 · Indicateurs du catalogue LLF2 · Baseline et cibles
+              Module 2 · LLF2 catalogue indicators · Baseline and targets
             </div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
-            Ouvrir
+            Open
           </button>
         </div>
       </div>
@@ -853,12 +853,12 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           <div>
             <h2 className="card-title">Reporting</h2>
             <div className="card-sub">
-              SF-1 · Etape 5 · Chaine d'approbation — question ouverte, hors perimetre pour l'instant
+              SF-1 · Step 5 · Approval chain — open question, out of scope for now
             </div>
           </div>
           {!showReportingForm && (
             <button className="btn btn-primary btn-sm" onClick={openReportingForm}>
-              Modifier
+              Edit
             </button>
           )}
         </div>
@@ -901,7 +901,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   {reportingMutation.isPending ? "Saving..." : "Save"}
                 </button>
                 <button className="btn btn-ghost" type="button" onClick={() => setShowReportingForm(false)}>
-                  Annuler
+                  Cancel
                 </button>
               </div>
             </form>

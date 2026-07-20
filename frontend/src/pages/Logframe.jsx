@@ -61,7 +61,7 @@ function TargetCard({ target, rowId, projectId, onChanged }) {
           <Icon name="check" size={12} /> Sauver
         </button>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 4 }} onClick={() => setEditing(false)}>
-          <Icon name="x" size={12} /> Annuler
+          <Icon name="x" size={12} /> Cancel
         </button>
       </div>
     );
@@ -110,7 +110,7 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
     <div style={{ marginTop: 8, padding: "var(--s-2)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--r-2)" }}>
       <div className="grid grid-2" style={{ gap: 8 }}>
         <div className="field" style={{ marginBottom: 0 }}>
-          <label className="field-label">Valeur cible ({unit})</label>
+          <label className="field-label">Target value ({unit})</label>
           <input className="field-input" type="number" step="any"
             value={form.target_value}
             onChange={(e) => setForm({ ...form, target_value: e.target.value })} required />
@@ -141,7 +141,7 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
           <Icon name="plus" size={13} /> {mutation.isPending ? "Adding..." : "Add target"}
         </button>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
-          <Icon name="x" size={13} /> Annuler
+          <Icon name="x" size={13} /> Cancel
         </button>
       </div>
     </div>
@@ -197,7 +197,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
                 </span>
               )}
               {row.targets?.length > 0 && (
-                <span>{row.targets.length} cible{row.targets.length > 1 ? "s" : ""}</span>
+                <span>{row.targets.length} target{row.targets.length > 1 ? "s" : ""}</span>
               )}
               {row.toc_node_code && (
                 <span className="text-mono" style={{ fontSize: 10 }}>ToC: {row.toc_node_code}</span>
@@ -216,7 +216,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
               <span className="card-sub">Reference Value (Baseline)</span>
               {!editingBaseline && (
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(true)}>
-                  <Icon name="pencil" size={13} /> Modifier
+                  <Icon name="pencil" size={13} /> Edit
                 </button>
               )}
             </div>
@@ -224,7 +224,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
               <div>
                 <div className="grid grid-2" style={{ gap: 8 }}>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Valeur baseline ({row.indicator_unit})</label>
+                    <label className="field-label">Baseline value ({row.indicator_unit})</label>
                     <input className="field-input" type="number" step="any"
                       value={baselineForm.baseline_value}
                       onChange={(e) => setBaselineForm({ ...baselineForm, baseline_value: e.target.value })} />
@@ -273,16 +273,16 @@ function LogframeRowCard({ row, projectId, onChanged }) {
                     <Icon name="check" size={13} /> {baselineMutation.isPending ? "Saving..." : "Save"}
                   </button>
                   <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(false)}>
-                    <Icon name="x" size={13} /> Annuler
+                    <Icon name="x" size={13} /> Cancel
                   </button>
                 </div>
               </div>
             ) : (
               <div className="dl">
-                <div><div className="dl-term">Valeur</div>
+                <div><div className="dl-term">Value</div>
                   <div className="dl-desc">{row.baseline_value != null ? `${Number(row.baseline_value).toLocaleString("fr-FR")} ${row.indicator_unit}` : "—"}</div>
                 </div>
-                <div><div className="dl-term">Annee</div><div className="dl-desc">{row.baseline_year || "—"}</div></div>
+                <div><div className="dl-term">Year</div><div className="dl-desc">{row.baseline_year || "—"}</div></div>
                 <div><div className="dl-term">Source</div><div className="dl-desc">{row.baseline_source || "—"}</div></div>
                 <div><div className="dl-term">Frequency</div><div className="dl-desc">{row.measurement_frequency_display || "—"}</div></div>
               </div>
@@ -295,7 +295,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
               <span className="card-sub">Targets</span>
               {!addingTarget && (
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setAddingTarget(true)}>
-                  <Icon name="plus" size={13} /> Ajouter une cible
+                  <Icon name="plus" size={13} /> Add target
                 </button>
               )}
             </div>
@@ -319,7 +319,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
           {/* Supprimer la ligne */}
           <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--rule)", paddingTop: "var(--s-2)" }}>
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "var(--rose, #E84A5F)" }}
-              onClick={() => window.confirm(`Supprimer la ligne "${row.indicator_code}" du logframe ? Les cibles seront perdues.`) && deleteMutation.mutate()}
+              onClick={() => window.confirm(`Delete row "${row.indicator_code}" from the logframe? Targets will be lost.`) && deleteMutation.mutate()}
               disabled={deleteMutation.isPending}>
               <Icon name="trash" size={13} /> {deleteMutation.isPending ? "Suppression..." : "Remove from logframe"}
             </button>
@@ -428,7 +428,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
           <div className="card-sub">Select one or more indicators from the LLF2 catalogue</div>
         </div>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
-          <Icon name="x" size={14} /> Annuler
+          <Icon name="x" size={14} /> Cancel
         </button>
       </div>
 
@@ -549,11 +549,11 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
         {/* Actions */}
         <div className="row" style={{ justifyContent: "space-between" }}>
           <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={addLine}>
-            <Icon name="plus" size={13} /> Ajouter une ligne
+            <Icon name="plus" size={13} /> Add row
           </button>
           <div className="row" style={{ gap: 8 }}>
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
-              <Icon name="x" size={13} /> Annuler
+              <Icon name="x" size={13} /> Cancel
             </button>
             <button
               className="btn btn-primary btn-sm row"
@@ -562,7 +562,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
               disabled={validCount === 0 || saving}
             >
               <Icon name="check" size={13} />
-              {saving ? "Saving..." : `Enregistrer au logframe (${validCount} indicateur${validCount !== 1 ? "s" : ""})`}
+              {saving ? "Saving..." : `Save to logframe (${validCount} indicator${validCount !== 1 ? "s" : ""})`}
             </button>
           </div>
         </div>
@@ -611,14 +611,14 @@ export default function Logframe({ projectId, onBack }) {
   return (
     <div className="view">
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
-        ← Fiche projet
+        ← Project
       </button>
 
       <div className="view-header">
         <div className="view-eyebrow text-mono">{project?.code}</div>
-        <h1 className="view-title">Cadre logique</h1>
+        <h1 className="view-title">Logframe</h1>
         <div className="row mt-2">
-          <span className="badge">{(rows || []).length} indicateur{rows?.length !== 1 ? "s" : ""}</span>
+          <span className="badge">{(rows || []).length} indicator{rows?.length !== 1 ? "s" : ""}</span>
           <span className="text-muted text-sm">{project?.name}</span>
         </div>
       </div>
@@ -633,7 +633,7 @@ export default function Logframe({ projectId, onBack }) {
       ) : (
         <div className="row mb-3">
           <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAddingRow(true)}>
-            <Icon name="plus" size={14} /> Ajouter des indicateurs
+            <Icon name="plus" size={14} /> Add indicators
           </button>
         </div>
       )}
@@ -666,7 +666,7 @@ export default function Logframe({ projectId, onBack }) {
                 </span>
                 <div>
                   <h2 className="card-title">{CHAIN_LEVEL_LABEL[level] || level}</h2>
-                  <div className="card-sub">{levelRows.length} indicateur{levelRows.length !== 1 ? "s" : ""}</div>
+                  <div className="card-sub">{levelRows.length} indicator{levelRows.length !== 1 ? "s" : ""}</div>
                 </div>
               </div>
             </div>

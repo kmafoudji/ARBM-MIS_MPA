@@ -40,7 +40,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
     <div className="view">
       <div className="row row-between mb-4" style={{ alignItems: "flex-end" }}>
         <div className="view-header" style={{ marginBottom: 0 }}>
-          <div className="view-eyebrow">Projets &amp; suivi</div>
+          <div className="view-eyebrow">Projects &amp; monitoring</div>
           <h1 className="view-title">Portfolio</h1>
           <p className="view-lead">
             Projects registered in the system, from Concept Note to closure.
@@ -71,11 +71,11 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
           <div className="empty">
             <div className="empty-title">No projects registered</div>
             <p className="text-sm mb-3">
-              Commencez par enregistrer un Concept Note — seuls le nom, le pays et le secteur
-              sont requis a ce stade.
+              Start by registering a Concept Note — only the name, country and sector
+              are required at this stage.
             </p>
             <button className="btn btn-primary" onClick={onCreateClick}>
-              Enregistrer un projet
+              Register a project
             </button>
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Projets</h2>
+              <h2 className="card-title">Projects</h2>
               <div className="card-sub">{data.length} enregistrement{data.length > 1 ? "s" : ""}</div>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
                 <th>Project</th>
                 <th>Countries</th>
                 <th>Sector</th>
-                <th>Etape</th>
+                <th>Stage</th>
                 <th style={{ textAlign: "right" }}>Budget USD</th>
               </tr>
             </thead>

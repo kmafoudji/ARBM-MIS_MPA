@@ -15,8 +15,8 @@ export default function Rbac() {
   return (
     <div className="view">
       <div className="view-header">
-        <div className="view-eyebrow">Systeme</div>
-        <h1 className="view-title">Utilisateurs &amp; roles</h1>
+        <div className="view-eyebrow">System</div>
+        <h1 className="view-title">Users &amp; Roles</h1>
         <p className="view-lead">
           Onze acteurs de la hierarchie LLFMU → Hub regional → PMU → Partenaires. Le principe du
           moindre privilege et la separation des taches sont appliques automatiquement a toute
@@ -67,7 +67,7 @@ export default function Rbac() {
                   </td>
                   <td>
                     {r.is_system ? (
-                      <span className="badge badge-violet">Systeme</span>
+                      <span className="badge badge-violet">System</span>
                     ) : (
                       <span className="badge">Business Role</span>
                     )}
@@ -98,7 +98,7 @@ export default function Rbac() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Utilisateur</th>
+                  <th>User</th>
                   <th>Role</th>
                   <th>Scope</th>
                   <th style={{ width: 120 }}>Assigned on</th>
@@ -138,7 +138,7 @@ export default function Rbac() {
             <thead>
               <tr>
                 <th>Email</th>
-                <th>Nom</th>
+                <th>Name</th>
               </tr>
             </thead>
             <tbody>

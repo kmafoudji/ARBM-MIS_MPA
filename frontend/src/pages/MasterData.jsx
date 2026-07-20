@@ -35,8 +35,8 @@ const ICON_OPTIONS = [
   ["climate", "Transversal — climate"],
   ["education", "Transversal — education"],
   ["employment", "Transversal — employment"],
-  ["governance", "Transversal — gouvernance"],
-  ["fragility", "Transversal — fragilite"],
+  ["governance", "Cross-cutting — governance"],
+  ["fragility", "Cross-cutting — fragility"],
   ["generic", "Generic — diamond"],
 ];
 
@@ -58,7 +58,7 @@ const AGENCY_TYPES = [
 const STATUS_FILTER = {
   key: "is_active",
   label: "Status",
-  options: [["true", "Actifs"], ["false", "Desactives"]],
+  options: [["true", "Active"], ["false", "Inactive"]],
 };
 
 const LOGO_HELP =
@@ -70,7 +70,7 @@ const TABS = [
     key: "countries",
     label: "Countries",
     url: "/api/reference/countries/",
-    singular: "un pays",
+    singular: "a country",
     sub: "GADM Admin 0 reference · assignment to regional hubs",
     fields: [
       { name: "name", label: "Country Name", type: "text", required: true },
@@ -86,7 +86,7 @@ const TABS = [
     label: "Regional Hubs",
     url: "/api/reference/hubs/",
     singular: "un hub",
-    sub: "Antennes regionales et pays rattaches",
+    sub: "Regional offices and linked countries",
     layout: "hubs",
     fields: [
       { name: "name", label: "Hub Name", type: "text", required: true },
@@ -99,7 +99,7 @@ const TABS = [
     key: "donors",
     label: "Donors",
     url: "/api/reference/donors/",
-    singular: "un bailleur",
+    singular: "a donor",
     sub: "Les 6 contributeurs du LLF2",
     fields: [
       { name: "short_name", label: "Short Name", type: "text", required: true },
@@ -126,7 +126,7 @@ const TABS = [
       { name: "code", label: "Code", type: "text", required: true },
       { name: "agency_type", label: "Type", type: "select", required: true, options: AGENCY_TYPES },
       { name: "country", label: "Countries", type: "select", optionsKey: "countries",
-        help: "Laisser vide pour une agence internationale (ONU, ONG multi-pays)." },
+        help: "Leave empty for an international agency (UN, multi-country NGO)." },
       { name: "logo_url", label: "Logo", type: "logo", help: LOGO_HELP },
     ],
   },
@@ -142,7 +142,7 @@ const TABS = [
       { name: "icon", label: "Pictogramme", type: "icon-select", options: ICON_OPTIONS },
       { name: "color", label: "Color", type: "color" },
       { name: "parent", label: "Parent Sector", type: "select", optionsKey: "sectors",
-        help: "Laisser vide pour un secteur de premier niveau." },
+        help: "Leave empty for a top-level sector." },
     ],
   },
   {
@@ -248,7 +248,7 @@ export default function MasterData({ canEdit }) {
           <button
             className="btn-square"
             title="Edit"
-            aria-label={`Editer ${r.name}`}
+            aria-label={`Edit ${r.name}`}
             onClick={(e) => { e.stopPropagation(); setEditing(r); }}
           >
             <IconEdit />
@@ -256,8 +256,8 @@ export default function MasterData({ canEdit }) {
           {!tab.closed && (
             <button
               className={`btn-square${r.is_active ? " danger" : ""}`}
-              title={r.is_active ? "Desactiver" : "Reactiver"}
-              aria-label={`${r.is_active ? "Desactiver" : "Reactiver"} ${r.name}`}
+              title={r.is_active ? "Deactivate" : "Reactivate"}
+              aria-label={`${r.is_active ? "Deactivate" : "Reactivate"} ${r.name}`}
               onClick={(e) => { e.stopPropagation(); setConfirming({ row: r, next: !r.is_active }); }}
             >
               {r.is_active ? <IconDeactivate /> : <IconReactivate />}
@@ -277,7 +277,7 @@ export default function MasterData({ canEdit }) {
         render: (r) =>
           r.is_active
             ? <span className="badge badge-lime">Active</span>
-            : <span className="badge badge-off">Desactive</span>,
+            : <span className="badge badge-off">Inactive</span>,
       }];
 
   const rows = data || [];
@@ -297,7 +297,7 @@ export default function MasterData({ canEdit }) {
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: r.hub_color || "var(--subtle)", flexShrink: 0 }} />
               {r.hub_name}
             </span>
-          ) : <span className="text-muted text-xs">Non rattache</span>,
+          ) : <span className="text-muted text-xs">Not linked</span>,
         },
         { key: "is_fragile", label: "Fragility", width: 84, render: (r) => r.is_fragile ? <span className="badge badge-rose">FCS</span> : "—" },
         ...statusCol,
@@ -326,7 +326,7 @@ export default function MasterData({ canEdit }) {
           sortValue: (r) => Number(r.committed_amount_usd || 0),
           render: (r) => r.committed_amount_usd
             ? `${(Number(r.committed_amount_usd) / 1_000_000).toFixed(0)}M USD`
-            : <span className="text-muted">Non renseigne</span>,
+            : <span className="text-muted">Not set</span>,
         },
         ...statusCol,
         ...actionsCol(),
@@ -359,7 +359,7 @@ export default function MasterData({ canEdit }) {
         { key: "icon", label: "", width: 52, render: (r) => <SectorIcon name={r.icon} color={r.color} /> },
         { key: "name", label: "Sector", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
         { key: "parent_name", label: "Linked to", width: 184, render: (r) => r.parent_name || <span className="text-muted text-xs">First level</span> },
-        { key: "usage_count", label: "Projets", width: 78, cellClass: "text-mono text-xs", sortable: true },
+        { key: "usage_count", label: "Projects", width: 78, cellClass: "text-mono text-xs", sortable: true },
         ...statusCol,
         ...actionsCol(),
       ],
@@ -393,16 +393,16 @@ export default function MasterData({ canEdit }) {
     <div className="view">
       <div className="row row-between mb-4" style={{ alignItems: "flex-end" }}>
         <div className="view-header" style={{ marginBottom: 0 }}>
-          <div className="view-eyebrow">Referentiels</div>
+          <div className="view-eyebrow">Reference Data</div>
           <h1 className="view-title">Reference Data</h1>
           <p className="view-lead">
-            Elements reutilises par tous les projets du portefeuille. La modification est
-            reservee aux roles portant la gouvernance des classifications.
+            Elements reused across every portfolio project. Editing is
+            restricted to the roles that own classification governance.
           </p>
         </div>
         {canEdit && !tab.closed && (
           <button className="btn btn-primary btn-icon" onClick={() => setEditing({})}>
-            <IconPlus size={14} /> Ajouter {tab.singular}
+            <IconPlus size={14} /> Add {tab.singular}
           </button>
         )}
       </div>
@@ -412,8 +412,8 @@ export default function MasterData({ canEdit }) {
           <div className="row" style={{ gap: "var(--s-2)" }}>
             <span className="badge badge-lime">Read only</span>
             <span className="text-sm text-muted">
-              Votre role ne porte pas la gouvernance des referentiels. Ces donnees sont
-              maintenues par le LLFMU aRBM Specialist ou le Data &amp; Digital Analyst.
+              Your role does not own reference-data governance. This data is
+              maintained by the LLFMU aRBM Specialist or the Data &amp; Digital Analyst.
             </span>
           </div>
         </div>
@@ -451,9 +451,9 @@ export default function MasterData({ canEdit }) {
                   <div>
                     <div className="hub-name">
                       {h.name}
-                      {!h.is_active && <span className="badge badge-off" style={{ marginLeft: 8 }}>Desactive</span>}
+                      {!h.is_active && <span className="badge badge-off" style={{ marginLeft: 8 }}>Inactive</span>}
                     </div>
-                    <div className="hub-city">{h.city || "Ville non renseignee"}</div>
+                    <div className="hub-city">{h.city || "City not set"}</div>
                   </div>
                   {canEdit && (
                     <div className="row-actions">
@@ -462,7 +462,7 @@ export default function MasterData({ canEdit }) {
                       </button>
                       <button
                         className={`btn-square${h.is_active ? " danger" : ""}`}
-                        title={h.is_active ? "Desactiver" : "Reactiver"}
+                        title={h.is_active ? "Deactivate" : "Reactivate"}
                         onClick={() => setConfirming({ row: h, next: !h.is_active })}
                       >
                         {h.is_active ? <IconDeactivate /> : <IconReactivate />}
@@ -471,7 +471,7 @@ export default function MasterData({ canEdit }) {
                   )}
                 </div>
                 <div className="country-chips">
-                  {h.countries.length === 0 && <span className="text-muted text-xs">Aucun pays rattache.</span>}
+                  {h.countries.length === 0 && <span className="text-muted text-xs">No country linked.</span>}
                   {h.countries.map((c) => (
                     <span className="country-chip" key={c.id}>
                       <Flag iso2={c.iso2} size={13} title={c.name} />
@@ -480,7 +480,7 @@ export default function MasterData({ canEdit }) {
                   ))}
                 </div>
                 <div className="hub-meta">
-                  <span>{h.country_count} pays · {h.usage_count} projets</span>
+                  <span>{h.country_count} countries · {h.usage_count} projects</span>
                   <span className="text-mono">{h.code}</span>
                 </div>
               </div>
@@ -505,15 +505,15 @@ export default function MasterData({ canEdit }) {
 
       {tabKey === "hubs" && (
         <p className="text-xs text-muted mt-3">
-          Le portefeuille LLF2 compte 8 hubs. Trois d'entre eux (Almaty, Ankara, Jakarta) ne sont
-          pas charges : leur composition en pays n'est pas encore documentee.
+          The LLF2 portfolio has 8 hubs. Three of them (Almaty, Ankara, Jakarta) are not
+          loaded yet: their country composition is not documented yet.
         </p>
       )}
       {tabKey === "donors" && (
         <p className="text-xs text-muted mt-3">
-          Les engagements ne sont pas pre-remplis : les chiffres publies varient selon la phase
-          (LLF1 / LLF2) et melent subventions, prets concessionnels et waqf. Ils doivent etre
-          saisis depuis les donnees officielles de la LLF MU.
+          Commitments are not pre-filled: published figures vary by phase
+          (LLF1 / LLF2) and mix grants, concessional loans and waqf. They must be
+          entered from the official LLF MU data.
         </p>
       )}
       {tabKey === "sdgs" && (
@@ -527,7 +527,7 @@ export default function MasterData({ canEdit }) {
       {/* ---------- Confirmation de desactivation / reactivation ---------- */}
       {confirming && (
         <Modal
-          title={confirming.next ? "Reactiver cet element ?" : "Desactiver cet element ?"}
+          title={confirming.next ? "Reactivate this item?" : "Deactivate this item?"}
           subtitle={confirming.row.name}
           onClose={() => setConfirming(null)}
           footer={
@@ -540,7 +540,7 @@ export default function MasterData({ canEdit }) {
               >
                 {toggleActive.isPending
                   ? "En cours..."
-                  : confirming.next ? "Reactiver" : "Desactiver"}
+                  : confirming.next ? "Reactivate" : "Deactivate"}
               </button>
             </>
           }
@@ -556,18 +556,18 @@ export default function MasterData({ canEdit }) {
                 <div className="notice notice-warn">
                   <IconWarning size={16} />
                   <span>
-                    Cet element est utilise par <strong>{confirming.row.usage_count} projet
-                    {confirming.row.usage_count > 1 ? "s" : ""}</strong>. Ces projets le
-                    conservent : la desactivation ne modifie aucune donnee existante.
+                    This item is used by <strong>{confirming.row.usage_count} project
+                    {confirming.row.usage_count > 1 ? "s" : ""}</strong>. Those projects
+                    keep it: deactivation does not change any existing data.
                   </span>
                 </div>
               )}
               <div className="notice notice-info">
                 <span>
-                  Conformement a POL-1.07, rien n'est supprime definitivement.
-                  <strong> {confirming.row.name}</strong> disparait des listes de selection
-                  pour les nouvelles saisies, mais reste attache aux donnees qui le
-                  referencent. L'operation est reversible a tout moment.
+                  Per POL-1.07, nothing is permanently deleted.
+                  <strong> {confirming.row.name}</strong> disappears from selection lists
+                  for new entries, but stays attached to the data that
+                  references it. The operation is reversible at any time.
                 </span>
               </div>
             </>
@@ -583,7 +583,7 @@ export default function MasterData({ canEdit }) {
       {/* ---------- Creation / edition ---------- */}
       {editing && (
         <Modal
-          title={isCreate ? `Ajouter ${tab.singular}` : `Editer ${editing.name || tab.singular}`}
+          title={isCreate ? `Add ${tab.singular}` : `Edit ${editing.name || tab.singular}`}
           subtitle={tab.sub}
           onClose={() => setEditing(null)}
           footer={
@@ -636,7 +636,7 @@ export default function MasterData({ canEdit }) {
                   ) : f.type === "select" ? (
                     <select id={`f-${f.name}`} className="field-select" value={value ?? ""} required={f.required}
                       onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })}>
-                      <option value="">— Aucun —</option>
+                      <option value="">— None —</option>
                       {(options || []).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   ) : f.type === "color" ? (

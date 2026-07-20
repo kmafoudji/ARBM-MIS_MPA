@@ -162,7 +162,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
           </div>
           <div className="row mt-2">
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={startEdit}>
-              <Icon name="pencil" size={14} /> Modifier
+              <Icon name="pencil" size={14} /> Edit
             </button>
             <button
               className="btn btn-ghost btn-sm row"
@@ -172,9 +172,9 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
               onClick={() => {
                 if (
                   window.confirm(
-                    `Supprimer le noeud ${node.code} ("${stripHtml(node.statement).slice(0, 60)}") ? ` +
+                    `Delete node ${node.code} ("${stripHtml(node.statement).slice(0, 60)}")? ` +
                       "All child nodes (direct and indirect) will be deleted with it. " +
-                      "seront supprimes avec lui. Cette action est irreversible."
+                      "This action is irreversible."
                   )
                 ) {
                   deleteMutation.mutate();
@@ -250,7 +250,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
               <Icon name="check" size={14} /> {updateMutation.isPending ? "Saving..." : "Save"}
             </button>
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditing(false)}>
-              <Icon name="x" size={14} /> Annuler
+              <Icon name="x" size={14} /> Cancel
             </button>
           </div>
         </form>
@@ -311,13 +311,13 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
           </span>
           <div>
             <h2 className="card-title">{level.label}</h2>
-            <div className="card-sub">{nodes.length} noeud{nodes.length !== 1 ? "s" : ""}</div>
+            <div className="card-sub">{nodes.length} node{nodes.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
         <div className="row" style={{ gap: 8 }}>
           {!adding && (
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAdding(true)}>
-              <Icon name="plus" size={14} /> Ajouter
+              <Icon name="plus" size={14} /> Add
             </button>
           )}
           <button
@@ -372,7 +372,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
                 </select>
                 {parentOptions.length === 0 && (
                   <span className="field-help">
-                    Aucun noeud au niveau superieur pour l'instant — creez-en un d'abord.
+                    No node at a higher level yet — create one first.
                   </span>
                 )}
               </div>
@@ -449,7 +449,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
                   setForm(EMPTY_NODE_FORM);
                 }}
               >
-                <Icon name="x" size={14} /> Annuler
+                <Icon name="x" size={14} /> Cancel
               </button>
             </div>
           </form>
@@ -504,7 +504,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
       </div>
     );
   }
-  if (!toc) return <div className="view">Introuvable.</div>;
+  if (!toc) return <div className="view">Not found.</div>;
 
   // Nodes portent deja `toc` (l'id de la ToC) cote donnees ? Non — on
   // l'injecte ici pour que NodeCard puisse construire l'URL de son PATCH/
@@ -514,7 +514,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
   return (
     <div className="view">
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
-        ← Fiche projet
+        ← Project
       </button>
 
       <div className="view-header">
@@ -551,7 +551,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
           <div className="row" style={{ gap: 8 }}>
             {!editingFrame && (
               <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openFrameEdit}>
-                <Icon name="pencil" size={14} /> Modifier
+                <Icon name="pencil" size={14} /> Edit
               </button>
             )}
             <button
@@ -574,7 +574,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
               }}
             >
               <div className="field">
-                <label className="field-label">Statut</label>
+                <label className="field-label">Status</label>
                 <select
                   className="field-select"
                   value={frameForm.status}
@@ -606,7 +606,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
                   <Icon name="check" size={14} /> {frameMutation.isPending ? "Saving..." : "Save"}
                 </button>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditingFrame(false)}>
-                  <Icon name="x" size={14} /> Annuler
+                  <Icon name="x" size={14} /> Cancel
                 </button>
               </div>
             </form>

@@ -37,55 +37,55 @@ from apps.reference.models import (
 
 
 CURRENCIES = [
-    ("USD", "Dollar americain"),
+    ("USD", "US Dollar"),
     ("EUR", "Euro"),
 ]
 
 # (code, nom, ville, couleur)
 HUBS = [
-    ("dakar", "Hub Senegal", "Dakar", "#A4C53F"),
-    ("abuja", "Hub Nigeria", "Abuja", "#3F6CC5"),
-    ("kampala", "Hub Afrique de l'Est", "Kampala", "#5BB39F"),
-    ("rabat", "Hub Maghreb", "Rabat", "#C97FB0"),
-    ("dhaka", "Hub Asie", "Dhaka", "#7B68C7"),
+    ("dakar", "Senegal Hub", "Dakar", "#A4C53F"),
+    ("abuja", "Nigeria Hub", "Abuja", "#3F6CC5"),
+    ("kampala", "East Africa Hub", "Kampala", "#5BB39F"),
+    ("rabat", "Maghreb Hub", "Rabat", "#C97FB0"),
+    ("dhaka", "Asia Hub", "Dhaka", "#7B68C7"),
 ]
 
 # (iso2, iso3, nom, code_hub)
 COUNTRIES = [
     # Hub Senegal (Dakar)
     ("SN", "SEN", "Senegal", "dakar"),
-    ("GM", "GMB", "Gambie", "dakar"),
+    ("GM", "GMB", "Gambia", "dakar"),
     ("CI", "CIV", "Cote d'Ivoire", "dakar"),
-    ("GN", "GIN", "Guinee", "dakar"),
+    ("GN", "GIN", "Guinea", "dakar"),
     ("ML", "MLI", "Mali", "dakar"),
     ("SL", "SLE", "Sierra Leone", "dakar"),
-    ("GW", "GNB", "Guinee-Bissau", "dakar"),
+    ("GW", "GNB", "Guinea-Bissau", "dakar"),
     # Hub Nigeria (Abuja)
     ("NG", "NGA", "Nigeria", "abuja"),
     ("BJ", "BEN", "Benin", "abuja"),
     ("TG", "TGO", "Togo", "abuja"),
     ("NE", "NER", "Niger", "abuja"),
-    ("TD", "TCD", "Tchad", "abuja"),
-    ("CM", "CMR", "Cameroun", "abuja"),
+    ("TD", "TCD", "Chad", "abuja"),
+    ("CM", "CMR", "Cameroon", "abuja"),
     ("BF", "BFA", "Burkina Faso", "abuja"),
     # Hub Afrique de l'Est (Kampala)
-    ("UG", "UGA", "Ouganda", "kampala"),
+    ("UG", "UGA", "Uganda", "kampala"),
     ("RW", "RWA", "Rwanda", "kampala"),
     ("BI", "BDI", "Burundi", "kampala"),
     ("MZ", "MOZ", "Mozambique", "kampala"),
-    ("SD", "SDN", "Soudan", "kampala"),
-    ("SS", "SSD", "Soudan du Sud", "kampala"),
+    ("SD", "SDN", "Sudan", "kampala"),
+    ("SS", "SSD", "South Sudan", "kampala"),
     # Hub Maghreb (Rabat)
-    ("MA", "MAR", "Maroc", "rabat"),
-    ("MR", "MRT", "Mauritanie", "rabat"),
-    ("EG", "EGY", "Egypte", "rabat"),
+    ("MA", "MAR", "Morocco", "rabat"),
+    ("MR", "MRT", "Mauritania", "rabat"),
+    ("EG", "EGY", "Egypt", "rabat"),
     ("YE", "YEM", "Yemen", "rabat"),
     ("DJ", "DJI", "Djibouti", "rabat"),
     # Hub Asie (Dhaka)
     ("BD", "BGD", "Bangladesh", "dhaka"),
     ("PK", "PAK", "Pakistan", "dhaka"),
-    ("ID", "IDN", "Indonesie", "dhaka"),
-    ("TJ", "TJK", "Tadjikistan", "dhaka"),
+    ("ID", "IDN", "Indonesia", "dhaka"),
+    ("TJ", "TJK", "Tajikistan", "dhaka"),
     ("MV", "MDV", "Maldives", "dhaka"),
 ]
 
@@ -113,26 +113,26 @@ DONORS = [
 
 # (code, nom, type, iso2 du pays ou None si international)
 AGENCIES = [
-    ("minsan-sn", "Ministere de la Sante & de l'Action sociale", "government", "SN"),
-    ("minsan-ml", "Ministere de la Sante", "government", "ML"),
-    ("minsan-bf", "Ministere de la Sante", "government", "BF"),
-    ("minsan-gn", "Ministere de la Sante & de l'Hygiene publique", "government", "GN"),
+    ("minsan-sn", "Ministry of Health & Social Action", "government", "SN"),
+    ("minsan-ml", "Ministry of Health", "government", "ML"),
+    ("minsan-bf", "Ministry of Health", "government", "BF"),
+    ("minsan-gn", "Ministry of Health & Public Hygiene", "government", "GN"),
     ("minagri-ng", "Kano State Ministry of Agriculture", "government", "NG"),
     ("knarda", "KNARDA", "national_agency", "NG"),
     ("unicef", "UNICEF", "un_agency", None),
     ("unfpa", "UNFPA", "un_agency", None),
-    ("who", "OMS", "un_agency", None),
+    ("who", "WHO", "un_agency", None),
     ("sos-sahel", "SOS Sahel International", "ngo", None),
 ]
 
 # 3 piliers LLF2 + 2 themes transversaux
 # (code, nom, icone, couleur) — couleurs reprises de la demo Sentinelle.
 SECTORS = [
-    ("health", "Sante primaire", "health", "#E84A5F"),
+    ("health", "Primary health care", "health", "#E84A5F"),
     ("agriculture", "Agriculture", "agriculture", "#A4C53F"),
-    ("infrastructure", "Infrastructure de base", "infrastructure", "#3F6CC5"),
-    ("gender", "Genre (transversal)", "gender", "#C97FB0"),
-    ("climate", "Climat (transversal)", "climate", "#5BB39F"),
+    ("infrastructure", "Basic infrastructure", "infrastructure", "#3F6CC5"),
+    ("gender", "Gender (cross-cutting)", "gender", "#C97FB0"),
+    ("climate", "Climate (cross-cutting)", "climate", "#5BB39F"),
 ]
 
 # Sous-secteurs confirmes dans les specifications anterieures. Liste NON
@@ -148,41 +148,41 @@ SUB_SECTORS = [
 # regles d'usage : le systeme affiche une tuile numerotee a la couleur
 # officielle plutot que de reproduire le pictogramme.
 SDGS = [
-    (1, "Pas de pauvrete", "#E5243B"),
-    (2, "Faim 'zero'", "#DDA63A"),
-    (3, "Bonne sante et bien-etre", "#4C9F38"),
-    (4, "Education de qualite", "#C5192D"),
-    (5, "Egalite entre les sexes", "#FF3A21"),
-    (6, "Eau propre et assainissement", "#26BDE2"),
-    (7, "Energie propre et d'un cout abordable", "#FCC30B"),
-    (8, "Travail decent et croissance economique", "#A21942"),
-    (9, "Industrie, innovation et infrastructure", "#FD6925"),
-    (10, "Inegalites reduites", "#DD1367"),
-    (11, "Villes et communautes durables", "#FD9D24"),
-    (12, "Consommation et production responsables", "#BF8B2E"),
-    (13, "Mesures relatives a la lutte contre les changements climatiques", "#3F7E44"),
-    (14, "Vie aquatique", "#0A97D9"),
-    (15, "Vie terrestre", "#56C02B"),
-    (16, "Paix, justice et institutions efficaces", "#00689D"),
-    (17, "Partenariats pour la realisation des objectifs", "#19486A"),
+    (1, "No Poverty", "#E5243B"),
+    (2, "Zero Hunger", "#DDA63A"),
+    (3, "Good Health and Well-being", "#4C9F38"),
+    (4, "Quality Education", "#C5192D"),
+    (5, "Gender Equality", "#FF3A21"),
+    (6, "Clean Water and Sanitation", "#26BDE2"),
+    (7, "Affordable and Clean Energy", "#FCC30B"),
+    (8, "Decent Work and Economic Growth", "#A21942"),
+    (9, "Industry, Innovation and Infrastructure", "#FD6925"),
+    (10, "Reduced Inequalities", "#DD1367"),
+    (11, "Sustainable Cities and Communities", "#FD9D24"),
+    (12, "Responsible Consumption and Production", "#BF8B2E"),
+    (13, "Climate Action", "#3F7E44"),
+    (14, "Life Below Water", "#0A97D9"),
+    (15, "Life on Land", "#56C02B"),
+    (16, "Peace, Justice and Strong Institutions", "#00689D"),
+    (17, "Partnerships for the Goals", "#19486A"),
 ]
 
 MARKERS = [
-    ("gender_equality", "Egalite de genre (OECD-DAC)"),
-    ("climate_mitigation", "Attenuation du changement climatique (OECD-DAC)"),
-    ("climate_adaptation", "Adaptation au changement climatique (OECD-DAC)"),
-    ("environment", "Environnement (OECD-DAC)"),
-    ("disability_inclusion", "Inclusion du handicap (OECD-DAC)"),
+    ("gender_equality", "Gender equality (OECD-DAC)"),
+    ("climate_mitigation", "Climate change mitigation (OECD-DAC)"),
+    ("climate_adaptation", "Climate change adaptation (OECD-DAC)"),
+    ("environment", "Environment (OECD-DAC)"),
+    ("disability_inclusion", "Disability inclusion (OECD-DAC)"),
 ]
 
 # Themes transversaux SF-2 (Module 1)
 CROSS_CUTTING_THEMES = [
-    ("climate", "Climat"),
-    ("fragility", "Fragilite"),
-    ("youth_employment", "Emploi jeunes"),
-    ("disability", "Handicap"),
+    ("climate", "Climate"),
+    ("fragility", "Fragility"),
+    ("youth_employment", "Youth employment"),
+    ("disability", "Disability"),
     ("migration", "Migration"),
-    ("digital_inclusion", "Inclusion numerique"),
+    ("digital_inclusion", "Digital inclusion"),
 ]
 
 
@@ -192,7 +192,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         for code, name in CURRENCIES:
-            Currency.objects.get_or_create(code=code, defaults={"name": name})
+            Currency.objects.update_or_create(code=code, defaults={"name": name})
         self.stdout.write(self.style.SUCCESS(f"Devises : {len(CURRENCIES)} OK"))
 
         hubs = {}
@@ -210,7 +210,7 @@ class Command(BaseCommand):
 
         countries = {}
         for iso2, iso3, name, hub_code in COUNTRIES:
-            country, _ = Country.objects.get_or_create(
+            country, _ = Country.objects.update_or_create(
                 iso3=iso3,
                 defaults={"iso2": iso2, "name": name, "hub": hubs.get(hub_code)},
             )
@@ -247,7 +247,7 @@ class Command(BaseCommand):
         )
 
         for code, name, agency_type, iso2 in AGENCIES:
-            ImplementingAgency.objects.get_or_create(
+            ImplementingAgency.objects.update_or_create(
                 code=code,
                 defaults={
                     "name": name,
@@ -258,7 +258,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Agences d'implementation : {len(AGENCIES)} OK"))
 
         for code, name, icon, color in SECTORS:
-            sector, _ = Sector.objects.get_or_create(
+            sector, _ = Sector.objects.update_or_create(
                 code=code, defaults={"name": name, "parent": None, "icon": icon, "color": color}
             )
             # Complete les secteurs seedes avant l'ajout des champs icone/couleur.
@@ -269,7 +269,7 @@ class Command(BaseCommand):
 
         for code, name, parent_code, icon, color in SUB_SECTORS:
             parent = Sector.objects.filter(code=parent_code).first()
-            sector, _ = Sector.objects.get_or_create(
+            sector, _ = Sector.objects.update_or_create(
                 code=code, defaults={"name": name, "parent": parent, "icon": icon, "color": color}
             )
             if not sector.color:
@@ -280,18 +280,18 @@ class Command(BaseCommand):
         )
 
         for number, name, color in SDGS:
-            sdg, _ = Sdg.objects.get_or_create(number=number, defaults={"name": name, "color": color})
+            sdg, _ = Sdg.objects.update_or_create(number=number, defaults={"name": name, "color": color})
             if not sdg.color:
                 sdg.color = color
                 sdg.save(update_fields=["color"])
         self.stdout.write(self.style.SUCCESS(f"ODD : {len(SDGS)} OK"))
 
         for code, name in MARKERS:
-            Marker.objects.get_or_create(code=code, defaults={"name": name})
+            Marker.objects.update_or_create(code=code, defaults={"name": name})
         self.stdout.write(self.style.SUCCESS(f"Marqueurs OECD-DAC : {len(MARKERS)} OK"))
 
         for code, name in CROSS_CUTTING_THEMES:
-            CrossCuttingTheme.objects.get_or_create(code=code, defaults={"name": name})
+            CrossCuttingTheme.objects.update_or_create(code=code, defaults={"name": name})
         self.stdout.write(
             self.style.SUCCESS(f"Themes transversaux : {len(CROSS_CUTTING_THEMES)} OK")
         )

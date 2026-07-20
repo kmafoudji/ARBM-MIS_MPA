@@ -4,8 +4,8 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 
 const DIRECTION_LABEL = {
-  increase: "↑ A la hausse",
-  decrease: "↓ A la baisse",
+  increase: "↑ Upward",
+  decrease: "↓ Downward",
   neutral: "→ Neutre",
 };
 const TYPE_COLOR = {
@@ -46,7 +46,7 @@ function ComboField({ label, choices, value, onChange, textarea }) {
           if (e.target.value === "Other") onChange("");
           else onChange(e.target.value);
         }}>
-        <option value="">Selectionner...</option>
+        <option value="">Select...</option>
         {choices.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
       {(selectVal === "Other" || isOther) && (
@@ -156,7 +156,7 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                 </div>
                 {canEdit && (
                   <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={(e) => { e.stopPropagation(); startEdit(); }}>
-                    <Icon name="pencil" size={13} /> Modifier
+                    <Icon name="pencil" size={13} /> Edit
                   </button>
                 )}
               </div>
@@ -300,7 +300,7 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                 </button>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
                   type="button" onClick={() => setEditing(false)}>
-                  <Icon name="x" size={13} /> Annuler
+                  <Icon name="x" size={13} /> Cancel
                 </button>
               </div>
             </form>
@@ -380,7 +380,7 @@ export default function IndicatorCatalogue() {
             </div>
             <div className="field" style={{ marginBottom: 0, display: "flex", alignItems: "flex-end" }}>
               <span className="text-muted text-sm">
-                {isLoading ? "Loading..." : `${indicators?.length ?? 0} indicateur${indicators?.length !== 1 ? "s" : ""}`}
+                {isLoading ? "Loading..." : `${indicators?.length ?? 0} indicator${indicators?.length !== 1 ? "s" : ""}`}
               </span>
             </div>
           </div>

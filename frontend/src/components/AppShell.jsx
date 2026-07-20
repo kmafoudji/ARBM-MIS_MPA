@@ -13,19 +13,19 @@ import i18n from "../i18n/index.js";
 
 const NAV_GROUPS = [
   {
-    label: "Pilotage",
-    items: [{ key: "overview", label: "Tableau de bord", Icon: IconDashboard }],
+    label: "Steering",
+    items: [{ key: "overview", label: "Dashboard", Icon: IconDashboard }],
   },
   {
-    label: "Referentiels",
+    label: "Reference Data",
     items: [{ key: "masterdata", label: "Reference Data", Icon: IconMasterData }],
   },
   {
-    label: "Projets & suivi",
+    label: "Projects & Monitoring",
     items: [
-      { key: "projects", label: "Projets", Icon: IconProjects, badgeKey: "projects" },
+      { key: "projects", label: "Projects", Icon: IconProjects, badgeKey: "projects" },
       { key: "new-project", label: "New Project", Icon: IconNewProject },
-      { key: "indicator-catalogue", label: "Catalogue d'indicateurs", Icon: IconCatalogue },
+      { key: "indicator-catalogue", label: "Indicator Catalogue", Icon: IconCatalogue },
     ],
   },
   {
@@ -37,12 +37,12 @@ const NAV_GROUPS = [
 // Chaine du fil d'Ariane : chaque vue declare son parent, ce qui permet de
 // reconstruire un chemin cliquable jusqu'au tableau de bord.
 const CRUMBS = {
-  overview: { label: "Tableau de bord", parent: null },
+  overview: { label: "Dashboard", parent: null },
   masterdata: { label: "Reference Data", parent: "overview" },
-  projects: { label: "Projets", parent: "overview" },
+  projects: { label: "Projects", parent: "overview" },
   "new-project": { label: "New Project", parent: "projects" },
-  "project-detail": { label: "Fiche projet", parent: "projects" },
-  "indicator-catalogue": { label: "Catalogue d'indicateurs", parent: "overview" },
+  "project-detail": { label: "Project", parent: "projects" },
+  "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
   rbac: { label: "Users & Roles", parent: "overview" },
 };
 

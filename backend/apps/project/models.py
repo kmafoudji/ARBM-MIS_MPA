@@ -80,26 +80,26 @@ GENDER_MARKER_CHOICES = [
 ]
 
 RIO_MARKER_CHOICES = [
-    ("not_targeted", "Non cible"),
-    ("significant", "Significatif"),
+    ("not_targeted", "Not targeted"),
+    ("significant", "Significant"),
     ("principal", "Principal"),
 ]
 
 IMPLEMENTATION_MODALITY_CHOICES = [
-    ("direct", "Directe"),
-    ("country_systems", "Systemes pays"),
-    ("ngo", "ONG"),
-    ("private", "Prive"),
-    ("multi_actor", "Multi-acteurs"),
-    ("hybrid", "Hybride"),
+    ("direct", "Direct"),
+    ("country_systems", "Country systems"),
+    ("ngo", "NGO"),
+    ("private", "Private"),
+    ("multi_actor", "Multi-actor"),
+    ("hybrid", "Hybrid"),
 ]
 
 GEOGRAPHIC_TYPOLOGY_CHOICES = [
-    ("urban", "Urbain"),
-    ("peri_urban", "Peri-urbain"),
+    ("urban", "Urban"),
+    ("peri_urban", "Peri-urban"),
     ("rural", "Rural"),
-    ("remote", "Recule"),
-    ("mixed_multi_district", "Mixte multi-districts"),
+    ("remote", "Remote"),
+    ("mixed_multi_district", "Mixed / multi-district"),
 ]
 
 FRAGILITY_STATUS_CHOICES = [
@@ -109,10 +109,10 @@ FRAGILITY_STATUS_CHOICES = [
 ]
 
 RISK_RATING_CHOICES = [
-    ("low", "Faible"),
-    ("moderate", "Modere"),
-    ("substantial", "Substantiel"),
-    ("high", "Eleve"),
+    ("low", "Low"),
+    ("moderate", "Moderate"),
+    ("substantial", "Substantial"),
+    ("high", "High"),
 ]
 
 
@@ -221,9 +221,9 @@ class Project(models.Model):
     # RBAC/workflow (SF-3 / Module 7), pas d'un champ simple sur le projet —
     # laisse en question ouverte plutot que de deviner une structure.
     REPORTING_FREQUENCY_CHOICES = [
-        ("quarterly", "Trimestrielle"),
-        ("semi_annual", "Semestrielle"),
-        ("annual", "Annuelle"),
+        ("quarterly", "Quarterly"),
+        ("semi_annual", "Semi-annual"),
+        ("annual", "Annual"),
     ]
     reporting_frequency = models.CharField(
         max_length=15, choices=REPORTING_FREQUENCY_CHOICES, null=True, blank=True

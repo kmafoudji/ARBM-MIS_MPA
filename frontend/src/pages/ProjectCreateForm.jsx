@@ -65,9 +65,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         <div className="view-eyebrow">Registration Wizard · SF-1</div>
         <h1 className="view-title">New Project</h1>
         <p className="view-lead">
-          Etape Concept Note. L'assistant n'exige que le sous-ensemble minimal correspondant a
-          cette etape (gating progressif) — les champs de classification complets seront requis
-          au franchissement du gate BED Approved.
+          Concept Note stage. The wizard only requires the minimal subset matching
+          this stage (progressive gating) — the full classification fields become required
+          when crossing the BED Approved gate.
         </p>
       </div>
 
@@ -78,7 +78,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <h2 className="card-title">Basic Identity</h2>
               <div className="card-sub">Name, geographic scope</div>
             </div>
-            <span className="badge badge-lime">Requis</span>
+            <span className="badge badge-lime">Required</span>
           </div>
           <div className="card-body">
             <div className="field">
@@ -115,8 +115,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                 ))}
               </select>
               <span className="field-help">
-                Multi-pays autorise (Ctrl/Cmd + clic). Le budget reste au niveau projet et n'est
-                jamais ventile par pays.
+                Multi-country allowed (Ctrl/Cmd + click). The budget stays at project level and is
+                never split by country.
               </span>
             </div>
 
@@ -274,7 +274,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
             {mutation.isPending ? "Saving..." : "Save Concept Note"}
           </button>
           <button className="btn btn-ghost" type="button" onClick={onCancel}>
-            Annuler
+            Cancel
           </button>
         </div>
       </form>

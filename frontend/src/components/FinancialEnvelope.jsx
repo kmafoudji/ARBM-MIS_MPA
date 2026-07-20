@@ -83,7 +83,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
         <div className="envelope-total">
           <div className="envelope-total-label">Enveloppe totale LLF2</div>
           <div className="envelope-total-amount">{fmt(total)}</div>
-          <div className="envelope-total-sub">{sources.length} source{sources.length > 1 ? "s" : ""} de financement</div>
+          <div className="envelope-total-sub">{sources.length} financing source{sources.length > 1 ? "s" : ""}</div>
         </div>
 
         {/* Répartition par source */}
@@ -113,12 +113,12 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
           <div>
             <h3 className="card-title">Financing Sources</h3>
             <div className="card-sub">
-              IsDB Ordinary Capital · LLF · Gouvernement · Co-financement
+              IsDB Ordinary Capital · LLF · Government · Co-financing
             </div>
           </div>
           {canEdit && (
             <button className="btn btn-primary btn-sm btn-icon" onClick={() => setShowAddSource(true)}>
-              <IconPlus size={13} /> Ajouter une ligne
+              <IconPlus size={13} /> Add row
             </button>
           )}
         </div>
@@ -134,7 +134,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
               <tr>
                 <th>Source</th>
                 <th>Instrument</th>
-                <th>Bailleur</th>
+                <th>Donor</th>
                 <th>Label</th>
                 <th style={{ width: 140 }}>Original Amount</th>
                 <th style={{ width: 130 }}>Equiv. USD</th>
@@ -161,7 +161,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
                           onClick={() => setEditSource({ ...s })}>
                           <IconEdit />
                         </button>
-                        <button className="btn-square danger" title="Supprimer"
+                        <button className="btn-square danger" title="Delete"
                           onClick={() => deleteSource.mutate(s.id)}>
                           <IconDeactivate />
                         </button>
@@ -174,7 +174,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
             <tfoot>
               <tr style={{ background: "var(--paper)" }}>
                 <td colSpan={canEdit ? 5 : 5} style={{ fontWeight: 600, fontSize: 12 }}>
-                  Total enveloppe
+                  Total envelope
                 </td>
                 <td className="text-mono" style={{ fontWeight: 700, color: "var(--lime-dark, var(--lime))" }}>
                   {fmt(total)}
@@ -190,12 +190,12 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h3 className="card-title">Allocation par composante <span className="badge" style={{ marginLeft: 8 }}>Indicative</span></h3>
+            <h3 className="card-title">Allocation by Component <span className="badge" style={{ marginLeft: 8 }}>Indicative</span></h3>
             <div className="card-sub">Works · Consulting · Goods · Training · Operations — detail in Module 9</div>
           </div>
           {canEdit && (
             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowAlloc(true)}>
-              <IconEdit size={13} /> Modifier
+              <IconEdit size={13} /> Edit
             </button>
           )}
         </div>
@@ -222,7 +222,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
             })}
             {unallocated > 0 && (
               <div className="notice notice-warn mt-2" style={{ fontSize: 11 }}>
-                {fmt(unallocated)} non alloués ({((unallocated / total) * 100).toFixed(1)} % de l'enveloppe).
+                {fmt(unallocated)} unallocated ({((unallocated / total) * 100).toFixed(1)}% of the envelope).
               </div>
             )}
           </div>
@@ -298,7 +298,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       onClose={onClose}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={pending || !form.source || !form.instrument || !form.amount_usd}>
             {pending ? "Saving..." : "Save"}
           </button>
@@ -306,7 +306,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       }
     >
       <div className="field">
-        <label className="field-label">Source de financement <span className="req">*</span></label>
+        <label className="field-label">Financing Source <span className="req">*</span></label>
         <select className="field-select" value={form.source} onChange={(e) => set("source", e.target.value)}>
           <option value="">— Choisir —</option>
           {(env.source_choices || []).map((c) => (
@@ -316,7 +316,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       </div>
 
       <div className="field">
-        <label className="field-label">Type d'instrument <span className="req">*</span></label>
+        <label className="field-label">Instrument Type <span className="req">*</span></label>
         <select className="field-select" value={form.instrument} onChange={(e) => set("instrument", e.target.value)}>
           <option value="">— Choisir —</option>
           {(env.instrument_choices || []).map((c) => (
@@ -328,7 +328,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       <div className="field">
         <label className="field-label">Associated Donor</label>
         <select className="field-select" value={form.donor} onChange={(e) => set("donor", e.target.value)}>
-          <option value="">— Aucun (optionnel) —</option>
+          <option value="">— None (optional) —</option>
           {donors.map((d) => <option key={d.id} value={d.id}>{d.short_name} — {d.name}</option>)}
         </select>
         <span className="field-help">Optional for IsDB Ordinary Capital lines.</span>
@@ -336,12 +336,12 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
 
       <div className="row" style={{ gap: "var(--s-3)" }}>
         <div className="field" style={{ flex: 2 }}>
-          <label className="field-label">Montant d'origine <span className="req">*</span></label>
+          <label className="field-label">Original Amount <span className="req">*</span></label>
           <input className="field-input" type="number" value={form.amount}
             onChange={(e) => set("amount", e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label className="field-label">Devise</label>
+          <label className="field-label">Currency</label>
           <select className="field-select" value={form.currency} onChange={(e) => set("currency", e.target.value)}>
             {currencies.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
           </select>
@@ -350,11 +350,11 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
 
       <div className="row" style={{ gap: "var(--s-3)" }}>
         <div className="field" style={{ flex: 2 }}>
-          <label className="field-label">Équivalent USD <span className="req">*</span></label>
+          <label className="field-label">USD Equivalent <span className="req">*</span></label>
           <input className="field-input" type="number" value={form.amount_usd}
             onChange={(e) => set("amount_usd", e.target.value)} />
           <span className="field-help">
-            Saisir manuellement avec la date de référence. Un flux de taux de change sera branché ultérieurement.
+            Enter manually with the reference date. An exchange-rate feed will be connected later.
           </span>
         </div>
         <div className="field" style={{ flex: 1 }}>
@@ -393,13 +393,13 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
       onClose={onClose}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
         </>
       }
     >
       <p className="text-sm text-muted mb-3">
         Saisir le montant USD indicatif pour chaque composante.
-        La somme ne doit pas dépasser l'enveloppe totale de <strong>{fmt(total)}</strong>.
+        The total must not exceed the overall envelope of <strong>{fmt(total)}</strong>.
       </p>
       {(env.component_choices || []).map((c) => (
         <div className="field" key={c.value}>

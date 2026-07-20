@@ -15,15 +15,15 @@ from apps.project.models import Project
 from apps.reference.models import Sdg, Sector
 
 TOC_STATUS_CHOICES = [
-    ("draft", "Brouillon"),
+    ("draft", "Draft"),
     ("active", "Active"),
 ]
 
 CHAIN_LEVEL_CHOICES = [
-    ("activity", "Activite"),
-    ("output", "Produit"),
-    ("immediate_outcome", "Effet immediat"),
-    ("intermediate_outcome", "Effet intermediaire"),
+    ("activity", "Activity"),
+    ("output", "Output"),
+    ("immediate_outcome", "Immediate outcome"),
+    ("intermediate_outcome", "Intermediate outcome"),
 ]
 
 CHAIN_LEVEL_WITH_IMPACT_CHOICES = CHAIN_LEVEL_CHOICES + [("impact", "Impact")]
@@ -42,16 +42,16 @@ INDICATOR_TYPE_CHOICES = [
 ]
 
 DIRECTION_CHOICES = [
-    ("increase", "A la hausse (+)"),
-    ("decrease", "A la baisse (-)"),
-    ("neutral", "Neutre"),
+    ("increase", "Upward (+)"),
+    ("decrease", "Downward (-)"),
+    ("neutral", "Neutral"),
 ]
 
 MEASUREMENT_FREQUENCY_CHOICES = [
-    ("quarterly", "Trimestrielle"),
-    ("semi_annual", "Semestrielle"),
-    ("annual", "Annuelle"),
-    ("end_of_project", "Fin de projet"),
+    ("quarterly", "Quarterly"),
+    ("semi_annual", "Semi-annual"),
+    ("annual", "Annual"),
+    ("end_of_project", "End of project"),
 ]
 
 

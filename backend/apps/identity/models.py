@@ -39,16 +39,16 @@ class AppUser(AbstractUser):
     """Utilisateur de la plateforme ARBM-MES. Remplace le User Django par defaut."""
 
     USER_TYPE_CHOICES = [
-        ("internal", "Interne (staff MillenniumPromise / IsDB)"),
-        ("external", "Externe (PMU, hub regional, donateur, auditeur)"),
+        ("internal", "Internal (MillenniumPromise / IsDB staff)"),
+        ("external", "External (PMU, regional hub, donor, auditor)"),
     ]
     AUTH_METHOD_CHOICES = [
-        ("password", "Mot de passe local"),
+        ("password", "Local password"),
         ("sso", "SSO (Entra ID)"),
     ]
     MFA_METHOD_CHOICES = [
-        ("none", "Aucune"),
-        ("app", "Application d'authentification"),
+        ("none", "None"),
+        ("app", "Authenticator app"),
         ("sms", "SMS"),
     ]
 
@@ -111,15 +111,15 @@ class Permission(models.Model):
         ("m11_admin", "M11 - Administration"),
     ]
     ACTION_CHOICES = [
-        ("create", "Creer"),
-        ("read", "Consulter"),
-        ("update", "Modifier"),
-        ("delete", "Supprimer"),
-        ("submit", "Soumettre"),
-        ("review", "Reviser"),
-        ("validate", "Valider"),
-        ("export", "Exporter"),
-        ("admin", "Administrer"),
+        ("create", "Create"),
+        ("read", "Read"),
+        ("update", "Update"),
+        ("delete", "Delete"),
+        ("submit", "Submit"),
+        ("review", "Review"),
+        ("validate", "Validate"),
+        ("export", "Export"),
+        ("admin", "Administer"),
     ]
 
     code = models.SlugField(max_length=80, unique=True)
@@ -151,10 +151,10 @@ class RoleAssignment(models.Model):
 
     SCOPE_CHOICES = [
         ("global", "Global"),
-        ("fund", "Fonds (LLF2)"),
-        ("hub", "Hub regional"),
-        ("project", "Projet"),
-        ("donor", "Projets d'un bailleur"),
+        ("fund", "Fund (LLF2)"),
+        ("hub", "Regional hub"),
+        ("project", "Project"),
+        ("donor", "Projects of a donor"),
     ]
 
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="role_assignments")
