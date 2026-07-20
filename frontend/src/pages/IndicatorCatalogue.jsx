@@ -21,7 +21,7 @@ const FIELD_ROWS = [
   { key: "denominator", label: "Denominateur", textarea: true },
   { key: "formula", label: "Formule", textarea: true },
   { key: "calculation_method", label: "Methode de calcul", textarea: true },
-  { key: "data_source", label: "Sources de donnees", textarea: true },
+  { key: "data_source", label: "Data Sources", textarea: true },
   { key: "collection_method", label: "Methode de collecte", textarea: true },
   { key: "means_of_verification", label: "Means of Verification", textarea: true },
   { key: "assumptions", label: "Assumptions", textarea: true },
@@ -200,8 +200,8 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                     <div className="dl-desc row" style={{ gap: 8, flexWrap: "wrap" }}>
                       {detail.related_sdg_numbers.map((n) => (
                         <span key={n} className="row" style={{ gap: 4, alignItems: "center" }}>
-                          <img src={`/logos/sdg/${n}.png`} alt={`ODD ${n}`} style={{ width: 24, height: 24 }} />
-                          <span className="text-sm">ODD {n}</span>
+                          <img src={`/logos/sdg/${n}.png`} alt={`SDG ${n}`} style={{ width: 24, height: 24 }} />
+                          <span className="text-sm">SDG {n}</span>
                         </span>
                       ))}
                     </div>

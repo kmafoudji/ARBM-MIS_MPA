@@ -84,7 +84,7 @@ export default function Rbac() {
           <div className="card-header">
             <div>
               <h2 className="card-title">Active Assignments</h2>
-              <div className="card-sub">User × role × scope</div>
+              <div className="card-sub">User × Role × Scope</div>
             </div>
           </div>
           {assignments?.length === 0 ? (

@@ -126,7 +126,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
         {sources.length === 0 ? (
           <div className="empty">
             <div className="empty-title">No financing source</div>
-            <p className="text-sm">Le financement mixte LLF2 combine prêts IsDB, dons de bailleurs et contreparties gouvernementales.</p>
+            <p className="text-sm">LLF2 blended finance combines IsDB loans, donor grants and government gouvernementales.</p>
           </div>
         ) : (
           <table className="table">
@@ -157,7 +157,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
                   {canEdit && (
                     <td>
                       <div className="row-actions">
-                        <button className="btn-square" title="Éditer"
+                        <button className="btn-square" title="Edit"
                           onClick={() => setEditSource({ ...s })}>
                           <IconEdit />
                         </button>
@@ -293,14 +293,14 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
 
   return (
     <Modal
-      title={isEdit ? "Modifier la ligne de financement" : "Ajouter une source de financement"}
+      title={isEdit ? "Edit financing line" : "Add financing source"}
       subtitle="SF-6 · LLF2 Financial Envelope"
       onClose={onClose}
       footer={
         <>
           <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={pending || !form.source || !form.instrument || !form.amount_usd}>
-            {pending ? "Enregistrement..." : "Enregistrer"}
+            {pending ? "Saving..." : "Save"}
           </button>
         </>
       }
@@ -366,13 +366,13 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
 
       <div className="field">
         <label className="field-label">Free Label</label>
-        <input className="field-input" value={form.label} placeholder="ex. Prêt IsDB tranche 1"
+        <input className="field-input" value={form.label} placeholder="e.g. IsDB Loan tranche 1"
           onChange={(e) => set("label", e.target.value)} />
       </div>
 
       {error && (
         <div className="field-error">
-          {error?.detail || "L'enregistrement a échoué."}
+          {error?.detail || "Registration failed."}
         </div>
       )}
     </Modal>

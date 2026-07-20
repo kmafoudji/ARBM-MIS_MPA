@@ -18,19 +18,19 @@ const NAV_GROUPS = [
   },
   {
     label: "Referentiels",
-    items: [{ key: "masterdata", label: "Donnees de base", Icon: IconMasterData }],
+    items: [{ key: "masterdata", label: "Reference Data", Icon: IconMasterData }],
   },
   {
     label: "Projets & suivi",
     items: [
       { key: "projects", label: "Projets", Icon: IconProjects, badgeKey: "projects" },
-      { key: "new-project", label: "Nouveau projet", Icon: IconNewProject },
+      { key: "new-project", label: "New Project", Icon: IconNewProject },
       { key: "indicator-catalogue", label: "Catalogue d'indicateurs", Icon: IconCatalogue },
     ],
   },
   {
-    label: "Systeme",
-    items: [{ key: "rbac", label: "Utilisateurs & roles", Icon: IconUsers, badgeKey: "users" }],
+    label: "System",
+    items: [{ key: "rbac", label: "Users & Roles", Icon: IconUsers, badgeKey: "users" }],
   },
 ];
 
@@ -38,12 +38,12 @@ const NAV_GROUPS = [
 // reconstruire un chemin cliquable jusqu'au tableau de bord.
 const CRUMBS = {
   overview: { label: "Tableau de bord", parent: null },
-  masterdata: { label: "Donnees de base", parent: "overview" },
+  masterdata: { label: "Reference Data", parent: "overview" },
   projects: { label: "Projets", parent: "overview" },
-  "new-project": { label: "Nouveau projet", parent: "projects" },
+  "new-project": { label: "New Project", parent: "projects" },
   "project-detail": { label: "Fiche projet", parent: "projects" },
   "indicator-catalogue": { label: "Catalogue d'indicateurs", parent: "overview" },
-  rbac: { label: "Utilisateurs & roles", parent: "overview" },
+  rbac: { label: "Users & Roles", parent: "overview" },
 };
 
 function crumbTrail(view) {

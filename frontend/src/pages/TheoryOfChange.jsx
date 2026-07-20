@@ -40,7 +40,7 @@ function LogframeRowSelect({ projectId, value, onChange }) {
   if (!rows || rows.length === 0) {
     return (
       <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>
-        Aucune ligne dans le logframe — ajoutez des indicateurs via "Cadre logique" d'abord.
+        No logframe lines — add indicators via "Logical Framework" first.
       </div>
     );
   }
@@ -173,7 +173,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
                 if (
                   window.confirm(
                     `Supprimer le noeud ${node.code} ("${stripHtml(node.statement).slice(0, 60)}") ? ` +
-                      "Tous les noeuds rattaches en dessous (enfants directs et indirects) " +
+                      "All child nodes (direct and indirect) will be deleted with it. " +
                       "seront supprimes avec lui. Cette action est irreversible."
                   )
                 ) {

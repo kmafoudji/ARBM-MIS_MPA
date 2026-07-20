@@ -16,7 +16,7 @@ export default function DataTable({
   filters = [],
   defaultFilters = {},
   pageSize = 15,
-  emptyLabel = "Aucun resultat.",
+  emptyLabel = "No results.",
   rowKey = (r) => r.id,
   rowClass,
   onRowClick,
@@ -88,8 +88,8 @@ export default function DataTable({
               type="search"
               value={query}
               onChange={reset((e) => setQuery(e.target.value))}
-              placeholder="Rechercher..."
-              aria-label="Rechercher dans le tableau"
+              placeholder="Search..."
+              aria-label="Search table"
             />
           )}
           {filters.map((f) => (
@@ -142,7 +142,7 @@ export default function DataTable({
             <tr>
               <td colSpan={columns.length} className="text-muted" style={{ padding: "var(--s-5)", textAlign: "center" }}>
                 {query || Object.values(active).some(Boolean)
-                  ? "Aucun resultat pour cette recherche."
+                  ? "No results for this search."
                   : emptyLabel}
               </td>
             </tr>

@@ -191,7 +191,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   <option value="">Select</option>
                   {sdgs?.map((s) => (
                     <option key={s.number} value={s.number}>
-                      ODD {s.number} — {s.name}
+                      SDG {s.number} — {s.name}
                     </option>
                   ))}
                 </select>
@@ -229,7 +229,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                 >
                   {contributingSdgChoices.map((s) => (
                     <option key={s.number} value={s.number}>
-                      ODD {s.number} — {s.name}
+                      SDG {s.number} — {s.name}
                     </option>
                   ))}
                 </select>

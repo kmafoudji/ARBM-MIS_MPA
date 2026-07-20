@@ -346,7 +346,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     >
                       <option value="">Select</option>
                       {sdgs?.map((s) => (
-                        <option key={s.number} value={s.number}>ODD {s.number} — {s.name}</option>
+                        <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>
                       ))}
                     </select>
                   </div>
@@ -361,7 +361,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                       onChange={(e) => handleMultiSelect("contributing_sdg_ids", e)}
                     >
                       {contributingSdgChoices.map((s) => (
-                        <option key={s.number} value={s.number}>ODD {s.number} — {s.name}</option>
+                        <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>
                       ))}
                     </select>
                   </div>
@@ -500,10 +500,10 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                       <img
                         className="sdg-icon"
                         src={`/logos/sdg/${project.primary_sdg}.png`}
-                        alt={`ODD ${project.primary_sdg}`}
+                        alt={`SDG ${project.primary_sdg}`}
                         style={{ width: 24, height: 24 }}
                       />
-                      {`ODD ${project.primary_sdg} — ${project.primary_sdg_name}`}
+                      {`SDG ${project.primary_sdg} — ${project.primary_sdg_name}`}
                     </span>
                   ) : "—"}
                 </Dt>
@@ -515,10 +515,10 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                           <img
                             className="sdg-icon"
                             src={`/logos/sdg/${s.number}.png`}
-                            alt={`ODD ${s.number}`}
+                            alt={`SDG ${s.number}`}
                             style={{ width: 20, height: 20 }}
                           />
-                          {`ODD ${s.number} — ${s.name}`}
+                          {`SDG ${s.number} — ${s.name}`}
                         </span>
                       ))}
                     </div>
@@ -669,7 +669,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     value={tForm.dual_authorized_by}
                     onChange={(e) => setTForm({ ...tForm, dual_authorized_by: e.target.value })}
                   >
-                    <option value="">Aucun</option>
+                    <option value="">None</option>
                     {users?.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.email}

@@ -15,49 +15,49 @@ import {
 } from "../components/ActionIcons.jsx";
 
 const ICON_OPTIONS = [
-  ["health", "Sante — croix"],
-  ["hospital", "Sante — etablissement"],
-  ["maternal", "Sante — maternelle & infantile"],
-  ["nutrition", "Sante — nutrition"],
-  ["vaccine", "Sante — vaccination"],
-  ["agriculture", "Agriculture — cultures"],
-  ["livestock", "Agriculture — elevage"],
-  ["fishery", "Agriculture — peche"],
+  ["health", "Health — cross"],
+  ["hospital", "Health — facility"],
+  ["maternal", "Health — maternal & child"],
+  ["nutrition", "Health — nutrition"],
+  ["vaccine", "Health — vaccination"],
+  ["agriculture", "Agriculture — crops"],
+  ["livestock", "Agriculture — livestock"],
+  ["fishery", "Agriculture — fishery"],
   ["irrigation", "Agriculture — irrigation"],
-  ["forestry", "Agriculture — foresterie"],
-  ["infrastructure", "Infrastructure — batiment"],
-  ["water", "Infrastructure — eau"],
-  ["sanitation", "Infrastructure — assainissement"],
-  ["energy", "Infrastructure — energie"],
+  ["forestry", "Agriculture — forestry"],
+  ["infrastructure", "Infrastructure — building"],
+  ["water", "Infrastructure — water"],
+  ["sanitation", "Infrastructure — sanitation"],
+  ["energy", "Infrastructure — energy"],
   ["transport", "Infrastructure — transport"],
-  ["digital", "Infrastructure — numerique"],
-  ["gender", "Transversal — genre"],
-  ["climate", "Transversal — climat"],
+  ["digital", "Infrastructure — digital"],
+  ["gender", "Transversal — gender"],
+  ["climate", "Transversal — climate"],
   ["education", "Transversal — education"],
-  ["employment", "Transversal — emploi"],
+  ["employment", "Transversal — employment"],
   ["governance", "Transversal — gouvernance"],
   ["fragility", "Transversal — fragilite"],
-  ["generic", "Generique — losange"],
+  ["generic", "Generic — diamond"],
 ];
 
 const DONOR_TYPES = [
   ["bilateral", "Bilateral"],
   ["multilateral", "Multilateral"],
-  ["foundation", "Fondation"],
+  ["foundation", "Foundation"],
   ["humanitarian", "Humanitaire"],
 ];
 
 const AGENCY_TYPES = [
-  ["government", "Gouvernement"],
+  ["government", "Government"],
   ["national_agency", "Agence nationale"],
   ["un_agency", "Agence ONU"],
   ["ngo", "ONG"],
-  ["private", "Secteur prive"],
+  ["private", "Private Sector"],
 ];
 
 const STATUS_FILTER = {
   key: "is_active",
-  label: "Statut",
+  label: "Status",
   options: [["true", "Actifs"], ["false", "Desactives"]],
 };
 
@@ -71,58 +71,58 @@ const TABS = [
     label: "Countries",
     url: "/api/reference/countries/",
     singular: "un pays",
-    sub: "Referentiel GADM Admin 0 · rattachement aux hubs regionaux",
+    sub: "GADM Admin 0 reference · assignment to regional hubs",
     fields: [
-      { name: "name", label: "Nom du pays", type: "text", required: true },
-      { name: "iso2", label: "Code ISO2", type: "text", required: true, maxLength: 2,
+      { name: "name", label: "Country Name", type: "text", required: true },
+      { name: "iso2", label: "ISO2 Code", type: "text", required: true, maxLength: 2,
         help: "Deux lettres. Determine le drapeau affiche." },
-      { name: "iso3", label: "Code ISO3", type: "text", required: true, maxLength: 3 },
+      { name: "iso3", label: "ISO3 Code", type: "text", required: true, maxLength: 3 },
       { name: "hub", label: "Regional Hub", type: "select", optionsKey: "hubs" },
-      { name: "is_fragile", label: "Contexte de fragilite (FCS)", type: "checkbox" },
+      { name: "is_fragile", label: "Fragility Context (FCS)", type: "checkbox" },
     ],
   },
   {
     key: "hubs",
-    label: "Hubs regionaux",
+    label: "Regional Hubs",
     url: "/api/reference/hubs/",
     singular: "un hub",
     sub: "Antennes regionales et pays rattaches",
     layout: "hubs",
     fields: [
-      { name: "name", label: "Nom du hub", type: "text", required: true },
-      { name: "code", label: "Code", type: "text", required: true, help: "Identifiant court, ex. dakar." },
-      { name: "city", label: "Ville d'implantation", type: "text" },
-      { name: "color", label: "Couleur d'identification", type: "color" },
+      { name: "name", label: "Hub Name", type: "text", required: true },
+      { name: "code", label: "Code", type: "text", required: true, help: "Short identifier, e.g. dakar." },
+      { name: "city", label: "Host City", type: "text" },
+      { name: "color", label: "Identification Color", type: "color" },
     ],
   },
   {
     key: "donors",
-    label: "Bailleurs",
+    label: "Donors",
     url: "/api/reference/donors/",
     singular: "un bailleur",
     sub: "Les 6 contributeurs du LLF2",
     fields: [
-      { name: "short_name", label: "Sigle", type: "text", required: true },
-      { name: "name", label: "Denomination complete", type: "text", required: true },
+      { name: "short_name", label: "Short Name", type: "text", required: true },
+      { name: "name", label: "Full Name", type: "text", required: true },
       { name: "code", label: "Code", type: "text", required: true },
       { name: "donor_type", label: "Type", type: "select", options: DONOR_TYPES },
-      { name: "origin_iso2", label: "Pays d'origine (ISO2)", type: "text", maxLength: 2,
-        help: "Laisser vide pour une institution multilaterale — elle n'a pas de drapeau national." },
+      { name: "origin_iso2", label: "Country of Origin (ISO2)", type: "text", maxLength: 2,
+        help: "Leave empty for multilateral institutions — they have no national flag." },
       { name: "logo_url", label: "Logo", type: "logo", help: LOGO_HELP },
-      { name: "color", label: "Couleur institutionnelle", type: "color",
+      { name: "color", label: "Institutional Color", type: "color",
         help: "Utilisee pour le monogramme de repli." },
-      { name: "committed_amount_usd", label: "Engagement (USD)", type: "number",
+      { name: "committed_amount_usd", label: "Commitment (USD)", type: "number",
         help: "A saisir depuis les chiffres officiels de la LLF MU." },
     ],
   },
   {
     key: "agencies",
-    label: "Agences d'implementation",
+    label: "Implementing Agencies",
     url: "/api/reference/agencies/",
     singular: "une agence",
     sub: "Ministeres, agences nationales, agences ONU et ONG d'execution",
     fields: [
-      { name: "name", label: "Nom de l'agence", type: "text", required: true },
+      { name: "name", label: "Agency Name", type: "text", required: true },
       { name: "code", label: "Code", type: "text", required: true },
       { name: "agency_type", label: "Type", type: "select", required: true, options: AGENCY_TYPES },
       { name: "country", label: "Countries", type: "select", optionsKey: "countries",
@@ -132,27 +132,27 @@ const TABS = [
   },
   {
     key: "sectors",
-    label: "Secteurs",
+    label: "Sectors",
     url: "/api/reference/sectors/",
     singular: "un secteur",
     sub: "Piliers LLF2 et themes transversaux",
     fields: [
-      { name: "name", label: "Nom du secteur", type: "text", required: true },
+      { name: "name", label: "Sector Name", type: "text", required: true },
       { name: "code", label: "Code", type: "text", required: true },
       { name: "icon", label: "Pictogramme", type: "icon-select", options: ICON_OPTIONS },
-      { name: "color", label: "Couleur", type: "color" },
-      { name: "parent", label: "Secteur parent", type: "select", optionsKey: "sectors",
+      { name: "color", label: "Color", type: "color" },
+      { name: "parent", label: "Parent Sector", type: "select", optionsKey: "sectors",
         help: "Laisser vide pour un secteur de premier niveau." },
     ],
   },
   {
     key: "sdgs",
-    label: "ODD",
+    label: "SDGs",
     url: "/api/reference/sdgs/",
     singular: "un ODD",
-    sub: "Objectifs de developpement durable · Nations Unies",
+    sub: "Sustainable Development Goals · United Nations",
     idField: "number",
-    // Referentiel ferme : les 17 ODD sont fixes par l'ONU. Ni ajout, ni
+    // Closed reference : les 17 ODD sont fixes par l'ONU. Ni ajout, ni
     // desactivation — seul le libelle est modifiable (traduction).
     closed: true,
     fields: [
@@ -247,7 +247,7 @@ export default function MasterData({ canEdit }) {
         <div className="row-actions">
           <button
             className="btn-square"
-            title="Editer"
+            title="Edit"
             aria-label={`Editer ${r.name}`}
             onClick={(e) => { e.stopPropagation(); setEditing(r); }}
           >
@@ -272,7 +272,7 @@ export default function MasterData({ canEdit }) {
     ? []
     : [{
         key: "is_active",
-        label: "Statut",
+        label: "Status",
         width: 92,
         render: (r) =>
           r.is_active
@@ -310,7 +310,7 @@ export default function MasterData({ canEdit }) {
       columns: [
         { key: "logo", label: "", width: 72, render: (r) => <LogoOrMono url={r.logo_url} label={r.short_name || r.code} color={r.color} /> },
         {
-          key: "short_name", label: "Sigle", width: 128, sortable: true,
+          key: "short_name", label: "Short Name", width: 128, sortable: true,
           render: (r) => (
             <span className="row" style={{ gap: 6 }}>
               <strong style={{ fontWeight: 600 }}>{r.short_name}</strong>
@@ -370,7 +370,7 @@ export default function MasterData({ canEdit }) {
         {
           key: "number", label: "", width: 64, sortable: true,
           render: (r) => (
-            <img className="sdg-icon" src={`/logos/sdg/${r.number}.png`} alt={`ODD ${r.number}`} loading="lazy" />
+            <img className="sdg-icon" src={`/logos/sdg/${r.number}.png`} alt={`SDG ${r.number}`} loading="lazy" />
           ),
         },
         {
@@ -457,7 +457,7 @@ export default function MasterData({ canEdit }) {
                   </div>
                   {canEdit && (
                     <div className="row-actions">
-                      <button className="btn-square" title="Editer" onClick={() => setEditing(h)}>
+                      <button className="btn-square" title="Edit" onClick={() => setEditing(h)}>
                         <IconEdit />
                       </button>
                       <button
@@ -518,7 +518,7 @@ export default function MasterData({ canEdit }) {
       )}
       {tabKey === "sdgs" && (
         <p className="text-xs text-muted mt-3">
-          Referentiel ferme : les 17 ODD sont fixes par les Nations Unies — ni ajout, ni
+          Closed reference: the 17 SDGs are defined by the United Nations — no addition,
           desactivation. Seul l'intitule reste modifiable, pour la traduction. Pictogrammes
           officiels ONU (version francaise), utilises conformement aux lignes directrices.
         </p>

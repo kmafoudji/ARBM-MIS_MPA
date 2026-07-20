@@ -6,10 +6,10 @@ import Icon from "../components/Icon";
 const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
 const CHAIN_LEVEL_LABEL = {
   impact: "Impact",
-  intermediate_outcome: "Effet intermediaire",
-  immediate_outcome: "Effet immediat",
-  output: "Produit",
-  activity: "Activite",
+  intermediate_outcome: "Intermediate Outcome",
+  immediate_outcome: "Immediate Outcome",
+  output: "Output",
+  activity: "Activity",
 };
 const CHAIN_LEVEL_ICON = {
   impact: "target",
@@ -82,7 +82,7 @@ function TargetCard({ target, rowId, projectId, onChanged }) {
         <Icon name="pencil" size={11} />
       </button>
       <button type="button"
-        onClick={() => window.confirm("Supprimer cette cible ?") && deleteMutation.mutate()}
+        onClick={() => window.confirm("Delete this target?") && deleteMutation.mutate()}
         disabled={deleteMutation.isPending}
         style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "inherit" }}>
         <Icon name="x" size={11} />
@@ -138,7 +138,7 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
       <div className="row mt-2">
         <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
           onClick={() => mutation.mutate(form)} disabled={mutation.isPending || !form.target_value || !form.target_date}>
-          <Icon name="plus" size={13} /> {mutation.isPending ? "Ajout..." : "Ajouter la cible"}
+          <Icon name="plus" size={13} /> {mutation.isPending ? "Adding..." : "Add target"}
         </button>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
           <Icon name="x" size={13} /> Annuler
@@ -472,7 +472,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
             color: "var(--muted)",
             fontWeight: 600,
           }}>
-            <span>Indicateur</span>
+            <span>Indicator</span>
             <span>Level in the chain</span>
             <span />
           </div>
@@ -533,7 +533,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
                 className="btn btn-ghost btn-sm"
                 style={{ padding: "2px 6px" }}
                 onClick={() => removeLine(idx)}
-                aria-label="Supprimer cette ligne"
+                aria-label="Remove this line"
               >
                 <Icon name="x" size={13} />
               </button>
@@ -642,8 +642,8 @@ export default function Logframe({ projectId, onBack }) {
         <div className="card card-flush">
           <div className="card-body">
             <p className="text-muted text-sm" style={{ margin: 0 }}>
-              Aucun indicateur dans le logframe. Cliquez sur "Ajouter un indicateur" pour
-              selectionner un indicateur du catalogue LLF2.
+              No indicators in the logframe. Click "Add Indicators" to
+              select from the LLF2 catalogue.
             </p>
           </div>
         </div>
