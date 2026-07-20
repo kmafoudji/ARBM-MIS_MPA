@@ -67,7 +67,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["envelope", projectId] }); },
   });
 
-  if (isLoading) return <div className="loading-wrap"><span className="spinner" /> Chargement de l'enveloppe...</div>;
+  if (isLoading) return <div className="loading-wrap"><span className="spinner" /> Loading envelope...</div>;
   if (!env) return null;
 
   const total = Number(env.total_amount_usd || 0);
@@ -88,8 +88,8 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
 
         {/* Répartition par source */}
         <div className="card" style={{ padding: "var(--s-3)" }}>
-          <div className="card-title mb-2" style={{ fontSize: 13 }}>Répartition par source</div>
-          {sources.length === 0 && <span className="text-muted text-xs">Aucune source saisie.</span>}
+          <div className="card-title mb-2" style={{ fontSize: 13 }}>Distribution by Source</div>
+          {sources.length === 0 && <span className="text-muted text-xs">No source entered.</span>}
           {sources.map((s) => {
             const pct = total > 0 ? (Number(s.amount_usd) / total) * 100 : 0;
             return (
@@ -111,7 +111,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h3 className="card-title">Sources de financement</h3>
+            <h3 className="card-title">Financing Sources</h3>
             <div className="card-sub">
               IsDB Ordinary Capital · LLF · Gouvernement · Co-financement
             </div>
@@ -125,7 +125,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
 
         {sources.length === 0 ? (
           <div className="empty">
-            <div className="empty-title">Aucune source de financement</div>
+            <div className="empty-title">No financing source</div>
             <p className="text-sm">Le financement mixte LLF2 combine prêts IsDB, dons de bailleurs et contreparties gouvernementales.</p>
           </div>
         ) : (
@@ -135,9 +135,9 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
                 <th>Source</th>
                 <th>Instrument</th>
                 <th>Bailleur</th>
-                <th>Libellé</th>
-                <th style={{ width: 140 }}>Montant d'origine</th>
-                <th style={{ width: 130 }}>Équiv. USD</th>
+                <th>Label</th>
+                <th style={{ width: 140 }}>Original Amount</th>
+                <th style={{ width: 130 }}>Equiv. USD</th>
                 {canEdit && <th style={{ width: 70 }} />}
               </tr>
             </thead>
@@ -190,8 +190,8 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h3 className="card-title">Allocation par composante <span className="badge" style={{ marginLeft: 8 }}>Indicatif</span></h3>
-            <div className="card-sub">Travaux · Conseil · Biens · Formation · Fonctionnement — détail au Module 9</div>
+            <h3 className="card-title">Allocation par composante <span className="badge" style={{ marginLeft: 8 }}>Indicative</span></h3>
+            <div className="card-sub">Works · Consulting · Goods · Training · Operations — detail in Module 9</div>
           </div>
           {canEdit && (
             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowAlloc(true)}>
@@ -202,7 +202,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
 
         {allocs.length === 0 ? (
           <div className="empty" style={{ padding: "var(--s-4)" }}>
-            <span className="text-muted text-xs">Aucune allocation saisie. Optionnel à ce stade.</span>
+            <span className="text-muted text-xs">No allocation entered. Optional at this stage.</span>
           </div>
         ) : (
           <div style={{ padding: "var(--s-4)" }}>
@@ -294,7 +294,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
   return (
     <Modal
       title={isEdit ? "Modifier la ligne de financement" : "Ajouter une source de financement"}
-      subtitle="SF-6 · Enveloppe financière LLF2"
+      subtitle="SF-6 · LLF2 Financial Envelope"
       onClose={onClose}
       footer={
         <>
@@ -326,12 +326,12 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       </div>
 
       <div className="field">
-        <label className="field-label">Bailleur associé</label>
+        <label className="field-label">Associated Donor</label>
         <select className="field-select" value={form.donor} onChange={(e) => set("donor", e.target.value)}>
           <option value="">— Aucun (optionnel) —</option>
           {donors.map((d) => <option key={d.id} value={d.id}>{d.short_name} — {d.name}</option>)}
         </select>
-        <span className="field-help">Optionnel pour les lignes IsDB Ordinary Capital.</span>
+        <span className="field-help">Optional for IsDB Ordinary Capital lines.</span>
       </div>
 
       <div className="row" style={{ gap: "var(--s-3)" }}>
@@ -358,14 +358,14 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
           </span>
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label className="field-label">Date du taux</label>
+          <label className="field-label">Exchange Rate Date</label>
           <input className="field-input" type="date" value={form.exchange_rate_date}
             onChange={(e) => set("exchange_rate_date", e.target.value)} />
         </div>
       </div>
 
       <div className="field">
-        <label className="field-label">Libellé libre</label>
+        <label className="field-label">Free Label</label>
         <input className="field-input" value={form.label} placeholder="ex. Prêt IsDB tranche 1"
           onChange={(e) => set("label", e.target.value)} />
       </div>
@@ -388,8 +388,8 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
 
   return (
     <Modal
-      title="Allocation par composante"
-      subtitle="Indicatif — détail au Module 9"
+      title="Allocation by Component"
+      subtitle="Indicative — detail in Module 9"
       onClose={onClose}
       footer={
         <>

@@ -46,15 +46,15 @@ export default function Rbac() {
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Acteurs</h2>
-              <div className="card-sub">Habilitations fonctionnelles par persona</div>
+              <h2 className="card-title">Actors</h2>
+              <div className="card-sub">Functional Permissions by Persona</div>
             </div>
           </div>
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: 240 }}>Acteur</th>
-                <th>Role dans le systeme</th>
+                <th style={{ width: 240 }}>Actor</th>
+                <th>System Role</th>
                 <th style={{ width: 90 }}>Type</th>
               </tr>
             </thead>
@@ -69,7 +69,7 @@ export default function Rbac() {
                     {r.is_system ? (
                       <span className="badge badge-violet">Systeme</span>
                     ) : (
-                      <span className="badge">Metier</span>
+                      <span className="badge">Business Role</span>
                     )}
                   </td>
                 </tr>
@@ -83,13 +83,13 @@ export default function Rbac() {
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Attributions actives</h2>
-              <div className="card-sub">Utilisateur × role × perimetre</div>
+              <h2 className="card-title">Active Assignments</h2>
+              <div className="card-sub">User × role × scope</div>
             </div>
           </div>
           {assignments?.length === 0 ? (
             <div className="empty">
-              <div className="empty-title">Aucune attribution</div>
+              <div className="empty-title">No assignment</div>
               <p className="text-sm">
                 Les attributions se font pour l'instant via la console d'administration Django.
               </p>
@@ -100,8 +100,8 @@ export default function Rbac() {
                 <tr>
                   <th>Utilisateur</th>
                   <th>Role</th>
-                  <th>Perimetre</th>
-                  <th style={{ width: 120 }}>Attribue le</th>
+                  <th>Scope</th>
+                  <th style={{ width: 120 }}>Assigned on</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,8 +130,8 @@ export default function Rbac() {
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Comptes</h2>
-              <div className="card-sub">Provisionnes via Microsoft Entra ID</div>
+              <h2 className="card-title">Accounts</h2>
+              <div className="card-sub">Provisioned via Microsoft Entra ID</div>
             </div>
           </div>
           <table className="table">

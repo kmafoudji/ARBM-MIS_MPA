@@ -23,8 +23,8 @@ const FIELD_ROWS = [
   { key: "calculation_method", label: "Methode de calcul", textarea: true },
   { key: "data_source", label: "Sources de donnees", textarea: true },
   { key: "collection_method", label: "Methode de collecte", textarea: true },
-  { key: "means_of_verification", label: "Moyens de verification", textarea: true },
-  { key: "assumptions", label: "Hypotheses", textarea: true },
+  { key: "means_of_verification", label: "Means of Verification", textarea: true },
+  { key: "assumptions", label: "Assumptions", textarea: true },
   { key: "limitations", label: "Limites", textarea: true },
 ];
 // unit, disaggregation, responsible -> ComboField (liste deroulante + champ libre)
@@ -53,7 +53,7 @@ function ComboField({ label, choices, value, onChange, textarea }) {
         <input
           className="field-input"
           style={{ marginTop: 4 }}
-          placeholder="Saisir une valeur personnalisee..."
+          placeholder="Enter a custom value..."
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -141,7 +141,7 @@ function IndicatorRow({ ind, isLast, canEdit }) {
           background: "var(--surface)",
           padding: "16px 16px 16px 24px",
         }}>
-          {isLoading && <div className="text-muted text-sm"><span className="spinner" /> Chargement...</div>}
+          {isLoading && <div className="text-muted text-sm"><span className="spinner" /> Loading...</div>}
 
           {detail && !editing && (
             <>
@@ -172,31 +172,31 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                 )}
                 {detail.unit && (
                   <div>
-                    <div className="dl-term">Unite de mesure</div>
+                    <div className="dl-term">Unit of Measure</div>
                     <div className="dl-desc">{detail.unit}</div>
                   </div>
                 )}
                 {detail.disaggregation && (
                   <div>
-                    <div className="dl-term">Desagregation</div>
+                    <div className="dl-term">Disaggregation</div>
                     <div className="dl-desc">{detail.disaggregation}</div>
                   </div>
                 )}
                 {detail.responsible && (
                   <div>
-                    <div className="dl-term">Responsable</div>
+                    <div className="dl-term">Responsible</div>
                     <div className="dl-desc">{detail.responsible}</div>
                   </div>
                 )}
                 {detail.reporting_frequency_display && (
                   <div>
-                    <div className="dl-term">Frequence de reporting</div>
+                    <div className="dl-term">Reporting Frequency</div>
                     <div className="dl-desc">{detail.reporting_frequency_display}</div>
                   </div>
                 )}
                 {detail.related_sdg_numbers?.length > 0 && (
                   <div>
-                    <div className="dl-term">ODD lies</div>
+                    <div className="dl-term">Related SDGs</div>
                     <div className="dl-desc row" style={{ gap: 8, flexWrap: "wrap" }}>
                       {detail.related_sdg_numbers.map((n) => (
                         <span key={n} className="row" style={{ gap: 4, alignItems: "center" }}>
@@ -232,32 +232,32 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                   <label className="field-label">Direction</label>
                   <select className="field-select" value={form.direction}
                     onChange={(e) => setForm({ ...form, direction: e.target.value })}>
-                    <option value="increase">A la hausse (+)</option>
-                    <option value="decrease">A la baisse (-)</option>
-                    <option value="neutral">Neutre</option>
+                    <option value="increase">Upward (+)</option>
+                    <option value="decrease">Downward (-)</option>
+                    <option value="neutral">Neutral</option>
                   </select>
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Frequence de reporting</label>
+                  <label className="field-label">Reporting Frequency</label>
                   <select className="field-select" value={form.reporting_frequency || ""}
                     onChange={(e) => setForm({ ...form, reporting_frequency: e.target.value })}>
-                    <option value="">Non specifie</option>
-                    <option value="quarterly">Trimestrielle</option>
-                    <option value="semi_annual">Semestrielle</option>
-                    <option value="annual">Annuelle</option>
-                    <option value="end_of_project">Fin de projet</option>
+                    <option value="">Not specified</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="semi_annual">Semi-annual</option>
+                    <option value="annual">Annual</option>
+                    <option value="end_of_project">End of project</option>
                   </select>
                 </div>
               </div>
 
               <div className="field">
-                <label className="field-label">Nom complet</label>
+                <label className="field-label">Full Name</label>
                 <textarea className="field-textarea" value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
 
               <ComboField
-                label="Unite de mesure"
+                label="Unit of Measure"
                 choices={choices?.units || []}
                 value={form.unit || ""}
                 onChange={(v) => setForm({ ...form, unit: v })}
@@ -277,14 +277,14 @@ function IndicatorRow({ ind, isLast, canEdit }) {
               ))}
 
               <ComboField
-                label="Desagregation"
+                label="Disaggregation"
                 choices={choices?.disaggregations || []}
                 value={form.disaggregation || ""}
                 onChange={(v) => setForm({ ...form, disaggregation: v })}
               />
 
               <ComboField
-                label="Responsable"
+                label="Responsible"
                 choices={choices?.responsibles || []}
                 value={form.responsible || ""}
                 onChange={(v) => setForm({ ...form, responsible: v })}
@@ -296,7 +296,7 @@ function IndicatorRow({ ind, isLast, canEdit }) {
               <div className="row">
                 <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
                   type="submit" disabled={updateMutation.isPending}>
-                  <Icon name="check" size={13} /> {updateMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  <Icon name="check" size={13} /> {updateMutation.isPending ? "Saving..." : "Save"}
                 </button>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
                   type="button" onClick={() => setEditing(false)}>
@@ -344,7 +344,7 @@ export default function IndicatorCatalogue() {
     <div className="view">
       <div className="view-header">
         <div className="view-eyebrow">Module 2 · LLF2</div>
-        <h1 className="view-title">Catalogue d'indicateurs</h1>
+        <h1 className="view-title">Indicator Catalogue</h1>
         <p className="view-lead">
           Bibliotheque institutionnelle LLF2 — Agriculture, Health, Infrastructure.
           Alimente par LLFMU uniquement.
@@ -356,15 +356,15 @@ export default function IndicatorCatalogue() {
         <div className="card-body">
           <div className="grid grid-2" style={{ gap: 8 }}>
             <div className="field" style={{ marginBottom: 0 }}>
-              <label className="field-label">Rechercher</label>
-              <input className="field-input" placeholder="Code (A001.1) ou mot-cle..."
+              <label className="field-label">Search</label>
+              <input className="field-input" placeholder="Code (A001.1) or keyword..."
                 value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
-              <label className="field-label">Secteur</label>
+              <label className="field-label">Sector</label>
               <select className="field-select" value={sectorFilter}
                 onChange={(e) => setSectorFilter(e.target.value)}>
-                <option value="">Tous</option>
+                <option value="">All</option>
                 {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
@@ -372,7 +372,7 @@ export default function IndicatorCatalogue() {
               <label className="field-label">Type</label>
               <select className="field-select" value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}>
-                <option value="">Tous</option>
+                <option value="">All</option>
                 <option value="output">Output</option>
                 <option value="outcome">Outcome</option>
                 <option value="impact">Impact</option>
@@ -380,7 +380,7 @@ export default function IndicatorCatalogue() {
             </div>
             <div className="field" style={{ marginBottom: 0, display: "flex", alignItems: "flex-end" }}>
               <span className="text-muted text-sm">
-                {isLoading ? "Chargement..." : `${indicators?.length ?? 0} indicateur${indicators?.length !== 1 ? "s" : ""}`}
+                {isLoading ? "Loading..." : `${indicators?.length ?? 0} indicateur${indicators?.length !== 1 ? "s" : ""}`}
               </span>
             </div>
           </div>
@@ -390,9 +390,9 @@ export default function IndicatorCatalogue() {
       {/* Liste */}
       <div className="card card-flush">
         <div style={{ padding: 0 }}>
-          {isLoading && <div style={{ padding: 16 }}><span className="spinner" /> Chargement...</div>}
+          {isLoading && <div style={{ padding: 16 }}><span className="spinner" /> Loading...</div>}
           {!isLoading && indicators?.length === 0 && (
-            <div className="text-muted text-sm" style={{ padding: 16 }}>Aucun indicateur trouve.</div>
+            <div className="text-muted text-sm" style={{ padding: 16 }}>No indicators found.</div>
           )}
           {indicators?.map((ind, i) => (
             <IndicatorRow

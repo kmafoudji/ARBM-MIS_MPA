@@ -232,7 +232,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       </div>
     );
   }
-  if (!project) return <div className="view">Projet introuvable.</div>;
+  if (!project) return <div className="view">Project not found.</div>;
 
   const otherStages = (stageChoices || []).filter((s) => s.value !== project.lifecycle_stage);
   const countries = project.countries_detail || [];
@@ -263,29 +263,29 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="grid grid-2 mb-3">
         <div className="card card-flush">
           <div className="card-header">
-            <h2 className="card-title">Identite &amp; perimetre</h2>
+            <h2 className="card-title">Identity &amp; Scope</h2>
           </div>
           <div className="card-body">
             <div className="dl">
-              <Dt term="Code interne">
+              <Dt term="Internal Code">
                 <span className="text-mono">{project.code}</span>
               </Dt>
-              <Dt term="Reference officielle">{project.official_reference_number}</Dt>
-              <Dt term="Pays chef de file">
+              <Dt term="Official Reference">{project.official_reference_number}</Dt>
+              <Dt term="Lead Country">
                 {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : "—"}
               </Dt>
-              <Dt term="Autres pays">
+              <Dt term="Other Countries">
                 {otherCountries.length > 0
                   ? otherCountries.map((c) => `${c.flag} ${c.name}`).join(", ")
                   : "—"}
               </Dt>
-              <Dt term="Hub regional">{project.hub_name || "—"}</Dt>
-              <Dt term="Budget indicatif">
+              <Dt term="Regional Hub">{project.hub_name || "—"}</Dt>
+              <Dt term="Indicative Budget">
                 {project.budget_amount
                   ? `${Number(project.budget_amount).toLocaleString("fr-FR")} USD`
                   : "—"}
               </Dt>
-              <Dt term="Enregistre par">{project.created_by_email}</Dt>
+              <Dt term="Registered by">{project.created_by_email}</Dt>
             </div>
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           <div className="card-header">
             <div>
               <h2 className="card-title">Classification</h2>
-              <div className="card-sub">SF-2 · requise au gate BED Approved</div>
+              <div className="card-sub">SF-2 · required at BED Approved gate</div>
             </div>
             {!showClassificationForm && (
               <button className="btn btn-primary btn-sm" onClick={openClassificationForm}>
@@ -307,14 +307,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <form onSubmit={handleClassificationSubmit}>
                 <div className="grid grid-2">
                   <div className="field">
-                    <label className="field-label" htmlFor="cPrimarySector">Secteur primaire</label>
+                    <label className="field-label" htmlFor="cPrimarySector">Primary Sector</label>
                     <select
                       id="cPrimarySector"
                       className="field-select"
                       value={cForm.primary_sector}
                       onChange={(e) => setCForm({ ...cForm, primary_sector: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {sectors?.map((s) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
@@ -322,7 +322,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="cContribSectors">Secteurs contributifs</label>
+                    <label className="field-label" htmlFor="cContribSectors">Contributing Sectors</label>
                     <select
                       id="cContribSectors"
                       className="field-select field-multi"
@@ -337,14 +337,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="cPrimarySdg">ODD primaire</label>
+                    <label className="field-label" htmlFor="cPrimarySdg">Primary SDG</label>
                     <select
                       id="cPrimarySdg"
                       className="field-select"
                       value={cForm.primary_sdg}
                       onChange={(e) => setCForm({ ...cForm, primary_sdg: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {sdgs?.map((s) => (
                         <option key={s.number} value={s.number}>ODD {s.number} — {s.name}</option>
                       ))}
@@ -352,7 +352,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="cContribSdgs">ODD contributifs</label>
+                    <label className="field-label" htmlFor="cContribSdgs">Contributing SDGs</label>
                     <select
                       id="cContribSdgs"
                       className="field-select field-multi"
@@ -367,14 +367,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="genderMarker">Marqueur genre</label>
+                    <label className="field-label" htmlFor="genderMarker">Gender Marker</label>
                     <select
                       id="genderMarker"
                       className="field-select"
                       value={cForm.gender_marker}
                       onChange={(e) => setCForm({ ...cForm, gender_marker: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {classificationChoices?.gender_marker.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
@@ -382,14 +382,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="modality">Modalite de mise en oeuvre</label>
+                    <label className="field-label" htmlFor="modality">Implementation Modality</label>
                     <select
                       id="modality"
                       className="field-select"
                       value={cForm.implementation_modality}
                       onChange={(e) => setCForm({ ...cForm, implementation_modality: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {classificationChoices?.implementation_modality.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
@@ -397,14 +397,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="typology">Typologie geographique</label>
+                    <label className="field-label" htmlFor="typology">Geographic Typology</label>
                     <select
                       id="typology"
                       className="field-select"
                       value={cForm.geographic_typology}
                       onChange={(e) => setCForm({ ...cForm, geographic_typology: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {classificationChoices?.geographic_typology.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
@@ -419,7 +419,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                       value={cForm.fragility_status}
                       onChange={(e) => setCForm({ ...cForm, fragility_status: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {classificationChoices?.fragility_status.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
@@ -427,14 +427,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="risk">Notation de risque</label>
+                    <label className="field-label" htmlFor="risk">Risk Rating</label>
                     <select
                       id="risk"
                       className="field-select"
                       value={cForm.risk_rating}
                       onChange={(e) => setCForm({ ...cForm, risk_rating: e.target.value })}
                     >
-                      <option value="">Selectionner</option>
+                      <option value="">Select</option>
                       {classificationChoices?.risk_rating.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
                       ))}
@@ -442,7 +442,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="themes">Themes transversaux</label>
+                    <label className="field-label" htmlFor="themes">Cross-Cutting Themes</label>
                     <select
                       id="themes"
                       className="field-select field-multi"
@@ -465,7 +465,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
                 <div className="row">
                   <button className="btn btn-primary" type="submit" disabled={classificationMutation.isPending}>
-                    {classificationMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                    {classificationMutation.isPending ? "Saving..." : "Save"}
                   </button>
                   <button className="btn btn-ghost" type="button" onClick={() => setShowClassificationForm(false)}>
                     Annuler
@@ -474,7 +474,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               </form>
             ) : (
               <div className="dl">
-                <Dt term="Secteur primaire">
+                <Dt term="Primary Sector">
                   {project.primary_sector_name ? (
                     <span className="row" style={{ gap: 8, alignItems: "center" }}>
                       <SectorIcon name={project.primary_sector_icon} color={project.primary_sector_color} size={24} />
@@ -482,7 +482,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     </span>
                   ) : "—"}
                 </Dt>
-                <Dt term="Secteurs contributifs">
+                <Dt term="Contributing Sectors">
                   {project.contributing_sectors_detail?.length ? (
                     <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
                       {project.contributing_sectors_detail.map((s) => (
@@ -494,7 +494,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     </div>
                   ) : "—"}
                 </Dt>
-                <Dt term="ODD primaire">
+                <Dt term="Primary SDG">
                   {project.primary_sdg ? (
                     <span className="row" style={{ gap: 8, alignItems: "center" }}>
                       <img
@@ -507,7 +507,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     </span>
                   ) : "—"}
                 </Dt>
-                <Dt term="ODD contributifs">
+                <Dt term="Contributing SDGs">
                   {project.contributing_sdgs_detail?.length ? (
                     <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
                       {project.contributing_sdgs_detail.map((s) => (
@@ -524,12 +524,12 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     </div>
                   ) : "—"}
                 </Dt>
-                <Dt term="Marqueur genre">{project.gender_marker_display || "—"}</Dt>
-                <Dt term="Modalite">{project.implementation_modality_display || "—"}</Dt>
-                <Dt term="Typologie geographique">{project.geographic_typology_display || "—"}</Dt>
-                <Dt term="Themes transversaux">{project.cross_cutting_theme_names?.join(", ") || "—"}</Dt>
-                <Dt term="Fragilite">{project.fragility_status_display || "—"}</Dt>
-                <Dt term="Notation de risque">{project.risk_rating_display || "—"}</Dt>
+                <Dt term="Gender Marker">{project.gender_marker_display || "—"}</Dt>
+                <Dt term="Modality">{project.implementation_modality_display || "—"}</Dt>
+                <Dt term="Geographic Typology">{project.geographic_typology_display || "—"}</Dt>
+                <Dt term="Cross-Cutting Themes">{project.cross_cutting_theme_names?.join(", ") || "—"}</Dt>
+                <Dt term="Fragility">{project.fragility_status_display || "—"}</Dt>
+                <Dt term="Risk Rating">{project.risk_rating_display || "—"}</Dt>
               </div>
             )}
           </div>
@@ -539,7 +539,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Cycle de vie</h2>
+            <h2 className="card-title">Lifecycle</h2>
             <div className="card-sub">
               Piste d'audit immuable · progression avant uniquement, autorisation double aux gates
             </div>
@@ -569,10 +569,10 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                 </div>
                 {!showDatesForm && (
                   <div className="dl">
-                    <Dt term="Date de debut">
+                    <Dt term="Start Date">
                       {project.start_date ? new Date(project.start_date).toLocaleDateString("fr-FR") : "—"}
                     </Dt>
-                    <Dt term="Date de fin">
+                    <Dt term="End Date">
                       {project.end_date ? new Date(project.end_date).toLocaleDateString("fr-FR") : "—"}
                     </Dt>
                   </div>
@@ -589,7 +589,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <form onSubmit={handleDatesSubmit} className="mt-2">
                 <div className="grid grid-2">
                   <div className="field">
-                    <label className="field-label" htmlFor="startDate">Date de debut</label>
+                    <label className="field-label" htmlFor="startDate">Start Date</label>
                     <input
                       id="startDate"
                       className="field-input"
@@ -599,7 +599,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     />
                   </div>
                   <div className="field">
-                    <label className="field-label" htmlFor="endDate">Date de fin</label>
+                    <label className="field-label" htmlFor="endDate">End Date</label>
                     <input
                       id="endDate"
                       className="field-input"
@@ -614,7 +614,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                 )}
                 <div className="row">
                   <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={datesMutation.isPending}>
-                    <Icon name="check" size={14} /> {datesMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                    <Icon name="check" size={14} /> {datesMutation.isPending ? "Saving..." : "Save"}
                   </button>
                   <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setShowDatesForm(false)}>
                     <Icon name="x" size={14} /> Annuler
@@ -650,7 +650,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     onChange={(e) => setTForm({ ...tForm, to_stage: e.target.value })}
                     required
                   >
-                    <option value="">Selectionner</option>
+                    <option value="">Select</option>
                     {otherStages.map((s) => (
                       <option key={s.value} value={s.value}>
                         {s.label}
@@ -691,7 +691,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   className="field-textarea"
                   value={tForm.justification}
                   onChange={(e) => setTForm({ ...tForm, justification: e.target.value })}
-                  placeholder="Obligatoire pour un retour arriere."
+                  placeholder="Required for a rollback."
                 />
               </div>
 
@@ -704,7 +704,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   className="field-input"
                   value={tForm.document_reference}
                   onChange={(e) => setTForm({ ...tForm, document_reference: e.target.value })}
-                  placeholder="Ex. PV Comite d'investissement 2026-03"
+                  placeholder="e.g. Investment Committee Minutes 2026-03"
                 />
               </div>
 
@@ -716,7 +716,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
               <div className="row">
                 <button className="btn btn-primary" type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? "Enregistrement..." : "Confirmer le changement"}
+                  {mutation.isPending ? "Saving..." : "Confirm Change"}
                 </button>
                 <button className="btn btn-ghost" type="button" onClick={() => setShowForm(false)}>
                   Annuler
@@ -759,7 +759,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Document PAD</h2>
+            <h2 className="card-title">PAD Document</h2>
             <div className="card-sub">
               SF-1 · Reference documentaire — l'extraction IA (BRQ-1.14) n'est pas encore active
             </div>
@@ -778,7 +778,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               </a>
               <div className="row">
                 <label className="btn btn-ghost btn-sm" style={{ cursor: "pointer" }}>
-                  {padUploadMutation.isPending ? "Televersement..." : "Remplacer"}
+                  {padUploadMutation.isPending ? "Uploading..." : "Replace"}
                   <input
                     type="file"
                     accept="application/pdf"
@@ -792,13 +792,13 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   disabled={padDeleteMutation.isPending}
                   onClick={() => padDeleteMutation.mutate()}
                 >
-                  {padDeleteMutation.isPending ? "Retrait..." : "Retirer"}
+                  {padDeleteMutation.isPending ? "Removing..." : "Remove"}
                 </button>
               </div>
             </div>
           ) : (
             <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
-              {padUploadMutation.isPending ? "Televersement..." : "Televerser le PAD (PDF)"}
+              {padUploadMutation.isPending ? "Uploading..." : "Upload PAD (PDF)"}
               <input
                 type="file"
                 accept="application/pdf"
@@ -821,7 +821,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Theorie du Changement</h2>
+            <h2 className="card-title">Theory of Change</h2>
             <div className="card-sub">
               SF-1 · Etape 2 · BRQ-1.35 — obligatoire des Pipeline Taskforce Approved
             </div>
@@ -836,7 +836,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Cadre logique (Logframe)</h2>
+            <h2 className="card-title">Logical Framework (Logframe)</h2>
             <div className="card-sub">
               Module 2 · Indicateurs du catalogue LLF2 · Baseline et cibles
             </div>
@@ -867,21 +867,21 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             <form onSubmit={handleReportingSubmit}>
               <div className="grid grid-2">
                 <div className="field">
-                  <label className="field-label" htmlFor="reportingFreq">Frequence</label>
+                  <label className="field-label" htmlFor="reportingFreq">Frequency</label>
                   <select
                     id="reportingFreq"
                     className="field-select"
                     value={rForm.reporting_frequency}
                     onChange={(e) => setRForm({ ...rForm, reporting_frequency: e.target.value })}
                   >
-                    <option value="">Selectionner</option>
-                    <option value="quarterly">Trimestrielle</option>
-                    <option value="semi_annual">Semestrielle</option>
-                    <option value="annual">Annuelle</option>
+                    <option value="">Select</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="semi_annual">Semi-annual</option>
+                    <option value="annual">Annual</option>
                   </select>
                 </div>
                 <div className="field">
-                  <label className="field-label" htmlFor="nextDue">Premiere echeance</label>
+                  <label className="field-label" htmlFor="nextDue">First Deadline</label>
                   <input
                     id="nextDue"
                     className="field-input"
@@ -898,7 +898,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               )}
               <div className="row">
                 <button className="btn btn-primary" type="submit" disabled={reportingMutation.isPending}>
-                  {reportingMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  {reportingMutation.isPending ? "Saving..." : "Save"}
                 </button>
                 <button className="btn btn-ghost" type="button" onClick={() => setShowReportingForm(false)}>
                   Annuler
@@ -907,8 +907,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </form>
           ) : (
             <div className="dl">
-              <Dt term="Frequence">{project.reporting_frequency_display || "—"}</Dt>
-              <Dt term="Premiere echeance">
+              <Dt term="Frequency">{project.reporting_frequency_display || "—"}</Dt>
+              <Dt term="First Deadline">
                 {project.next_reporting_due
                   ? new Date(project.next_reporting_due).toLocaleDateString("fr-FR")
                   : "—"}
@@ -922,8 +922,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Enveloppe financiere</h2>
-            <div className="card-sub">SF-6 · Financement mixte LLF2 · Indicatif — detail au Module 9</div>
+            <h2 className="card-title">Financial Envelope</h2>
+            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
           </div>
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />

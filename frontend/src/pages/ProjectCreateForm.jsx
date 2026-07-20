@@ -62,8 +62,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   return (
     <div className="view" style={{ maxWidth: 880 }}>
       <div className="view-header">
-        <div className="view-eyebrow">Assistant d'enregistrement · SF-1</div>
-        <h1 className="view-title">Nouveau projet</h1>
+        <div className="view-eyebrow">Registration Wizard · SF-1</div>
+        <h1 className="view-title">New Project</h1>
         <p className="view-lead">
           Etape Concept Note. L'assistant n'exige que le sous-ensemble minimal correspondant a
           cette etape (gating progressif) — les champs de classification complets seront requis
@@ -75,8 +75,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         <div className="card card-flush mb-3">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Identite de base</h2>
-              <div className="card-sub">Nom, perimetre geographique</div>
+              <h2 className="card-title">Basic Identity</h2>
+              <div className="card-sub">Name, geographic scope</div>
             </div>
             <span className="badge badge-lime">Requis</span>
           </div>
@@ -150,8 +150,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         <div className="card card-flush mb-3">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Alignement strategique</h2>
-              <div className="card-sub">Secteurs et objectifs de developpement durable</div>
+              <h2 className="card-title">Strategic Alignment</h2>
+              <div className="card-sub">Sectors and sustainable development goals</div>
             </div>
           </div>
           <div className="card-body">
@@ -168,7 +168,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   onChange={handleChange}
                   required
                 >
-                  <option value="">Selectionner</option>
+                  <option value="">Select</option>
                   {sectors?.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -188,7 +188,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   value={form.primary_sdg}
                   onChange={handleChange}
                 >
-                  <option value="">Selectionner</option>
+                  <option value="">Select</option>
                   {sdgs?.map((s) => (
                     <option key={s.number} value={s.number}>
                       ODD {s.number} — {s.name}
@@ -241,8 +241,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         <div className="card card-flush mb-4">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Financement</h2>
-              <div className="card-sub">Enveloppe indicative au stade Concept Note</div>
+              <h2 className="card-title">Financing</h2>
+              <div className="card-sub">Indicative envelope at Concept Note stage</div>
             </div>
           </div>
           <div className="card-body">
@@ -271,7 +271,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
         <div className="row">
           <button className="btn btn-primary btn-lg" type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Enregistrement..." : "Enregistrer le Concept Note"}
+            {mutation.isPending ? "Saving..." : "Save Concept Note"}
           </button>
           <button className="btn btn-ghost" type="button" onClick={onCancel}>
             Annuler

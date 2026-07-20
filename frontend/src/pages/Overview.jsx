@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { apiFetch } from "../api";
 
 function Kpi({ label, value, extra }) {
@@ -12,32 +13,33 @@ function Kpi({ label, value, extra }) {
 }
 
 const STAGE_PHASE = {
-  concept_note: "Pre-approbation",
-  pipeline_taskforce_review: "Pre-approbation",
-  pipeline_taskforce_approved: "Pre-approbation",
-  preparation_identification: "Pre-approbation",
-  trc_endorsed: "Gate d'approbation",
-  ic_approved: "Gate d'approbation",
-  bed_approved: "Gate d'approbation",
-  appraisal: "Mise en oeuvre",
-  effective: "Mise en oeuvre",
-  implementing: "Mise en oeuvre",
-  mid_term_review: "Mise en oeuvre",
-  substantially_complete: "Cloture",
-  closed: "Cloture",
-  suspended: "Exception",
-  cancelled: "Exception",
+  concept_note: "pre_approval",
+  pipeline_taskforce_review: "pre_approval",
+  pipeline_taskforce_approved: "pre_approval",
+  preparation_identification: "pre_approval",
+  trc_endorsed: "approval_gate",
+  ic_approved: "approval_gate",
+  bed_approved: "approval_gate",
+  appraisal: "implementation",
+  effective: "implementation",
+  implementing: "implementation",
+  mid_term_review: "implementation",
+  substantially_complete: "closure",
+  closed: "closure",
+  suspended: "exception",
+  cancelled: "exception",
 };
 
 const PHASE_COLOR = {
-  "Pre-approbation": "var(--subtle)",
-  "Gate d'approbation": "var(--orange)",
-  "Mise en oeuvre": "var(--lime)",
-  Cloture: "var(--blue)",
-  Exception: "var(--rose)",
+  pre_approval: "var(--subtle)",
+  approval_gate: "var(--orange)",
+  implementation: "var(--lime)",
+  closure: "var(--blue, #3F6CC5)",
+  exception: "var(--rose)",
 };
 
 export default function Overview({ user }) {
+  const { t } = useTranslation();
   const { data: projects } = useQuery({ queryKey: ["projects"], queryFn: () => apiFetch("/api/projects/") });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: countries } = useQuery({ queryKey: ["countries"], queryFn: () => apiFetch("/api/reference/countries/") });
@@ -49,9 +51,17 @@ export default function Overview({ user }) {
   const coveredCountries = new Set();
   projects?.forEach((p) => p.country_names?.forEach((c) => coveredCountries.add(c)));
 
+  const PHASE_LABELS = {
+    pre_approval: "Pre-Approval",
+    approval_gate: "Approval Gate",
+    implementation: "Implementation",
+    closure: "Closure",
+    exception: "Exception",
+  };
+
   const byPhase = {};
   projects?.forEach((p) => {
-    const phase = STAGE_PHASE[p.lifecycle_stage] || "Autre";
+    const phase = STAGE_PHASE[p.lifecycle_stage] || "exception";
     byPhase[phase] = (byPhase[phase] || 0) + 1;
   });
   const maxPhase = Math.max(1, ...Object.values(byPhase));
@@ -66,28 +76,28 @@ export default function Overview({ user }) {
   return (
     <div className="view">
       <div className="view-header">
-        <div className="view-eyebrow">Console · LLF2</div>
+        <div className="view-eyebrow">{t("app.console")}</div>
         <h1 className="view-title">
-          Pilotage du portefeuille{user?.name ? ` — ${user.name}` : ""}
+          Portfolio Dashboard{user?.name ? ` — ${user.name}` : ""}
         </h1>
         <p className="view-lead">
-          Vue consolidee de la configuration : donnees de reference chargees, projets enregistres
-          et repartition du portefeuille. Tout est configure via les ecrans d'administration.
+          Consolidated configuration view: reference data loaded, projects registered
+          and portfolio distribution. Everything is configured via the administration screens.
         </p>
       </div>
 
       <div className="kpi-strip mb-4">
         <Kpi
-          label="Projets enregistres"
+          label="Registered Projects"
           value={projects?.length}
-          extra={`${coveredCountries.size} pays couvert${coveredCountries.size > 1 ? "s" : ""}`}
+          extra={`${coveredCountries.size} countr${coveredCountries.size > 1 ? "ies" : "y"} covered`}
         />
-        <Kpi label="Engagement total" value={<>{budgetM} <span style={{ fontSize: 16, color: "var(--muted)" }}>M USD</span></>} extra="budget indicatif cumule" />
-        <Kpi label="Pays references" value={countries?.length} extra="referentiel GADM Admin 0" />
+        <Kpi label="Total Commitment" value={<>{budgetM} <span style={{ fontSize: 16, color: "var(--muted)" }}>{t("overview.m_usd")}</span></>} extra="cumulative indicative budget" />
+        <Kpi label="Reference Countries" value={countries?.length} extra="GADM Admin 0 reference" />
         <Kpi
-          label="Utilisateurs"
+          label="Users"
           value={users?.length}
-          extra={`${roles?.length ?? 0} roles configures`}
+          extra={`${roles?.length ?? 0} roles configured`}
         />
       </div>
 
@@ -95,28 +105,20 @@ export default function Overview({ user }) {
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Repartition par secteur</h2>
-              <div className="card-sub">Engagement financier · USD</div>
+              <h2 className="card-title">{t("overview.by_sector")}</h2>
+              <div className="card-sub">{t("envelope.commitment")}</div>
             </div>
-            <span className="badge badge-lime">{Object.keys(bySector).length} secteurs</span>
+            <span className="badge badge-lime">{Object.keys(bySector).length} sectors</span>
           </div>
           <div className="card-body">
             {Object.keys(bySector).length === 0 && (
-              <p className="text-muted text-sm">Aucun projet avec budget renseigne.</p>
+              <p className="text-muted text-sm">{t("overview.no_budget")}</p>
             )}
             {Object.entries(bySector).map(([sector, amount]) => (
               <div key={sector} className="row mb-2" style={{ gap: "var(--s-3)" }}>
                 <span style={{ flex: "0 0 34%", fontSize: 13 }}>{sector}</span>
                 <span style={{ flex: 1, height: 6, background: "var(--rule-soft)", borderRadius: 100 }}>
-                  <span
-                    style={{
-                      display: "block",
-                      height: "100%",
-                      width: `${(amount / maxSector) * 100}%`,
-                      background: "var(--lime)",
-                      borderRadius: 100,
-                    }}
-                  />
+                  <span style={{ display: "block", height: "100%", width: `${(amount / maxSector) * 100}%`, background: "var(--lime)", borderRadius: 100 }} />
                 </span>
                 <span className="text-mono text-xs" style={{ flex: "0 0 70px", textAlign: "right" }}>
                   {(amount / 1_000_000).toFixed(1)}M
@@ -129,43 +131,25 @@ export default function Overview({ user }) {
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Cycle de vie</h2>
-              <div className="card-sub">Projets par phase · SF-4</div>
+              <h2 className="card-title">Lifecycle</h2>
+              <div className="card-sub">{t("overview.phases")}</div>
             </div>
-            <span className="badge">{projects?.length ?? 0} projets</span>
+            <span className="badge">{projects?.length ?? 0} projects</span>
           </div>
           <div className="card-body">
             {Object.keys(byPhase).length === 0 && (
-              <p className="text-muted text-sm">Aucun projet enregistre.</p>
+              <p className="text-muted text-sm">{t("project.none_desc")}</p>
             )}
             {Object.entries(byPhase).map(([phase, count]) => (
               <div key={phase} className="row mb-2" style={{ gap: "var(--s-3)" }}>
                 <span className="row" style={{ flex: "0 0 42%", gap: 8, fontSize: 13 }}>
-                  <span
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: PHASE_COLOR[phase] || "var(--subtle)",
-                      flexShrink: 0,
-                    }}
-                  />
-                  {phase}
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: PHASE_COLOR[phase] || "var(--subtle)", flexShrink: 0 }} />
+                  {PHASE_LABELS[phase] || phase}
                 </span>
                 <span style={{ flex: 1, height: 6, background: "var(--rule-soft)", borderRadius: 100 }}>
-                  <span
-                    style={{
-                      display: "block",
-                      height: "100%",
-                      width: `${(count / maxPhase) * 100}%`,
-                      background: PHASE_COLOR[phase] || "var(--subtle)",
-                      borderRadius: 100,
-                    }}
-                  />
+                  <span style={{ display: "block", height: "100%", width: `${(count / maxPhase) * 100}%`, background: PHASE_COLOR[phase] || "var(--subtle)", borderRadius: 100 }} />
                 </span>
-                <span className="text-mono text-xs" style={{ flex: "0 0 24px", textAlign: "right" }}>
-                  {count}
-                </span>
+                <span className="text-mono text-xs" style={{ flex: "0 0 24px", textAlign: "right" }}>{count}</span>
               </div>
             ))}
           </div>

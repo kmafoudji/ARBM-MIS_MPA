@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Flag from "../components/Flag.jsx";
@@ -40,27 +41,27 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
       <div className="row row-between mb-4" style={{ alignItems: "flex-end" }}>
         <div className="view-header" style={{ marginBottom: 0 }}>
           <div className="view-eyebrow">Projets &amp; suivi</div>
-          <h1 className="view-title">Portefeuille</h1>
+          <h1 className="view-title">Portfolio</h1>
           <p className="view-lead">
-            Projets enregistres dans le systeme, du Concept Note a la cloture.
+            Projects registered in the system, from Concept Note to closure.
             Selectionnez un projet pour consulter sa fiche et son cycle de vie.
           </p>
         </div>
         <button className="btn btn-primary" onClick={onCreateClick}>
-          + Nouveau projet
+          + New Project
         </button>
       </div>
 
       {isLoading && (
         <div className="loading-wrap" style={{ minHeight: 200 }}>
-          <span className="spinner" /> Chargement du portefeuille...
+          <span className="spinner" /> Loading portfolio...
         </div>
       )}
 
       {isError && (
         <div className="card">
           <div className="field-error">
-            Impossible de charger les projets. Verifiez votre session et reessayez.
+            Unable to load projects. Please check your session and try again.
           </div>
         </div>
       )}
@@ -68,7 +69,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
       {data?.length === 0 && (
         <div className="card">
           <div className="empty">
-            <div className="empty-title">Aucun projet enregistre</div>
+            <div className="empty-title">No projects registered</div>
             <p className="text-sm mb-3">
               Commencez par enregistrer un Concept Note — seuls le nom, le pays et le secteur
               sont requis a ce stade.
@@ -92,9 +93,9 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Projet</th>
-                <th>Pays</th>
-                <th>Secteur</th>
+                <th>Project</th>
+                <th>Countries</th>
+                <th>Sector</th>
                 <th>Etape</th>
                 <th style={{ textAlign: "right" }}>Budget USD</th>
               </tr>

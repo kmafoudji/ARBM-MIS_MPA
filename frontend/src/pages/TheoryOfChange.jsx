@@ -7,10 +7,10 @@ import RichTextEditor from "../components/RichTextEditor";
 import TagInput from "../components/TagInput";
 
 const LEVELS = [
-  { key: "activity", label: "Activites", parentKey: null, icon: "zap" },
-  { key: "output", label: "Produits", parentKey: "activity", icon: "package" },
-  { key: "immediate_outcome", label: "Effets immediats", parentKey: "output", icon: "trending-up" },
-  { key: "intermediate_outcome", label: "Effets intermediaires", parentKey: "immediate_outcome", icon: "layers" },
+  { key: "activity", label: "Activities", parentKey: null, icon: "zap" },
+  { key: "output", label: "Outputs", parentKey: "activity", icon: "package" },
+  { key: "immediate_outcome", label: "Immediate Outcomes", parentKey: "output", icon: "trending-up" },
+  { key: "intermediate_outcome", label: "Intermediate Outcomes", parentKey: "immediate_outcome", icon: "layers" },
 ];
 
 const EMPTY_NODE_FORM = {
@@ -35,7 +35,7 @@ function LogframeRowSelect({ projectId, value, onChange }) {
     queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/`),
   });
 
-  if (isLoading) return <div className="field-input text-muted text-sm">Chargement...</div>;
+  if (isLoading) return <div className="field-input text-muted text-sm">Loading...</div>;
 
   if (!rows || rows.length === 0) {
     return (
@@ -47,7 +47,7 @@ function LogframeRowSelect({ projectId, value, onChange }) {
 
   return (
     <select className="field-select" value={value || ""} onChange={(e) => onChange(e.target.value || null)}>
-      <option value="">Aucun indicateur lie</option>
+      <option value="">No indicator linked</option>
       {rows.map((r) => (
         <option key={r.id} value={r.id}>
           {r.indicator_code} — {r.indicator_name.slice(0, 55)}
@@ -116,7 +116,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
       {expanded && !editing && (
         <div className="dl mt-2">
           <div>
-            <div className="dl-term">Indicateur (logframe)</div>
+            <div className="dl-term">Indicator (logframe)</div>
             <div className="dl-desc">
               {node.logframe_indicator_code ? (
                 <span className="row" style={{ gap: 8, alignItems: "center" }}>
@@ -133,23 +133,23 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
             </div>
           </div>
           <div>
-            <div className="dl-term">Moyens de verification</div>
+            <div className="dl-term">Means of Verification</div>
             <div className="dl-desc"><RichText value={node.means_of_verification} /></div>
           </div>
           <div>
-            <div className="dl-term">Hypotheses</div>
+            <div className="dl-term">Assumptions</div>
             <div className="dl-desc"><RichText value={node.assumptions} /></div>
           </div>
           <div>
-            <div className="dl-term">Mitigation des risques</div>
+            <div className="dl-term">Risk Mitigation</div>
             <div className="dl-desc"><RichText value={node.risks_mitigation} /></div>
           </div>
           <div>
-            <div className="dl-term">Strategie d'adaptation</div>
+            <div className="dl-term">Adaptation Strategy</div>
             <div className="dl-desc"><RichText value={node.adaptation_strategy} /></div>
           </div>
           <div>
-            <div className="dl-term">Tag genre / climat</div>
+            <div className="dl-term">Gender / Climate Tag</div>
             <div className="dl-desc">
               {node.gender_climate_tag ? (
                 <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
@@ -181,7 +181,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
                 }
               }}
             >
-              <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Suppression..." : "Delete"}
             </button>
           </div>
         </div>
@@ -190,7 +190,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
       {editing && (
         <form onSubmit={submitEdit} className="mt-2">
           <div className="field">
-            <label className="field-label">Enonce</label>
+            <label className="field-label">Statement</label>
             <RichTextEditor
               value={form.statement}
               onChange={(html) => setForm({ ...form, statement: html })}
@@ -198,7 +198,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
           </div>
           <div className="grid grid-2">
             <div className="field">
-              <label className="field-label">Indicateur (logframe)</label>
+              <label className="field-label">Indicator (logframe)</label>
               <LogframeRowSelect
                 projectId={projectId}
                 value={form.logframe_row_id || ""}
@@ -206,37 +206,37 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
               />
             </div>
             <div className="field">
-              <label className="field-label">Tag genre / climat</label>
+              <label className="field-label">Gender / Climate Tag</label>
               <TagInput
                 value={form.gender_climate_tag}
                 onChange={(v) => setForm({ ...form, gender_climate_tag: v })}
-                placeholder="genre, climat, jeunesse..."
+                placeholder="gender, climate, youth..."
               />
             </div>
           </div>
           <div className="field">
-            <label className="field-label">Moyens de verification</label>
+            <label className="field-label">Means of Verification</label>
             <RichTextEditor
               value={form.means_of_verification}
               onChange={(html) => setForm({ ...form, means_of_verification: html })}
             />
           </div>
           <div className="field">
-            <label className="field-label">Hypotheses</label>
+            <label className="field-label">Assumptions</label>
             <RichTextEditor
               value={form.assumptions}
               onChange={(html) => setForm({ ...form, assumptions: html })}
             />
           </div>
           <div className="field">
-            <label className="field-label">Mitigation des risques</label>
+            <label className="field-label">Risk Mitigation</label>
             <RichTextEditor
               value={form.risks_mitigation}
               onChange={(html) => setForm({ ...form, risks_mitigation: html })}
             />
           </div>
           <div className="field">
-            <label className="field-label">Strategie d'adaptation</label>
+            <label className="field-label">Adaptation Strategy</label>
             <RichTextEditor
               value={form.adaptation_strategy}
               onChange={(html) => setForm({ ...form, adaptation_strategy: html })}
@@ -247,7 +247,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
           )}
           <div className="row">
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={updateMutation.isPending}>
-              <Icon name="check" size={14} /> {updateMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+              <Icon name="check" size={14} /> {updateMutation.isPending ? "Saving..." : "Save"}
             </button>
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditing(false)}>
               <Icon name="x" size={14} /> Annuler
@@ -333,7 +333,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
       {!collapsed && (
       <div className="card-body">
         {nodes.length === 0 && !adding && (
-          <p className="text-muted text-sm" style={{ margin: 0 }}>Aucun noeud a ce niveau.</p>
+          <p className="text-muted text-sm" style={{ margin: 0 }}>No nodes at this level.</p>
         )}
         <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
           {nodes.map((n) => (
@@ -363,7 +363,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
                   onChange={(e) => setForm({ ...form, parent: e.target.value })}
                   required
                 >
-                  <option value="">Selectionner</option>
+                  <option value="">Select</option>
                   {parentOptions.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.code} — {stripHtml(p.statement).slice(0, 60)}
@@ -388,7 +388,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
             </div>
             <div className="grid grid-2">
               <div className="field">
-                <label className="field-label">Indicateur (logframe)</label>
+                <label className="field-label">Indicator (logframe)</label>
                 <LogframeRowSelect
                   projectId={projectId}
                   value={form.logframe_row}
@@ -396,38 +396,38 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
                 />
               </div>
               <div className="field">
-                <label className="field-label">Tag genre / climat</label>
+                <label className="field-label">Gender / Climate Tag</label>
                 <TagInput
                   value={form.gender_climate_tag}
                   onChange={(v) => setForm({ ...form, gender_climate_tag: v })}
-                  placeholder="genre, climat, jeunesse..."
+                  placeholder="gender, climate, youth..."
                 />
               </div>
             </div>
             <div className="field">
-              <label className="field-label">Moyens de verification</label>
+              <label className="field-label">Means of Verification</label>
               <RichTextEditor
                 value={form.means_of_verification}
                 onChange={(html) => setForm({ ...form, means_of_verification: html })}
               />
             </div>
             <div className="field">
-              <label className="field-label">Hypotheses</label>
+              <label className="field-label">Assumptions</label>
               <RichTextEditor
                 value={form.assumptions}
                 onChange={(html) => setForm({ ...form, assumptions: html })}
-                placeholder="Conditions supposees pour que le pathway causal tienne."
+                placeholder="Conditions assumed true for the causal pathway to hold."
               />
             </div>
             <div className="field">
-              <label className="field-label">Mitigation des risques</label>
+              <label className="field-label">Risk Mitigation</label>
               <RichTextEditor
                 value={form.risks_mitigation}
                 onChange={(html) => setForm({ ...form, risks_mitigation: html })}
               />
             </div>
             <div className="field">
-              <label className="field-label">Strategie d'adaptation</label>
+              <label className="field-label">Adaptation Strategy</label>
               <RichTextEditor
                 value={form.adaptation_strategy}
                 onChange={(html) => setForm({ ...form, adaptation_strategy: html })}
@@ -438,7 +438,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
             )}
             <div className="row">
               <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={createMutation.isPending}>
-                <Icon name="plus" size={14} /> {createMutation.isPending ? "Enregistrement..." : "Ajouter"}
+                <Icon name="plus" size={14} /> {createMutation.isPending ? "Saving..." : "Add"}
               </button>
               <button
                 className="btn btn-ghost btn-sm row"
@@ -519,7 +519,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
 
       <div className="view-header">
         <div className="view-eyebrow text-mono">{toc.project_code}</div>
-        <h1 className="view-title">Theorie du Changement</h1>
+        <h1 className="view-title">Theory of Change</h1>
         <div className="row mt-2">
           <span className="badge">{toc.status_display}</span>
           <span className="text-muted text-sm">{toc.project_name}</span>
@@ -544,8 +544,8 @@ export default function TheoryOfChange({ projectId, onBack }) {
               <Icon name="target" size={18} />
             </span>
             <div>
-              <h2 className="card-title">Cadre</h2>
-              <div className="card-sub">Enonce du probleme et effet ultime (sommet de la chaine)</div>
+              <h2 className="card-title">Frame</h2>
+              <div className="card-sub">Problem statement and ultimate outcome (top of the chain)</div>
             </div>
           </div>
           <div className="row" style={{ gap: 8 }}>
@@ -580,19 +580,19 @@ export default function TheoryOfChange({ projectId, onBack }) {
                   value={frameForm.status}
                   onChange={(e) => setFrameForm({ ...frameForm, status: e.target.value })}
                 >
-                  <option value="draft">Brouillon</option>
+                  <option value="draft">Draft</option>
                   <option value="active">Active</option>
                 </select>
               </div>
               <div className="field">
-                <label className="field-label">Enonce du probleme</label>
+                <label className="field-label">Problem Statement</label>
                 <RichTextEditor
                   value={frameForm.problem_statement}
                   onChange={(html) => setFrameForm({ ...frameForm, problem_statement: html })}
                 />
               </div>
               <div className="field">
-                <label className="field-label">Effet ultime (impact)</label>
+                <label className="field-label">Ultimate Outcome (Impact)</label>
                 <RichTextEditor
                   value={frameForm.ultimate_outcome}
                   onChange={(html) => setFrameForm({ ...frameForm, ultimate_outcome: html })}
@@ -603,7 +603,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
               )}
               <div className="row">
                 <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={frameMutation.isPending}>
-                  <Icon name="check" size={14} /> {frameMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  <Icon name="check" size={14} /> {frameMutation.isPending ? "Saving..." : "Save"}
                 </button>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditingFrame(false)}>
                   <Icon name="x" size={14} /> Annuler
@@ -613,11 +613,11 @@ export default function TheoryOfChange({ projectId, onBack }) {
           ) : (
             <div className="dl">
               <div>
-                <div className="dl-term">Enonce du probleme</div>
+                <div className="dl-term">Problem Statement</div>
                 <div className="dl-desc"><RichText value={toc.problem_statement} /></div>
               </div>
               <div>
-                <div className="dl-term">Effet ultime (impact)</div>
+                <div className="dl-term">Ultimate Outcome (Impact)</div>
                 <div className="dl-desc"><RichText value={toc.ultimate_outcome} /></div>
               </div>
             </div>

@@ -68,7 +68,7 @@ const LOGO_HELP =
 const TABS = [
   {
     key: "countries",
-    label: "Pays",
+    label: "Countries",
     url: "/api/reference/countries/",
     singular: "un pays",
     sub: "Referentiel GADM Admin 0 · rattachement aux hubs regionaux",
@@ -77,7 +77,7 @@ const TABS = [
       { name: "iso2", label: "Code ISO2", type: "text", required: true, maxLength: 2,
         help: "Deux lettres. Determine le drapeau affiche." },
       { name: "iso3", label: "Code ISO3", type: "text", required: true, maxLength: 3 },
-      { name: "hub", label: "Hub regional", type: "select", optionsKey: "hubs" },
+      { name: "hub", label: "Regional Hub", type: "select", optionsKey: "hubs" },
       { name: "is_fragile", label: "Contexte de fragilite (FCS)", type: "checkbox" },
     ],
   },
@@ -125,7 +125,7 @@ const TABS = [
       { name: "name", label: "Nom de l'agence", type: "text", required: true },
       { name: "code", label: "Code", type: "text", required: true },
       { name: "agency_type", label: "Type", type: "select", required: true, options: AGENCY_TYPES },
-      { name: "country", label: "Pays", type: "select", optionsKey: "countries",
+      { name: "country", label: "Countries", type: "select", optionsKey: "countries",
         help: "Laisser vide pour une agence internationale (ONU, ONG multi-pays)." },
       { name: "logo_url", label: "Logo", type: "logo", help: LOGO_HELP },
     ],
@@ -276,7 +276,7 @@ export default function MasterData({ canEdit }) {
         width: 92,
         render: (r) =>
           r.is_active
-            ? <span className="badge badge-lime">Actif</span>
+            ? <span className="badge badge-lime">Active</span>
             : <span className="badge badge-off">Desactive</span>,
       }];
 
@@ -289,9 +289,9 @@ export default function MasterData({ canEdit }) {
       columns: [
         { key: "flag", label: "", width: 44, render: (r) => <Flag iso2={r.iso2} title={r.name} /> },
         { key: "iso3", label: "ISO3", width: 66, cellClass: "text-mono text-xs", sortable: true },
-        { key: "name", label: "Pays", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
+        { key: "name", label: "Countries", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
         {
-          key: "hub_name", label: "Hub regional", sortable: true,
+          key: "hub_name", label: "Regional Hub", sortable: true,
           render: (r) => r.hub_name ? (
             <span className="row" style={{ gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: r.hub_color || "var(--subtle)", flexShrink: 0 }} />
@@ -299,7 +299,7 @@ export default function MasterData({ canEdit }) {
             </span>
           ) : <span className="text-muted text-xs">Non rattache</span>,
         },
-        { key: "is_fragile", label: "Fragilite", width: 84, render: (r) => r.is_fragile ? <span className="badge badge-rose">FCS</span> : "—" },
+        { key: "is_fragile", label: "Fragility", width: 84, render: (r) => r.is_fragile ? <span className="badge badge-rose">FCS</span> : "—" },
         ...statusCol,
         ...actionsCol(),
       ],
@@ -340,7 +340,7 @@ export default function MasterData({ canEdit }) {
         { key: "name", label: "Agence", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
         { key: "agency_type_display", label: "Type", width: 148, sortable: true, render: (r) => <span className="badge">{r.agency_type_display}</span> },
         {
-          key: "country_name", label: "Pays", width: 168, sortable: true,
+          key: "country_name", label: "Countries", width: 168, sortable: true,
           render: (r) => r.country_name ? (
             <span className="row" style={{ gap: 7 }}>
               <Flag iso2={r.country_iso2} size={16} />
@@ -357,8 +357,8 @@ export default function MasterData({ canEdit }) {
       filters: [STATUS_FILTER],
       columns: [
         { key: "icon", label: "", width: 52, render: (r) => <SectorIcon name={r.icon} color={r.color} /> },
-        { key: "name", label: "Secteur", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
-        { key: "parent_name", label: "Rattache a", width: 184, render: (r) => r.parent_name || <span className="text-muted text-xs">Premier niveau</span> },
+        { key: "name", label: "Sector", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
+        { key: "parent_name", label: "Linked to", width: 184, render: (r) => r.parent_name || <span className="text-muted text-xs">First level</span> },
         { key: "usage_count", label: "Projets", width: 78, cellClass: "text-mono text-xs", sortable: true },
         ...statusCol,
         ...actionsCol(),
@@ -394,7 +394,7 @@ export default function MasterData({ canEdit }) {
       <div className="row row-between mb-4" style={{ alignItems: "flex-end" }}>
         <div className="view-header" style={{ marginBottom: 0 }}>
           <div className="view-eyebrow">Referentiels</div>
-          <h1 className="view-title">Donnees de base</h1>
+          <h1 className="view-title">Reference Data</h1>
           <p className="view-lead">
             Elements reutilises par tous les projets du portefeuille. La modification est
             reservee aux roles portant la gouvernance des classifications.
@@ -410,7 +410,7 @@ export default function MasterData({ canEdit }) {
       {!canEdit && (
         <div className="card mb-3" style={{ background: "var(--lime-pale)", borderColor: "var(--lime-soft)" }}>
           <div className="row" style={{ gap: "var(--s-2)" }}>
-            <span className="badge badge-lime">Lecture seule</span>
+            <span className="badge badge-lime">Read only</span>
             <span className="text-sm text-muted">
               Votre role ne porte pas la gouvernance des referentiels. Ces donnees sont
               maintenues par le LLFMU aRBM Specialist ou le Data &amp; Digital Analyst.
@@ -532,7 +532,7 @@ export default function MasterData({ canEdit }) {
           onClose={() => setConfirming(null)}
           footer={
             <>
-              <button className="btn btn-ghost" onClick={() => setConfirming(null)}>Annuler</button>
+              <button className="btn btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
               <button
                 className={confirming.next ? "btn btn-primary" : "btn btn-danger"}
                 onClick={() => toggleActive.mutate(confirming)}
@@ -588,9 +588,9 @@ export default function MasterData({ canEdit }) {
           onClose={() => setEditing(null)}
           footer={
             <>
-              <button className="btn btn-ghost" onClick={() => setEditing(null)}>Annuler</button>
+              <button className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={submitForm} disabled={mutation.isPending}>
-                {mutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                {mutation.isPending ? "Saving..." : "Save"}
               </button>
             </>
           }

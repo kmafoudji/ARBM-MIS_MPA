@@ -52,7 +52,7 @@ function TargetCard({ target, rowId, projectId, onChanged }) {
         <input className="field-input" style={{ width: 140 }} type="date"
           value={form.target_date}
           onChange={(e) => setForm({ ...form, target_date: e.target.value })} />
-        <input className="field-input" style={{ width: 120 }} placeholder="Libelle (ex. T1 2025)"
+        <input className="field-input" style={{ width: 120 }} placeholder="Label (e.g. Q1 2025)"
           value={form.label}
           onChange={(e) => setForm({ ...form, label: e.target.value })} />
         <button className="btn btn-primary btn-sm row" style={{ gap: 4 }}
@@ -116,20 +116,20 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
             onChange={(e) => setForm({ ...form, target_value: e.target.value })} required />
         </div>
         <div className="field" style={{ marginBottom: 0 }}>
-          <label className="field-label">Date d'echeance</label>
+          <label className="field-label">Deadline</label>
           <input className="field-input" type="date"
             value={form.target_date}
             onChange={(e) => setForm({ ...form, target_date: e.target.value })} required />
         </div>
         <div className="field" style={{ marginBottom: 0 }}>
-          <label className="field-label">Libelle (ex. T1 2025)</label>
-          <input className="field-input" placeholder="T1 2025, Mi-parcours, Fin projet..."
+          <label className="field-label">Label (e.g. Q1 2025)</label>
+          <input className="field-input" placeholder="Q1 2025, Mid-term, End of project..."
             value={form.label}
             onChange={(e) => setForm({ ...form, label: e.target.value })} />
         </div>
         <div className="field" style={{ marginBottom: 0 }}>
-          <label className="field-label">Note de desagregation</label>
-          <input className="field-input" placeholder="Ex. 60% femmes, 40% hommes"
+          <label className="field-label">Disaggregation Note</label>
+          <input className="field-input" placeholder="e.g. 60% women, 40% men"
             value={form.disaggregation_note}
             onChange={(e) => setForm({ ...form, disaggregation_note: e.target.value })} />
         </div>
@@ -213,7 +213,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
           {/* Baseline */}
           <div style={{ marginBottom: "var(--s-3)" }}>
             <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}>
-              <span className="card-sub">Valeur de reference (baseline)</span>
+              <span className="card-sub">Reference Value (Baseline)</span>
               {!editingBaseline && (
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(true)}>
                   <Icon name="pencil" size={13} /> Modifier
@@ -230,27 +230,27 @@ function LogframeRowCard({ row, projectId, onChanged }) {
                       onChange={(e) => setBaselineForm({ ...baselineForm, baseline_value: e.target.value })} />
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Annee de reference</label>
+                    <label className="field-label">Reference Year</label>
                     <input className="field-input" type="number" min="2000" max="2050"
                       value={baselineForm.baseline_year}
                       onChange={(e) => setBaselineForm({ ...baselineForm, baseline_year: e.target.value })} />
                   </div>
                   <div className="field" style={{ marginBottom: 0, gridColumn: "span 2" }}>
-                    <label className="field-label">Source de la baseline</label>
+                    <label className="field-label">Baseline Source</label>
                     <input className="field-input"
                       value={baselineForm.baseline_source}
                       onChange={(e) => setBaselineForm({ ...baselineForm, baseline_source: e.target.value })} />
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Frequence de mesure</label>
+                    <label className="field-label">Measurement Frequency</label>
                     <select className="field-select"
                       value={baselineForm.measurement_frequency}
                       onChange={(e) => setBaselineForm({ ...baselineForm, measurement_frequency: e.target.value })}>
-                      <option value="">Selectionner</option>
-                      <option value="quarterly">Trimestrielle</option>
-                      <option value="semi_annual">Semestrielle</option>
-                      <option value="annual">Annuelle</option>
-                      <option value="end_of_project">Fin de projet</option>
+                      <option value="">Select</option>
+                      <option value="quarterly">Quarterly</option>
+                      <option value="semi_annual">Semi-annual</option>
+                      <option value="annual">Annual</option>
+                      <option value="end_of_project">End of project</option>
                     </select>
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
@@ -270,7 +270,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
                       measurement_frequency: baselineForm.measurement_frequency || null,
                       notes: baselineForm.notes,
                     })} disabled={baselineMutation.isPending}>
-                    <Icon name="check" size={13} /> {baselineMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                    <Icon name="check" size={13} /> {baselineMutation.isPending ? "Saving..." : "Save"}
                   </button>
                   <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(false)}>
                     <Icon name="x" size={13} /> Annuler
@@ -284,7 +284,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
                 </div>
                 <div><div className="dl-term">Annee</div><div className="dl-desc">{row.baseline_year || "—"}</div></div>
                 <div><div className="dl-term">Source</div><div className="dl-desc">{row.baseline_source || "—"}</div></div>
-                <div><div className="dl-term">Frequence</div><div className="dl-desc">{row.measurement_frequency_display || "—"}</div></div>
+                <div><div className="dl-term">Frequency</div><div className="dl-desc">{row.measurement_frequency_display || "—"}</div></div>
               </div>
             )}
           </div>
@@ -292,7 +292,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
           {/* Cibles */}
           <div>
             <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-              <span className="card-sub">Cibles</span>
+              <span className="card-sub">Targets</span>
               {!addingTarget && (
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setAddingTarget(true)}>
                   <Icon name="plus" size={13} /> Ajouter une cible
@@ -300,7 +300,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
               )}
             </div>
             {row.targets?.length === 0 && !addingTarget && (
-              <p className="text-muted text-sm" style={{ margin: 0 }}>Aucune cible definie.</p>
+              <p className="text-muted text-sm" style={{ margin: 0 }}>No targets defined.</p>
             )}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {row.targets?.map((t) => (
@@ -321,7 +321,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "var(--rose, #E84A5F)" }}
               onClick={() => window.confirm(`Supprimer la ligne "${row.indicator_code}" du logframe ? Les cibles seront perdues.`) && deleteMutation.mutate()}
               disabled={deleteMutation.isPending}>
-              <Icon name="trash" size={13} /> {deleteMutation.isPending ? "Suppression..." : "Retirer du logframe"}
+              <Icon name="trash" size={13} /> {deleteMutation.isPending ? "Suppression..." : "Remove from logframe"}
             </button>
           </div>
         </div>
@@ -424,8 +424,8 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
     <div className="card card-flush mb-3">
       <div className="card-header">
         <div>
-          <h2 className="card-title">Ajouter des indicateurs au logframe</h2>
-          <div className="card-sub">Selectionnez un ou plusieurs indicateurs du catalogue LLF2</div>
+          <h2 className="card-title">Add indicators to the logframe</h2>
+          <div className="card-sub">Select one or more indicators from the LLF2 catalogue</div>
         </div>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
           <Icon name="x" size={14} /> Annuler
@@ -436,21 +436,21 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
         {/* Filtres persistants */}
         <div className="grid grid-2" style={{ gap: 8, marginBottom: 12 }}>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="field-label">Rechercher</label>
-            <input className="field-input" placeholder="Code (A001.1) ou mot-cle..."
+            <label className="field-label">Search</label>
+            <input className="field-input" placeholder="Code (A001.1) or keyword..."
               value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="field-label">Secteur</label>
+            <label className="field-label">Sector</label>
             <select className="field-select" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
-              <option value="">Tous</option>
+              <option value="">All</option>
               {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="field-label">Type</label>
             <select className="field-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-              <option value="">Tous</option>
+              <option value="">All</option>
               <option value="output">Output</option>
               <option value="outcome">Outcome</option>
               <option value="impact">Impact</option>
@@ -473,7 +473,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
             fontWeight: 600,
           }}>
             <span>Indicateur</span>
-            <span>Niveau dans la chaine</span>
+            <span>Level in the chain</span>
             <span />
           </div>
 
@@ -500,7 +500,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
                 }}
               >
                 <option value="">
-                  {isLoading ? "Chargement..." : "Selectionner un indicateur..."}
+                  {isLoading ? "Loading..." : "Select an indicator..."}
                 </option>
                 {indicators?.map((ind) => (
                   <option
@@ -521,7 +521,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
                 value={line.chainLevel}
                 onChange={(e) => setLine(idx, { chainLevel: e.target.value })}
               >
-                <option value="">Niveau...</option>
+                <option value="">Level...</option>
                 {choices?.chain_levels?.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
@@ -562,7 +562,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
               disabled={validCount === 0 || saving}
             >
               <Icon name="check" size={13} />
-              {saving ? "Enregistrement..." : `Enregistrer au logframe (${validCount} indicateur${validCount !== 1 ? "s" : ""})`}
+              {saving ? "Saving..." : `Enregistrer au logframe (${validCount} indicateur${validCount !== 1 ? "s" : ""})`}
             </button>
           </div>
         </div>
