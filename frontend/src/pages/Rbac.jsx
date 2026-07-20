@@ -34,7 +34,7 @@ const ACTION_COLOR = {
 /* ── modal générique ─────────────────────────────────────────────────────── */
 function Modal({ title, onClose, children }) {
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 520 }}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
