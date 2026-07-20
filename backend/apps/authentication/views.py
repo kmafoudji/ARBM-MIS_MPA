@@ -129,6 +129,46 @@ def me_view(request):
     )
 
 
+def local_login_view(request):
+    """
+    POST /auth/login/local/ — connexion par email + mot de passe.
+    Utilisé pour les comptes locaux (admin technique, tests).
+    Les comptes SSO doivent passer par /auth/login/ (Entra ID).
+    """
+    import json
+    from django.contrib.auth import authenticate, login as auth_login
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return JsonResponse({"error": "Email and password are required."}, status=400)
+
+    # Django authenticate via username (AppUser.username == email à la création)
+    user = authenticate(request, username=email, password=password)
+    if user is None:
+        # Essai via email directement (cas où username != email)
+        try:
+            candidate = User.objects.get(email__iexact=email)
+            user = authenticate(request, username=candidate.username, password=password)
+        except User.DoesNotExist:
+            pass
+
+    if user is None or not user.is_active:
+        return JsonResponse({"error": "Invalid email or password."}, status=401)
+
+    auth_login(request, user)
+    return JsonResponse({"ok": True})
+
+
 def logout_view(request):
     """Termine la session locale (revocation immediate, RG-3.3)."""
     logout(request)

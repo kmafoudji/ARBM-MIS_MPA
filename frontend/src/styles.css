@@ -723,6 +723,46 @@ input, select, textarea { font: inherit; color: inherit; }
   transition: background 0.12s;
 }
 .login-btn:hover { background: var(--lime-darker); border-color: var(--lime-darker); }
+.login-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.login-btn-outline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: 11px var(--s-3);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.login-btn-outline:hover { border-color: var(--navy); background: var(--surface-2); }
+.login-separator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  color: var(--subtle);
+  font-size: 12px;
+}
+.login-separator::before,
+.login-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule-soft);
+}
+.login-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: var(--r-2);
+  padding: 8px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
 .login-foot {
   font-size: 11px;
   color: var(--subtle);
