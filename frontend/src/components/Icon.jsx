@@ -34,6 +34,7 @@ const PATHS = {
   ),
   "chevron-down": <path d="M6 9l6 6 6-6" />,
   "chevron-up": <path d="M6 15l6-6 6 6" />,
+  cloud: <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />,
   pencil: (
     <>
       <path d="M12 20h9" />

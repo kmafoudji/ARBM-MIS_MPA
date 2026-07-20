@@ -98,7 +98,7 @@ export default function App() {
 
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}
       {nav === "indicator-catalogue" && <IndicatorCatalogue />}
-      {nav === "rbac" && <Rbac />}
+      {nav === "rbac" && <Rbac currentUser={user} />}
     </AppShell>
   );
 }

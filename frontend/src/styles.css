@@ -487,6 +487,22 @@ input, select, textarea { font: inherit; color: inherit; }
 .badge-lime { background: var(--lime-soft); color: var(--lime-darker); }
 .badge-orange { background: var(--orange-soft); color: var(--orange); }
 .badge-violet { background: var(--violet-soft); color: var(--violet); }
+.badge-red { background: #fee2e2; color: #b91c1c; }
+
+/* Avatar compact (initiales) */
+.avatar-sm {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  flex-shrink: 0; letter-spacing: 0.03em;
+}
+
+/* Lien discret inline */
+.btn-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--navy); text-decoration: underline; font-size: inherit;
+}
+.btn-link:hover { color: var(--lime-darker); }
 .badge-green { background: var(--green-soft); color: var(--green); }
 .badge-rose { background: var(--rose-soft); color: var(--rose); }
 .badge-blue { background: var(--blue-soft); color: var(--blue); }
