@@ -333,18 +333,30 @@ function LogframeRowCard({ row, projectId, onChanged }) {
 // ---------------------------------------------------------------------------
 // Composant : formulaire d'ajout d'une ligne logframe
 // ---------------------------------------------------------------------------
-function AddRowForm({ projectId, onAdded, onCancel }) {
+// Niveau par defaut selon le type de l'indicateur
+function defaultLevel(ind) {
+  if (!ind) return "";
+  if (ind.indicator_type === "impact") return "impact";
+  if (ind.indicator_type === "outcome") return "intermediate_outcome";
+  return "output";
+}
+
+function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
   const [search, setSearch] = useState("");
-  const [selectedIndicator, setSelectedIndicator] = useState(null);
-  const [chainLevel, setChainLevel] = useState("");
   const [sectorFilter, setSectorFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  // Lignes : [{indicatorId, indicatorLabel, chainLevel}, ...]
+  const [lines, setLines] = useState([{ indicatorId: "", indicatorLabel: "", chainLevel: "" }]);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState([]);
 
   const { data: indicators, isLoading } = useQuery({
-    queryKey: ["indicators", search, sectorFilter],
+    queryKey: ["indicators", search, sectorFilter, typeFilter],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) params.set("q", search);
       if (sectorFilter) params.set("sector", sectorFilter);
+      if (typeFilter) params.set("type", typeFilter);
       return apiFetch(`/api/results/indicators/?${params}`);
     },
   });
@@ -359,99 +371,200 @@ function AddRowForm({ projectId, onAdded, onCancel }) {
     queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/choices/`),
   });
 
-  const mutation = useMutation({
-    mutationFn: (payload) =>
-      apiFetch(`/api/projects/${projectId}/logframe/`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: () => { onAdded(); },
-  });
+  // IDs deja dans le logframe + deja selectionnes dans les autres lignes
+  const usedIds = new Set([
+    ...existingIndicatorIds,
+    ...lines.map((l) => l.indicatorId).filter(Boolean),
+  ]);
+
+  function setLine(idx, patch) {
+    setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
+  }
+
+  function addLine() {
+    setLines((prev) => [...prev, { indicatorId: "", indicatorLabel: "", chainLevel: "" }]);
+  }
+
+  function removeLine(idx) {
+    setLines((prev) => prev.length === 1 ? [{ indicatorId: "", indicatorLabel: "", chainLevel: "" }] : prev.filter((_, i) => i !== idx));
+  }
+
+  function selectIndicator(idx, ind) {
+    setLine(idx, {
+      indicatorId: String(ind.id),
+      indicatorLabel: `${ind.code} — ${ind.name}`,
+      chainLevel: defaultLevel(ind),
+    });
+  }
+
+  async function handleSave() {
+    const valid = lines.filter((l) => l.indicatorId && l.chainLevel);
+    if (valid.length === 0) return;
+    setSaving(true);
+    setErrors([]);
+    const errs = [];
+    for (const line of valid) {
+      try {
+        await apiFetch(`/api/projects/${projectId}/logframe/`, {
+          method: "POST",
+          body: JSON.stringify({ indicator: Number(line.indicatorId), chain_level: line.chainLevel }),
+        });
+      } catch (e) {
+        errs.push(`${line.indicatorLabel}: ${JSON.stringify(e.detail)}`);
+      }
+    }
+    setSaving(false);
+    setErrors(errs);
+    if (errs.length === 0) onAdded();
+  }
+
+  const validCount = lines.filter((l) => l.indicatorId && l.chainLevel).length;
 
   return (
     <div className="card card-flush mb-3">
       <div className="card-header">
         <div>
-          <h2 className="card-title">Ajouter un indicateur au logframe</h2>
-          <div className="card-sub">Catalogue LLF2 — Agriculture</div>
+          <h2 className="card-title">Ajouter des indicateurs au logframe</h2>
+          <div className="card-sub">Selectionnez un ou plusieurs indicateurs du catalogue LLF2</div>
         </div>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
           <Icon name="x" size={14} /> Annuler
         </button>
       </div>
+
       <div className="card-body">
+        {/* Filtres persistants */}
         <div className="grid grid-2" style={{ gap: 8, marginBottom: 12 }}>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="field-label">Rechercher un indicateur</label>
+            <label className="field-label">Rechercher</label>
             <input className="field-input" placeholder="Code (A001.1) ou mot-cle..."
-              value={search} onChange={(e) => { setSearch(e.target.value); setSelectedIndicator(null); }} />
+              value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="field-label">Filtrer par secteur</label>
-            <select className="field-select" value={sectorFilter}
-              onChange={(e) => { setSectorFilter(e.target.value); setSelectedIndicator(null); }}>
-              <option value="">Tous les secteurs</option>
+            <label className="field-label">Secteur</label>
+            <select className="field-select" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
+              <option value="">Tous</option>
               {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="field-label">Type</label>
+            <select className="field-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+              <option value="">Tous</option>
+              <option value="output">Output</option>
+              <option value="outcome">Outcome</option>
+              <option value="impact">Impact</option>
             </select>
           </div>
         </div>
 
-        {/* Liste des indicateurs */}
-        <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--rule)", borderRadius: "var(--r-2)", marginBottom: 12 }}>
-          {isLoading && <div className="text-muted text-sm" style={{ padding: 12 }}>Chargement...</div>}
-          {!isLoading && indicators?.length === 0 && (
-            <div className="text-muted text-sm" style={{ padding: 12 }}>Aucun indicateur trouve.</div>
-          )}
-          {indicators?.map((ind) => (
-            <div
-              key={ind.id}
-              onClick={() => { setSelectedIndicator(ind); if (!chainLevel) setChainLevel(ind.indicator_type === "impact" ? "impact" : ind.indicator_type === "outcome" ? "intermediate_outcome" : "output"); }}
-              style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                borderBottom: "1px solid var(--rule-soft)",
-                background: selectedIndicator?.id === ind.id ? "var(--lime-pale)" : "transparent",
-                display: "flex", gap: 10, alignItems: "flex-start",
-              }}
-            >
-              <span className="text-mono badge" style={{ fontSize: 10, flexShrink: 0 }}>{ind.code}</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: selectedIndicator?.id === ind.id ? 600 : 400 }}>{ind.name}</div>
-                <div className="text-muted" style={{ fontSize: 11 }}>
-                  {ind.sector_name} · {ind.indicator_type_display} · {ind.unit}
-                </div>
-              </div>
+        {/* Tableau multi-lignes */}
+        <div style={{ border: "1px solid var(--rule)", borderRadius: "var(--r-3)", overflow: "hidden", marginBottom: 12 }}>
+          {/* En-tete */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 180px 32px",
+            gap: 8,
+            padding: "6px 12px",
+            background: "var(--surface)",
+            borderBottom: "1px solid var(--rule)",
+            fontSize: 12,
+            color: "var(--muted)",
+            fontWeight: 600,
+          }}>
+            <span>Indicateur</span>
+            <span>Niveau dans la chaine</span>
+            <span />
+          </div>
+
+          {/* Lignes */}
+          {lines.map((line, idx) => (
+            <div key={idx} style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 180px 32px",
+              gap: 8,
+              padding: "8px 12px",
+              alignItems: "center",
+              borderBottom: idx < lines.length - 1 ? "1px solid var(--rule-soft)" : "none",
+              background: line.indicatorId ? "var(--lime-pale)" : "transparent",
+            }}>
+              {/* Select indicateur */}
+              <select
+                className="field-select"
+                style={{ margin: 0 }}
+                value={line.indicatorId}
+                onChange={(e) => {
+                  const ind = indicators?.find((i) => String(i.id) === e.target.value);
+                  if (ind) selectIndicator(idx, ind);
+                  else setLine(idx, { indicatorId: "", indicatorLabel: "", chainLevel: "" });
+                }}
+              >
+                <option value="">
+                  {isLoading ? "Chargement..." : "Selectionner un indicateur..."}
+                </option>
+                {indicators?.map((ind) => (
+                  <option
+                    key={ind.id}
+                    value={ind.id}
+                    disabled={usedIds.has(String(ind.id)) && String(ind.id) !== line.indicatorId}
+                  >
+                    {ind.code} — {ind.name.slice(0, 60)}{ind.name.length > 60 ? "..." : ""}
+                    {usedIds.has(String(ind.id)) && String(ind.id) !== line.indicatorId ? " (deja ajoute)" : ""}
+                  </option>
+                ))}
+              </select>
+
+              {/* Select niveau */}
+              <select
+                className="field-select"
+                style={{ margin: 0 }}
+                value={line.chainLevel}
+                onChange={(e) => setLine(idx, { chainLevel: e.target.value })}
+              >
+                <option value="">Niveau...</option>
+                {choices?.chain_levels?.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+
+              {/* Bouton supprimer la ligne */}
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                style={{ padding: "2px 6px" }}
+                onClick={() => removeLine(idx)}
+                aria-label="Supprimer cette ligne"
+              >
+                <Icon name="x" size={13} />
+              </button>
             </div>
           ))}
         </div>
 
-        {selectedIndicator && (
-          <div style={{ padding: "var(--s-2)", background: "var(--lime-pale)", borderRadius: "var(--r-2)", marginBottom: 12 }}>
-            <strong>{selectedIndicator.code}</strong> — {selectedIndicator.name}
-            <div className="text-muted text-sm">{selectedIndicator.unit} · {selectedIndicator.indicator_type_display}</div>
+        {/* Erreurs */}
+        {errors.map((e, i) => (
+          <div key={i} className="field-error" style={{ marginBottom: 4 }}>{e}</div>
+        ))}
+
+        {/* Actions */}
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={addLine}>
+            <Icon name="plus" size={13} /> Ajouter une ligne
+          </button>
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
+              <Icon name="x" size={13} /> Annuler
+            </button>
+            <button
+              className="btn btn-primary btn-sm row"
+              style={{ gap: 6 }}
+              onClick={handleSave}
+              disabled={validCount === 0 || saving}
+            >
+              <Icon name="check" size={13} />
+              {saving ? "Enregistrement..." : `Enregistrer au logframe (${validCount} indicateur${validCount !== 1 ? "s" : ""})`}
+            </button>
           </div>
-        )}
-
-        <div className="field">
-          <label className="field-label">Niveau dans la chaine <span className="req">*</span></label>
-          <select className="field-select" value={chainLevel} onChange={(e) => setChainLevel(e.target.value)} required>
-            <option value="">Selectionner</option>
-            {choices?.chain_levels?.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-          <span className="field-help">Pre-rempli selon le type de l'indicateur, modifiable.</span>
-        </div>
-
-        {mutation.isError && <div className="field-error mb-3">{JSON.stringify(mutation.error.detail)}</div>}
-
-        <div className="row">
-          <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
-            onClick={() => mutation.mutate({ indicator: selectedIndicator?.id, chain_level: chainLevel })}
-            disabled={!selectedIndicator || !chainLevel || mutation.isPending}>
-            <Icon name="plus" size={13} /> {mutation.isPending ? "Ajout..." : "Ajouter au logframe"}
-          </button>
-          <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={onCancel}>
-            <Icon name="x" size={13} /> Annuler
-          </button>
         </div>
       </div>
     </div>
@@ -511,15 +624,16 @@ export default function Logframe({ projectId, onBack }) {
       </div>
 
       {addingRow ? (
-        <AddRowForm
+        <AddRowsForm
           projectId={projectId}
+          existingIndicatorIds={(rows || []).map((r) => String(r.indicator))}
           onAdded={() => { setAddingRow(false); onChanged(); }}
           onCancel={() => setAddingRow(false)}
         />
       ) : (
         <div className="row mb-3">
           <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAddingRow(true)}>
-            <Icon name="plus" size={14} /> Ajouter un indicateur
+            <Icon name="plus" size={14} /> Ajouter des indicateurs
           </button>
         </div>
       )}
