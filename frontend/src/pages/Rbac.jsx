@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
@@ -33,7 +34,7 @@ const ACTION_COLOR = {
 
 /* ── modal générique ─────────────────────────────────────────────────────── */
 function Modal({ title, onClose, children }) {
-  return (
+  return createPortal(
     <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 520 }}>
         <div className="modal-header">
@@ -42,7 +43,8 @@ function Modal({ title, onClose, children }) {
         </div>
         <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

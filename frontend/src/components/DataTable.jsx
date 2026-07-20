@@ -171,17 +171,17 @@ export default function DataTable({
             onClick={() => setPage(safePage - 1)}
             disabled={safePage === 1}
           >
-            ← Precedent
+            ← Previous
           </button>
           <span className="text-sm text-muted">
-            Page {safePage} sur {pageCount}
+            Page {safePage} of {pageCount}
           </span>
           <button
             className="btn btn-sm"
             onClick={() => setPage(safePage + 1)}
             disabled={safePage === pageCount}
           >
-            Suivant →
+            Next →
           </button>
         </div>
       )}

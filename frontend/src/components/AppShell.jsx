@@ -9,6 +9,7 @@ import {
   IconUsers,
 } from "./Icons.jsx";
 import { useTranslation } from "react-i18next";
+import Icon from "./Icon";
 import i18n from "../i18n/index.js";
 
 const NAV_GROUPS = [
@@ -160,7 +161,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
             </div>
           </div>
           <a className="user-signout" href="/auth/logout/">
-            {t("auth.sign_out")}
+            <Icon name="logout" size={14} /> {t("auth.sign_out")}
           </a>
         </div>
       </aside>

@@ -6,7 +6,7 @@ import Icon from "../components/Icon";
 const DIRECTION_LABEL = {
   increase: "↑ Upward",
   decrease: "↓ Downward",
-  neutral: "→ Neutre",
+  neutral: "→ Neutral",
 };
 const TYPE_COLOR = {
   output: "badge",
@@ -17,15 +17,15 @@ const TYPE_COLOR = {
 // Champs texte/textarea generiques dans la fiche IRS
 const FIELD_ROWS = [
   { key: "definition", label: "Definition", textarea: true },
-  { key: "numerator", label: "Numerateur", textarea: true },
-  { key: "denominator", label: "Denominateur", textarea: true },
-  { key: "formula", label: "Formule", textarea: true },
-  { key: "calculation_method", label: "Methode de calcul", textarea: true },
+  { key: "numerator", label: "Numerator", textarea: true },
+  { key: "denominator", label: "Denominator", textarea: true },
+  { key: "formula", label: "Formula", textarea: true },
+  { key: "calculation_method", label: "Calculation method", textarea: true },
   { key: "data_source", label: "Data Sources", textarea: true },
-  { key: "collection_method", label: "Methode de collecte", textarea: true },
+  { key: "collection_method", label: "Collection method", textarea: true },
   { key: "means_of_verification", label: "Means of Verification", textarea: true },
   { key: "assumptions", label: "Assumptions", textarea: true },
-  { key: "limitations", label: "Limites", textarea: true },
+  { key: "limitations", label: "Limitations", textarea: true },
 ];
 // unit, disaggregation, responsible -> ComboField (liste deroulante + champ libre)
 
@@ -314,10 +314,14 @@ function IndicatorRow({ ind, isLast, canEdit }) {
 // ---------------------------------------------------------------------------
 // Page principale
 // ---------------------------------------------------------------------------
+const PAGE_SIZE = 20;
+
 export default function IndicatorCatalogue() {
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [viewMode, setViewMode] = useState("sector"); // "sector" | "flat"
+  const [page, setPage] = useState(1);
 
   const { data: indicators, isLoading } = useQuery({
     queryKey: ["indicators", search, sectorFilter, typeFilter],
@@ -335,10 +339,25 @@ export default function IndicatorCatalogue() {
     queryFn: () => apiFetch("/api/reference/sectors/"),
   });
 
-  // Seul le role LLFMU peut modifier les indicateurs du catalogue — pour
-  // l'instant on derive du meme flag que les donnees de base (a affiner
-  // quand la matrice RBAC sera completement arbitree).
   const canEdit = true;
+  const total = indicators?.length ?? 0;
+
+  // Réinitialiser la page quand les filtres changent
+  const resetPage = () => setPage(1);
+
+  // Vue plate paginée
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const flatSlice = (indicators || []).slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Vue par secteur : grouper les indicateurs
+  const bySector = (indicators || []).reduce((acc, ind) => {
+    const key = ind.sector_name || "Other";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(ind);
+    return acc;
+  }, {});
+  const sectorKeys = Object.keys(bySector).sort();
 
   return (
     <div className="view">
@@ -346,64 +365,119 @@ export default function IndicatorCatalogue() {
         <div className="view-eyebrow">Module 2 · LLF2</div>
         <h1 className="view-title">Indicator Catalogue</h1>
         <p className="view-lead">
-          Bibliotheque institutionnelle LLF2 — Agriculture, Health, Infrastructure.
-          Alimente par LLFMU uniquement.
+          LLF2 institutional library — Agriculture, Health, Infrastructure.
+          Maintained by LLFMU only.
         </p>
       </div>
 
-      {/* Filtres */}
+      {/* Filtres + toggle vue */}
       <div className="card card-flush mb-3">
         <div className="card-body">
-          <div className="grid grid-2" style={{ gap: 8 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div className="field" style={{ marginBottom: 0, flex: "2 1 200px" }}>
               <label className="field-label">Search</label>
               <input className="field-input" placeholder="Code (A001.1) or keyword..."
-                value={search} onChange={(e) => setSearch(e.target.value)} />
+                value={search} onChange={(e) => { setSearch(e.target.value); resetPage(); }} />
             </div>
-            <div className="field" style={{ marginBottom: 0 }}>
+            <div className="field" style={{ marginBottom: 0, flex: "1 1 140px" }}>
               <label className="field-label">Sector</label>
               <select className="field-select" value={sectorFilter}
-                onChange={(e) => setSectorFilter(e.target.value)}>
+                onChange={(e) => { setSectorFilter(e.target.value); resetPage(); }}>
                 <option value="">All</option>
-                {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sectors?.filter(s => !s.parent).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
-            <div className="field" style={{ marginBottom: 0 }}>
+            <div className="field" style={{ marginBottom: 0, flex: "1 1 120px" }}>
               <label className="field-label">Type</label>
               <select className="field-select" value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}>
+                onChange={(e) => { setTypeFilter(e.target.value); resetPage(); }}>
                 <option value="">All</option>
                 <option value="output">Output</option>
                 <option value="outcome">Outcome</option>
                 <option value="impact">Impact</option>
               </select>
             </div>
-            <div className="field" style={{ marginBottom: 0, display: "flex", alignItems: "flex-end" }}>
-              <span className="text-muted text-sm">
-                {isLoading ? "Loading..." : `${indicators?.length ?? 0} indicator${indicators?.length !== 1 ? "s" : ""}`}
-              </span>
+            <div style={{ display: "flex", gap: 4, paddingBottom: 2 }}>
+              <button
+                className={`btn btn-sm${viewMode === "sector" ? " btn-primary" : " btn-ghost"}`}
+                onClick={() => setViewMode("sector")}
+                title="Group by sector"
+              ><Icon name="layers" size={13} /> By sector</button>
+              <button
+                className={`btn btn-sm${viewMode === "flat" ? " btn-primary" : " btn-ghost"}`}
+                onClick={() => setViewMode("flat")}
+                title="Flat list with pagination"
+              ><Icon name="list" size={13} /> List</button>
             </div>
+          </div>
+          <div className="text-muted text-sm" style={{ marginTop: 8 }}>
+            {isLoading ? "Loading..." : `${total} indicator${total !== 1 ? "s" : ""}${viewMode === "flat" ? ` · page ${safePage} of ${pageCount}` : ""}`}
           </div>
         </div>
       </div>
 
-      {/* Liste */}
-      <div className="card card-flush">
-        <div style={{ padding: 0 }}>
-          {isLoading && <div style={{ padding: 16 }}><span className="spinner" /> Loading...</div>}
-          {!isLoading && indicators?.length === 0 && (
-            <div className="text-muted text-sm" style={{ padding: 16 }}>No indicators found.</div>
+      {/* Vue par secteur */}
+      {!isLoading && viewMode === "sector" && (
+        total === 0
+          ? <div className="card card-flush"><div className="text-muted text-sm" style={{ padding: 16 }}>No indicators found.</div></div>
+          : sectorKeys.map((sectorName) => (
+            <div key={sectorName} className="card card-flush mb-3">
+              <div className="card-header" style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon name="bar-chart" size={14} />
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{sectorName}</span>
+                  <span className="badge" style={{ fontSize: 10 }}>{bySector[sectorName].length}</span>
+                </div>
+              </div>
+              <div style={{ padding: 0 }}>
+                {bySector[sectorName].map((ind, i) => (
+                  <IndicatorRow
+                    key={ind.id}
+                    ind={ind}
+                    isLast={i === bySector[sectorName].length - 1}
+                    canEdit={canEdit}
+                  />
+                ))}
+              </div>
+            </div>
+          ))
+      )}
+
+      {/* Vue plate paginée */}
+      {!isLoading && viewMode === "flat" && (
+        <div className="card card-flush">
+          <div style={{ padding: 0 }}>
+            {total === 0 && (
+              <div className="text-muted text-sm" style={{ padding: 16 }}>No indicators found.</div>
+            )}
+            {flatSlice.map((ind, i) => (
+              <IndicatorRow
+                key={ind.id}
+                ind={ind}
+                isLast={i === flatSlice.length - 1}
+                canEdit={canEdit}
+              />
+            ))}
+          </div>
+          {pageCount > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
+              <button className="btn btn-sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}>
+                ← Previous
+              </button>
+              <span className="text-sm text-muted">Page {safePage} of {pageCount}</span>
+              <button className="btn btn-sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount}>
+                Next →
+              </button>
+            </div>
           )}
-          {indicators?.map((ind, i) => (
-            <IndicatorRow
-              key={ind.id}
-              ind={ind}
-              isLast={i === indicators.length - 1}
-              canEdit={canEdit}
-            />
-          ))}
         </div>
-      </div>
+      )}
+
+      {isLoading && (
+        <div className="card card-flush">
+          <div style={{ padding: 24, textAlign: "center" }}><span className="spinner" /> Loading...</div>
+        </div>
+      )}
     </div>
   );
 }

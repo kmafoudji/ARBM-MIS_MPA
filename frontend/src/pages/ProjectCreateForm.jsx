@@ -83,7 +83,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-body">
             <div className="field">
               <label className="field-label" htmlFor="name">
-                Nom du projet <span className="req">*</span>
+                Project name <span className="req">*</span>
               </label>
               <input
                 id="name"
@@ -98,7 +98,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
             <div className="field">
               <label className="field-label" htmlFor="countries">
-                Pays <span className="req">*</span>
+                Countries <span className="req">*</span>
               </label>
               <select
                 id="countries"
@@ -123,7 +123,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
             {selectedCountries.length > 1 && (
               <div className="field">
                 <label className="field-label" htmlFor="lead">
-                  Pays chef de file <span className="req">*</span>
+                  Lead country <span className="req">*</span>
                 </label>
                 <select
                   id="lead"
@@ -199,7 +199,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
               <div className="field">
                 <label className="field-label" htmlFor="contribSectors">
-                  Secteurs contributifs
+                  Contributing sectors
                 </label>
                 <select
                   id="contribSectors"
@@ -218,7 +218,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
               <div className="field">
                 <label className="field-label" htmlFor="contribSdgs">
-                  ODD contributifs
+                  Contributing SDGs
                 </label>
                 <select
                   id="contribSdgs"

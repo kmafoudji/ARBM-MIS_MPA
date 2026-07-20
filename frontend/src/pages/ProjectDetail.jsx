@@ -263,7 +263,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="grid grid-2 mb-3">
         <div className="card card-flush">
           <div className="card-header">
-            <h2 className="card-title">Identity &amp; Scope</h2>
+            <h2 className="card-title"><Icon name="tag" size={15} style={{marginRight:6}} />Identity &amp; Scope</h2>
           </div>
           <div className="card-body">
             <div className="dl">
@@ -293,7 +293,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Classification</h2>
+              <h2 className="card-title"><Icon name="layers" size={15} style={{marginRight:6}} />Classification</h2>
               <div className="card-sub">SF-2 · required at BED Approved gate</div>
             </div>
             {!showClassificationForm && (
@@ -539,9 +539,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Lifecycle</h2>
+            <h2 className="card-title"><Icon name="git-branch" size={15} style={{marginRight:6}} />Lifecycle</h2>
             <div className="card-sub">
-              Piste d'audit immuable · progression avant uniquement, autorisation double aux gates
+              Immutable audit trail · forward-only progression, dual authorisation at gates
             </div>
           </div>
           {!showForm && (
@@ -759,9 +759,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">PAD Document</h2>
+            <h2 className="card-title"><Icon name="file-text" size={15} style={{marginRight:6}} />PAD Document</h2>
             <div className="card-sub">
-              SF-1 · Reference documentaire — l'extraction IA (BRQ-1.14) n'est pas encore active
+              SF-1 · Reference document — AI extraction (BRQ-1.14) not yet active
             </div>
           </div>
         </div>
@@ -821,7 +821,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Theory of Change</h2>
+            <h2 className="card-title"><Icon name="globe" size={15} style={{marginRight:6}} />Theory of Change</h2>
             <div className="card-sub">
               SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
             </div>
@@ -836,7 +836,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Logical Framework (Logframe)</h2>
+            <h2 className="card-title"><Icon name="bar-chart" size={15} style={{marginRight:6}} />Logical Framework (Logframe)</h2>
             <div className="card-sub">
               Module 2 · LLF2 catalogue indicators · Baseline and targets
             </div>
@@ -851,7 +851,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Reporting</h2>
+            <h2 className="card-title"><Icon name="trending-up" size={15} style={{marginRight:6}} />Reporting</h2>
             <div className="card-sub">
               SF-1 · Step 5 · Approval chain — open question, out of scope for now
             </div>
@@ -922,7 +922,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Financial Envelope</h2>
+            <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
             <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
           </div>
         </div>
