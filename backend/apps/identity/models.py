@@ -36,7 +36,7 @@ class IdentityProvider(models.Model):
 
 
 class AppUser(AbstractUser):
-    """Utilisateur de la plateforme ARBM-MES. Remplace le User Django par defaut."""
+    """Utilisateur de la plateforme ARBM-MIS. Remplace le User Django par defaut."""
 
     USER_TYPE_CHOICES = [
         ("internal", "Internal (MillenniumPromise / IsDB staff)"),

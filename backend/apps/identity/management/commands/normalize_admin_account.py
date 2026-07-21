@@ -19,7 +19,7 @@ qu'on utilise un tout autre enregistrement.
 CE QUE FAIT LA COMMANDE
 -----------------------
 1. Deplace le compte d'amorcage vers une identite technique
-   (admin.local / admin@arbm-mes.local par defaut) ;
+   (admin.local / admin@arbm-mis.local par defaut) ;
 2. Retire ses attributions de role, qui n'ont aucun effet sur un superuser
    (get_user_permissions() lui accorde deja toutes les permissions) et ne
    font qu'entretenir l'illusion d'un profil metier ;
@@ -32,7 +32,7 @@ Usage :
     python manage.py normalize_admin_account
     python manage.py normalize_admin_account --username mafoudji.kande
     python manage.py normalize_admin_account --new-username admin.local \\
-        --new-email admin@arbm-mes.local --no-input
+        --new-email admin@arbm-mis.local --no-input
 """
 from collections import defaultdict
 
@@ -45,7 +45,7 @@ from apps.identity.models import RoleAssignment
 User = get_user_model()
 
 DEFAULT_NEW_USERNAME = "admin.local"
-DEFAULT_NEW_EMAIL = "admin@arbm-mes.local"
+DEFAULT_NEW_EMAIL = "admin@arbm-mis.local"
 
 
 class Command(BaseCommand):

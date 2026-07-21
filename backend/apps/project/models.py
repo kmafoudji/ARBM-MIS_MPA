@@ -357,24 +357,24 @@ class ProjectStageTransition(models.Model):
 
 FINANCING_SOURCE_CHOICES = [
     ("isdb_oc",       "IsDB Ordinary Capital"),
-    ("llf",           "LLF (fonds fiduciaire multi-donateurs)"),
-    ("government",    "Gouvernement / contrepartie nationale"),
-    ("co_financing",  "Co-financement"),
+    ("llf",           "LLF (multi-donor trust fund)"),
+    ("government",    "Government / national counterpart"),
+    ("co_financing",  "Co-financing"),
 ]
 
 FINANCING_INSTRUMENT_CHOICES = [
     ("loan",          "Pret"),
     ("grant",         "Don"),
     ("counterpart",   "Contrepartie"),
-    ("co_financing",  "Co-financement"),
+    ("co_financing",  "Co-financing"),
 ]
 
 COMPONENT_CHOICES = [
-    ("works",         "Travaux"),
-    ("consulting",    "Conseil"),
-    ("goods",         "Biens"),
-    ("training",      "Formation"),
-    ("operating",     "Fonctionnement"),
+    ("works",         "Works"),
+    ("consulting",    "Consulting"),
+    ("goods",         "Goods"),
+    ("training",      "Training"),
+    ("operating",     "Operating costs"),
 ]
 
 
@@ -501,7 +501,7 @@ class ComponentAllocation(models.Model):
     """
     Allocation indicative par composante (SF-6, champ optionnel).
 
-    Travaux / Conseil / Biens / Formation / Fonctionnement.
+    Works / Consulting / Goods / Training / Operating costs.
     Indicatif uniquement — le detail reste au Module 9.
     La somme des allocations DOIT etre egale a total_amount_usd
     (controle applicatif, pas de contrainte DB car les valeurs sont

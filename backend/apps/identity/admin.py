@@ -17,7 +17,7 @@ class AppUserAdmin(UserAdmin):
     list_display = ("username", "email", "user_type", "auth_method", "mfa_enrolled", "is_active")
     fieldsets = UserAdmin.fieldsets + (
         (
-            "ARBM-MES — SSO / MFA",
+            "ARBM-MIS — SSO / MFA",
             {
                 "fields": (
                     "user_type",

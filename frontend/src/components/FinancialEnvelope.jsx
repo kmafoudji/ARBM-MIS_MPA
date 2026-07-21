@@ -308,7 +308,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       <div className="field">
         <label className="field-label">Financing Source <span className="req">*</span></label>
         <select className="field-select" value={form.source} onChange={(e) => set("source", e.target.value)}>
-          <option value="">— Choisir —</option>
+          <option value="">— Select —</option>
           {(env.source_choices || []).map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
           ))}
@@ -318,7 +318,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       <div className="field">
         <label className="field-label">Instrument Type <span className="req">*</span></label>
         <select className="field-select" value={form.instrument} onChange={(e) => set("instrument", e.target.value)}>
-          <option value="">— Choisir —</option>
+          <option value="">— Select —</option>
           {(env.instrument_choices || []).map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
           ))}
@@ -398,7 +398,7 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
       }
     >
       <p className="text-sm text-muted mb-3">
-        Saisir le montant USD indicatif pour chaque composante.
+        Enter the indicative USD amount for each component.
         The total must not exceed the overall envelope of <strong>{fmt(total)}</strong>.
       </p>
       {(env.component_choices || []).map((c) => (
@@ -417,7 +417,7 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
               disabled={pending || !vals[c.value]}
               onClick={() => onSave(c.value, vals[c.value])}
             >
-              {pending ? "..." : "Sauvegarder"}
+              {pending ? "..." : "Save"}
             </button>
           </div>
         </div>

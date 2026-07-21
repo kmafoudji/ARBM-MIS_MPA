@@ -49,93 +49,93 @@ ROLES = [
         "LLFMU Manager",
         ["read", "validate", "admin"],
         True,
-        "Autorite strategique. Visibilite portefeuille, approbation finale des "
-        "transitions d'etape, supervision de la gouvernance d'acces. "
-        "Portee recommandee : Global.",
+        "Strategic authority. Portfolio visibility, final approval of "
+        "stage transitions, access governance supervision. "
+        "Recommended scope: Global.",
     ),
     (
         "llfmu_arbm_specialist",
         "LLFMU aRBM Specialist",
         ["read", "create", "update", "delete", "admin"],
         False,
-        "Proprietaire module. Execution de l'assistant d'enregistrement, "
-        "gouvernance des classifications, gestion du pre-pipeline. "
-        "Portee recommandee : Global.",
+        "Module owner. Runs the project registration wizard, "
+        "classification governance, pre-pipeline management. "
+        "Recommended scope: Global.",
     ),
     (
         "llfmu_portfolio_analyst",
         "LLFMU Portfolio Analyst",
         ["read", "create", "update", "submit"],
         False,
-        "Intendant pre-approbation. Enregistrement en phase Concept Note / "
-        "Pipeline, initiation des transitions. Portee recommandee : Global.",
+        "Pre-approval steward. Concept Note / Pipeline registration, "
+        "transition initiation. Recommended scope: Global.",
     ),
     (
         "data_digital_analyst",
         "Data & Digital Analyst",
         ["read", "create", "update", "delete", "admin"],
         True,
-        "Autorite de provisioning. Cycle de vie des comptes, affectation de "
-        "roles, revocation immediate, revue d'acces trimestrielle (RG-3.2, "
-        "RG-3.3). Portee recommandee : Global.",
+        "Provisioning authority. Account lifecycle, role assignment, "
+        "immediate revocation, quarterly access review (RG-3.2, "
+        "RG-3.3). Recommended scope: Global.",
     ),
     (
         "isdb_otl",
         "IsDB OTL",
         ["read", "validate"],
         False,
-        "Supervision projet. Concurrence aux transitions d'etape (autorisation "
-        "double), acces au workspace projet. Portee recommandee : Projet.",
+        "Project supervision. Co-approval at stage transitions (dual "
+        "authorisation), access to project workspace. Recommended scope: Project.",
     ),
     (
         "regional_hub",
         "Regional Hub (OTL / PMS)",
         ["read", "review"],
         False,
-        "Approbateur regional (acces Reviewer). Portefeuille regional, "
-        "premier niveau d'approbation. Portee recommandee : Hub.",
+        "Regional approver (Reviewer access). Regional portfolio, "
+        "first-level approval. Recommended scope: Hub.",
     ),
     (
         "pmu_project_manager",
         "PMU Project Manager",
         ["read", "create", "update", "submit"],
         False,
-        "Depositaire projet (acces Editor). Soumission de donnees, revue des "
-        "affectations RBAC de son equipe. Portee recommandee : Projet.",
+        "Project steward (Editor access). Data submission, review of "
+        "team RBAC assignments. Recommended scope: Project.",
     ),
     (
         "pmu_me_officer",
         "PMU M&E Officer",
         ["read", "create", "update"],
         False,
-        "Configurateur projet. Configuration du workspace, import en masse, "
-        "selection d'indicateurs. Portee recommandee : Projet.",
+        "Project configurator. Workspace setup, bulk import, "
+        "indicator selection. Recommended scope: Project.",
     ),
     (
         "implementing_partner",
         "Implementing Partner",
         ["read", "create", "update"],
         False,
-        "Contributeur composante (Viewer / Restricted Data Contributor). "
-        "RG-3.6 : a restreindre a une sous-composante precise "
-        "(activites/preuves/beneficiaires) — restriction fine non encore "
-        "enforced techniquement. Portee recommandee : Projet (sous-composante).",
+        "Component contributor (Viewer / Restricted Data Contributor). "
+        "RG-3.6: restrict to a specific sub-component "
+        "(activities/evidence/beneficiaries) — fine-grained restriction not yet "
+        "technically enforced. Recommended scope: Project (sub-component).",
     ),
     (
         "donor_representative",
         "Donor Representative",
         ["read"],
         False,
-        "Intendant d'investissement. Lecture seule sur les projets finances, "
-        "portail self-service (Module 11). Portee recommandee : Bailleur.",
+        "Investment steward. Read-only access to financed projects, "
+        "self-service portal (Module 11). Recommended scope: Donor.",
     ),
     (
         "isdb_internal_audit",
         "IsDB Internal Audit / IEvD",
         ["read", "export"],
         False,
-        "Verificateur / Evaluateur. Export de la piste d'audit, lecture "
-        "seule des archives de cloture. Portee recommandee : Global.",
+        "Auditor / Evaluator. Audit trail export, read-only access to "
+        "closure archives. Recommended scope: Global.",
     ),
 ]
 
