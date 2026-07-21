@@ -84,7 +84,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       queryClient.invalidateQueries({ queryKey: ["project-transitions", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setShowForm(false);
-      setTForm({ to_stage: "", justification: "", document_reference: "", dual_authorized_by: "" });
+      setTForm({ to_stage: "", transition_date: "", justification: "", document_reference: "", dual_authorized_by: "" });
     },
   });
 
@@ -546,21 +546,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
       </div>
-      {/* Module 2 — Cadre logique */}
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="bar-chart" size={15} style={{marginRight:6}} />Logical Framework (Logframe)</h2>
-            <div className="card-sub">
-              Module 2 · LLF2 catalogue indicators · Baseline and targets
-            </div>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
-            Open
-          </button>
-        </div>
-      </div>
-
       {/* SF-1 Etape 2 — Theorie du Changement */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -571,6 +556,21 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
+            Open
+          </button>
+        </div>
+      </div>
+
+      {/* Module 2 — Cadre logique */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="bar-chart" size={15} style={{marginRight:6}} />Logical Framework (Logframe)</h2>
+            <div className="card-sub">
+              Module 2 · LLF2 catalogue indicators · Baseline and targets
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
             Open
           </button>
         </div>
@@ -668,7 +668,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                mutation.mutate({ ...tForm, dual_authorized_by: tForm.dual_authorized_by || null });
+                mutation.mutate({ ...tForm, transition_date: tForm.transition_date || null, dual_authorized_by: tForm.dual_authorized_by || null });
               }}
               style={{
                 background: "var(--paper)",
@@ -700,8 +700,22 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                 </div>
 
                 <div className="field">
+                  <label className="field-label" htmlFor="transDate">
+                    Transition date <span className="req">*</span>
+                  </label>
+                  <input
+                    id="transDate"
+                    className="field-input"
+                    type="date"
+                    value={tForm.transition_date}
+                    onChange={(e) => setTForm({ ...tForm, transition_date: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="field">
                   <label className="field-label" htmlFor="dual">
-                    Second approbateur
+                    Second approver
                   </label>
                   <select
                     id="dual"
@@ -737,7 +751,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
               <div className="field">
                 <label className="field-label" htmlFor="docref">
-                  Reference documentaire
+                  Document reference
                 </label>
                 <input
                   id="docref"

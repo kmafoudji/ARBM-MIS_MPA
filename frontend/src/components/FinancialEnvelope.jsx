@@ -422,6 +422,26 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
           </div>
         </div>
       ))}
+
+      {/* Total alloué */}
+      {(() => {
+        const allocTotal = Object.values(vals).reduce((s, v) => s + Number(v || 0), 0);
+        const over = allocTotal > total;
+        return (
+          <div style={{
+            marginTop: 16, paddingTop: 12,
+            borderTop: "2px solid var(--border)",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            fontSize: 13, fontWeight: 600,
+          }}>
+            <span style={{ color: "var(--text-muted)" }}>Total allocated</span>
+            <span style={{ color: over ? "#dc2626" : "var(--lime-darker)" }}>
+              {fmt(allocTotal)} / {fmt(total)} USD
+              {over && <span style={{ marginLeft: 8, fontSize: 11 }}>⚠ Exceeds envelope</span>}
+            </span>
+          </div>
+        );
+      })()}
     </Modal>
   );
 }

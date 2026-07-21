@@ -74,9 +74,9 @@ GATE_STAGES = {"trc_endorsed", "ic_approved", "bed_approved"}
 EXCEPTION_STAGES = {"suspended", "cancelled"}
 
 GENDER_MARKER_CHOICES = [
-    ("0", "Categorie 0 - Non cible"),
-    ("1", "Categorie 1 - Significatif"),
-    ("2", "Categorie 2 - Principal"),
+    ("0", "Category 0 — Not targeted"),
+    ("1", "Category 1 — Significant"),
+    ("2", "Category 2 — Principal"),
 ]
 
 RIO_MARKER_CHOICES = [
@@ -363,9 +363,9 @@ FINANCING_SOURCE_CHOICES = [
 ]
 
 FINANCING_INSTRUMENT_CHOICES = [
-    ("loan",          "Pret"),
-    ("grant",         "Don"),
-    ("counterpart",   "Contrepartie"),
+    ("loan",          "Loan"),
+    ("grant",         "Grant"),
+    ("counterpart",   "Counterpart"),
     ("co_financing",  "Co-financing"),
 ]
 
