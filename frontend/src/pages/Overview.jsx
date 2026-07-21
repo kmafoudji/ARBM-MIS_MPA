@@ -240,7 +240,7 @@ export default function Overview({ user }) {
           </div>
           {recentProjects.length === 0
             ? <div className="empty"><div className="empty-title">No projects yet</div></div>
-            : <table className="table">
+            : <div className="table-wrap"><table className="table">
                 <thead>
                   <tr>
                     <th>Project</th>
@@ -268,7 +268,7 @@ export default function Overview({ user }) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
           }
         </div>
 

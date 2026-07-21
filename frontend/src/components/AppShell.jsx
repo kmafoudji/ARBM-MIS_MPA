@@ -81,6 +81,10 @@ function initials(user) {
 export default function AppShell({ view, onNavigate, user, counts = {}, children }) {
   const { t } = useTranslation();
   const [lang, setLang] = useState(i18n.language || "en");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  function closeSidebar() { setSidebarOpen(false); }
+  function openSidebar()  { setSidebarOpen(true); }
   const activeKey = NAV_ALIAS[view] || view;
 
   function switchLang(l) {
@@ -114,7 +118,10 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      {/* Overlay mobile */}
+      <div className={`sidebar-overlay${sidebarOpen ? " open" : ""}`} onClick={closeSidebar} aria-hidden="true" />
+
+      <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="brand">
           <LogoFull dark={true} />
           <div className="brand-sub-wrap">
@@ -130,7 +137,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
                 <button
                   key={key}
                   className={`nav-item${activeKey === key ? " active" : ""}`}
-                  onClick={() => onNavigate(key)}
+                  onClick={() => { onNavigate(key); closeSidebar(); }}
                   aria-current={activeKey === key ? "page" : undefined}
                 >
                   <Icon />
@@ -166,6 +173,11 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
 
       <div className="main">
         <div className="topbar">
+          <button className="burger-btn" onClick={openSidebar} aria-label="Open menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <nav className="crumb" aria-label={t("nav.breadcrumb")}>
             <span className="diamond" />
             {crumbTrail(view).map((c, i, arr) => {

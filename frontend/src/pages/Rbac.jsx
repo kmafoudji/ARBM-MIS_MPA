@@ -91,7 +91,7 @@ function TabUsers({ currentUser }) {
         {isLoading ? (
           <div className="empty"><span className="spinner" /></div>
         ) : (
-          <table className="table">
+          <div className="table-wrap"><table className="table">
             <thead>
               <tr>
                 <th style={{ width: 40 }}></th>
@@ -170,7 +170,7 @@ function TabUsers({ currentUser }) {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
 
@@ -249,7 +249,7 @@ function TabRoles({ currentUser }) {
         <span className="badge">{roles.length} roles</span>
       </div>
       {isLoading ? <div className="empty"><span className="spinner" /></div> : (
-        <table className="table">
+        <div className="table-wrap"><table className="table">
           <thead>
             <tr>
               <th style={{ width: 220 }}>Role</th>
@@ -300,7 +300,7 @@ function TabRoles({ currentUser }) {
               ];
             })}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   );
@@ -376,7 +376,7 @@ function TabAssignments({ currentUser }) {
               <p className="text-sm">Use the button above to assign a role to a user.</p>
             </div>
           ) : (
-            <table className="table">
+            <div className="table-wrap"><table className="table">
               <thead>
                 <tr>
                   <th>User</th>
@@ -422,7 +422,7 @@ function TabAssignments({ currentUser }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
 
         {revoked.length > 0 && !showRevoked && (

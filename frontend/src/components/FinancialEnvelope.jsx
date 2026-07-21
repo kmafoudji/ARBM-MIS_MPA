@@ -129,7 +129,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
             <p className="text-sm">LLF2 blended finance combines IsDB loans, donor grants and government gouvernementales.</p>
           </div>
         ) : (
-          <table className="table">
+          <div className="table-wrap"><table className="table">
             <thead>
               <tr>
                 <th>Source</th>
@@ -182,7 +182,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
                 {canEdit && <td />}
               </tr>
             </tfoot>
-          </table>
+          </table></div>
         )}
       </div>
 

@@ -112,7 +112,7 @@ export default function DataTable({
         </div>
       )}
 
-      <table className="table">
+      <div className="table-wrap"><table className="table">
         <thead>
           <tr>
             {columns.map((c) => (
@@ -162,7 +162,7 @@ export default function DataTable({
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
 
       {pageCount > 1 && (
         <div className="pagination">
