@@ -536,6 +536,46 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      {/* SF-6 — Enveloppe financiere */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
+            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
+          </div>
+        </div>
+        <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
+      </div>
+      {/* SF-1 Etape 2 — Theorie du Changement */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="globe" size={15} style={{marginRight:6}} />Theory of Change</h2>
+            <div className="card-sub">
+              SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
+            Open
+          </button>
+        </div>
+      </div>
+
+      {/* Module 2 — Cadre logique */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="bar-chart" size={15} style={{marginRight:6}} />Logical Framework (Logframe)</h2>
+            <div className="card-sub">
+              Module 2 · LLF2 catalogue indicators · Baseline and targets
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
+            Open
+          </button>
+        </div>
+      </div>
+
       <div className="card card-flush">
         <div className="card-header">
           <div>
@@ -817,36 +857,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
-      {/* SF-1 Etape 2 — Theorie du Changement */}
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="globe" size={15} style={{marginRight:6}} />Theory of Change</h2>
-            <div className="card-sub">
-              SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
-            </div>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
-            Open
-          </button>
-        </div>
-      </div>
-
-      {/* Module 2 — Cadre logique */}
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="bar-chart" size={15} style={{marginRight:6}} />Logical Framework (Logframe)</h2>
-            <div className="card-sub">
-              Module 2 · LLF2 catalogue indicators · Baseline and targets
-            </div>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
-            Open
-          </button>
-        </div>
-      </div>
-
       {/* SF-1 Etape 5 — Reporting */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -918,16 +928,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
-      {/* SF-6 — Enveloppe financiere */}
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
-            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
-          </div>
-        </div>
-        <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
-      </div>
     </div>
   );
 }
