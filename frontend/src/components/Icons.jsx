@@ -51,11 +51,30 @@ export const IconCatalogue = () => (
   </svg>
 );
 
-export const BrandMark = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-    <rect x="2" y="11" width="20" height="2" fill="#0F1A1E" transform="rotate(45 12 12)" />
-    <rect x="11" y="2" width="2" height="20" fill="#0F1A1E" transform="rotate(45 12 12)" />
+/* Logo ARBM-MIS — double losange (variante C) */
+export const BrandMark = ({ size = 32 }) => (
+  <svg width={size} height={size} viewBox="0 0 38 38" aria-hidden="true">
+    <polygon points="19,2 36,19 19,36 2,19" fill="#111111"/>
+    <polygon points="19,7 31,19 19,31 7,19" fill="#A4C53F"/>
   </svg>
+);
+
+/* Logo complet : losange + texte ARBM-MIS */
+export const LogoFull = ({ dark = false }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <svg width="32" height="32" viewBox="0 0 38 38" aria-hidden="true">
+      <polygon points="19,2 36,19 19,36 2,19" fill={dark ? "rgba(255,255,255,0.12)" : "#111111"}/>
+      <polygon points="19,7 31,19 19,31 7,19" fill="#A4C53F"/>
+    </svg>
+    <span style={{
+      fontFamily: "var(--font-display, 'Sora', sans-serif)",
+      fontWeight: 700,
+      fontSize: 18,
+      letterSpacing: "-0.02em",
+      color: dark ? "#ffffff" : "#111111",
+      lineHeight: 1,
+    }}>ARBM-MIS</span>
+  </div>
 );
 
 export const MicrosoftLogo = () => (

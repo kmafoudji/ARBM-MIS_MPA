@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BrandMark, MicrosoftLogo } from "../components/Icons.jsx";
+import { BrandMark, MicrosoftLogo, LogoFull } from "../components/Icons.jsx";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -41,11 +41,9 @@ export default function Login() {
 
         {/* Brand */}
         <div className="login-brand">
-          <div className="brand-mark"><BrandMark /></div>
-          <div>
-            <div className="login-eyebrow">{t("app.llf2")}</div>
-          </div>
+          <LogoFull dark={false} />
         </div>
+        <div className="login-eyebrow" style={{ marginBottom: 12 }}>{t("app.llf2")}</div>
 
         <h1 className="login-title">
           Where impact

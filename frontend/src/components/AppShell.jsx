@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   BrandMark,
+  LogoFull,
   IconCatalogue,
   IconDashboard,
   IconMasterData,
@@ -115,11 +116,8 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">
-            <BrandMark />
-          </div>
-          <div className="brand-text-wrap">
-            <div className="brand-name">{t("app.title")}</div>
+          <LogoFull dark={true} />
+          <div className="brand-sub-wrap">
             <div className="brand-sub">{t("app.console")}</div>
           </div>
         </div>
