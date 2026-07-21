@@ -5,7 +5,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 
 
 def health_check(request):
-    return JsonResponse({"status": "ok", "service": "arbm-mes-backend"})
+    return JsonResponse({"status": "ok", "service": "arbm-mis-backend"})
 
 
 @ensure_csrf_cookie

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Utilitaire en ligne de commande Django pour ARBM-MES (Adaptive Results-Based Management/Monitoring and Evaluation System)."""
+"""Utilitaire en ligne de commande Django pour ARBM-MIS (Adaptive Results-Based Management/Monitoring and Evaluation System)."""
 import os
 import sys
 

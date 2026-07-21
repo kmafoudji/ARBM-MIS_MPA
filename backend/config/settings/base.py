@@ -1,5 +1,5 @@
 """
-Settings de base pour ARBM-MES (Adaptive Results-Based Management/Monitoring and Evaluation System).
+Settings de base pour ARBM-MIS (Adaptive Results-Based Management/Monitoring and Evaluation System).
 Communs a tous les environnements (local, docker, production Azure).
 Les valeurs sensibles/variables viennent des variables d'environnement (.env),
 jamais codees en dur ici (principe "configure, don't code").
@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
-    # ARBM-MES apps
+    # ARBM-MIS apps
     "apps.identity",
     "apps.reference",
     "apps.project",
@@ -163,4 +163,4 @@ ENTRA_SCOPES = ["User.Read"]
 # Blob Storage (Azure) - utilise en production, S3-compatible en local si besoin
 AZURE_STORAGE_ACCOUNT_NAME = env("AZURE_STORAGE_ACCOUNT_NAME", default="")
 AZURE_STORAGE_ACCOUNT_KEY = env("AZURE_STORAGE_ACCOUNT_KEY", default="")
-AZURE_STORAGE_CONTAINER = env("AZURE_STORAGE_CONTAINER", default="arbm-mes-media")
+AZURE_STORAGE_CONTAINER = env("AZURE_STORAGE_CONTAINER", default="arbm-mis-media")

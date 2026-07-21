@@ -24,7 +24,7 @@ STORAGES = {
         "OPTIONS": {
             "account_name": env("AZURE_STORAGE_ACCOUNT_NAME"),
             "account_key": env("AZURE_STORAGE_ACCOUNT_KEY"),
-            "azure_container": env("AZURE_STORAGE_CONTAINER", default="arbm-mes-media"),
+            "azure_container": env("AZURE_STORAGE_CONTAINER", default="arbm-mis-media"),
             # Les medias sont servis depuis une origine distincte de celle qui
             # porte le cookie de session : un fichier televerse ne peut pas
             # executer de script dans le contexte de l'application.
