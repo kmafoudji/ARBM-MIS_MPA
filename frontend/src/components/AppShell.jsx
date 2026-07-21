@@ -187,7 +187,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
           <div className="topbar-actions">
             {/* Switcher langue EN / FR */}
             <div className="row" style={{ gap: 4 }}>
-              {["en", "fr"].map((l) => (
+              {["en", "fr", "ar"].map((l) => (
                 <button
                   key={l}
                   onClick={() => switchLang(l)}
