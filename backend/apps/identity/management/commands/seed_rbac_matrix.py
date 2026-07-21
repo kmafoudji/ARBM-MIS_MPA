@@ -165,7 +165,7 @@ class Command(BaseCommand):
         role_count = 0
         rp_count = 0
         for code, label, actions, is_system, description in ROLES:
-            role, _created = Role.objects.get_or_create(
+            role, _created = Role.objects.update_or_create(
                 code=code,
                 defaults={"label": label, "description": description, "is_system": is_system},
             )
