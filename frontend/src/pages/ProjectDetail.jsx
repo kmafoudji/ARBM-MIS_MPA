@@ -546,21 +546,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
       </div>
-      {/* SF-1 Etape 2 — Theorie du Changement */}
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="globe" size={15} style={{marginRight:6}} />Theory of Change</h2>
-            <div className="card-sub">
-              SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
-            </div>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
-            Open
-          </button>
-        </div>
-      </div>
-
       {/* Module 2 — Cadre logique */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -571,6 +556,21 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
+            Open
+          </button>
+        </div>
+      </div>
+
+      {/* SF-1 Etape 2 — Theorie du Changement */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="globe" size={15} style={{marginRight:6}} />Theory of Change</h2>
+            <div className="card-sub">
+              SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
             Open
           </button>
         </div>

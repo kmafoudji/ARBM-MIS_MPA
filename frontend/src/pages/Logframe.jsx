@@ -576,7 +576,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
 // ---------------------------------------------------------------------------
 export default function Logframe({ projectId, onBack }) {
   const queryClient = useQueryClient();
-  const [addingRow, setAddingRow] = useState(false);
+  // addingRow retiré — les indicateurs s'attachent depuis la ToC
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["logframe", projectId],
@@ -616,34 +616,25 @@ export default function Logframe({ projectId, onBack }) {
 
       <div className="view-header">
         <div className="view-eyebrow text-mono">{project?.code}</div>
-        <h1 className="view-title">Logframe</h1>
+        <h1 className="view-title">Indicator Summary</h1>
         <div className="row mt-2">
           <span className="badge">{(rows || []).length} indicator{rows?.length !== 1 ? "s" : ""}</span>
           <span className="text-muted text-sm">{project?.name}</span>
         </div>
       </div>
 
-      {addingRow ? (
-        <AddRowsForm
-          projectId={projectId}
-          existingIndicatorIds={(rows || []).map((r) => String(r.indicator))}
-          onAdded={() => { setAddingRow(false); onChanged(); }}
-          onCancel={() => setAddingRow(false)}
-        />
-      ) : (
-        <div className="row mb-3">
-          <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAddingRow(true)}>
-            <Icon name="plus" size={14} /> Add indicators
-          </button>
-        </div>
-      )}
+      <div className="notice notice-info" style={{ marginBottom: 16, fontSize: 13 }}>
+        <span style={{ marginRight: 8 }}>ℹ️</span>
+        Indicators are attached to nodes directly from the <strong>Theory of Change</strong> screen.
+        This view shows a consolidated read-only summary. Baseline and targets can be edited here.
+      </div>
 
-      {(rows || []).length === 0 && !addingRow && (
+      {(rows || []).length === 0 && (
         <div className="card card-flush">
           <div className="card-body">
             <p className="text-muted text-sm" style={{ margin: 0 }}>
-              No indicators in the logframe. Click "Add Indicators" to
-              select from the LLF2 catalogue.
+              No indicators attached yet. Go to <strong>Theory of Change</strong>,
+              open a node and click "Attach indicator".
             </p>
           </div>
         </div>

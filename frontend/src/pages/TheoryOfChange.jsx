@@ -7,71 +7,364 @@ import RichTextEditor from "../components/RichTextEditor";
 import TagInput from "../components/TagInput";
 
 const LEVELS = [
-  { key: "activity", label: "Activities", parentKey: null, icon: "zap" },
-  { key: "output", label: "Outputs", parentKey: "activity", icon: "package" },
-  { key: "immediate_outcome", label: "Immediate Outcomes", parentKey: "output", icon: "trending-up" },
-  { key: "intermediate_outcome", label: "Intermediate Outcomes", parentKey: "immediate_outcome", icon: "layers" },
+  { key: "activity",             label: "Activities",            parentKey: null,                 icon: "zap"          },
+  { key: "output",               label: "Outputs",               parentKey: "activity",           icon: "package"      },
+  { key: "immediate_outcome",    label: "Immediate Outcomes",    parentKey: "output",             icon: "trending-up"  },
+  { key: "intermediate_outcome", label: "Intermediate Outcomes", parentKey: "immediate_outcome",  icon: "layers"       },
 ];
 
 const EMPTY_NODE_FORM = {
-  parent: "",
-  statement: "",
-  logframe_row: "",
-  means_of_verification: "",
-  assumptions: "",
-  risks_mitigation: "",
-  adaptation_strategy: "",
-  gender_climate_tag: "",
+  parent: "", statement: "",
+  means_of_verification: "", assumptions: "",
+  risks_mitigation: "", adaptation_strategy: "", gender_climate_tag: "",
 };
 
-/**
- * Select des lignes logframe d'un projet — recharge uniquement quand le
- * formulaire est ouvert (enabled: true par defaut ici car ce composant
- * n'est monté que dans ce cas).
- */
-function LogframeRowSelect({ projectId, value, onChange }) {
-  const { data: rows, isLoading } = useQuery({
-    queryKey: ["logframe", projectId],
-    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/`),
+/* ── Formulaire inline indicateur + baseline + cibles ───────────────────── */
+function IndicatorPanel({ projectId, node, onSaved }) {
+  const qc = useQueryClient();
+  const [mode, setMode]       = useState("view"); // view | attach | baseline | targets
+  const [search, setSearch]   = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const [chainLevel, setChainLevel] = useState(node.chain_level || "");
+  const [baselineForm, setBaselineForm] = useState({
+    baseline_value: node.logframe_baseline_value ?? "",
+    baseline_year:  node.logframe_baseline_year  ?? "",
+    baseline_source: "",
+    measurement_frequency: "",
+    notes: "",
+  });
+  const [targetForm, setTargetForm] = useState({ target_value: "", target_date: "", label: "" });
+  const [targets, setTargets]       = useState([]);
+
+  /* Catalogue */
+  const { data: indicators, isLoading: indLoading } = useQuery({
+    queryKey: ["indicators", search],
+    queryFn: () => apiFetch(`/api/results/indicators/?${search ? `q=${encodeURIComponent(search)}` : ""}`),
+    enabled: mode === "attach",
   });
 
-  if (isLoading) return <div className="field-input text-muted text-sm">Loading...</div>;
+  /* Cibles existantes (si ligne logframe déjà attachée) */
+  const { data: existingRow } = useQuery({
+    queryKey: ["logframe-row", projectId, node.logframe_row_id],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/`),
+    enabled: !!node.logframe_row_id,
+  });
 
-  if (!rows || rows.length === 0) {
-    return (
-      <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 0" }}>
-        No logframe lines — add indicators via "Logical Framework" first.
-      </div>
-    );
-  }
+  /* Choices niveau chaîne */
+  const { data: choices } = useQuery({
+    queryKey: ["logframe-choices", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/choices/`),
+    enabled: mode === "attach",
+  });
 
+  /* Créer logframe_row + attacher au nœud */
+  const attachMutation = useMutation({
+    mutationFn: async () => {
+      // 1. Créer la ligne logframe
+      const row = await apiFetch(`/api/projects/${projectId}/logframe/`, {
+        method: "POST",
+        body: JSON.stringify({ indicator: Number(selectedId), chain_level: chainLevel }),
+      });
+      // 2. Attacher la ligne au nœud ToC
+      await apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ logframe_row: row.id }),
+      });
+      return row;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["toc", projectId] });
+      qc.invalidateQueries({ queryKey: ["logframe", projectId] });
+      onSaved();
+      setMode("view");
+    },
+  });
+
+  /* Sauvegarder baseline */
+  const baselineMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/`, {
+        method: "PATCH", body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["toc", projectId] });
+      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, node.logframe_row_id] });
+      onSaved();
+      setMode("view");
+    },
+  });
+
+  /* Ajouter une cible */
+  const targetMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/targets/`, {
+        method: "POST", body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, node.logframe_row_id] });
+      qc.invalidateQueries({ queryKey: ["logframe", projectId] });
+      setTargetForm({ target_value: "", target_date: "", label: "" });
+    },
+  });
+
+  /* Supprimer une cible */
+  const deleteTargetMutation = useMutation({
+    mutationFn: (tid) =>
+      apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/targets/${tid}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["logframe-row", projectId, node.logframe_row_id] }),
+  });
+
+  /* Détacher l'indicateur du nœud */
+  const detachMutation = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, {
+        method: "PATCH", body: JSON.stringify({ logframe_row: null }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["toc", projectId] });
+      onSaved();
+      setMode("view");
+    },
+  });
+
+  const hasIndicator = !!node.logframe_indicator_code;
+  const rowTargets   = existingRow?.targets || [];
+
+  /* ── Vue indicator ── */
   return (
-    <select className="field-select" value={value || ""} onChange={(e) => onChange(e.target.value || null)}>
-      <option value="">No indicator linked</option>
-      {rows.map((r) => (
-        <option key={r.id} value={r.id}>
-          {r.indicator_code} — {r.indicator_name.slice(0, 55)}
-        </option>
-      ))}
-    </select>
+    <div style={{
+      background: "var(--surface-2)", border: "1px solid var(--border)",
+      borderRadius: "var(--r-2)", padding: "12px 14px", marginTop: 10,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+          Indicator &amp; Measurement
+        </span>
+        <div style={{ display: "flex", gap: 6 }}>
+          {hasIndicator && mode === "view" && (
+            <>
+              <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11 }} onClick={() => {
+                setBaselineForm({
+                  baseline_value: node.logframe_baseline_value ?? "",
+                  baseline_year:  node.logframe_baseline_year  ?? "",
+                  baseline_source: existingRow?.baseline_source ?? "",
+                  measurement_frequency: existingRow?.measurement_frequency ?? "",
+                  notes: existingRow?.notes ?? "",
+                });
+                setMode("baseline");
+              }}>
+                <Icon name="pencil" size={11} /> Baseline
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11 }} onClick={() => setMode("targets")}>
+                <Icon name="plus" size={11} /> Target
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11, color: "var(--red, #dc2626)" }}
+                onClick={() => window.confirm("Detach this indicator from the node? The logframe row and targets are preserved.") && detachMutation.mutate()}>
+                <Icon name="x" size={11} /> Detach
+              </button>
+            </>
+          )}
+          {!hasIndicator && mode === "view" && (
+            <button className="btn btn-primary btn-sm" style={{ gap: 5, fontSize: 11 }} onClick={() => setMode("attach")}>
+              <Icon name="plus" size={11} /> Attach indicator
+            </button>
+          )}
+          {mode !== "view" && (
+            <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => setMode("view")}>
+              <Icon name="x" size={11} /> Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Vue résumé */}
+      {mode === "view" && hasIndicator && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span className="badge" style={{ fontSize: 11, fontFamily: "var(--font-mono)" }}>{node.logframe_indicator_code}</span>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{node.logframe_indicator_name}</span>
+            <span className="text-muted" style={{ fontSize: 11 }}>{node.logframe_indicator_unit}</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12 }}>
+            <span>
+              <span className="text-muted">Baseline: </span>
+              <strong>{node.logframe_baseline_value != null ? `${Number(node.logframe_baseline_value).toLocaleString()} ${node.logframe_indicator_unit}` : "—"}</strong>
+              {node.logframe_baseline_year ? <span className="text-muted"> ({node.logframe_baseline_year})</span> : ""}
+            </span>
+            {rowTargets.length > 0 && (
+              <span>
+                <span className="text-muted">Targets: </span>
+                <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
+                  {rowTargets.map((t) => (
+                    <span key={t.id} className="badge badge-lime" style={{ fontSize: 10 }}>
+                      {t.label || new Date(t.target_date).getFullYear()} : {Number(t.target_value).toLocaleString()}
+                      <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
+                        onClick={() => window.confirm("Delete target?") && deleteTargetMutation.mutate(t.id)}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {mode === "view" && !hasIndicator && (
+        <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>No indicator attached — click "Attach indicator" to link one from the LLF2 catalogue.</p>
+      )}
+
+      {/* Mode : attacher un indicateur */}
+      {mode === "attach" && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 180px", gap: 8, marginBottom: 8 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Search catalogue</label>
+              <input className="field-input" placeholder="Code or keyword..." value={search}
+                onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Level in chain</label>
+              <select className="field-select" value={chainLevel} onChange={(e) => setChainLevel(e.target.value)}>
+                <option value="">Select...</option>
+                {choices?.chain_levels?.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <select className="field-select" style={{ marginBottom: 10 }} value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}>
+            <option value="">{indLoading ? "Loading..." : "Select an indicator..."}</option>
+            {indicators?.map((ind) => (
+              <option key={ind.id} value={ind.id}>{ind.code} — {ind.name.slice(0, 70)}</option>
+            ))}
+          </select>
+          {attachMutation.isError && (
+            <div className="field-error" style={{ marginBottom: 8 }}>{JSON.stringify(attachMutation.error?.detail)}</div>
+          )}
+          <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
+            disabled={!selectedId || !chainLevel || attachMutation.isPending}
+            onClick={() => attachMutation.mutate()}>
+            <Icon name="check" size={13} /> {attachMutation.isPending ? "Attaching..." : "Attach to node"}
+          </button>
+        </div>
+      )}
+
+      {/* Mode : saisir baseline */}
+      {mode === "baseline" && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Baseline value ({node.logframe_indicator_unit})</label>
+              <input className="field-input" type="number" step="any" value={baselineForm.baseline_value}
+                onChange={(e) => setBaselineForm({ ...baselineForm, baseline_value: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Reference year</label>
+              <input className="field-input" type="number" min="2000" max="2050" value={baselineForm.baseline_year}
+                onChange={(e) => setBaselineForm({ ...baselineForm, baseline_year: e.target.value })} />
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <label className="field-label" style={{ fontSize: 11 }}>Source</label>
+              <input className="field-input" value={baselineForm.baseline_source}
+                onChange={(e) => setBaselineForm({ ...baselineForm, baseline_source: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Measurement frequency</label>
+              <select className="field-select" value={baselineForm.measurement_frequency}
+                onChange={(e) => setBaselineForm({ ...baselineForm, measurement_frequency: e.target.value })}>
+                <option value="">Select</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="semi_annual">Semi-annual</option>
+                <option value="annual">Annual</option>
+                <option value="end_of_project">End of project</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Notes</label>
+              <input className="field-input" value={baselineForm.notes}
+                onChange={(e) => setBaselineForm({ ...baselineForm, notes: e.target.value })} />
+            </div>
+          </div>
+          {baselineMutation.isError && (
+            <div className="field-error" style={{ marginBottom: 8 }}>{JSON.stringify(baselineMutation.error?.detail)}</div>
+          )}
+          <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
+            disabled={baselineMutation.isPending}
+            onClick={() => baselineMutation.mutate({
+              baseline_value: baselineForm.baseline_value || null,
+              baseline_year:  baselineForm.baseline_year  || null,
+              baseline_source: baselineForm.baseline_source,
+              measurement_frequency: baselineForm.measurement_frequency || null,
+              notes: baselineForm.notes,
+            })}>
+            <Icon name="check" size={13} /> {baselineMutation.isPending ? "Saving..." : "Save baseline"}
+          </button>
+        </div>
+      )}
+
+      {/* Mode : ajouter une cible */}
+      {mode === "targets" && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Target value ({node.logframe_indicator_unit})</label>
+              <input className="field-input" type="number" step="any" value={targetForm.target_value}
+                onChange={(e) => setTargetForm({ ...targetForm, target_value: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Target date</label>
+              <input className="field-input" type="date" value={targetForm.target_date}
+                onChange={(e) => setTargetForm({ ...targetForm, target_date: e.target.value })} />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11 }}>Label (e.g. 2025, Q3)</label>
+              <input className="field-input" value={targetForm.label}
+                onChange={(e) => setTargetForm({ ...targetForm, label: e.target.value })} />
+            </div>
+          </div>
+          {/* Cibles déjà saisies */}
+          {rowTargets.length > 0 && (
+            <div style={{ marginBottom: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {rowTargets.map((t) => (
+                <span key={t.id} className="badge badge-lime" style={{ fontSize: 11 }}>
+                  {t.label || new Date(t.target_date).getFullYear()} : {Number(t.target_value).toLocaleString()}
+                  <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
+                    onClick={() => window.confirm("Delete target?") && deleteTargetMutation.mutate(t.id)}>
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          {targetMutation.isError && (
+            <div className="field-error" style={{ marginBottom: 8 }}>{JSON.stringify(targetMutation.error?.detail)}</div>
+          )}
+          <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
+            disabled={!targetForm.target_value || !targetForm.target_date || targetMutation.isPending}
+            onClick={() => targetMutation.mutate(targetForm)}>
+            <Icon name="plus" size={13} /> {targetMutation.isPending ? "Adding..." : "Add target"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
+/* ── NodeCard ────────────────────────────────────────────────────────────── */
 function NodeCard({ node, projectId, onSaved, onDeleted }) {
   const [expanded, setExpanded] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState(node);
+  const [editing,  setEditing]  = useState(false);
+  const [form,     setForm]     = useState(node);
 
   const updateMutation = useMutation({
     mutationFn: (payload) =>
       apiFetch(`/api/projects/${node.toc}/toc/nodes/${node.id}/`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
+        method: "PATCH", body: JSON.stringify(payload),
       }),
-    onSuccess: () => {
-      setEditing(false);
-      onSaved();
-    },
+    onSuccess: () => { setEditing(false); onSaved(); },
   });
 
   const deleteMutation = useMutation({
@@ -80,11 +373,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
     onSuccess: onDeleted,
   });
 
-  function startEdit() {
-    setForm(node);
-    setEditing(true);
-    setExpanded(true);
-  }
+  function startEdit() { setForm(node); setEditing(true); setExpanded(true); }
 
   function submitEdit(e) {
     e.preventDefault();
@@ -92,96 +381,54 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
             logframe_row_id, logframe_indicator_code, logframe_indicator_name,
             logframe_indicator_unit, logframe_baseline_value, logframe_baseline_year,
             ...payload } = form;
-    payload.logframe_row = form.logframe_row_id || null;
     updateMutation.mutate(payload);
   }
 
   return (
-    <div
-      style={{
-        background: "var(--paper)",
-        border: "1px solid var(--rule)",
-        borderRadius: "var(--r-3)",
-        padding: "var(--s-3)",
-      }}
-    >
-      <div className="row" style={{ justifyContent: "space-between", cursor: "pointer" }} onClick={() => !editing && setExpanded(!expanded)}>
+    <div style={{
+      background: "var(--surface)", border: "1px solid var(--border)",
+      borderRadius: "var(--r-3)", padding: "var(--s-3)",
+    }}>
+      <div className="row" style={{ justifyContent: "space-between", cursor: "pointer" }}
+        onClick={() => !editing && setExpanded(!expanded)}>
         <div className="row" style={{ gap: 10 }}>
           <span className="text-mono badge">{node.code}</span>
-          <span>{stripHtml(node.statement)}</span>
+          <span style={{ fontWeight: 500 }}>{stripHtml(node.statement)}</span>
         </div>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "var(--muted)" }} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "var(--text-muted)" }} />
       </div>
 
       {expanded && !editing && (
-        <div className="dl mt-2">
-          <div>
-            <div className="dl-term">Indicator (logframe)</div>
-            <div className="dl-desc">
-              {node.logframe_indicator_code ? (
-                <span className="row" style={{ gap: 8, alignItems: "center" }}>
-                  <span className="text-mono badge" style={{ fontSize: 11 }}>{node.logframe_indicator_code}</span>
-                  <span>{node.logframe_indicator_name}</span>
-                  {node.logframe_baseline_value != null && (
-                    <span className="text-muted text-sm">
-                      baseline : {Number(node.logframe_baseline_value).toLocaleString("fr-FR")} {node.logframe_indicator_unit}
-                      {node.logframe_baseline_year ? ` (${node.logframe_baseline_year})` : ""}
-                    </span>
-                  )}
-                </span>
-              ) : "—"}
-            </div>
-          </div>
-          <div>
-            <div className="dl-term">Means of Verification</div>
-            <div className="dl-desc"><RichText value={node.means_of_verification} /></div>
-          </div>
-          <div>
-            <div className="dl-term">Assumptions</div>
-            <div className="dl-desc"><RichText value={node.assumptions} /></div>
-          </div>
-          <div>
-            <div className="dl-term">Risk Mitigation</div>
-            <div className="dl-desc"><RichText value={node.risks_mitigation} /></div>
-          </div>
-          <div>
-            <div className="dl-term">Adaptation Strategy</div>
-            <div className="dl-desc"><RichText value={node.adaptation_strategy} /></div>
-          </div>
-          <div>
-            <div className="dl-term">Gender / Climate Tag</div>
-            <div className="dl-desc">
-              {node.gender_climate_tag ? (
-                <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                  {node.gender_climate_tag.split(",").map((t) => t.trim()).filter(Boolean).map((t, i) => (
-                    <span key={i} className="badge">{t}</span>
-                  ))}
-                </div>
-              ) : "—"}
+        <div>
+          {/* Panneau indicateur */}
+          <IndicatorPanel projectId={projectId} node={node} onSaved={onSaved} />
+
+          <div className="dl mt-3">
+            <div><div className="dl-term">Means of Verification</div><div className="dl-desc"><RichText value={node.means_of_verification} /></div></div>
+            <div><div className="dl-term">Assumptions</div><div className="dl-desc"><RichText value={node.assumptions} /></div></div>
+            <div><div className="dl-term">Risk Mitigation</div><div className="dl-desc"><RichText value={node.risks_mitigation} /></div></div>
+            <div><div className="dl-term">Adaptation Strategy</div><div className="dl-desc"><RichText value={node.adaptation_strategy} /></div></div>
+            <div>
+              <div className="dl-term">Gender / Climate Tag</div>
+              <div className="dl-desc">
+                {node.gender_climate_tag
+                  ? <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                      {node.gender_climate_tag.split(",").map((t) => t.trim()).filter(Boolean).map((t, i) => (
+                        <span key={i} className="badge">{t}</span>
+                      ))}
+                    </div>
+                  : "—"}
+              </div>
             </div>
           </div>
           <div className="row mt-2">
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={startEdit}>
               <Icon name="pencil" size={14} /> Edit
             </button>
-            <button
-              className="btn btn-ghost btn-sm row"
-              style={{ gap: 6 }}
-              type="button"
+            <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button"
               disabled={deleteMutation.isPending}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Delete node ${node.code} ("${stripHtml(node.statement).slice(0, 60)}")? ` +
-                      "All child nodes (direct and indirect) will be deleted with it. " +
-                      "This action is irreversible."
-                  )
-                ) {
-                  deleteMutation.mutate();
-                }
-              }}
-            >
-              <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Suppression..." : "Delete"}
+              onClick={() => window.confirm(`Delete node ${node.code} ("${stripHtml(node.statement).slice(0, 60)}")? All child nodes will be deleted. This action is irreversible.`) && deleteMutation.mutate()}>
+              <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </button>
           </div>
         </div>
@@ -191,59 +438,34 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
         <form onSubmit={submitEdit} className="mt-2">
           <div className="field">
             <label className="field-label">Statement</label>
-            <RichTextEditor
-              value={form.statement}
-              onChange={(html) => setForm({ ...form, statement: html })}
-            />
+            <RichTextEditor value={form.statement} onChange={(html) => setForm({ ...form, statement: html })} />
           </div>
           <div className="grid grid-2">
             <div className="field">
-              <label className="field-label">Indicator (logframe)</label>
-              <LogframeRowSelect
-                projectId={projectId}
-                value={form.logframe_row_id || ""}
-                onChange={(v) => setForm({ ...form, logframe_row_id: v })}
-              />
-            </div>
-            <div className="field">
               <label className="field-label">Gender / Climate Tag</label>
-              <TagInput
-                value={form.gender_climate_tag}
+              <TagInput value={form.gender_climate_tag}
                 onChange={(v) => setForm({ ...form, gender_climate_tag: v })}
-                placeholder="gender, climate, youth..."
-              />
+                placeholder="gender, climate, youth..." />
             </div>
           </div>
           <div className="field">
             <label className="field-label">Means of Verification</label>
-            <RichTextEditor
-              value={form.means_of_verification}
-              onChange={(html) => setForm({ ...form, means_of_verification: html })}
-            />
+            <RichTextEditor value={form.means_of_verification} onChange={(html) => setForm({ ...form, means_of_verification: html })} />
           </div>
           <div className="field">
             <label className="field-label">Assumptions</label>
-            <RichTextEditor
-              value={form.assumptions}
-              onChange={(html) => setForm({ ...form, assumptions: html })}
-            />
+            <RichTextEditor value={form.assumptions} onChange={(html) => setForm({ ...form, assumptions: html })} />
           </div>
           <div className="field">
             <label className="field-label">Risk Mitigation</label>
-            <RichTextEditor
-              value={form.risks_mitigation}
-              onChange={(html) => setForm({ ...form, risks_mitigation: html })}
-            />
+            <RichTextEditor value={form.risks_mitigation} onChange={(html) => setForm({ ...form, risks_mitigation: html })} />
           </div>
           <div className="field">
             <label className="field-label">Adaptation Strategy</label>
-            <RichTextEditor
-              value={form.adaptation_strategy}
-              onChange={(html) => setForm({ ...form, adaptation_strategy: html })}
-            />
+            <RichTextEditor value={form.adaptation_strategy} onChange={(html) => setForm({ ...form, adaptation_strategy: html })} />
           </div>
           {updateMutation.isError && (
-            <div className="field-error mb-3">{JSON.stringify(updateMutation.error.detail)}</div>
+            <div className="field-error mb-3">{JSON.stringify(updateMutation.error?.detail)}</div>
           )}
           <div className="row">
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={updateMutation.isPending}>
@@ -259,35 +481,24 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
   );
 }
 
+/* ── LevelSection ────────────────────────────────────────────────────────── */
 function LevelSection({ level, nodes, parentOptions, projectId, onChanged, collapsed, onToggleCollapse }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState(EMPTY_NODE_FORM);
+  const [form, setForm]     = useState(EMPTY_NODE_FORM);
 
   const createMutation = useMutation({
     mutationFn: (payload) =>
-      apiFetch(`/api/projects/${projectId}/toc/nodes/`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: () => {
-      setAdding(false);
-      setForm(EMPTY_NODE_FORM);
-      onChanged();
-    },
+      apiFetch(`/api/projects/${projectId}/toc/nodes/`, { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => { setAdding(false); setForm(EMPTY_NODE_FORM); onChanged(); },
   });
 
   function submit(e) {
     e.preventDefault();
     createMutation.mutate({
-      chain_level: level.key,
-      parent: form.parent || null,
-      statement: form.statement,
-      logframe_row: form.logframe_row || null,
-      means_of_verification: form.means_of_verification,
-      assumptions: form.assumptions,
-      risks_mitigation: form.risks_mitigation,
-      adaptation_strategy: form.adaptation_strategy,
-      gender_climate_tag: form.gender_climate_tag,
+      chain_level: level.key, parent: form.parent || null,
+      statement: form.statement, means_of_verification: form.means_of_verification,
+      assumptions: form.assumptions, risks_mitigation: form.risks_mitigation,
+      adaptation_strategy: form.adaptation_strategy, gender_climate_tag: form.gender_climate_tag,
     });
   }
 
@@ -295,18 +506,11 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
     <div className="card card-flush mb-3">
       <div className="card-header">
         <div className="row" style={{ gap: 10, alignItems: "center", cursor: "pointer" }} onClick={onToggleCollapse}>
-          <span
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--lime-dark)",
-            }}
-          >
+          <span style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--lime-dark)",
+          }}>
             <Icon name={level.icon} size={18} />
           </span>
           <div>
@@ -320,150 +524,101 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
               <Icon name="plus" size={14} /> Add
             </button>
           )}
-          <button
-            className="btn btn-ghost btn-sm"
-            type="button"
-            aria-label={collapsed ? "Deplier" : "Replier"}
-            onClick={onToggleCollapse}
-          >
+          <button className="btn btn-ghost btn-sm" type="button" onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand" : "Collapse"}>
             <Icon name={collapsed ? "chevron-down" : "chevron-up"} size={16} />
           </button>
         </div>
       </div>
-      {!collapsed && (
-      <div className="card-body">
-        {nodes.length === 0 && !adding && (
-          <p className="text-muted text-sm" style={{ margin: 0 }}>No nodes at this level.</p>
-        )}
-        <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
-          {nodes.map((n) => (
-            <NodeCard key={n.id} node={n} projectId={projectId} onSaved={onChanged} onDeleted={onChanged} />
-          ))}
-        </div>
 
-        {adding && (
-          <form
-            onSubmit={submit}
-            className="mt-3"
-            style={{
-              background: "var(--paper)",
-              border: "1px solid var(--rule)",
-              borderRadius: "var(--r-3)",
-              padding: "var(--s-3)",
-            }}
-          >
-            {level.parentKey && (
+      {!collapsed && (
+        <div className="card-body">
+          {nodes.length === 0 && !adding && (
+            <p className="text-muted text-sm" style={{ margin: 0 }}>No nodes at this level.</p>
+          )}
+          <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
+            {nodes.map((n) => (
+              <NodeCard key={n.id} node={n} projectId={projectId} onSaved={onChanged} onDeleted={onChanged} />
+            ))}
+          </div>
+
+          {adding && (
+            <form onSubmit={submit} className="mt-3" style={{
+              background: "var(--surface-2)", border: "1px solid var(--border)",
+              borderRadius: "var(--r-3)", padding: "var(--s-3)",
+            }}>
+              {level.parentKey && (
+                <div className="field">
+                  <label className="field-label">Parent node <span className="req">*</span></label>
+                  <select className="field-select" value={form.parent}
+                    onChange={(e) => setForm({ ...form, parent: e.target.value })} required>
+                    <option value="">Select</option>
+                    {parentOptions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.code} — {stripHtml(p.statement).slice(0, 60)}</option>
+                    ))}
+                  </select>
+                  {parentOptions.length === 0 && (
+                    <span className="field-help">No node at a higher level yet — create one first.</span>
+                  )}
+                </div>
+              )}
               <div className="field">
-                <label className="field-label">
-                  Rattache a <span className="req">*</span>
-                </label>
-                <select
-                  className="field-select"
-                  value={form.parent}
-                  onChange={(e) => setForm({ ...form, parent: e.target.value })}
-                  required
-                >
-                  <option value="">Select</option>
-                  {parentOptions.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code} — {stripHtml(p.statement).slice(0, 60)}
-                    </option>
-                  ))}
-                </select>
-                {parentOptions.length === 0 && (
-                  <span className="field-help">
-                    No node at a higher level yet — create one first.
-                  </span>
-                )}
+                <label className="field-label">Statement <span className="req">*</span></label>
+                <RichTextEditor value={form.statement}
+                  onChange={(html) => setForm({ ...form, statement: html })} />
               </div>
-            )}
-            <div className="field">
-              <label className="field-label">
-                Enonce <span className="req">*</span>
-              </label>
-              <RichTextEditor
-                value={form.statement}
-                onChange={(html) => setForm({ ...form, statement: html })}
-              />
-            </div>
-            <div className="grid grid-2">
               <div className="field">
-                <label className="field-label">Indicator (logframe)</label>
-                <LogframeRowSelect
-                  projectId={projectId}
-                  value={form.logframe_row}
-                  onChange={(v) => setForm({ ...form, logframe_row: v })}
-                />
+                <label className="field-label">Means of Verification</label>
+                <RichTextEditor value={form.means_of_verification}
+                  onChange={(html) => setForm({ ...form, means_of_verification: html })} />
+              </div>
+              <div className="field">
+                <label className="field-label">Assumptions</label>
+                <RichTextEditor value={form.assumptions}
+                  onChange={(html) => setForm({ ...form, assumptions: html })}
+                  placeholder="Conditions assumed true for the causal pathway to hold." />
+              </div>
+              <div className="field">
+                <label className="field-label">Risk Mitigation</label>
+                <RichTextEditor value={form.risks_mitigation}
+                  onChange={(html) => setForm({ ...form, risks_mitigation: html })} />
+              </div>
+              <div className="field">
+                <label className="field-label">Adaptation Strategy</label>
+                <RichTextEditor value={form.adaptation_strategy}
+                  onChange={(html) => setForm({ ...form, adaptation_strategy: html })} />
               </div>
               <div className="field">
                 <label className="field-label">Gender / Climate Tag</label>
-                <TagInput
-                  value={form.gender_climate_tag}
+                <TagInput value={form.gender_climate_tag}
                   onChange={(v) => setForm({ ...form, gender_climate_tag: v })}
-                  placeholder="gender, climate, youth..."
-                />
+                  placeholder="gender, climate, youth..." />
               </div>
-            </div>
-            <div className="field">
-              <label className="field-label">Means of Verification</label>
-              <RichTextEditor
-                value={form.means_of_verification}
-                onChange={(html) => setForm({ ...form, means_of_verification: html })}
-              />
-            </div>
-            <div className="field">
-              <label className="field-label">Assumptions</label>
-              <RichTextEditor
-                value={form.assumptions}
-                onChange={(html) => setForm({ ...form, assumptions: html })}
-                placeholder="Conditions assumed true for the causal pathway to hold."
-              />
-            </div>
-            <div className="field">
-              <label className="field-label">Risk Mitigation</label>
-              <RichTextEditor
-                value={form.risks_mitigation}
-                onChange={(html) => setForm({ ...form, risks_mitigation: html })}
-              />
-            </div>
-            <div className="field">
-              <label className="field-label">Adaptation Strategy</label>
-              <RichTextEditor
-                value={form.adaptation_strategy}
-                onChange={(html) => setForm({ ...form, adaptation_strategy: html })}
-              />
-            </div>
-            {createMutation.isError && (
-              <div className="field-error mb-3">{JSON.stringify(createMutation.error.detail)}</div>
-            )}
-            <div className="row">
-              <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={createMutation.isPending}>
-                <Icon name="plus" size={14} /> {createMutation.isPending ? "Saving..." : "Add"}
-              </button>
-              <button
-                className="btn btn-ghost btn-sm row"
-                style={{ gap: 6 }}
-                type="button"
-                onClick={() => {
-                  setAdding(false);
-                  setForm(EMPTY_NODE_FORM);
-                }}
-              >
-                <Icon name="x" size={14} /> Cancel
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+              {createMutation.isError && (
+                <div className="field-error mb-3">{JSON.stringify(createMutation.error?.detail)}</div>
+              )}
+              <div className="row">
+                <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={createMutation.isPending}>
+                  <Icon name="plus" size={14} /> {createMutation.isPending ? "Saving..." : "Add node"}
+                </button>
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button"
+                  onClick={() => { setAdding(false); setForm(EMPTY_NODE_FORM); }}>
+                  <Icon name="x" size={14} /> Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
+/* ── Page principale ─────────────────────────────────────────────────────── */
 export default function TheoryOfChange({ projectId, onBack }) {
   const queryClient = useQueryClient();
-  const [editingFrame, setEditingFrame] = useState(false);
-  const [frameForm, setFrameForm] = useState({ problem_statement: "", ultimate_outcome: "", status: "draft" });
+  const [editingFrame,      setEditingFrame]      = useState(false);
+  const [frameForm,         setFrameForm]         = useState({ problem_statement: "", ultimate_outcome: "", status: "draft" });
   const [collapsedSections, setCollapsedSections] = useState({});
 
   function toggleSection(key) {
@@ -478,69 +633,43 @@ export default function TheoryOfChange({ projectId, onBack }) {
   const frameMutation = useMutation({
     mutationFn: (payload) =>
       apiFetch(`/api/projects/${projectId}/toc/`, { method: "PATCH", body: JSON.stringify(payload) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["toc", projectId] });
-      setEditingFrame(false);
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["toc", projectId] }); setEditingFrame(false); },
   });
 
-  function onChanged() {
-    queryClient.invalidateQueries({ queryKey: ["toc", projectId] });
-  }
+  function onChanged() { queryClient.invalidateQueries({ queryKey: ["toc", projectId] }); }
 
   function openFrameEdit() {
-    setFrameForm({
-      problem_statement: toc.problem_statement || "",
-      ultimate_outcome: toc.ultimate_outcome || "",
-      status: toc.status,
-    });
+    setFrameForm({ problem_statement: toc.problem_statement || "", ultimate_outcome: toc.ultimate_outcome || "", status: toc.status });
     setEditingFrame(true);
   }
 
-  if (isLoading) {
-    return (
-      <div className="loading-wrap">
-        <span className="spinner" /> Chargement de la Theorie du Changement...
-      </div>
-    );
-  }
-  if (!toc) return <div className="view">Not found.</div>;
+  if (isLoading) return <div className="loading-wrap"><span className="spinner" /> Loading Theory of Change...</div>;
+  if (!toc)      return <div className="view">Not found.</div>;
 
-  // Nodes portent deja `toc` (l'id de la ToC) cote donnees ? Non — on
-  // l'injecte ici pour que NodeCard puisse construire l'URL de son PATCH/
-  // DELETE sans avoir a le faire remonter depuis le parent a chaque fois.
   const nodesWithToc = toc.nodes.map((n) => ({ ...n, toc: projectId }));
 
   return (
     <div className="view">
-      <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
-        ← Project
-      </button>
+      <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>← Project</button>
 
       <div className="view-header">
         <div className="view-eyebrow text-mono">{toc.project_code}</div>
         <h1 className="view-title">Theory of Change</h1>
+        <p className="view-lead">
+          Build the causal chain (Activities → Outputs → Outcomes → Impact), then attach
+          an indicator to each node — the baseline and targets are defined here, directly on the node.
+        </p>
         <div className="row mt-2">
           <span className="badge">{toc.status_display}</span>
           <span className="text-muted text-sm">{toc.project_name}</span>
         </div>
       </div>
 
+      {/* Frame */}
       <div className="card card-flush mb-3">
         <div className="card-header">
           <div className="row" style={{ gap: 10, alignItems: "center", cursor: "pointer" }} onClick={() => toggleSection("frame")}>
-            <span
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--lime-dark)",
-              }}
-            >
+            <span style={{ width: 32, height: 32, borderRadius: 8, background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--lime-dark)" }}>
               <Icon name="target" size={18} />
             </span>
             <div>
@@ -554,75 +683,52 @@ export default function TheoryOfChange({ projectId, onBack }) {
                 <Icon name="pencil" size={14} /> Edit
               </button>
             )}
-            <button
-              className="btn btn-ghost btn-sm"
-              type="button"
-              aria-label={collapsedSections.frame ? "Deplier" : "Replier"}
-              onClick={() => toggleSection("frame")}
-            >
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => toggleSection("frame")}>
               <Icon name={collapsedSections.frame ? "chevron-down" : "chevron-up"} size={16} />
             </button>
           </div>
         </div>
         {!collapsedSections.frame && (
-        <div className="card-body">
-          {editingFrame ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                frameMutation.mutate(frameForm);
-              }}
-            >
-              <div className="field">
-                <label className="field-label">Status</label>
-                <select
-                  className="field-select"
-                  value={frameForm.status}
-                  onChange={(e) => setFrameForm({ ...frameForm, status: e.target.value })}
-                >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                </select>
+          <div className="card-body">
+            {editingFrame ? (
+              <form onSubmit={(e) => { e.preventDefault(); frameMutation.mutate(frameForm); }}>
+                <div className="field">
+                  <label className="field-label">Status</label>
+                  <select className="field-select" value={frameForm.status}
+                    onChange={(e) => setFrameForm({ ...frameForm, status: e.target.value })}>
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="field-label">Problem Statement</label>
+                  <RichTextEditor value={frameForm.problem_statement}
+                    onChange={(html) => setFrameForm({ ...frameForm, problem_statement: html })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Ultimate Outcome (Impact)</label>
+                  <RichTextEditor value={frameForm.ultimate_outcome}
+                    onChange={(html) => setFrameForm({ ...frameForm, ultimate_outcome: html })} />
+                </div>
+                {frameMutation.isError && (
+                  <div className="field-error mb-3">{JSON.stringify(frameMutation.error?.detail)}</div>
+                )}
+                <div className="row">
+                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={frameMutation.isPending}>
+                    <Icon name="check" size={14} /> {frameMutation.isPending ? "Saving..." : "Save"}
+                  </button>
+                  <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditingFrame(false)}>
+                    <Icon name="x" size={14} /> Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="dl">
+                <div><div className="dl-term">Problem Statement</div><div className="dl-desc"><RichText value={toc.problem_statement} /></div></div>
+                <div><div className="dl-term">Ultimate Outcome (Impact)</div><div className="dl-desc"><RichText value={toc.ultimate_outcome} /></div></div>
               </div>
-              <div className="field">
-                <label className="field-label">Problem Statement</label>
-                <RichTextEditor
-                  value={frameForm.problem_statement}
-                  onChange={(html) => setFrameForm({ ...frameForm, problem_statement: html })}
-                />
-              </div>
-              <div className="field">
-                <label className="field-label">Ultimate Outcome (Impact)</label>
-                <RichTextEditor
-                  value={frameForm.ultimate_outcome}
-                  onChange={(html) => setFrameForm({ ...frameForm, ultimate_outcome: html })}
-                />
-              </div>
-              {frameMutation.isError && (
-                <div className="field-error mb-3">{JSON.stringify(frameMutation.error.detail)}</div>
-              )}
-              <div className="row">
-                <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={frameMutation.isPending}>
-                  <Icon name="check" size={14} /> {frameMutation.isPending ? "Saving..." : "Save"}
-                </button>
-                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditingFrame(false)}>
-                  <Icon name="x" size={14} /> Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="dl">
-              <div>
-                <div className="dl-term">Problem Statement</div>
-                <div className="dl-desc"><RichText value={toc.problem_statement} /></div>
-              </div>
-              <div>
-                <div className="dl-term">Ultimate Outcome (Impact)</div>
-                <div className="dl-desc"><RichText value={toc.ultimate_outcome} /></div>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -631,9 +737,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
           key={level.key}
           level={level}
           nodes={nodesWithToc.filter((n) => n.chain_level === level.key)}
-          parentOptions={
-            level.parentKey ? nodesWithToc.filter((n) => n.chain_level === level.parentKey) : []
-          }
+          parentOptions={level.parentKey ? nodesWithToc.filter((n) => n.chain_level === level.parentKey) : []}
           projectId={projectId}
           onChanged={onChanged}
           collapsed={!!collapsedSections[level.key]}
