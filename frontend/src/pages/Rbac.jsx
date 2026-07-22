@@ -401,8 +401,23 @@ function TabAssignments({ currentUser }) {
                 {displayed.map((a) => (
                   <tr key={a.id} style={{ opacity: a.revoked_at ? 0.5 : 1 }}>
                     <td>
-                      <div style={{ fontWeight: 500, fontSize: 13 }}>{a.user_name || a.user_email}</div>
-                      <div className="text-mono text-xs text-muted">{a.user_name ? a.user_email : ""}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div className="avatar-sm" style={{
+                          background: a.user_email === currentUser?.email ? "var(--lime)" : "#1B5A8C",
+                          flexShrink: 0,
+                        }}>
+                          {initials({ first_name: a.user_name?.split(" ")[0] || "", last_name: a.user_name?.split(" ").slice(1).join(" ") || "", email: a.user_email })}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: 13 }}>
+                            {a.user_name || a.user_email}
+                            {a.user_email === currentUser?.email && (
+                              <span className="badge badge-lime" style={{ marginLeft: 6, fontSize: 10 }}>You</span>
+                            )}
+                          </div>
+                          <div className="text-mono text-xs text-muted">{a.user_name ? a.user_email : ""}</div>
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <span style={{ fontWeight: 600, fontSize: 13 }}>{a.role_label}</span>
