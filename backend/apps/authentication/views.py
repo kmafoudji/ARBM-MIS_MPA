@@ -15,6 +15,7 @@ from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import redirect
 
 from apps.identity.models import RoleAssignment
