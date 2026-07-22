@@ -22,7 +22,13 @@ class AppUserSerializer(serializers.ModelSerializer):
         read_only_fields = ["date_joined", "last_login", "full_name", "role_labels"]
 
     def get_full_name(self, obj):
-        return (f"{obj.first_name} {obj.last_name}").strip() or None
+        # Cas normal : first + last séparés
+        if obj.first_name and obj.last_name:
+            return f"{obj.first_name} {obj.last_name}".strip()
+        # Cas Entra ID : nom complet dans first_name
+        if obj.first_name:
+            return obj.first_name.strip()
+        return None
 
     def get_role_labels(self, obj):
         return list(

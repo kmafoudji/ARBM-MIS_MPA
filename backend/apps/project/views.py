@@ -394,6 +394,29 @@ class ProjectReportingConfigView(APIView):
         return Response(ProjectDetailSerializer(project).data)
 
 
+class ProjectStatsView(APIView):
+    """
+    GET /api/projects/stats/ — compteurs portefeuille pour la page login.
+    Accessible sans authentification (données agrégées non sensibles).
+    """
+    permission_classes = []  # public
+
+    def get(self, request):
+        from .models import Project
+        from apps.reference.models import Hub
+        projects = Project.objects.all()
+        countries = set()
+        for p in projects.prefetch_related("project_countries__country"):
+            for pc in p.project_countries.all():
+                if pc.country:
+                    countries.add(pc.country_id)
+        return Response({
+            "project_count": projects.count(),
+            "country_count": len(countries),
+            "hub_count": Hub.objects.filter(is_active=True).count(),
+        })
+
+
 class ProjectDatesView(APIView):
     """
     PATCH /api/projects/{pk}/dates/  — SF-1 Etape 3 (dates de debut/fin)

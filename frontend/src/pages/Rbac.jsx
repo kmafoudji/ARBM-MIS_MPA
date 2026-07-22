@@ -6,8 +6,18 @@ import Icon from "../components/Icon";
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 function initials(u) {
-  const s = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "?";
-  return s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  // Cas 1 : first_name + last_name séparés
+  if (u.first_name && u.last_name) {
+    return (u.first_name[0] + u.last_name[0]).toUpperCase();
+  }
+  // Cas 2 : Entra ID met le nom complet dans first_name (ex. "Samuel Travis")
+  if (u.first_name && u.first_name.includes(" ")) {
+    const parts = u.first_name.trim().split(" ");
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  // Cas 3 : juste un prénom ou l'email
+  const s = u.first_name || u.last_name || u.email || "?";
+  return s.slice(0, 2).toUpperCase();
 }
 function fmtDate(iso) {
   if (!iso) return "—";

@@ -68,6 +68,11 @@ def callback_view(request):
     claims = result.get("id_token_claims", {})
     email = claims.get("preferred_username") or claims.get("email")
     name = claims.get("name", "")
+    # Entra ID retourne le nom complet dans "name" (ex. "Samuel Travis")
+    # On le découpe en first/last pour que les initiales s'affichent correctement
+    name_parts = name.strip().split(" ", 1)
+    first_name = name_parts[0] if name_parts else ""
+    last_name  = name_parts[1] if len(name_parts) > 1 else ""
     subject = claims.get("sub", "")
 
     if not email:
@@ -87,7 +92,8 @@ def callback_view(request):
         user = User.objects.create(
             username=email,
             email=email,
-            first_name=name,
+            first_name=first_name,
+            last_name=last_name,
             auth_method="sso",
             idp_subject=subject,
         )

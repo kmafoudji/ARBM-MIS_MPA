@@ -12,6 +12,7 @@ from .views import (
     ProjectFinancialEnvelopeView,
     ProjectPadView,
     ProjectReportingConfigView,
+    ProjectStatsView,
     ProjectViewSet,
 )
 
@@ -31,6 +32,7 @@ urlpatterns = router.urls + [
     path("projects/<int:pk>/reporting-config/",
          ProjectReportingConfigView.as_view(), name="project-reporting-config"),
     path("projects/<int:pk>/dates/", ProjectDatesView.as_view(), name="project-dates"),
+    path("projects/stats/", ProjectStatsView.as_view(), name="project-stats"),
 ] + [
     path(f"projects/<int:pk>/{pattern.pattern}", pattern.callback, name=pattern.name)
     for pattern in results_project_urls

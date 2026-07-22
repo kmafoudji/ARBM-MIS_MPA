@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { BrandMark, MicrosoftLogo, LogoFull } from "../components/Icons.jsx";
+import { apiFetch } from "../api";
 
 export default function Login() {
   const { t } = useTranslation();
   const [mode, setMode] = useState("main"); // "main" | "password"
+
+  // Stats portefeuille pour la page de login
+  const { data: stats } = useQuery({
+    queryKey: ["login-stats"],
+    queryFn: () => apiFetch("/api/projects/stats/").catch(() => null),
+    retry: false,
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -132,7 +141,12 @@ export default function Login() {
           SSO authentication is managed by Microsoft Entra ID.
         </p>
       </div>
-      <div className="login-side">{t("app.subtitle")}</div>
+      <div className="login-side">
+        ARBM-MIS · POC ·{" "}
+        {stats?.project_count ?? 44} projects ·{" "}
+        {stats?.country_count ?? 22} countries ·{" "}
+        {stats?.hub_count ?? 8} hubs
+      </div>
     </div>
   );
 }
