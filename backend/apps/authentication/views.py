@@ -135,6 +135,7 @@ def me_view(request):
     )
 
 
+@csrf_exempt
 def local_login_view(request):
     """
     POST /auth/login/local/ — connexion par email + mot de passe.
