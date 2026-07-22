@@ -122,7 +122,7 @@ function TabUsers({ currentUser }) {
                 return (
                   <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
                     <td>
-                      <div className="avatar-sm" style={{ background: isMe ? "var(--lime)" : "var(--navy)" }}>
+                      <div className="avatar-sm" style={{ background: isMe ? "var(--lime)" : "#1B5A8C" }}>
                         {initials(u)}
                       </div>
                     </td>
