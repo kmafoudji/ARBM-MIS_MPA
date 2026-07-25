@@ -15,8 +15,15 @@ CACHES = {
     }
 }
 
-# Stockage local pour les tests (pas Azure)
-DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+# Stockage local pour les tests (pas Azure) — syntaxe Django 5.x
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 # Celery synchrone en test
 CELERY_TASK_ALWAYS_EAGER = True
