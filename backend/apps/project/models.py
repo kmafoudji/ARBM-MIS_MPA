@@ -684,3 +684,44 @@ class ReportingPeriod(models.Model):
 
     def __str__(self):
         return f"{self.project.code} — {self.label or f'P{self.period_number}'}"
+
+
+# ---------------------------------------------------------------------------
+# SF-10 — Workspace projet (généré au passage à Effective)
+# ---------------------------------------------------------------------------
+
+class ProjectWorkspace(models.Model):
+    """
+    Enregistrement sentinelle créé automatiquement lors du passage à
+    Effective (SF-10). Marque l'activation du projet et sert de point
+    d'entrée pour les modules aval (M2, M3, M5, M6, M9, M11, M13).
+    Un seul workspace par projet — OneToOne.
+    """
+    project = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="workspace",
+    )
+    activated_at = models.DateTimeField(auto_now_add=True)
+    activated_by = models.ForeignKey(
+        "identity.AppUser",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="workspaces_activated",
+    )
+    # Checklist de génération — chaque clé devient True une fois le
+    # module aval instancié (rempli progressivement à mesure que les
+    # modules sont construits).
+    m2_results_ready   = models.BooleanField(default=False, help_text="ToC verrouillée, Logframe initialisé.")
+    m3_workplan_ready  = models.BooleanField(default=False, help_text="Workplan skeleton créé.")
+    m5_gis_ready       = models.BooleanField(default=False, help_text="Périmètre GIS hérité de SF-7.")
+    m6_beneficiary_ready = models.BooleanField(default=False, help_text="Scaffold bénéficiaires créé.")
+    m9_risk_ready      = models.BooleanField(default=False, help_text="Registre de risques amorcé.")
+    m11_dashboard_ready = models.BooleanField(default=False, help_text="Dashboards par défaut créés.")
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "project_workspace"
+
+    def __str__(self):
+        return f"Workspace — {self.project.code}"

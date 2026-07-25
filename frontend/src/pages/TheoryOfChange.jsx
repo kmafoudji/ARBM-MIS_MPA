@@ -492,7 +492,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
 }
 
 /* ── LevelSection ────────────────────────────────────────────────────────── */
-function LevelSection({ level, nodes, parentOptions, projectId, onChanged, collapsed, onToggleCollapse }) {
+function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readOnly, collapsed, onToggleCollapse }) {
   const [adding, setAdding] = useState(false);
   const [form, setForm]     = useState(EMPTY_NODE_FORM);
 
@@ -529,7 +529,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, colla
           </div>
         </div>
         <div className="row" style={{ gap: 8 }}>
-          {!adding && (
+          {!adding && !readOnly && (
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setAdding(true)}>
               <Icon name="plus" size={14} /> Add
             </button>
@@ -657,10 +657,20 @@ export default function TheoryOfChange({ projectId, onBack }) {
   if (!toc)      return <div className="view">Not found.</div>;
 
   const nodesWithToc = toc.nodes.map((n) => ({ ...n, toc: projectId }));
+  const isLocked = toc.status === "locked";
 
   return (
     <div className="view">
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>← Project</button>
+      {isLocked && (
+        <div className="notice notice-warn" style={{ marginBottom: "var(--s-3)", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="lock" size={14} style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Theory of Change is locked.</strong> The project has reached Effective stage (SF-10).
+            Structural changes are disabled to preserve the results framework integrity.
+          </span>
+        </div>
+      )}
 
       <div className="view-header">
         <div className="view-eyebrow text-mono">{toc.project_code}</div>

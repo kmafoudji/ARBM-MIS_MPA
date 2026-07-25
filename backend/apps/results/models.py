@@ -15,8 +15,9 @@ from apps.project.models import Project
 from apps.reference.models import Sdg, Sector
 
 TOC_STATUS_CHOICES = [
-    ("draft", "Draft"),
-    ("active", "Active"),
+    ("draft",   "Draft"),
+    ("active",  "Active"),
+    ("locked",  "Locked — Effective (SF-10)"),
 ]
 
 CHAIN_LEVEL_CHOICES = [

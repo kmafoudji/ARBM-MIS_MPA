@@ -170,6 +170,14 @@ def transition_stage(
     )
     project.lifecycle_stage = to_stage
     project.save(update_fields=["lifecycle_stage", "updated_at"])
+
+    # SF-10 : génération du workspace au passage à Effective
+    if to_stage == "effective":
+        try:
+            generate_workspace(project, actor)
+        except Exception:
+            pass  # Non bloquant — la transition est déjà enregistrée
+
     return project
 
 
@@ -404,3 +412,65 @@ def generate_reporting_periods(project):
 
     ReportingPeriod.objects.bulk_create(periods, ignore_conflicts=True)
     return len(periods), None
+
+
+# ---------------------------------------------------------------------------
+# SF-10 — Génération du workspace à Effective
+# ---------------------------------------------------------------------------
+
+def generate_workspace(project, actor):
+    """
+    Génère le workspace projet lors du passage à Effective (SF-10).
+    Idempotent — ne crée rien si le workspace existe déjà.
+
+    Actions :
+      1. Crée ProjectWorkspace (sentinelle d'activation)
+      2. Verrouille la ToC (status → locked)
+      3. Marque m5_gis_ready si des zones GADM existent
+      4. Génère le schedule de reporting si les prérequis sont là
+      5. Marque m2_results_ready
+
+    Retourne le workspace créé ou existant.
+    """
+    from apps.project.models import ProjectWorkspace
+
+    # Idempotence
+    workspace, created = ProjectWorkspace.objects.get_or_create(
+        project=project,
+        defaults={"activated_by": actor},
+    )
+    if not created:
+        return workspace
+
+    updates = []
+
+    # 1. Verrouiller la ToC
+    try:
+        toc = project.theory_of_change
+        if toc.status != "locked":
+            toc.status = "locked"
+            toc.save(update_fields=["status", "updated_at"])
+        workspace.m2_results_ready = True
+        updates.append("m2_results_ready")
+    except Exception:
+        pass
+
+    # 2. GIS — vérifier que des zones GADM existent
+    if project.gadm_scope.exists():
+        workspace.m5_gis_ready = True
+        updates.append("m5_gis_ready")
+
+    # 3. Générer le schedule de reporting
+    if project.reporting_frequency and project.next_reporting_due and project.end_date:
+        try:
+            count, error = generate_reporting_periods(project)
+            if not error and count > 0:
+                pass  # Périodes générées
+        except Exception:
+            pass
+
+    # 4. Sauvegarder workspace
+    if updates:
+        workspace.save(update_fields=updates)
+
+    return workspace

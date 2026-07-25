@@ -326,9 +326,14 @@ class ToCNodeDetailView(APIView):
 
     def patch(self, request, pk, node_pk):
         node = self._get_node(pk, node_pk)
+        # Bloquer les modifications structurelles si la ToC est verrouillée
+        if node.toc.status == "locked":
+            # Seul l'attachement d'indicateur (logframe_row) reste autorisé
+            allowed_fields = {"logframe_row"}
+            if not set(request.data.keys()).issubset(allowed_fields):
+                raise DRFValidationError({"detail": ["The Theory of Change is locked (Effective stage). Only indicator attachment is allowed."]})
         serializer = ToCNodeUpdateSerializer(node, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        # Valider que le logframe_row (si fourni) appartient au meme projet
         lr = serializer.validated_data.get("logframe_row")
         if lr and lr.project_id != int(pk):
             raise DRFValidationError({"detail": ["Cette ligne logframe n'appartient pas a ce projet."]})

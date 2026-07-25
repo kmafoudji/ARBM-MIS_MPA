@@ -665,3 +665,27 @@ class ReportingPeriodDetailView(APIView):
             "id": period.id, "status": period.status,
             "status_display": period.get_status_display(),
         })
+
+
+class ProjectWorkspaceView(APIView):
+    """GET /api/projects/<pk>/workspace/ — état du workspace SF-10"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from apps.project.models import ProjectWorkspace
+        project = get_object_or_404(Project, pk=pk)
+        try:
+            ws = project.workspace
+            return Response({
+                "exists":              True,
+                "activated_at":        ws.activated_at,
+                "activated_by_email":  ws.activated_by.email if ws.activated_by else None,
+                "m2_results_ready":    ws.m2_results_ready,
+                "m3_workplan_ready":   ws.m3_workplan_ready,
+                "m5_gis_ready":        ws.m5_gis_ready,
+                "m6_beneficiary_ready":ws.m6_beneficiary_ready,
+                "m9_risk_ready":       ws.m9_risk_ready,
+                "m11_dashboard_ready": ws.m11_dashboard_ready,
+            })
+        except ProjectWorkspace.DoesNotExist:
+            return Response({"exists": False})

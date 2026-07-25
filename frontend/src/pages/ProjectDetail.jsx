@@ -79,6 +79,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
+  const { data: workspace } = useQuery({ queryKey: ["workspace", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/workspace/`), staleTime: 30_000 });
   const { data: toc } = useQuery({ queryKey: ["toc", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/toc/`), staleTime: 30_000 });
   const { data: partners = [] } = useQuery({ queryKey: ["partners", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/partners/`), staleTime: 30_000 });
   const { data: logframeRows = [] } = useQuery({ queryKey: ["logframe", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/`), staleTime: 30_000 });
@@ -259,6 +260,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           <span className={STAGE_BADGE[project.lifecycle_stage] || "badge"}>
             {project.lifecycle_stage_display}
           </span>
+          {workspace?.exists && (
+            <span className="badge badge-lime" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <Icon name="zap" size={11} /> Workspace active
+            </span>
+          )}
           <span className="text-muted text-sm">
             {leadCountry && `${leadCountry.flag} ${leadCountry.name}`}
             {otherCountries.length > 0 &&
