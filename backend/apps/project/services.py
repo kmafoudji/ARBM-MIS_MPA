@@ -18,6 +18,7 @@ from django.db import transaction
 from .models import (
     GATE_STAGES,
     LIFECYCLE_ORDER,
+    LIFECYCLE_STAGE_CHOICES,
     Project,
     ProjectCountry,
     ProjectSdg,
