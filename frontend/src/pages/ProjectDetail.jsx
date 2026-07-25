@@ -76,6 +76,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const { data: sectors } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
+  const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
 
   const mutation = useMutation({
     mutationFn: (payload) =>
@@ -542,7 +543,14 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
-            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
+            <div className="card-sub">
+              SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9
+              {envelope?.total_amount_usd && (
+                <span style={{ marginLeft: 12, fontWeight: 600, color: "var(--lime-dark, var(--lime))" }}>
+                  {Number(envelope.total_amount_usd).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
@@ -560,7 +568,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </div>
           </div>
         </div>
-        <ImplementingPartners projectId={project.id} canEdit={canEdit} />
+        <ImplementingPartners projectId={project.id} canEdit={canEdit} envelopeTotal={envelope?.total_amount_usd} />
       </div>
 
       {/* SF-1 Etape 2 — Theorie du Changement */}
@@ -593,7 +601,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
-      <div className="card card-flush">
+      <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="git-branch" size={15} style={{marginRight:6}} />Lifecycle</h2>

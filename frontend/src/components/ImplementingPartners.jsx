@@ -4,13 +4,12 @@ import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 import Flag from "./Flag.jsx";
 
-
 function fmt(n) {
   if (n === null || n === undefined || n === "") return "—";
   const v = Number(n);
-  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)} Md USD`;
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)} Bn USD`;
   if (v >= 1_000_000)     return `${(v / 1_000_000).toFixed(2)} M USD`;
-  return `${v.toLocaleString("fr-FR")} USD`;
+  return `${v.toLocaleString("en-US")} USD`;
 }
 
 const ROLE_CHOICES = [
@@ -27,13 +26,7 @@ const ROLE_BADGE = {
 
 const EMPTY_FORM = { agency: "", role: "lead", allocated_amount_usd: "", notes: "" };
 
-export default function ImplementingPartners({ projectId, canEdit }) {
-  // Chargement de l'enveloppe pour la barre de contrôle budgétaire
-  const { data: envelope } = useQuery({
-    queryKey: ["envelope", projectId],
-    queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`),
-  });
-  const envelopeTotal = envelope?.total_amount_usd ?? null;
+export default function ImplementingPartners({ projectId, envelopeTotal, canEdit }) {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId]     = useState(null);
@@ -42,11 +35,13 @@ export default function ImplementingPartners({ projectId, canEdit }) {
   const { data: partners = [], isLoading } = useQuery({
     queryKey: ["partners", projectId],
     queryFn: () => apiFetch(`/api/projects/${projectId}/partners/`),
+    staleTime: 30_000,
   });
 
   const { data: agencies = [] } = useQuery({
     queryKey: ["implementing-agencies"],
     queryFn: () => apiFetch("/api/reference/implementing-agencies/"),
+    staleTime: 60_000,
   });
 
   const addMutation = useMutation({
@@ -119,7 +114,6 @@ export default function ImplementingPartners({ projectId, canEdit }) {
     setForm(EMPTY_FORM);
   }
 
-  // Total délégué = somme des montants renseignés
   const totalAllocated = partners.reduce((sum, p) => {
     return sum + (p.allocated_amount_usd ? Number(p.allocated_amount_usd) : 0);
   }, 0);
@@ -129,10 +123,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
     ? Math.min(100, (totalAllocated / Number(envelopeTotal)) * 100).toFixed(1)
     : null;
 
-  // Agences déjà assignées (pour filtre optionnel)
   const assignedAgencyIds = new Set(partners.map((p) => p.agency));
-
-  // Agences disponibles dans le select (toutes — on laisse l'API valider l'unicité du Lead)
   const availableAgencies = agencies.filter(
     (a) => a.is_active && (editId ? true : !assignedAgencyIds.has(a.id))
   );
@@ -140,14 +131,14 @@ export default function ImplementingPartners({ projectId, canEdit }) {
   if (isLoading) {
     return (
       <div className="card-body">
-        <span className="spinner" /> Chargement…
+        <span className="spinner" /> Loading partners...
       </div>
     );
   }
 
   return (
     <div className="card-body">
-      {/* Tableau des partenaires */}
+      {/* Partner table */}
       {partners.length > 0 && (
         <table className="data-table mb-3" style={{ width: "100%" }}>
           <thead>
@@ -187,13 +178,13 @@ export default function ImplementingPartners({ projectId, canEdit }) {
                 <td>
                   {canEdit && (
                     <span className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
-                      <IconEdit onClick={() => openEdit(p)} title="Modifier" />
+                      <IconEdit onClick={() => openEdit(p)} title="Edit" />
                       <IconDeactivate
                         onClick={() => {
-                          if (window.confirm(`Retirer ${p.agency_name} du projet ?`))
+                          if (window.confirm(`Remove ${p.agency_name} from this project?`))
                             deleteMutation.mutate(p.id);
                         }}
-                        title="Retirer"
+                        title="Remove"
                       />
                     </span>
                   )}
@@ -204,7 +195,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
         </table>
       )}
 
-      {/* Barre de contrôle budgétaire */}
+      {/* Budget control bar */}
       {totalAllocated > 0 && (
         <div
           style={{
@@ -216,12 +207,12 @@ export default function ImplementingPartners({ projectId, canEdit }) {
           }}
         >
           <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}>
-            <span className="text-sm text-muted">Total délégué aux partenaires</span>
+            <span className="text-sm text-muted">Total delegated to partners</span>
             <span className="text-sm" style={{ fontWeight: 600 }}>
               {fmt(totalAllocated)}
               {pctAllocated && (
                 <span className="text-muted" style={{ fontWeight: 400, marginLeft: 6 }}>
-                  ({pctAllocated}% de l'enveloppe)
+                  ({pctAllocated}% of envelope)
                 </span>
               )}
             </span>
@@ -252,13 +243,14 @@ export default function ImplementingPartners({ projectId, canEdit }) {
         </div>
       )}
 
+      {/* Empty state */}
       {partners.length === 0 && !showForm && (
         <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>
-          Aucun partenaire d'exécution enregistré pour ce projet.
+          No implementing partner recorded for this project.
         </p>
       )}
 
-      {/* Formulaire d'ajout / édition */}
+      {/* Add / Edit form */}
       {canEdit && showForm && (
         <div
           style={{
@@ -270,13 +262,13 @@ export default function ImplementingPartners({ projectId, canEdit }) {
           }}
         >
           <div className="card-sub" style={{ marginBottom: "var(--s-3)" }}>
-            {editId ? "Modifier le partenaire" : "Ajouter un partenaire d'exécution"}
+            {editId ? "Edit partner" : "Add implementing partner"}
           </div>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-2">
               <div className="field">
                 <label className="field-label" htmlFor="partnerAgency">
-                  Agence <span className="req">*</span>
+                  Agency <span className="req">*</span>
                 </label>
                 <select
                   id="partnerAgency"
@@ -285,7 +277,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
                   onChange={(e) => setForm({ ...form, agency: e.target.value })}
                   required
                 >
-                  <option value="">Sélectionner…</option>
+                  <option value="">Select…</option>
                   {availableAgencies.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
@@ -297,7 +289,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
 
               <div className="field">
                 <label className="field-label" htmlFor="partnerRole">
-                  Rôle <span className="req">*</span>
+                  Role <span className="req">*</span>
                 </label>
                 <select
                   id="partnerRole"
@@ -314,7 +306,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
 
               <div className="field">
                 <label className="field-label" htmlFor="partnerAmount">
-                  Montant délégué (USD)
+                  Delegated Amount (USD)
                 </label>
                 <input
                   id="partnerAmount"
@@ -324,7 +316,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
                   step="0.01"
                   value={form.allocated_amount_usd}
                   onChange={(e) => setForm({ ...form, allocated_amount_usd: e.target.value })}
-                  placeholder="Indicatif — détail au Module 9"
+                  placeholder="Indicative — detail in Module 9"
                 />
               </div>
 
@@ -338,7 +330,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
                   type="text"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Périmètre d'intervention, composantes couvertes…"
+                  placeholder="Scope, components covered…"
                 />
               </div>
             </div>
@@ -359,15 +351,15 @@ export default function ImplementingPartners({ projectId, canEdit }) {
                 disabled={addMutation.isPending || editMutation.isPending}
               >
                 {(addMutation.isPending || editMutation.isPending)
-                  ? "Enregistrement…"
-                  : editId ? "Mettre à jour" : "Ajouter"}
+                  ? "Saving..."
+                  : editId ? "Update" : "Add partner"}
               </button>
               <button
                 className="btn btn-ghost btn-sm"
                 type="button"
                 onClick={handleCancel}
               >
-                Annuler
+                Cancel
               </button>
             </div>
           </form>
@@ -376,7 +368,7 @@ export default function ImplementingPartners({ projectId, canEdit }) {
 
       {canEdit && !showForm && (
         <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openAdd}>
-          <IconPlus size={14} /> Ajouter un partenaire
+          <IconPlus size={14} /> Add partner
         </button>
       )}
     </div>
