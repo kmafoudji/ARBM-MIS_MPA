@@ -11,17 +11,23 @@ class UserFactory(DjangoModelFactory):
     class Meta:
         model = "identity.AppUser"
 
-    email = factory.Sequence(lambda n: f"user{n}@test.arbm.org")
+    username = factory.Sequence(lambda n: f"user{n}")
+    email    = factory.Sequence(lambda n: f"user{n}@test.arbm.org")
     first_name = factory.Sequence(lambda n: f"User{n}")
-    last_name = "Test"
-    user_type = "internal"
+    last_name  = "Test"
+    user_type  = "internal"
     auth_method = "password"
-    is_active = True
+    is_active  = True
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
-        kwargs.setdefault("password", "testpass123")
-        return model_class.objects.create_user(**kwargs)
+        password = kwargs.pop("password", "testpass123")
+        return model_class.objects.create_user(
+            username=kwargs.pop("username"),
+            email=kwargs.pop("email"),
+            password=password,
+            **kwargs,
+        )
 
 
 class HubFactory(DjangoModelFactory):

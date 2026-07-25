@@ -24,7 +24,7 @@ class TestProjectCreate:
 
     def test_unauthenticated_returns_401(self, client):
         resp = client.post("/api/projects/", {})
-        assert resp.status_code == 401
+        assert resp.status_code in (401, 403)  # DRF/SessionAuth retourne 403
 
     def test_create_project_minimal(self, auth_client):
         client, user = auth_client
@@ -134,7 +134,7 @@ class TestProjectList:
 
     def test_list_unauthenticated_returns_401(self, client):
         resp = client.get("/api/projects/")
-        assert resp.status_code == 401
+        assert resp.status_code in (401, 403)  # DRF/SessionAuth retourne 403
 
 
 @pytest.mark.django_db
