@@ -6,7 +6,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("project", "0008_project_next_reporting_due_and_more"),
-        ("reference", "0001_initial"),
+        ("reference", "0006_country_is_active_donor_is_active_and_more"),
     ]
 
     operations = [
