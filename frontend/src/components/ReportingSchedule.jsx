@@ -121,20 +121,19 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
             {canEdit && (
               <div className="row" style={{ gap: 8, marginLeft: "auto", alignSelf: "center" }}>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
+                  title="Add any missing periods without deleting existing ones"
                   onClick={() => generateMutation.mutate()}
                   disabled={generateMutation.isPending || resetMutation.isPending}>
-                  <Icon name="refresh-cw" size={13} />
+                  <Icon name="plus" size={13} />
                   {generateMutation.isPending ? "…" : "Add missing"}
                 </button>
-                {projectEndDate && (
-                  <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
-                    title="Delete all periods and regenerate from scratch"
-                    onClick={() => window.confirm("Reset all periods and regenerate?") && resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() })}
-                    disabled={generateMutation.isPending || resetMutation.isPending}>
-                    <Icon name="trash-2" size={13} />
-                    {resetMutation.isPending ? "…" : "Reset & regenerate"}
-                  </button>
-                )}
+                <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+                  title="Delete all periods and recalculate from current settings"
+                  onClick={() => window.confirm("Recalculate the reporting schedule? Existing periods will be deleted.") && resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() })}
+                  disabled={generateMutation.isPending || resetMutation.isPending || !projectEndDate}>
+                  <Icon name="refresh-cw" size={13} />
+                  {resetMutation.isPending || generateMutation.isPending ? "Calculating…" : "Recalculate"}
+                </button>
               </div>
             )}
           </div>
