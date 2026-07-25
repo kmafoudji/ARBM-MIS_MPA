@@ -13,6 +13,7 @@ from .views import (
     ReportingPeriodRefreshView,
     ReportingPeriodResetView,
     ProjectWorkspaceView,
+    ProjectStageTransitionDetailView,
     FinancingSourceDetailView,
     FinancingSourceListView,
     ProjectDatesView,
@@ -55,6 +56,8 @@ urlpatterns = router.urls + [
          ProjectImplementingPartnerListView.as_view(), name="project-partners"),
     path("projects/<int:pk>/partners/<int:partner_pk>/",
          ProjectImplementingPartnerDetailView.as_view(), name="project-partner-detail"),
+    path("projects/<int:pk>/transitions/<int:t_pk>/",
+         ProjectStageTransitionDetailView.as_view(), name="project-transition-detail"),
 ] + [
     path(f"projects/<int:pk>/{pattern.pattern}", pattern.callback, name=pattern.name)
     for pattern in results_project_urls

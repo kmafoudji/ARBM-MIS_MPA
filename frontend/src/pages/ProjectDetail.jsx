@@ -1074,27 +1074,68 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </p>
           )}
 
-          {transitions?.length > 0 && (
-            <div className="timeline">
-              {transitions.map((t) => (
-                <div className="timeline-item" key={t.id}>
-                  <div className="timeline-head">
-                    {t.from_stage_display} → <strong>{t.to_stage_display}</strong>
-                  </div>
-                  <div className="timeline-meta">
-                    {new Date(t.transitioned_at).toLocaleString("fr-FR")} · {t.transitioned_by_email}
-                    {t.dual_authorized_by_email && (
-                      <> · co-approuve par {t.dual_authorized_by_email}</>
-                    )}
-                  </div>
-                  {t.justification && <div className="timeline-note">{t.justification}</div>}
-                  {t.document_reference && (
-                    <div className="timeline-meta text-mono">{t.document_reference}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {transitions?.length > 0 && (() => {
+            const lastId = transitions[0]?.id; // ordonné -transitioned_at, donc [0] = le plus récent
+            return (
+              <div className="timeline">
+                {transitions.map((t) => {
+                  const isLast = t.id === lastId;
+                  return (
+                    <div className="timeline-item" key={t.id}>
+                      <div className="timeline-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <span>{t.from_stage_display} → <strong>{t.to_stage_display}</strong></span>
+                        {canEdit && isLast && (
+                          <span className="row" style={{ gap: 4 }}>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: 11, padding: "2px 8px" }}
+                              onClick={() => {
+                                const justification = window.prompt("Edit justification:", t.justification || "");
+                                if (justification === null) return;
+                                apiFetch(`/api/projects/${projectId}/transitions/${t.id}/`, {
+                                  method: "PATCH",
+                                  body: JSON.stringify({ justification }),
+                                }).then(() => queryClient.invalidateQueries({ queryKey: ["project-transitions", projectId] }));
+                              }}
+                            >
+                              <Icon name="pencil" size={11} /> Edit
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: 11, padding: "2px 8px", color: "var(--danger, #dc2626)" }}
+                              onClick={() => {
+                                if (!window.confirm(`Delete this transition (${t.from_stage_display} → ${t.to_stage_display})? The project will revert to "${t.from_stage_display}".`)) return;
+                                apiFetch(`/api/projects/${projectId}/transitions/${t.id}/`, { method: "DELETE" })
+                                  .then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+                                    queryClient.invalidateQueries({ queryKey: ["project-transitions", projectId] });
+                                    queryClient.invalidateQueries({ queryKey: ["projects"] });
+                                    queryClient.invalidateQueries({ queryKey: ["workspace", projectId] });
+                                    setToast({ type: "warning", title: "Transition deleted", message: `Project reverted to "${t.from_stage_display}".` });
+                                  });
+                              }}
+                            >
+                              <Icon name="trash" size={11} /> Delete
+                            </button>
+                          </span>
+                        )}
+                      </div>
+                      <div className="timeline-meta">
+                        {new Date(t.transitioned_at).toLocaleString("fr-FR")} · {t.transitioned_by_email}
+                        {t.dual_authorized_by_email && (
+                          <> · co-approuvé par {t.dual_authorized_by_email}</>
+                        )}
+                      </div>
+                      {t.justification && <div className="timeline-note">{t.justification}</div>}
+                      {t.document_reference && (
+                        <div className="timeline-meta text-mono">{t.document_reference}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

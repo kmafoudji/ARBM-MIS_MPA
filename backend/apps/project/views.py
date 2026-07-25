@@ -712,3 +712,48 @@ class ProjectWorkspaceView(APIView):
             })
         except ProjectWorkspace.DoesNotExist:
             return Response({"exists": False})
+
+
+class ProjectStageTransitionDetailView(APIView):
+    """
+    PATCH  /api/projects/<pk>/transitions/<t_pk>/
+           Corrige la justification ou la référence documentaire
+           de la DERNIÈRE transition uniquement (audit trail protégé).
+
+    DELETE /api/projects/<pk>/transitions/<t_pk>/
+           Supprime la DERNIÈRE transition et restaure le stade précédent.
+           Bloqué si c'est la seule transition enregistrée.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get_last_transition(self, pk, t_pk):
+        project = get_object_or_404(Project, pk=pk)
+        from apps.project.models import ProjectStageTransition
+        last = project.stage_transitions.order_by("-transitioned_at").first()
+        if not last or last.pk != int(t_pk):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied(
+                "Seule la dernière transition peut être modifiée ou supprimée (RG-4.1)."
+            )
+        return project, last
+
+    def patch(self, request, pk, t_pk):
+        from apps.project.serializers import ProjectStageTransitionSerializer
+        project, transition = self._get_last_transition(pk, t_pk)
+        allowed = {"justification", "document_reference"}
+        for field in allowed:
+            if field in request.data:
+                setattr(transition, field, request.data[field])
+        transition.save(update_fields=list(allowed & set(request.data.keys())))
+        return Response(ProjectStageTransitionSerializer(transition).data)
+
+    def delete(self, request, pk, t_pk):
+        from apps.project.serializers import ProjectDetailSerializer
+        project, transition = self._get_last_transition(pk, t_pk)
+        # Restaurer le stade précédent
+        previous_stage = transition.from_stage
+        transition.delete()
+        project.lifecycle_stage = previous_stage
+        project.save(update_fields=["lifecycle_stage", "updated_at"])
+        return Response(ProjectDetailSerializer(project).data)
