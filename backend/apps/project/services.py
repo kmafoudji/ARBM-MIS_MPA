@@ -143,20 +143,24 @@ def transition_stage(
     )
     is_gate = to_stage in GATE_STAGES or from_stage in GATE_STAGES
 
+    from django.conf import settings
+    rbac_enforced = getattr(settings, "RBAC_ENFORCED", False)
+
     if is_backward and not justification:
         raise ValidationError(
             "Retour arriere : une justification est obligatoire (POL-1.09)."
         )
-    if (is_backward or is_gate) and not dual_authorized_by:
-        raise ValidationError(
-            "Cette transition (gate d'approbation ou retour arriere) exige une "
-            "autorisation double : renseignez dual_authorized_by."
-        )
-    if dual_authorized_by and dual_authorized_by == actor:
-        raise ValidationError(
-            "L'autorisation double exige un second approbateur distinct de l'auteur "
-            "de la transition (RG-3.5 / RG-4.1)."
-        )
+    if rbac_enforced:
+        if (is_backward or is_gate) and not dual_authorized_by:
+            raise ValidationError(
+                "Cette transition (gate d'approbation ou retour arriere) exige une "
+                "autorisation double : renseignez dual_authorized_by."
+            )
+        if dual_authorized_by and dual_authorized_by == actor:
+            raise ValidationError(
+                "L'autorisation double exige un second approbateur distinct de l'auteur "
+                "de la transition (RG-3.5 / RG-4.1)."
+            )
     if to_stage == "bed_approved":
         _check_bed_approved_prerequisites_complete(project)
 
