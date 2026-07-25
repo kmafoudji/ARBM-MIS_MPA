@@ -120,13 +120,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
             ))}
             {canEdit && (
               <div className="row" style={{ gap: 8, marginLeft: "auto", alignSelf: "center" }}>
-                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
-                  title="Add any missing periods without deleting existing ones"
-                  onClick={() => generateMutation.mutate()}
-                  disabled={generateMutation.isPending || resetMutation.isPending}>
-                  <Icon name="plus" size={13} />
-                  {generateMutation.isPending ? "…" : "Add missing"}
-                </button>
+
                 {projectEndDate && reportingFrequency && nextReportingDue && (
                   <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
                     title="Delete all periods and recalculate from current settings"
