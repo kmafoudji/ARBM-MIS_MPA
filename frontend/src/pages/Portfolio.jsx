@@ -312,15 +312,21 @@ function LevelSection({ level, indicators }) {
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
 export default function Portfolio() {
-  const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "" });
+  const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "", country: "", donor: "", fragility: "", rag: "" });
 
-  const { data: hubs    = [] } = useQuery({ queryKey: ["hubs"],    queryFn: () => apiFetch("/api/reference/hubs/") });
-  const { data: sectors = [] } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
+  const { data: hubs     = [] } = useQuery({ queryKey: ["hubs"],     queryFn: () => apiFetch("/api/reference/hubs/") });
+  const { data: sectors  = [] } = useQuery({ queryKey: ["sectors"],  queryFn: () => apiFetch("/api/reference/sectors/") });
+  const { data: countries= [] } = useQuery({ queryKey: ["countries"],queryFn: () => apiFetch("/api/reference/countries/") });
+  const { data: donors   = [] } = useQuery({ queryKey: ["ref","donors"], queryFn: () => apiFetch("/api/reference/donors/") });
 
   const params = new URLSearchParams();
   if (filters.hub)         params.set("hub",         filters.hub);
   if (filters.sector)      params.set("sector",      filters.sector);
   if (filters.chain_level) params.set("chain_level", filters.chain_level);
+  if (filters.country)     params.set("country",     filters.country);
+  if (filters.donor)       params.set("donor",       filters.donor);
+  if (filters.fragility)   params.set("fragility",   filters.fragility);
+  if (filters.rag)         params.set("rag",         filters.rag);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["portfolio-aggregation", filters],
@@ -430,12 +436,22 @@ export default function Portfolio() {
         <Icon name="filter" size={14} style={{ color: "#9ca3af", flexShrink: 0 }} />
 
         {[
-          { key: "hub", label: "Hub", options: hubs.map(h => ({ value: String(h.id), label: h.name })) },
-          { key: "sector", label: "Sector", options: sectors.map(s => ({ value: String(s.id), label: s.name })) },
-          {
-            key: "chain_level", label: "Level",
-            options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })),
-          },
+          { key: "hub",       label: "Hub",       options: hubs.map(h => ({ value: String(h.id), label: h.name })) },
+          { key: "sector",    label: "Sector",    options: sectors.map(s => ({ value: String(s.id), label: s.name })) },
+          { key: "country",   label: "Country",   options: countries.filter(c=>c.is_active).map(c => ({ value: String(c.id), label: c.name })) },
+          { key: "donor",     label: "Donor",     options: donors.map(d => ({ value: String(d.id), label: d.short_name || d.name })) },
+          { key: "chain_level", label: "Level",   options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })) },
+          { key: "fragility", label: "Fragility", options: [
+            { value: "stable",    label: "Stable" },
+            { value: "pre_fcv",   label: "Pre-FCV" },
+            { value: "fcv",       label: "FCV" },
+          ]},
+          { key: "rag", label: "Status", options: [
+            { value: "green", label: "🟢 On track" },
+            { value: "amber", label: "🟡 At risk" },
+            { value: "red",   label: "🔴 Off track" },
+            { value: "na",    label: "⚪ No data" },
+          ]},
         ].map(({ key, label, options }) => (
           <select
             key={key}
@@ -456,7 +472,7 @@ export default function Portfolio() {
 
         {Object.values(filters).some(Boolean) && (
           <button
-            onClick={() => setFilters({ hub: "", sector: "", chain_level: "" })}
+            onClick={() => setFilters({ hub: "", sector: "", chain_level: "", country: "", donor: "", fragility: "", rag: "" })}
             style={{
               height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
               border: "1px solid #fca5a5", borderRadius: 8,

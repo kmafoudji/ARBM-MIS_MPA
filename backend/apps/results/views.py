@@ -984,6 +984,10 @@ class PortfolioAggregationView(APIView):
         sector_id   = request.query_params.get("sector")
         period_id   = request.query_params.get("period")
         chain_level = request.query_params.get("chain_level")
+        country_id  = request.query_params.get("country")
+        donor_id    = request.query_params.get("donor")
+        fragility   = request.query_params.get("fragility")
+        rag_filter  = request.query_params.get("rag")
 
         # Projets Effective uniquement (workspace actif)
         projects = Project.objects.filter(
@@ -991,13 +995,22 @@ class PortfolioAggregationView(APIView):
         ).select_related("hub", "primary_sector")
 
         if hub_id:
-            # Hub peut être sur Project.hub directement OU sur le pays chef de file
             projects = projects.filter(
                 models.Q(hub_id=hub_id) |
                 models.Q(project_countries__is_lead=True, project_countries__country__hub_id=hub_id)
             ).distinct()
         if sector_id:
             projects = projects.filter(primary_sector_id=sector_id)
+        if country_id:
+            projects = projects.filter(
+                project_countries__country_id=country_id
+            ).distinct()
+        if donor_id:
+            projects = projects.filter(
+                financial_envelope__sources__donor_id=donor_id
+            ).distinct()
+        if fragility:
+            projects = projects.filter(fragility_status=fragility)
 
         project_ids = list(projects.values_list("id", flat=True))
 
@@ -1139,6 +1152,10 @@ class PortfolioAggregationView(APIView):
                 "breakdown":        breakdown,
             })
 
+        # Appliquer le filtre RAG après calcul
+        if rag_filter:
+            result = [r for r in result if r["rag_status"] == rag_filter]
+
         # Trier par chain_level puis code indicateur
         level_order = ["activity", "output", "immediate_outcome", "intermediate_outcome", "ultimate_outcome"]
         result.sort(key=lambda x: (
@@ -1164,6 +1181,10 @@ class PortfolioAggregationView(APIView):
                 "sector":      sector_id,
                 "period":      period_id,
                 "chain_level": chain_level,
+                "country":     country_id,
+                "donor":       donor_id,
+                "fragility":   fragility,
+                "rag":         rag_filter,
             },
             "indicators": result,
         })
