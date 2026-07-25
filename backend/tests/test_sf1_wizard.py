@@ -3,7 +3,7 @@ Tests SF-1 — Wizard d'enregistrement et enveloppe financière (SF-6).
 """
 import pytest
 from rest_framework.test import APIClient
-from tests.factories import ProjectFactory, UserFactory, CountryFactory, SectorFactory, CurrencyFactory
+from tests.factories import ProjectFactory, UserFactory, CountryFactory, SectorFactory, CurrencyFactory, ProjectFinancialEnvelopeFactory
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ class TestFinancialEnvelope:
         client, user = auth_client
         CurrencyFactory(code="USD")
         project = ProjectFactory()
-        client.get(f"/api/projects/{project.id}/envelope/")
+        ProjectFinancialEnvelopeFactory(project=project)
         payload = {
             "source": "llf",
             "instrument": "grant",
@@ -80,7 +80,7 @@ class TestFinancialEnvelope:
         client, user = auth_client
         CurrencyFactory(code="USD")
         project = ProjectFactory()
-        client.get(f"/api/projects/{project.id}/envelope/")
+        ProjectFinancialEnvelopeFactory(project=project)
         for amount in ["3000000", "2000000"]:
             client.post(f"/api/projects/{project.id}/envelope/sources/", {
                 "source": "llf", "instrument": "grant",
@@ -93,7 +93,7 @@ class TestFinancialEnvelope:
         client, user = auth_client
         CurrencyFactory(code="USD")
         project = ProjectFactory()
-        client.get(f"/api/projects/{project.id}/envelope/")
+        ProjectFinancialEnvelopeFactory(project=project)
         add_resp = client.post(f"/api/projects/{project.id}/envelope/sources/", {
             "source": "llf", "instrument": "grant",
             "amount": "1000000", "currency": "USD", "amount_usd": "1000000",
