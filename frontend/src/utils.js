@@ -20,7 +20,7 @@
  * @param {string}  opts.empty        Texte si null/vide (défaut : "—")
  * @param {string}  opts.locale       Locale (défaut : navigator.language)
  */
-export function fmtNum(val, { maxDecimals = 4, empty = "—", locale } = {}) {
+export function fmtNum(val, { maxDecimals = 4, empty = "—", locale = "en-US" } = {}) {
   if (val === null || val === undefined || val === "") return empty;
   const n = typeof val === "number" ? val : parseFloat(val);
   if (isNaN(n)) return String(val);

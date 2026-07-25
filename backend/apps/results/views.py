@@ -1125,11 +1125,22 @@ class PortfolioAggregationView(APIView):
                     else "red" if proj_rate is not None
                     else "na"
                 )
+                # Résoudre le hub via Project.hub OU pays lead
+                hub_name = None
+                if proj.hub_id:
+                    hub_name = proj.hub.name
+                else:
+                    lead_country = proj.project_countries.filter(
+                        is_lead=True
+                    ).select_related("country__hub").first()
+                    if lead_country and lead_country.country.hub_id:
+                        hub_name = lead_country.country.hub.name
+
                 breakdown.append({
                     "project_id":   proj.id,
                     "project_code": proj.code,
                     "project_name": proj.name[:60],
-                    "hub":          proj.hub.name if proj.hub else None,
+                    "hub":          hub_name,
                     "sector":       proj.primary_sector.name if proj.primary_sector else None,
                     "actual_value": fmt_decimal(rd.actual_value),
                     "target_value": fmt_decimal(Decimal(str(proj_target_sum))) if proj_target_sum else None,
