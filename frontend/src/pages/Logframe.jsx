@@ -154,7 +154,7 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
 // ---------------------------------------------------------------------------
 // Composant : ligne logframe
 // ---------------------------------------------------------------------------
-function LogframeRowCard({ row, projectId, onChanged }) {
+function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
   const dialog = useDialog();
   const [expanded, setExpanded] = useState(false);
   const [addingTarget, setAddingTarget] = useState(false);
@@ -320,8 +320,14 @@ function LogframeRowCard({ row, projectId, onChanged }) {
             )}
           </div>
 
-          {/* Supprimer la ligne */}
-          <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--rule)", paddingTop: "var(--s-2)" }}>
+          {/* Actions */}
+          <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--rule)", paddingTop: "var(--s-2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {onOpenPIRS && (
+              <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "#1B5A8C" }}
+                onClick={() => onOpenPIRS(row.id)}>
+                <Icon name="file-text" size={13} /> View PIRS
+              </button>
+            )}
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "var(--rose, #E84A5F)" }}
               onClick={async () => { const ok = await dialog.confirm(`All targets for "${row.indicator_code}" will be lost.`, { title: "Remove from logframe?", confirmLabel: "Remove", danger: true }); if (ok) deleteMutation.mutate(); }}
               disabled={deleteMutation.isPending}>
@@ -578,7 +584,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
 // ---------------------------------------------------------------------------
 // Page principale Logframe
 // ---------------------------------------------------------------------------
-export default function Logframe({ projectId, onBack }) {
+export default function Logframe({ projectId, onBack, onOpenPIRS }) {
   const queryClient = useQueryClient();
   const dialog = useDialog();
   // addingRow retiré — les indicateurs s'attachent depuis la ToC
@@ -670,7 +676,7 @@ export default function Logframe({ projectId, onBack }) {
             <div className="card-body">
               <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
                 {levelRows.map((row) => (
-                  <LogframeRowCard key={row.id} row={row} projectId={projectId} onChanged={onChanged} />
+                  <LogframeRowCard key={row.id} row={row} projectId={projectId} onChanged={onChanged} onOpenPIRS={onOpenPIRS} />
                 ))}
               </div>
             </div>

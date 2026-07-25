@@ -10,6 +10,7 @@ from .views import (
     LogframeTargetDetailView,
     LogframeTargetListView,
     LogframeView,
+    PIRSDataView,
     PortfolioAggregationView,
     ResultsDataView,
     ResultsDataDetailView,
@@ -58,6 +59,8 @@ project_urlpatterns = [
     path("results/",                  ResultsDataView.as_view(),       name="project-results"),
     path("results/summary/",          ResultsSummaryView.as_view(),    name="project-results-summary"),
     path("results/<int:rd_pk>/",      ResultsDataDetailView.as_view(), name="project-results-detail"),
+    # SF-7 : PIRS par indicateur
+    path("logframe/<int:row_pk>/pirs/", PIRSDataView.as_view(), name="project-pirs"),
     # SF-6 : désagrégation par ResultsData
     path("results/<int:rd_pk>/disaggregation/", DisaggregationValueView.as_view(), name="project-results-disaggregation"),
 ]

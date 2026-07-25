@@ -1199,3 +1199,206 @@ class PortfolioAggregationView(APIView):
             },
             "indicators": result,
         })
+
+
+# ---------------------------------------------------------------------------
+# SF-7 — Générateur PIRS (Performance Indicator Reference Sheet)
+# RG-7.1 / RG-7.2 / RG-7.3
+# ---------------------------------------------------------------------------
+
+class PIRSDataView(APIView):
+    """
+    GET /api/projects/<pk>/logframe/<row_pk>/pirs/
+        Retourne toutes les données pour générer le PIRS d'un indicateur.
+        Données temps réel tirées de la bibliothèque + moteur de performance.
+
+    GET /api/projects/<pk>/logframe/<row_pk>/pirs/?format=docx
+        Génère et retourne le fichier DOCX.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request, pk, row_pk):
+        from decimal import Decimal
+        from django.db.models import Sum
+        from apps.project.models import ReportingPeriod
+        from .models import ResultsData, LogframeTarget, IndicatorDisaggregation, DisaggregationValue
+
+        row     = get_object_or_404(LogframeRow, pk=row_pk, project_id=pk)
+        project = row.project
+        ind     = row.indicator
+
+        # ── Cibles ────────────────────────────────────────────────────────
+        targets = list(row.targets.order_by("target_date").values(
+            "id", "target_value", "target_date", "label",
+            "status", "is_original_pad",
+        ))
+        for t in targets:
+            t["target_value"] = fmt_decimal(t["target_value"])
+
+        # ── Actuals par période ───────────────────────────────────────────
+        periods = project.reporting_periods.order_by("period_number")
+        actuals = []
+        for p in periods:
+            rd = ResultsData.objects.filter(
+                logframe_row=row, reporting_period=p
+            ).first()
+            if rd:
+                actuals.append({
+                    "period_id":        p.id,
+                    "period_label":     p.label,
+                    "period_end":       str(p.end_date),
+                    "actual_value":     fmt_decimal(rd.actual_value),
+                    "narrative":        rd.narrative,
+                    "rag_status":       rd.rag_status,
+                    "achievement_rate": fmt_decimal(rd.achievement_rate) if rd.achievement_rate else None,
+                    "status":           rd.status,
+                    "approved_at":      rd.approved_at.isoformat() if rd.approved_at else None,
+                })
+
+        # ── Désagrégations ────────────────────────────────────────────────
+        disagg_dims = IndicatorDisaggregation.objects.filter(indicator=ind).order_by("order")
+        disaggregations = []
+        for dim in disagg_dims:
+            dim_data = {"dimension": dim.name, "categories": []}
+            for p in periods:
+                rd = ResultsData.objects.filter(logframe_row=row, reporting_period=p).first()
+                if rd:
+                    values = DisaggregationValue.objects.filter(
+                        results_data=rd, dimension=dim
+                    ).values("category", "value")
+                    if values.exists():
+                        dim_data["categories"].append({
+                            "period_label": p.label,
+                            "values": [{"cat": v["category"], "val": fmt_decimal(v["value"])} for v in values],
+                        })
+            disaggregations.append(dim_data)
+
+        # ── Hub via pays lead ─────────────────────────────────────────────
+        hub_name = None
+        if project.hub_id:
+            hub_name = project.hub.name
+        else:
+            lead = project.project_countries.filter(
+                is_lead=True
+            ).select_related("country__hub").first()
+            if lead and lead.country.hub_id:
+                hub_name = lead.country.hub.name
+
+        lead_country = project.project_countries.filter(
+            is_lead=True
+        ).select_related("country").first()
+
+        # ── SDGs ─────────────────────────────────────────────────────────
+        sdg_numbers = list(ind.related_sdgs.values_list("number", flat=True))
+
+        pirs_data = {
+            # En-tête projet
+            "project": {
+                "id":           project.id,
+                "code":         project.code,
+                "name":         project.name,
+                "acronym":      project.acronym or "",
+                "sector":       project.primary_sector.name if project.primary_sector else None,
+                "hub":          hub_name,
+                "country":      lead_country.country.name if lead_country else None,
+                "start_date":   str(project.start_date) if project.start_date else None,
+                "end_date":     str(project.end_date) if project.end_date else None,
+                "lifecycle_stage": project.lifecycle_stage,
+            },
+            # Définition indicateur (RG-7.1)
+            "indicator": {
+                "id":                 ind.id,
+                "code":               ind.code,
+                "name":               ind.name,
+                "definition":         ind.definition,
+                "unit":               ind.unit,
+                "indicator_type":     ind.get_indicator_type_display(),
+                "direction":          ind.get_direction_display(),
+                "aggregation_rule":   ind.get_aggregation_rule_display(),
+                "chain_level":        row.chain_level,
+                "chain_level_display": row.get_chain_level_display(),
+                "calculation_method": ind.calculation_method,
+                "numerator":          ind.numerator,
+                "denominator":        ind.denominator,
+                "formula":            ind.formula,
+                "data_source":        ind.data_source,
+                "collection_method":  ind.collection_method,
+                "reporting_frequency": ind.get_reporting_frequency_display(),
+                "means_of_verification": ind.means_of_verification,
+                "responsible":        ind.responsible,
+                "assumptions":        ind.assumptions,
+                "limitations":        ind.limitations,
+                "cross_cutting_tags": ind.cross_cutting_tags,
+                "related_sdgs":       sdg_numbers,
+                "version":            ind.version,
+            },
+            # Baseline (RG-3.1)
+            "baseline": {
+                "value":  fmt_decimal(row.baseline_value) if row.baseline_value else None,
+                "year":   row.baseline_year,
+                "source": row.baseline_source,
+                "measurement_frequency": row.get_measurement_frequency_display(),
+                "notes":  row.notes,
+            },
+            # Cibles (RG-3.2)
+            "targets": targets,
+            # Actuals par période
+            "actuals": actuals,
+            # Désagrégations (SF-6)
+            "disaggregations": disaggregations,
+            # Méta
+            "generated_at": __import__("django.utils.timezone", fromlist=["now"]).now().isoformat(),
+        }
+
+        fmt = request.query_params.get("format", "json")
+        if fmt == "docx":
+            return self._generate_docx(pirs_data)
+
+        return Response(pirs_data)
+
+    def _generate_docx(self, data):
+        """Génère le PIRS en DOCX via Node.js + docx-js."""
+        import json
+        import subprocess
+        import tempfile
+        import os
+        from django.http import HttpResponse
+
+        script_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "scripts", "generate_pirs.js"
+        )
+        script_path = os.path.normpath(script_path)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            data_path = os.path.join(tmpdir, "pirs_data.json")
+            out_path  = os.path.join(tmpdir, "pirs.docx")
+
+            with open(data_path, "w") as f:
+                json.dump(data, f, ensure_ascii=False)
+
+            try:
+                result = subprocess.run(
+                    ["node", script_path, data_path, out_path],
+                    capture_output=True, text=True, timeout=30
+                )
+                if result.returncode != 0:
+                    return Response(
+                        {"detail": f"DOCX generation failed: {result.stderr}"},
+                        status=500
+                    )
+                with open(out_path, "rb") as f:
+                    content = f.read()
+
+                code = data["project"]["code"]
+                ind_code = data["indicator"]["code"]
+                filename = f"PIRS_{code}_{ind_code}.docx"
+
+                response = HttpResponse(
+                    content,
+                    content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+                response["Content-Disposition"] = f'attachment; filename="{filename}"'
+                return response
+            except subprocess.TimeoutExpired:
+                return Response({"detail": "DOCX generation timed out."}, status=500)

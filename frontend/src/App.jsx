@@ -10,6 +10,7 @@ import ProjectDetail from "./pages/ProjectDetail.jsx";
 import TheoryOfChange from "./pages/TheoryOfChange.jsx";
 import Logframe from "./pages/Logframe.jsx";
 import Portfolio from "./pages/Portfolio.jsx";
+import PIRSView from "./pages/PIRSView.jsx";
 import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
@@ -44,6 +45,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [nav, setNav] = useState("overview");
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedRowId, setSelectedRowId] = useState(null);
 
   useEffect(() => {
     fetch("/auth/me/", { credentials: "include" })
@@ -139,12 +141,23 @@ export default function App() {
         <TheoryOfChange projectId={selectedProjectId} onBack={() => setNav("project-detail")} />
       )}
       {nav === "project-logframe" && (
-        <Logframe projectId={selectedProjectId} onBack={() => setNav("project-detail")} />
+        <Logframe
+          projectId={selectedProjectId}
+          onBack={() => setNav("project-detail")}
+          onOpenPIRS={(rowId) => { setSelectedRowId(rowId); setNav("pirs"); }}
+        />
       )}
 
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}
       {nav === "indicator-catalogue" && <IndicatorCatalogue />}
       {nav === "portfolio" && <Portfolio />}
+      {nav === "pirs" && selectedRowId && (
+        <PIRSView
+          projectId={selectedProjectId}
+          rowId={selectedRowId}
+          onBack={() => setNav("project-logframe")}
+        />
+      )}
       {nav === "rbac" && <Rbac currentUser={user} />}
     </AppShell>
     </ErrorBoundary>

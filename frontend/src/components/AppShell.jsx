@@ -48,6 +48,7 @@ const CRUMBS = {
   "project-detail": { label: "Project", parent: "projects" },
   "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
   portfolio: { label: "Portfolio Results", parent: "overview" },
+  pirs:      { label: "PIRS", parent: "project-logframe" },
   rbac: { label: "Users & Roles", parent: "overview" },
 };
 
@@ -69,6 +70,7 @@ const API_PATHS = {
   "project-detail": "/api/projects/:id",
   "indicator-catalogue": "/api/results/indicators",
   portfolio: "/api/results/portfolio",
+  pirs:      "/api/projects/:id/logframe/:row/pirs",
   rbac: "/api/identity/roles",
 };
 
