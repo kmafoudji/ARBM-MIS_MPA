@@ -239,10 +239,10 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
           borderTop: "2px solid var(--rule)",
           background: "var(--paper)",
         }}>
-          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
-            Total envelope · {sources.length} source{sources.length !== 1 ? "s" : ""}
+          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
+            Total envelope
           </span>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--lime-dark, var(--lime))", fontVariantNumeric: "tabular-nums" }}>
+          <span className="text-mono" style={{ fontWeight: 700, color: "var(--lime-dark, var(--lime))" }}>
             {fmt(total)}
           </span>
         </div>
