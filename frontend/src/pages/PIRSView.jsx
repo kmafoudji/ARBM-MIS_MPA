@@ -248,7 +248,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
               <span style={{ fontWeight: 700 }}>{fmtNum(t.target_value)} <span style={{ color: "#9ca3af", fontWeight: 400, fontSize: 11 }}>{indicator.unit}</span></span>,
               t.target_date,
               <span style={{ fontSize: 11, fontWeight: 700, color: t.status === "approved" ? "#16a34a" : "#d97706" }}>{t.status.toUpperCase()}</span>,
-              t.is_original_pad ? <span style={{ fontSize: 11, fontWeight: 700, color: "#A4C53F" }}>✓ PAD</span> : null,
+              t.is_original_pad ? <span style={{ fontSize: 12, color: "#A4C53F" }}>✓</span> : null,
             ])}
           />
       }
