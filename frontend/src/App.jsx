@@ -49,14 +49,23 @@ export default function App() {
   const [splashExiting, setSplashExiting] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // Déclenche le fondu de sortie dès que la session est résolue,
-  // puis retire le splash du DOM après la transition (0.4s).
+  // Le splash reste visible au minimum le temps que la barre se complète (2.1s),
+  // même si la session répond instantanément. Dès que les deux conditions sont
+  // réunies (session résolue + délai écoulé), on déclenche le fondu de sortie.
   useEffect(() => {
-    if (authState !== "checking") {
+    if (authState === "checking") return;
+
+    const MIN_DISPLAY = 2100; // ms — laisse la barre atteindre 100%
+    const elapsed = performance.now();
+
+    const remaining = Math.max(0, MIN_DISPLAY - elapsed);
+    const t1 = setTimeout(() => {
       setSplashExiting(true);
-      const t = setTimeout(() => setShowSplash(false), 420);
-      return () => clearTimeout(t);
-    }
+      const t2 = setTimeout(() => setShowSplash(false), 420);
+      return () => clearTimeout(t2);
+    }, remaining);
+
+    return () => clearTimeout(t1);
   }, [authState]);
 
   if (showSplash) return <SplashScreen exiting={splashExiting} />;
