@@ -50,7 +50,7 @@ def main():
         print("  MODE : DRY-RUN (aucune donnée ne sera supprimée)")
     print(SEPARATOR)
 
-    qs = Project.objects.all().order_by("project_code")
+    qs = Project.objects.all().order_by("code")
     total = qs.count()
 
     if total == 0:
@@ -59,7 +59,7 @@ def main():
 
     print(f"\n  {total} projet(s) trouvé(s) :\n")
     for p in qs:
-        print(f"  • {p.project_code or '(no code)':12s}  {p.acronym or '':12s}  {p.name[:55]}")
+        print(f"  • {p.code or '(no code)':12s}  {p.name[:55]}")
 
     if args.dry_run:
         print(f"\n  [DRY-RUN] {total} projet(s) auraient été supprimés.")
