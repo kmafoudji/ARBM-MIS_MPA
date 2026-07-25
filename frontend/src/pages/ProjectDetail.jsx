@@ -91,6 +91,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["project-transitions", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["workspace", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["toc", projectId] });
       setShowForm(false);
       setTForm({ to_stage: "", transition_date: "", justification: "", document_reference: "", dual_authorized_by: "" });
     },
