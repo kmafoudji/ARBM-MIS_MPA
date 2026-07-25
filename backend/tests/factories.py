@@ -45,8 +45,8 @@ class CountryFactory(DjangoModelFactory):
     class Meta:
         model = "reference.Country"
 
-    iso2 = factory.Sequence(lambda n: f"T{n % 26:01X}"[:2])
-    iso3 = factory.Sequence(lambda n: f"TS{n % 26:01X}"[:3])
+    iso2 = factory.Sequence(lambda n: f"{chr(65 + (n // 26) % 26)}{chr(65 + n % 26)}")
+    iso3 = factory.Sequence(lambda n: f"T{chr(65 + (n // 26) % 26)}{chr(65 + n % 26)}")
     name = factory.Sequence(lambda n: f"Country {n}")
     hub = factory.SubFactory(HubFactory)
 
@@ -77,7 +77,6 @@ class CurrencyFactory(DjangoModelFactory):
 
     code = "USD"
     name = "US Dollar"
-    symbol = "$"
 
 
 class ProjectFactory(DjangoModelFactory):
