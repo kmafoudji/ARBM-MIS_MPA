@@ -350,3 +350,80 @@ def get_logframe_choices():
         "cross_cutting_tags":     [{"value": v, "label": l} for v, l in CROSS_CUTTING_TAG_CHOICES],
         "target_statuses":        [{"value": v, "label": l} for v, l in TARGET_STATUS_CHOICES],
     }
+
+
+# ---------------------------------------------------------------------------
+# SF-4 / SF-5 — ResultsData
+# ---------------------------------------------------------------------------
+
+class ResultsDataSerializer(serializers.ModelSerializer):
+    indicator_code    = serializers.CharField(source="logframe_row.indicator.code",      read_only=True)
+    indicator_name    = serializers.CharField(source="logframe_row.indicator.name",      read_only=True)
+    indicator_unit    = serializers.CharField(source="logframe_row.indicator.unit",      read_only=True)
+    indicator_direction = serializers.CharField(source="logframe_row.indicator.direction", read_only=True)
+    period_label      = serializers.CharField(source="reporting_period.label",           read_only=True)
+    period_end        = serializers.DateField(source="reporting_period.end_date",        read_only=True)
+    status_display    = serializers.CharField(source="get_status_display",               read_only=True)
+    rag_display       = serializers.CharField(source="get_rag_status_display",           read_only=True)
+    submitted_by_email = serializers.CharField(source="submitted_by.email",             read_only=True)
+    approved_by_email  = serializers.CharField(source="approved_by.email",              read_only=True)
+
+    # Cible de référence pour cette période (la plus proche approuvée)
+    reference_target  = serializers.SerializerMethodField()
+
+    class Meta:
+        from .models import ResultsData
+        model  = ResultsData
+        fields = [
+            "id", "logframe_row", "reporting_period",
+            "indicator_code", "indicator_name", "indicator_unit", "indicator_direction",
+            "period_label", "period_end",
+            "actual_value", "narrative",
+            "rag_status", "rag_display", "achievement_rate",
+            "status", "status_display",
+            "submitted_by_email", "approved_by_email", "approved_at",
+            "reference_target",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = [
+            "id", "rag_status", "rag_display", "achievement_rate",
+            "indicator_code", "indicator_name", "indicator_unit", "indicator_direction",
+            "period_label", "period_end",
+            "submitted_by_email", "approved_by_email",
+            "reference_target", "created_at", "updated_at",
+        ]
+
+    def get_reference_target(self, obj):
+        period_end = obj.reporting_period.end_date
+        t = (
+            obj.logframe_row.targets
+            .filter(status="approved")
+            .filter(target_date__lte=period_end)
+            .order_by("target_date")
+            .last()
+        ) or obj.logframe_row.targets.filter(status="approved").order_by("target_date").first()
+        if not t:
+            return None
+        return {
+            "id": t.id,
+            "target_value": str(t.target_value),
+            "target_date": str(t.target_date),
+            "label": t.label,
+        }
+
+
+class ResultsDataCreateSerializer(serializers.Serializer):
+    logframe_row     = serializers.IntegerField()
+    reporting_period = serializers.IntegerField()
+    actual_value     = serializers.DecimalField(max_digits=18, decimal_places=4)
+    narrative        = serializers.CharField(required=False, allow_blank=True, default="")
+    approve          = serializers.BooleanField(
+        default=False,
+        help_text="True = approuver directement (RBAC neutralisé).",
+    )
+
+
+class ResultsDataUpdateSerializer(serializers.Serializer):
+    actual_value = serializers.DecimalField(max_digits=18, decimal_places=4, required=False)
+    narrative    = serializers.CharField(required=False, allow_blank=True)
+    approve      = serializers.BooleanField(required=False)

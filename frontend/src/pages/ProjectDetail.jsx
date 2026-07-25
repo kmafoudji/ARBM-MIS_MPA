@@ -6,6 +6,7 @@ import FinancialEnvelope from "../components/FinancialEnvelope";
 import ImplementingPartners from "../components/ImplementingPartners";
 import GeographicScope from "../components/GeographicScope";
 import ReportingSchedule from "../components/ReportingSchedule";
+import ResultsEntry from "../components/ResultsEntry";
 import Toast from "../components/Toast";
 import { useDialog } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
@@ -1290,6 +1291,20 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           nextReportingDue={project.next_reporting_due}
           canEdit={canEdit}
         />
+      </div>
+
+      {/* ── Module 2 — Results Data Entry ─────────────────────────────── */}
+      <div className="card mt-4">
+        <div className="card-header">
+          <h2 className="card-title">
+            <Icon name="bar-chart-2" size={15} style={{ marginRight: 6 }} />
+            Results — Data Entry
+          </h2>
+          <div className="card-subtitle">
+            Enter actual values per indicator and reporting period. RAG status is calculated automatically.
+          </div>
+        </div>
+        <ResultsEntry projectId={projectId} canEdit={canEdit} />
       </div>
 
     </div>

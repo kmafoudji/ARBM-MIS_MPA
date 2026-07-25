@@ -413,3 +413,139 @@ class TargetRevision(models.Model):
             f"Revision {self.target.logframe_row} "
             f"{self.previous_value}→{self.target.target_value} ({self.revision_status})"
         )
+
+
+# ---------------------------------------------------------------------------
+# SF-4 / SF-5 — Saisie des valeurs réelles et scoring RAG
+# ---------------------------------------------------------------------------
+
+RESULTS_DATA_STATUS_CHOICES = [
+    ("draft",    "Draft"),
+    ("approved", "Approved"),
+]
+
+RAG_CHOICES = [
+    ("green",  "On track (≥ 90%)"),
+    ("amber",  "At risk (60–89%)"),
+    ("red",    "Off track (< 60%)"),
+    ("na",     "N/A — no target for this period"),
+]
+
+
+class ResultsData(models.Model):
+    """
+    Valeur réelle saisie pour un indicateur sur une période de reporting.
+
+    Une entrée par (logframe_row, reporting_period) — contrainte unique.
+    Le scoring RAG est calculé automatiquement à la sauvegarde via
+    compute_rag() : actual_value / target_value la plus proche antérieure.
+
+    Workflow simplifié (RBAC neutralisé) : Draft → Approved directement.
+    La machine à états complète (PMU → Hub → LLFMU) sera branchée avec RBAC.
+    """
+    from apps.project.models import ReportingPeriod as _RP  # import local
+
+    logframe_row = models.ForeignKey(
+        LogframeRow,
+        on_delete=models.CASCADE,
+        related_name="results_data",
+    )
+    reporting_period = models.ForeignKey(
+        "project.ReportingPeriod",
+        on_delete=models.CASCADE,
+        related_name="results_data",
+    )
+
+    actual_value = models.DecimalField(
+        max_digits=18, decimal_places=4,
+        help_text="Valeur réelle observée pour cette période.",
+    )
+    narrative = models.TextField(
+        blank=True,
+        help_text="Commentaire qualitatif sur la valeur (contexte, difficultés, leçons).",
+    )
+
+    # RAG calculé automatiquement
+    rag_status = models.CharField(
+        max_length=6, choices=RAG_CHOICES, default="na",
+        help_text="Scoring automatique : actual / target la plus proche.",
+    )
+    achievement_rate = models.DecimalField(
+        max_digits=7, decimal_places=2, null=True, blank=True,
+        help_text="Taux d'atteinte en % (actual / target × 100).",
+    )
+
+    # Workflow
+    status = models.CharField(
+        max_length=10, choices=RESULTS_DATA_STATUS_CHOICES, default="draft",
+    )
+    submitted_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="results_submitted",
+    )
+    approved_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="results_approved",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table       = "results_data"
+        ordering       = ["reporting_period__period_number", "logframe_row__order"]
+        unique_together = [("logframe_row", "reporting_period")]
+
+    def __str__(self):
+        return (
+            f"{self.logframe_row.indicator.code} | "
+            f"{self.reporting_period.label} | "
+            f"{self.actual_value} [{self.rag_status}]"
+        )
+
+    def compute_and_save_rag(self):
+        """
+        Calcule le taux d'atteinte et le statut RAG puis sauvegarde.
+
+        Logique :
+          - Cherche la cible approuvée dont la date est la plus proche
+            (≤ end_date de la période, sinon la première disponible).
+          - Si aucune cible → rag_status = 'na'.
+          - Vert ≥ 90 %, Ambre 60–89 %, Rouge < 60 %.
+          - Pour les indicateurs "decrease" : logique inversée.
+        """
+        from decimal import Decimal
+
+        period_end = self.reporting_period.end_date
+        targets = (
+            self.logframe_row.targets
+            .filter(status="approved")
+            .order_by("target_date")
+        )
+        # Cible la plus proche ≤ end_date, sinon première disponible
+        target = (
+            targets.filter(target_date__lte=period_end).last()
+            or targets.first()
+        )
+
+        if not target or target.target_value == 0:
+            self.rag_status       = "na"
+            self.achievement_rate = None
+        else:
+            direction = self.logframe_row.indicator.direction
+            rate = (self.actual_value / target.target_value) * Decimal("100")
+
+            if direction == "decrease":
+                # Pour les indicateurs en baisse : actual ≤ target = bon
+                rate = (target.target_value / self.actual_value) * Decimal("100") if self.actual_value else Decimal("0")
+
+            self.achievement_rate = rate.quantize(Decimal("0.01"))
+            if rate >= 90:
+                self.rag_status = "green"
+            elif rate >= 60:
+                self.rag_status = "amber"
+            else:
+                self.rag_status = "red"
+
+        self.save(update_fields=["rag_status", "achievement_rate"])

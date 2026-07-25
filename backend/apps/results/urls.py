@@ -8,6 +8,9 @@ from .views import (
     LogframeTargetDetailView,
     LogframeTargetListView,
     LogframeView,
+    ResultsDataView,
+    ResultsDataDetailView,
+    ResultsSummaryView,
     TargetRevisionView,
     TargetRevisionActionView,
     TheoryOfChangeView,
@@ -42,4 +45,8 @@ project_urlpatterns = [
     path("logframe/<int:row_pk>/targets/<int:t_pk>/revise/",                          TargetRevisionView.as_view(),       name="project-target-revise"),
     path("logframe/<int:row_pk>/targets/<int:t_pk>/revisions/",                       TargetRevisionView.as_view(),       name="project-target-revisions"),
     path("logframe/<int:row_pk>/targets/<int:t_pk>/revisions/<int:rev_pk>/action/",   TargetRevisionActionView.as_view(), name="project-target-revision-action"),
+    # SF-4 / SF-5 : saisie des valeurs réelles + RAG
+    path("results/",                  ResultsDataView.as_view(),       name="project-results"),
+    path("results/summary/",          ResultsSummaryView.as_view(),    name="project-results-summary"),
+    path("results/<int:rd_pk>/",      ResultsDataDetailView.as_view(), name="project-results-detail"),
 ]

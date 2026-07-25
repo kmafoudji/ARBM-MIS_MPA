@@ -558,3 +558,200 @@ class ToCNodeCrossPathwayView(APIView):
         target = ToCNode.objects.get(pk=target_pk, toc__project_id=pk)
         node.cross_pathways.remove(target)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# SF-4 / SF-5 — ResultsData : saisie et scoring RAG
+# ---------------------------------------------------------------------------
+
+class ResultsDataView(APIView):
+    """
+    GET  /api/projects/<pk>/results/
+         Liste toutes les valeurs saisies pour ce projet.
+         Filtres optionnels : ?period=<id>  ?row=<id>  ?status=draft|approved
+
+    POST /api/projects/<pk>/results/
+         Crée ou met à jour une valeur (upsert sur logframe_row + reporting_period).
+         Calcule le RAG automatiquement.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request, pk):
+        from .models import ResultsData
+        from .serializers import ResultsDataSerializer
+        qs = ResultsData.objects.filter(
+            logframe_row__project_id=pk
+        ).select_related(
+            "logframe_row__indicator",
+            "reporting_period",
+            "submitted_by", "approved_by",
+        )
+        period = request.query_params.get("period")
+        row    = request.query_params.get("row")
+        st     = request.query_params.get("status")
+        if period: qs = qs.filter(reporting_period_id=period)
+        if row:    qs = qs.filter(logframe_row_id=row)
+        if st:     qs = qs.filter(status=st)
+        return Response(ResultsDataSerializer(qs, many=True).data)
+
+    def post(self, request, pk):
+        from django.utils import timezone
+        from .models import ResultsData
+        from .serializers import ResultsDataCreateSerializer, ResultsDataSerializer
+
+        ser = ResultsDataCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+
+        # Valider appartenance au projet
+        row = get_object_or_404(LogframeRow, pk=d["logframe_row"], project_id=pk)
+        from apps.project.models import ReportingPeriod
+        period = get_object_or_404(ReportingPeriod, pk=d["reporting_period"], project_id=pk)
+
+        # Upsert
+        rd, created = ResultsData.objects.update_or_create(
+            logframe_row=row,
+            reporting_period=period,
+            defaults={
+                "actual_value": d["actual_value"],
+                "narrative":    d.get("narrative", ""),
+                "submitted_by": request.user,
+            },
+        )
+
+        # Approbation directe si demandée
+        if d.get("approve"):
+            rd.status      = "approved"
+            rd.approved_by = request.user
+            rd.approved_at = timezone.now()
+            rd.save(update_fields=["status", "approved_by", "approved_at"])
+
+        # Calcul RAG
+        rd.compute_and_save_rag()
+        rd.refresh_from_db()
+
+        return Response(
+            ResultsDataSerializer(rd).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class ResultsDataDetailView(APIView):
+    """
+    GET    /api/projects/<pk>/results/<rd_pk>/  Détail d'une valeur.
+    PATCH  /api/projects/<pk>/results/<rd_pk>/  Mise à jour (valeur, narrative, approve).
+    DELETE /api/projects/<pk>/results/<rd_pk>/  Suppression (draft uniquement).
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get(self, pk, rd_pk):
+        from .models import ResultsData
+        return get_object_or_404(
+            ResultsData,
+            pk=rd_pk,
+            logframe_row__project_id=pk,
+        )
+
+    def get(self, request, pk, rd_pk):
+        from .serializers import ResultsDataSerializer
+        return Response(ResultsDataSerializer(self._get(pk, rd_pk)).data)
+
+    def patch(self, request, pk, rd_pk):
+        from django.utils import timezone
+        from .serializers import ResultsDataUpdateSerializer, ResultsDataSerializer
+        rd  = self._get(pk, rd_pk)
+        ser = ResultsDataUpdateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+
+        if "actual_value" in d:
+            rd.actual_value = d["actual_value"]
+        if "narrative" in d:
+            rd.narrative = d["narrative"]
+        rd.save(update_fields=["actual_value", "narrative", "updated_at"])
+
+        if d.get("approve"):
+            rd.status      = "approved"
+            rd.approved_by = request.user
+            rd.approved_at = timezone.now()
+            rd.save(update_fields=["status", "approved_by", "approved_at"])
+
+        rd.compute_and_save_rag()
+        rd.refresh_from_db()
+        return Response(ResultsDataSerializer(rd).data)
+
+    def delete(self, request, pk, rd_pk):
+        rd = self._get(pk, rd_pk)
+        if rd.status == "approved":
+            return Response(
+                {"detail": "Une valeur approuvée ne peut pas être supprimée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        rd.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ResultsSummaryView(APIView):
+    """
+    GET /api/projects/<pk>/results/summary/
+    Vue consolidée : pour chaque ligne logframe, toutes les périodes
+    avec leur valeur saisie, RAG et taux d'atteinte.
+    Utilisé par le frontend pour afficher la grille de saisie.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request, pk):
+        from .models import ResultsData
+        project = get_object_or_404(Project, pk=pk)
+        rows    = LogframeRow.objects.filter(project=project).select_related("indicator")
+        periods = project.reporting_periods.all().order_by("period_number")
+
+        # Index des valeurs saisies : (row_id, period_id) → ResultsData
+        rd_index = {
+            (rd.logframe_row_id, rd.reporting_period_id): rd
+            for rd in ResultsData.objects.filter(
+                logframe_row__project=project
+            ).select_related("submitted_by", "approved_by")
+        }
+
+        result = []
+        for row in rows:
+            periods_data = []
+            for p in periods:
+                rd = rd_index.get((row.id, p.id))
+                periods_data.append({
+                    "period_id":    p.id,
+                    "period_label": p.label,
+                    "period_end":   str(p.end_date),
+                    "period_status": p.status,
+                    "data": {
+                        "id":               rd.id           if rd else None,
+                        "actual_value":     str(rd.actual_value) if rd else None,
+                        "narrative":        rd.narrative    if rd else "",
+                        "rag_status":       rd.rag_status   if rd else None,
+                        "achievement_rate": str(rd.achievement_rate) if rd and rd.achievement_rate else None,
+                        "status":           rd.status       if rd else None,
+                        "approved_at":      rd.approved_at.isoformat() if rd and rd.approved_at else None,
+                    } if rd else None,
+                })
+            result.append({
+                "row_id":           row.id,
+                "indicator_code":   row.indicator.code,
+                "indicator_name":   row.indicator.name,
+                "indicator_unit":   row.indicator.unit,
+                "indicator_direction": row.indicator.direction,
+                "chain_level":      row.chain_level,
+                "baseline_value":   str(row.baseline_value) if row.baseline_value else None,
+                "baseline_year":    row.baseline_year,
+                "periods":          periods_data,
+            })
+
+        return Response({
+            "project_id":   pk,
+            "project_code": project.code,
+            "rows":         result,
+            "periods":      [{"id": p.id, "label": p.label, "end_date": str(p.end_date), "status": p.status} for p in periods],
+        })
