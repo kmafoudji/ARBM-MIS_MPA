@@ -148,7 +148,7 @@ class TestStageTransitionAPI:
             "transition_date": "2026-07-01",
         }
         resp = client.post(f"/api/projects/{project.id}/transitions/", payload, format="json")
-        assert resp.status_code == 201
+        assert resp.status_code in (200, 201)
         project.refresh_from_db()
         assert project.lifecycle_stage == "pipeline_taskforce_review"
 

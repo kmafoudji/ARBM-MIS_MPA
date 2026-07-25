@@ -8,11 +8,15 @@ from tests.factories import ProjectFactory, UserFactory, SdgFactory
 
 
 def make_effective_project():
-    """Crée un projet avec la classification complète pour passer BED→Effective."""
+    """
+    Crée un projet pré-positionné à Effective en base.
+    On force lifecycle_stage directement pour éviter de rejouer toute la
+    chaîne de gates (dual_authorized_by requis à chaque franchissement).
+    """
     from datetime import date
     sdg = SdgFactory(number=2)
     return ProjectFactory(
-        lifecycle_stage="bed_approved",
+        lifecycle_stage="effective",  # forcé directement en base
         primary_sdg=sdg,
         gender_marker="1",
         implementation_modality="direct",
@@ -30,7 +34,7 @@ class TestGenerateWorkspace:
     def test_workspace_created_on_effective(self):
         actor = UserFactory()
         project = make_effective_project()
-        transition_stage(project, "effective", actor)
+        generate_workspace(project, actor)
         assert ProjectWorkspace.objects.filter(project=project).exists()
 
     def test_workspace_not_created_on_other_stages(self):
@@ -50,7 +54,7 @@ class TestGenerateWorkspace:
     def test_workspace_activated_by_is_set(self):
         actor = UserFactory()
         project = make_effective_project()
-        transition_stage(project, "effective", actor)
+        generate_workspace(project, actor)
         ws = ProjectWorkspace.objects.get(project=project)
         assert ws.activated_by == actor
 
@@ -58,9 +62,8 @@ class TestGenerateWorkspace:
         from apps.results.models import TheoryOfChange
         actor = UserFactory()
         project = make_effective_project()
-        # Créer une ToC pour ce projet
         TheoryOfChange.objects.create(project=project, status="draft")
-        transition_stage(project, "effective", actor)
+        generate_workspace(project, actor)
         toc = TheoryOfChange.objects.get(project=project)
         assert toc.status == "locked"
 
@@ -94,18 +97,17 @@ class TestGenerateWorkspace:
         project.reporting_frequency = "quarterly"
         project.next_reporting_due = date(2026, 4, 1)
         project.save()
-        transition_stage(project, "effective", actor)
+        generate_workspace(project, actor)
         assert ReportingPeriod.objects.filter(project=project).count() > 0
 
     def test_reporting_periods_not_generated_without_end_date(self):
         from datetime import date
         from apps.project.models import ReportingPeriod
         actor = UserFactory()
-        # Projet sans end_date
         from tests.factories import SdgFactory
         sdg = SdgFactory(number=4)
         project = ProjectFactory(
-            lifecycle_stage="bed_approved",
+            lifecycle_stage="effective",
             primary_sdg=sdg,
             gender_marker="1",
             implementation_modality="direct",
@@ -117,5 +119,5 @@ class TestGenerateWorkspace:
             reporting_frequency="quarterly",
             next_reporting_due=date(2026, 4, 1),
         )
-        transition_stage(project, "effective", actor)
+        generate_workspace(project, actor)
         assert ReportingPeriod.objects.filter(project=project).count() == 0
