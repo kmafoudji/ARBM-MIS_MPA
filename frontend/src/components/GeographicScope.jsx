@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
-import { useDialog } from "./Dialog.jsx";
+import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
 
 export default function GeographicScope({ projectId, countries, canEdit }) {
@@ -236,7 +236,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
 
   return (
     <div className="card-body">
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       {scope.length === 0 && openFor === null && (
         <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>
           No geographic scope defined. Add Admin 1 regions or Admin 2 districts.

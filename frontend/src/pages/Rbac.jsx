@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-import { useDialog } from "../components/Dialog.jsx";
+import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
@@ -671,7 +671,7 @@ export default function Rbac({ currentUser }) {
 
   return (
     <div className="view">
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       <div className="view-header">
         <div className="view-eyebrow">System</div>
         <h1 className="view-title">Users &amp; Roles</h1>

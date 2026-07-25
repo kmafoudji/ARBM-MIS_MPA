@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import RichText, { stripHtml } from "../components/RichText";
-import { useDialog } from "../components/Dialog.jsx";
+import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import RichTextEditor from "../components/RichTextEditor";
 import TagInput from "../components/TagInput";
 
@@ -139,7 +139,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
       background: "var(--surface-2)", border: "1px solid var(--border)",
       borderRadius: "var(--r-2)", padding: "12px 14px", marginTop: 10,
     }}>
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Indicator &amp; Measurement
@@ -418,7 +418,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
       background: "var(--surface)", border: "1px solid var(--border)",
       borderRadius: "var(--r-3)", padding: "var(--s-3)",
     }}>
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       <div className="row" style={{ justifyContent: "space-between", cursor: "pointer" }}
         onClick={() => !editing && setExpanded(!expanded)}>
         <div className="row" style={{ gap: 10 }}>

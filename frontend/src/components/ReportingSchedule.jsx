@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
-import { useDialog } from "./Dialog.jsx";
+import { useDialog, DialogModal } from "./Dialog.jsx";
 
 const STATUS_BADGE = {
   upcoming:  "badge",
@@ -74,7 +74,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
 
   return (
     <div className="card-body">
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       {/* Pas de fréquence configurée */}
       {!reportingFrequency && (
         <p className="text-muted text-sm" style={{ margin: 0 }}>

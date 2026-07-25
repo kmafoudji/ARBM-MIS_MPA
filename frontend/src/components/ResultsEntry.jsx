@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
-import { useDialog } from "./Dialog.jsx";
+import { useDialog, DialogModal } from "./Dialog.jsx";
 
 const RAG_CONFIG = {
   green: { color: "#16a34a", bg: "#dcfce7", border: "#86efac", label: "On track",  icon: "circle-check" },
@@ -77,7 +77,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
   if (!open) {
     return (
       <td style={{ padding: "6px 8px", textAlign: "center", minWidth: 120 }}>
-        <dialog.Dialog />
+        <DialogModal {...dialog.dialogProps} />
         {hasData ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <span style={{ fontWeight: 600, fontSize: 13 }}>
@@ -111,7 +111,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
 
   return (
     <td style={{ padding: "6px 8px", background: "#f0f6dc", minWidth: 180 }}>
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <input
           autoFocus

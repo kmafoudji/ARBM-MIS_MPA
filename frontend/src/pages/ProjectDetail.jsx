@@ -8,7 +8,7 @@ import GeographicScope from "../components/GeographicScope";
 import ReportingSchedule from "../components/ReportingSchedule";
 import ResultsEntry from "../components/ResultsEntry";
 import Toast from "../components/Toast";
-import { useDialog } from "../components/Dialog.jsx";
+import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 
 const STAGE_BADGE = {
@@ -343,7 +343,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   return (
     <div className="view">
       <Toast toast={toast} onClose={() => setToast(null)} />
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
         ← Portefeuille
       </button>

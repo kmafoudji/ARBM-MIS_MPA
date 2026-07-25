@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-import { useDialog } from "../components/Dialog.jsx";
+import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 
 const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
@@ -614,7 +614,7 @@ export default function Logframe({ projectId, onBack }) {
 
   return (
     <div className="view">
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
         ← Project
       </button>

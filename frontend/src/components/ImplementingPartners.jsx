@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
-import { useDialog } from "./Dialog.jsx";
+import { useDialog, DialogModal } from "./Dialog.jsx";
 
 function AgencyLogo({ url, name }) {
   if (url) {
@@ -189,7 +189,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
 
   return (
     <div className="card-body">
-      <dialog.Dialog />
+      <DialogModal {...dialog.dialogProps} />
       {/* Partner table */}
       {partners.length > 0 && (
         <table className="data-table mb-3" style={{ width: "100%" }}>
