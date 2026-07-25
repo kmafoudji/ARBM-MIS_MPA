@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
@@ -115,9 +115,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   const qc = useQueryClient();
   const [step, setStep]           = useState(1);
   const [maxReached, setMaxReached] = useState(1);
-  const [projectId, setProjectId] = useState(null); // créé après step 1
-  const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState(null);
+  const projectIdRef = useRef(null);   // ref : pas de stale closure
+  const savingRef    = useRef(false);  // ref : évite les double-clics
+  const [saving, setSaving]       = useState(false); // pour le rendu bouton
 
   /* ── Form state (toutes étapes) ── */
   const [f, setF] = useState({
@@ -171,10 +172,12 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
   /* ── Sauvegarder l'étape courante ── */
   async function saveCurrentStep() {
+    if (savingRef.current) return null; // anti double-clic
+    savingRef.current = true;
     setError(null);
     setSaving(true);
     try {
-      if (step === 1 && !projectId) {
+      if (step === 1 && !projectIdRef.current) {
         // Création initiale
         const payload = {
           name: f.name,
@@ -187,15 +190,15 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           contributing_sdg_ids: f.contributingSdgIds,
         };
         const proj = await apiFetch("/api/projects/", { method: "POST", body: JSON.stringify(payload) });
-        setProjectId(proj.id);
+        projectIdRef.current = proj.id;
         qc.invalidateQueries({ queryKey: ["projects"] });
         return proj.id;
       }
 
-      const pid = projectId;
+      const pid = projectIdRef.current;
 
       if (step === 1 && pid) {
-        // Mise à jour step 1 via endpoint dédié (country_ids, lead, secteurs)
+        // Mise à jour step 1 via endpoint dédié
         await apiFetch(`/api/projects/${pid}/basic/`, { method: "PATCH", body: JSON.stringify({
           name: f.name,
           country_ids: f.countryIds,
@@ -243,6 +246,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       setError(typeof detail === "string" ? detail : JSON.stringify(detail));
       return null;
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
