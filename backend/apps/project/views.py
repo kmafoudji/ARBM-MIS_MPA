@@ -667,6 +667,25 @@ class ReportingPeriodDetailView(APIView):
         })
 
 
+class ReportingPeriodRefreshView(APIView):
+    """
+    POST /api/projects/<pk>/reporting-periods/refresh/
+
+    Force la mise à jour des statuts (upcoming/open/overdue) pour ce projet
+    sans attendre le cron quotidien. Utile en dev et pour les tests.
+
+    Retourne le nombre de périodes mises à jour + le détail par statut.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def post(self, request, pk):
+        from apps.project.services import refresh_period_statuses
+        project = get_object_or_404(Project, pk=pk)
+        result = refresh_period_statuses(project=project)
+        return Response(result)
+
+
 class ProjectWorkspaceView(APIView):
     """GET /api/projects/<pk>/workspace/ — état du workspace SF-10"""
     permission_classes = [IsAuthenticated]

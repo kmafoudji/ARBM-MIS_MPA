@@ -415,6 +415,64 @@ def generate_reporting_periods(project):
 
 
 # ---------------------------------------------------------------------------
+# SF-5 — Moteur de mise à jour des statuts de périodes (deadline engine)
+# ---------------------------------------------------------------------------
+
+def refresh_period_statuses(project=None):
+    """
+    Met à jour le statut des ReportingPeriod en fonction de la date du jour.
+
+    Transitions automatiques :
+      upcoming  → open     si start_date <= today <= end_date
+      upcoming  → overdue  si today > due_date  (période jamais ouverte)
+      open      → overdue  si today > due_date
+
+    Les statuts submitted et approved sont immuables — ils ne régressent
+    jamais automatiquement (transition manuelle via PATCH uniquement).
+
+    Paramètres :
+      project : Project ou None.
+                Si None, traite l'ensemble du portefeuille (appel cron).
+                Si fourni, traite uniquement les périodes de ce projet
+                (appel manuel depuis la vue ou les tests).
+
+    Retourne : dict {updated: int, detail: {status: count}}
+    """
+    from datetime import date
+    from apps.project.models import ReportingPeriod
+
+    today = date.today()
+    qs = ReportingPeriod.objects.all()
+    if project is not None:
+        qs = qs.filter(project=project)
+
+    # On ne touche qu'aux statuts automatisables (pas submitted/approved)
+    qs = qs.filter(status__in=["upcoming", "open"])
+
+    updated = 0
+    detail = {"open": 0, "overdue": 0}
+
+    for period in qs.select_related("project"):
+        new_status = None
+
+        if today > period.due_date:
+            # Deadline dépassée → overdue (quelle que soit la valeur actuelle)
+            new_status = "overdue"
+        elif period.start_date <= today <= period.end_date:
+            # Dans la fenêtre de rapport → open
+            new_status = "open"
+        # Sinon : encore dans le futur → reste upcoming, rien à faire
+
+        if new_status and new_status != period.status:
+            period.status = new_status
+            period.save(update_fields=["status"])
+            updated += 1
+            detail[new_status] = detail.get(new_status, 0) + 1
+
+    return {"updated": updated, "detail": detail}
+
+
+# ---------------------------------------------------------------------------
 # SF-10 — Génération du workspace à Effective
 # ---------------------------------------------------------------------------
 

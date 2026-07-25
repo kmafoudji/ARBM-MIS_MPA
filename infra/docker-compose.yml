@@ -43,6 +43,42 @@ services:
       redis:
         condition: service_started
 
+  celery_worker:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=2
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  celery_beat:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    command: celery -A config beat --loglevel=info --schedule=/tmp/celerybeat-schedule
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   frontend:
     build:
       context: ../frontend

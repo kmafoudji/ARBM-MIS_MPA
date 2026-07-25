@@ -57,6 +57,11 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reporting-periods", projectId] }),
   });
 
+  const refreshMutation = useMutation({
+    mutationFn: () => apiFetch(`/api/projects/${projectId}/reporting-periods/refresh/`, { method: "POST", body: JSON.stringify({}) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["reporting-periods", projectId] }),
+  });
+
   if (isLoading) return <div className="card-body"><span className="spinner" /> Loading…</div>;
 
   // Résumé
@@ -120,6 +125,14 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
             ))}
             {canEdit && (
               <div className="row" style={{ gap: 8, marginLeft: "auto", alignSelf: "center" }}>
+
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
+                  title="Update period statuses based on today's date (upcoming / open / overdue)"
+                  onClick={() => refreshMutation.mutate()}
+                  disabled={refreshMutation.isPending}>
+                  <Icon name="zap" size={13} />
+                  {refreshMutation.isPending ? "Refreshing…" : "Refresh statuses"}
+                </button>
 
                 {projectEndDate && reportingFrequency && nextReportingDue && (
                   <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
