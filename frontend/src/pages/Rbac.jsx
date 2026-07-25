@@ -397,6 +397,7 @@ function TabRoles({ currentUser }) {
 const PAGE_SIZE_ASSIGN = 10;
 
 function TabAssignments({ currentUser }) {
+  const dialog = useDialog();
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [showRevoked, setShowRevoked] = useState(false);
@@ -659,6 +660,7 @@ function TabAssignments({ currentUser }) {
 /*  PAGE PRINCIPALE                                                           */
 /* ══════════════════════════════════════════════════════════════════════════ */
 export default function Rbac({ currentUser }) {
+  const dialog = useDialog();
   const [tab, setTab] = useState("users");
 
   const { data: users = [] } = useQuery({ queryKey: ["users-full"], queryFn: () => apiFetch("/api/identity/users/") });

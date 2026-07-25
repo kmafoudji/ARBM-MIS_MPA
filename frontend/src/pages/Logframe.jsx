@@ -154,6 +154,7 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
 // Composant : ligne logframe
 // ---------------------------------------------------------------------------
 function LogframeRowCard({ row, projectId, onChanged }) {
+  const dialog = useDialog();
   const [expanded, setExpanded] = useState(false);
   const [addingTarget, setAddingTarget] = useState(false);
   const [editingBaseline, setEditingBaseline] = useState(false);
