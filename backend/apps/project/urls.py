@@ -6,6 +6,7 @@ from apps.results.views import TheoryOfChangeView, ToCNodeDetailView, ToCNodeLis
 
 from .views import (
     ComponentAllocationView,
+    ProjectBasicUpdateView,
     FinancingSourceDetailView,
     FinancingSourceListView,
     ProjectDatesView,
@@ -35,6 +36,7 @@ urlpatterns = router.urls + [
          ProjectReportingConfigView.as_view(), name="project-reporting-config"),
     path("projects/<int:pk>/dates/", ProjectDatesView.as_view(), name="project-dates"),
     path("projects/stats/", ProjectStatsView.as_view(), name="project-stats"),
+    path("projects/<int:pk>/basic/", ProjectBasicUpdateView.as_view(), name="project-basic-update"),
     path("projects/<int:pk>/partners/",
          ProjectImplementingPartnerListView.as_view(), name="project-partners"),
     path("projects/<int:pk>/partners/<int:partner_pk>/",

@@ -78,7 +78,10 @@ export default function App() {
         />
       )}
       {nav === "new-project" && (
-        <ProjectCreateForm onCreated={() => setNav("projects")} onCancel={() => setNav("projects")} />
+        <ProjectCreateForm
+          onCreated={(pid) => { if (pid) { setSelectedProjectId(pid); setNav("project-detail"); } else { setNav("projects"); } }}
+          onCancel={() => setNav("projects")}
+        />
       )}
       {nav === "project-detail" && (
         <ProjectDetail

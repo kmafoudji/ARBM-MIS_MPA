@@ -1,6 +1,7 @@
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    CrossCuttingThemeViewSet,
     CurrencyViewSet,
     CountryViewSet,
     DonorViewSet,
@@ -18,5 +19,6 @@ router.register("agencies", ImplementingAgencyViewSet, basename="implementingage
 router.register("sectors", SectorViewSet, basename="sector")
 router.register("currencies", CurrencyViewSet, basename="currency")
 router.register("sdgs", SdgViewSet, basename="sdg")
+router.register("cross-cutting-themes", CrossCuttingThemeViewSet, basename="crosscuttingtheme")
 
 urlpatterns = router.urls

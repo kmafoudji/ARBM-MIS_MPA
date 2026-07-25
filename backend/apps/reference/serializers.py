@@ -124,6 +124,12 @@ class ImplementingAgencySerializer(serializers.ModelSerializer):
         return data
 
 
+class CrossCuttingThemeSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.reference.models import CrossCuttingTheme
+        model = CrossCuttingTheme
+        fields = ["id", "code", "name"]
+
 class SectorSerializer(serializers.ModelSerializer):
     parent_name = serializers.CharField(source="parent.name", read_only=True)
     usage_count = serializers.SerializerMethodField()

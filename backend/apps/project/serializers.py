@@ -240,10 +240,13 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
+            "name", "budget_amount",
             "primary_sector", "contributing_sector_ids",
             "primary_sdg", "contributing_sdg_ids",
             "gender_marker", "implementation_modality", "geographic_typology",
             "fragility_status", "risk_rating", "cross_cutting_theme_ids",
+            "rio_marker_mitigation", "rio_marker_adaptation",
+            "rio_marker_biodiversity", "rio_marker_desertification",
         ]
 
     def update(self, instance, validated_data):

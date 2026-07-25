@@ -83,6 +83,10 @@ class CurrencyViewSet(ReferenceViewSet):
     http_method_names = ["get", "head", "options"]
 
 
+class CrossCuttingThemeViewSet(ReferenceViewSet):
+    from apps.reference.serializers import CrossCuttingThemeSerializer
+    serializer_class = CrossCuttingThemeSerializer
+
 class SdgViewSet(ReferenceViewSet):
     """
     Les 17 ODD sont un referentiel ferme, fixe par les Nations Unies : ni

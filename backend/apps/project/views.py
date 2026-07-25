@@ -436,6 +436,48 @@ class ProjectDatesView(APIView):
         return Response(ProjectDetailSerializer(project).data)
 
 
+class ProjectBasicUpdateView(APIView):
+    """
+    PATCH /api/projects/<pk>/basic/
+    Mise a jour des champs Basic Identity (step 1 wizard) :
+    name, pays, secteur primaire — champs non couverts par
+    ProjectClassificationUpdateSerializer.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
+
+    def patch(self, request, pk):
+        project = get_object_or_404(Project, pk=pk)
+        data = request.data
+
+        if "name" in data:
+            project.name = data["name"]
+        if "budget_amount" in data:
+            project.budget_amount = data["budget_amount"] or None
+        if "primary_sector" in data and data["primary_sector"]:
+            from apps.reference.models import Sector
+            project.primary_sector_id = int(data["primary_sector"])
+
+        project.save()
+
+        # Pays
+        country_ids = data.get("country_ids")
+        lead_country_id = data.get("lead_country_id")
+        if country_ids is not None:
+            from apps.project.services import set_project_countries
+            lead = int(lead_country_id) if lead_country_id else (int(country_ids[0]) if country_ids else None)
+            set_project_countries(project, [int(c) for c in country_ids], lead)
+
+        # Secteurs contributifs
+        contrib = data.get("contributing_sector_ids")
+        if contrib is not None:
+            from apps.project.services import set_project_sectors
+            set_project_sectors(project, [int(s) for s in contrib])
+
+        from apps.project.serializers import ProjectDetailSerializer
+        return Response(ProjectDetailSerializer(project).data)
+
+
 class ProjectImplementingPartnerListView(APIView):
     """
     GET  /api/projects/<pk>/partners/   — liste des partenaires d'exécution
