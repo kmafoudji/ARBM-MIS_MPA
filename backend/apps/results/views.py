@@ -10,6 +10,21 @@ from apps.identity.permissions import ReadOnlyOrHasModulePermission
 from apps.project.models import Project
 
 from .models import Indicator, LogframeRow, LogframeTarget, TargetRevision, TheoryOfChange, ToCNode
+
+def fmt_decimal(value):
+    """Formate un Decimal : supprime les zéros décimaux inutiles.
+    1500.0000 → '1500'  |  3.5000 → '3.5'  |  2.7500 → '2.75'
+    """
+    if value is None:
+        return None
+    from decimal import Decimal
+    d = Decimal(str(value)).normalize()
+    # Si l'exposant est positif (ex. 1.5E+3), repasser en notation fixe
+    if d == d.to_integral_value():
+        return str(d.to_integral_value())
+    return str(d)
+
+
 from .serializers import (
     IndicatorDetailSerializer,
     IndicatorListSerializer,
@@ -740,10 +755,10 @@ class ResultsSummaryView(APIView):
                         "period_status": p.status,
                         "data": {
                             "id":               rd.id           if rd else None,
-                            "actual_value":     str(rd.actual_value) if rd else None,
+                            "actual_value":     fmt_decimal(rd.actual_value) if rd else None,
                             "narrative":        rd.narrative    if rd else "",
                             "rag_status":       rd.rag_status   if rd else None,
-                            "achievement_rate": str(rd.achievement_rate) if rd and rd.achievement_rate else None,
+                            "achievement_rate": fmt_decimal(rd.achievement_rate) if rd and rd.achievement_rate else None,
                             "status":           rd.status       if rd else None,
                             "approved_at":      rd.approved_at.isoformat() if rd and rd.approved_at else None,
                         } if rd else None,
@@ -755,7 +770,7 @@ class ResultsSummaryView(APIView):
                     "indicator_unit":   row.indicator.unit,
                     "indicator_direction": row.indicator.direction,
                     "chain_level":      row.chain_level,
-                    "baseline_value":   str(row.baseline_value) if row.baseline_value else None,
+                    "baseline_value":   fmt_decimal(row.baseline_value) if row.baseline_value else None,
                     "baseline_year":    row.baseline_year,
                     "periods":          periods_data,
                 })
@@ -877,13 +892,13 @@ class DisaggregationValueView(APIView):
                 warnings.append({
                     "dimension": dim.name,
                     "sum": str(total),
-                    "actual": str(rd.actual_value),
+                    "actual": fmt_decimal(rd.actual_value),
                     "message": f"La somme des valeurs pour « {dim.name} » ({total}) ≠ valeur totale ({rd.actual_value}).",
                 })
 
         return Response({
             "results_data_id": rd.id,
-            "actual_value":    str(rd.actual_value),
+            "actual_value":    fmt_decimal(rd.actual_value),
             "dimensions":      IndicatorDisaggregationSerializer(dimensions, many=True).data,
             "values":          DisaggregationValueSerializer(values, many=True).data,
             "warnings":        warnings,

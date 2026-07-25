@@ -107,6 +107,8 @@ class LogframeTargetSerializer(serializers.ModelSerializer):
     approved_by_email = serializers.CharField(source="approved_by.email", read_only=True)
     revisions         = TargetRevisionSerializer(many=True, read_only=True)
 
+    target_value = serializers.SerializerMethodField()
+
     class Meta:
         model  = LogframeTarget
         fields = [
@@ -119,6 +121,12 @@ class LogframeTargetSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "approved_by_email", "revisions", "created_at"]
+
+    def get_target_value(self, obj):
+        from decimal import Decimal
+        if obj.target_value is None: return None
+        d = Decimal(str(obj.target_value)).normalize()
+        return str(d.to_integral_value()) if d == d.to_integral_value() else str(d)
 
 
 class LogframeTargetCreateSerializer(serializers.ModelSerializer):
@@ -442,11 +450,19 @@ class IndicatorDisaggregationSerializer(serializers.ModelSerializer):
 
 class DisaggregationValueSerializer(serializers.ModelSerializer):
     dimension_name = serializers.CharField(source="dimension.name", read_only=True)
+    value = serializers.SerializerMethodField()
 
     class Meta:
         model  = __import__("apps.results.models", fromlist=["DisaggregationValue"]).DisaggregationValue
         fields = ["id", "dimension", "dimension_name", "category", "value"]
         read_only_fields = ["id", "dimension_name"]
+
+    def get_value(self, obj):
+        from decimal import Decimal
+        d = Decimal(str(obj.value)).normalize()
+        if d == d.to_integral_value():
+            return str(d.to_integral_value())
+        return str(d)
 
 
 class DisaggregationValueWriteSerializer(serializers.Serializer):

@@ -75,7 +75,7 @@ function TargetCard({ target, rowId, projectId, onChanged }) {
       style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "default" }}
     >
       {target.label && <span className="text-mono" style={{ fontSize: 11 }}>{target.label}</span>}
-      <strong>{Number(target.target_value).toLocaleString("fr-FR")}</strong>
+      <strong>{parseFloat(target.target_value) % 1 === 0 ? parseInt(target.target_value).toLocaleString() : parseFloat(target.target_value).toLocaleString()}</strong>
       <span style={{ color: "var(--muted)", fontSize: 11 }}>
         {new Date(target.target_date).toLocaleDateString("fr-FR")}
       </span>
@@ -195,7 +195,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
               <span>{row.indicator_unit}</span>
               <span>{directionIcon}</span>
               {row.baseline_value != null && (
-                <span>Baseline : <strong>{Number(row.baseline_value).toLocaleString("fr-FR")}</strong>
+                <span>Baseline : <strong>{parseFloat(row.baseline_value) % 1 === 0 ? parseInt(row.baseline_value).toLocaleString() : parseFloat(row.baseline_value).toLocaleString()}</strong>
                   {row.baseline_year && ` (${row.baseline_year})`}
                 </span>
               )}
@@ -283,7 +283,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
             ) : (
               <div className="dl">
                 <div><div className="dl-term">Value</div>
-                  <div className="dl-desc">{row.baseline_value != null ? `${Number(row.baseline_value).toLocaleString("fr-FR")} ${row.indicator_unit}` : "—"}</div>
+                  <div className="dl-desc">{row.baseline_value != null ? `${parseFloat(row.baseline_value) % 1 === 0 ? parseInt(row.baseline_value).toLocaleString() : parseFloat(row.baseline_value).toLocaleString()} ${row.indicator_unit}` : "—"}</div>
                 </div>
                 <div><div className="dl-term">Year</div><div className="dl-desc">{row.baseline_year || "—"}</div></div>
                 <div><div className="dl-term">Source</div><div className="dl-desc">{row.baseline_source || "—"}</div></div>

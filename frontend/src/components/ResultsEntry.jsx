@@ -9,6 +9,19 @@ import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 
+
+// Formate un nombre : supprime les décimales inutiles
+// "1500.0000" → "1 500" | "3.5000" → "3.5" | null → "—"
+function fmtNum(val) {
+  if (val === null || val === undefined || val === "") return "—";
+  const n = parseFloat(val);
+  if (isNaN(n)) return val;
+  // Si entier, pas de décimales
+  if (Number.isInteger(n)) return n.toLocaleString();
+  // Sinon supprimer les zéros trailing
+  return parseFloat(n.toFixed(4)).toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
 const RAG_CONFIG = {
   green: { color: "#16a34a", bg: "#dcfce7", border: "#86efac", label: "On track",  icon: "circle-check" },
   amber: { color: "#d97706", bg: "#fef9c3", border: "#fde047", label: "At risk",   icon: "alert-triangle" },
@@ -83,7 +96,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
       {/* Titre */}
       <div style={{ marginBottom: 12 }}>
         <span style={{ fontWeight: 700, fontSize: 12, color: "#374151" }}>
-          Disaggregation — Total: <strong>{Number(rd.actual_value).toLocaleString()}</strong>
+          Disaggregation — Total: <strong>{fmtNum(rd.actual_value)}</strong>
         </span>
       </div>
 
@@ -121,7 +134,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
               {/* Somme inline à droite des champs */}
               <div style={{ paddingBottom: 4 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: sumOk ? "#16a34a" : "#d97706" }}>
-                  Σ = {dimSum.toLocaleString()} {sumOk ? "✓" : `≠ ${total.toLocaleString()}`}
+                  Σ = {fmtNum(dimSum)} {sumOk ? "✓" : `≠ ${fmtNum(total)}`}
                 </span>
               </div>
             </div>
@@ -196,7 +209,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
         {hasData ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <span style={{ fontWeight: 600, fontSize: 13 }}>
-              {Number(data.actual_value).toLocaleString()}
+              {fmtNum(data.actual_value)}
             </span>
             <RagBadge rag={data.rag_status} rate={data.achievement_rate} />
             {data.status === "approved" && (
