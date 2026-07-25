@@ -229,6 +229,25 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
         )}
       </div>
 
+      {/* Total général — pied de card */}
+      {total > 0 && (
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 20px",
+          borderTop: "2px solid var(--rule)",
+          background: "var(--paper)",
+        }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
+            Total envelope · {sources.length} source{sources.length !== 1 ? "s" : ""}
+          </span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--lime-dark, var(--lime))", fontVariantNumeric: "tabular-nums" }}>
+            {fmt(total)}
+          </span>
+        </div>
+      )}
+
       {/* Modal : ajouter / éditer source */}
       {(showAddSource || editSource) && (
         <SourceModal

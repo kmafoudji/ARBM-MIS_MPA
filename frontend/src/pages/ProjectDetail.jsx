@@ -543,14 +543,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
-            <div className="card-sub">
-              SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9
-              {envelope?.total_amount_usd && (
-                <span style={{ marginLeft: 12, fontWeight: 600, color: "var(--lime-dark, var(--lime))" }}>
-                  {Number(envelope.total_amount_usd).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD
-                </span>
-              )}
-            </div>
+            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
           </div>
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
