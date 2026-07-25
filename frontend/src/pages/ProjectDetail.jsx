@@ -6,6 +6,7 @@ import FinancialEnvelope from "../components/FinancialEnvelope";
 import ImplementingPartners from "../components/ImplementingPartners";
 import GeographicScope from "../components/GeographicScope";
 import ReportingSchedule from "../components/ReportingSchedule";
+import Toast from "../components/Toast";
 import Icon from "../components/Icon";
 
 const STAGE_BADGE = {
@@ -26,6 +27,88 @@ const STAGE_BADGE = {
   cancelled: "badge badge-rose",
 };
 
+const STAGE_TOAST = {
+  pipeline_taskforce_review: {
+    type: "info",
+    title: "Pipeline Taskforce Review",
+    message: "The project has entered the review pipeline. Ensure the concept note and basic identity are complete before the committee meeting.",
+  },
+  pipeline_taskforce_approved: {
+    type: "success",
+    title: "Pipeline Taskforce Approved",
+    message: "The project has been approved by the Taskforce. You can now proceed to the preparation and identification phase.",
+  },
+  preparation_identification: {
+    type: "info",
+    title: "Preparation / Identification",
+    message: "Project is under preparation. Complete the Theory of Change, geographic scope, and financial envelope before the TRC.",
+  },
+  trc_endorsed: {
+    type: "success",
+    title: "TRC Endorsed",
+    message: "The Technical Review Committee has endorsed the project.",
+    bullets: ["Verify that all classification fields are complete.", "The IC Approval gate will require a second approver."],
+  },
+  ic_approved: {
+    type: "success",
+    title: "IC Approved",
+    message: "Investment Committee approval recorded.",
+    bullets: ["Ensure BED Approved prerequisites are met: Gender Marker, Risk Rating, Fragility Status, start and end dates."],
+  },
+  appraisal: {
+    type: "info",
+    title: "Appraisal",
+    message: "Project is under appraisal. Review all technical and financial parameters before BED submission.",
+  },
+  bed_approved: {
+    type: "success",
+    title: "BED Approved",
+    message: "Board / Executive Director approval recorded. The project is ready to become Effective.",
+    bullets: ["Upload the final PAD if not already done.", "Confirm reporting dates are set before transitioning to Effective."],
+  },
+  effective: {
+    type: "success",
+    title: "⚡ Project is now Effective",
+    message: "The workspace has been activated.",
+    bullets: [
+      "Theory of Change is now locked — no further structural edits.",
+      "Reporting schedule has been auto-generated.",
+      "GIS scope inherited by Module 5.",
+      "Results framework (Module 2) is ready for data entry.",
+    ],
+  },
+  implementing: {
+    type: "info",
+    title: "Implementing",
+    message: "Project implementation phase has started. Reporting periods are open for data collection.",
+  },
+  mid_term_review: {
+    type: "warning",
+    title: "Mid-Term Review",
+    message: "The project is under mid-term review. Results data and evidence should be up to date before the review meeting.",
+  },
+  substantially_complete: {
+    type: "success",
+    title: "Substantially Complete",
+    message: "Project activities are substantially complete. Prepare the completion report and final evidence package.",
+  },
+  closed: {
+    type: "info",
+    title: "Project Closed",
+    message: "The project has been officially closed. All data is now read-only.",
+  },
+  suspended: {
+    type: "warning",
+    title: "Project Suspended",
+    message: "The project has been suspended. Document the reasons and define a reactivation plan.",
+  },
+  cancelled: {
+    type: "error",
+    title: "Project Cancelled",
+    message: "The project has been cancelled. Ensure all financial obligations are settled and the closure note is filed.",
+  },
+};
+
 function Dt({ term, children }) {
   if (children === null || children === undefined || children === "") return null;
   return (
@@ -38,6 +121,7 @@ function Dt({ term, children }) {
 
 export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogframe, canEdit = false }) {
   const queryClient = useQueryClient();
+  const [toast, setToast] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
     to_stage: "",
@@ -87,7 +171,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const mutation = useMutation({
     mutationFn: (payload) =>
       apiFetch(`/api/projects/${projectId}/transitions/`, { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["project-transitions", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -95,6 +179,10 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       queryClient.invalidateQueries({ queryKey: ["toc", projectId] });
       setShowForm(false);
       setTForm({ to_stage: "", transition_date: "", justification: "", document_reference: "", dual_authorized_by: "" });
+      const newStage = data?.lifecycle_stage;
+      if (newStage && STAGE_TOAST[newStage]) {
+        setToast(STAGE_TOAST[newStage]);
+      }
     },
   });
 
@@ -251,6 +339,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
   return (
     <div className="view">
+      <Toast toast={toast} onClose={() => setToast(null)} />
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
         ← Portefeuille
       </button>
