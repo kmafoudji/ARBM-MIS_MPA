@@ -12,8 +12,7 @@ import Icon from "./Icon.jsx";
 export default function GeographicScope({ projectId, countries, canEdit }) {
   const qc = useQueryClient();
   const [showForm, setShowForm]   = useState(false);
-  const [editId, setEditId]       = useState(null); // area id en cours d'édition
-  const [editForm, setEditForm]   = useState({ is_primary: false, notes: "" });
+  const [editScope, setEditScope] = useState(null); // objet scope en cours d'édition
   const [selAdmin1, setSelAdmin1] = useState("");
   const [selAdmin2, setSelAdmin2] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
@@ -72,14 +71,27 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] });
-      setEditId(null);
+      closeForm();
     },
   });
 
   function openEdit(s) {
-    setEditId(s.area);
-    setEditForm({ is_primary: s.is_primary, notes: s.notes || "" });
+    // Pré-remplir le formulaire avec les données de la zone
+    setEditScope(s);
+    setSelAdmin1(String(s.area_level === 2 ? (s.parent_id || "") : s.area));
+    setSelAdmin2(s.area_level === 2 ? String(s.area) : "");
+    setIsPrimary(s.is_primary);
+    setNotes(s.notes || "");
+    setShowForm(true);
+  }
+
+  function closeForm() {
     setShowForm(false);
+    setEditScope(null);
+    setSelAdmin1("");
+    setSelAdmin2("");
+    setIsPrimary(false);
+    setNotes("");
   }
 
   const primaryMutation = useMutation({
@@ -93,7 +105,20 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
   function handleAdd() {
     const areaId = selAdmin2 || selAdmin1;
     if (!areaId) return;
-    addMutation.mutate({ area: Number(areaId), is_primary: isPrimary, notes });
+    if (editScope) {
+      // Mode édition : supprimer l'ancienne zone et créer la nouvelle si changée
+      if (String(editScope.area) !== String(areaId)) {
+        // Zone changée : supprimer + recréer
+        removeMutation.mutate(editScope.area, {
+          onSuccess: () => addMutation.mutate({ area: Number(areaId), is_primary: isPrimary, notes }),
+        });
+      } else {
+        // Même zone : juste mettre à jour is_primary et notes
+        editMutation.mutate({ areaId: editScope.area, payload: { is_primary: isPrimary, notes } });
+      }
+    } else {
+      addMutation.mutate({ area: Number(areaId), is_primary: isPrimary, notes });
+    }
   }
 
   const hasAdmin2 = admin2List.length > 0;
@@ -132,29 +157,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                 </td>
                 {canEdit && (
                   <td>
-                    {editId === s.area ? (
-                      /* Formulaire d'édition inline */
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
-                          <input type="checkbox" checked={editForm.is_primary}
-                            onChange={(e) => setEditForm({ ...editForm, is_primary: e.target.checked })} />
-                          Primary zone
-                        </label>
-                        <input className="field-input" style={{ fontSize: 12 }}
-                          placeholder="Notes…" value={editForm.notes}
-                          onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
-                        <div className="row" style={{ gap: 4 }}>
-                          <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }}
-                            disabled={editMutation.isPending}
-                            onClick={() => editMutation.mutate({ areaId: s.area, payload: editForm })}>
-                            {editMutation.isPending ? "…" : "Save"}
-                          </button>
-                          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
-                            onClick={() => setEditId(null)}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="row" style={{ gap: 4 }}>
+                    <span className="row" style={{ gap: 4 }}>
                         <button className="btn-square" title="Edit" onClick={() => openEdit(s)}>
                           <IconEdit />
                         </button>
@@ -163,7 +166,6 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                           <IconDeactivate />
                         </button>
                       </span>
-                    )}
                   </td>
                 )}
               </tr>
@@ -184,7 +186,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
           background: "var(--paper)", border: "1px solid var(--rule)",
           borderRadius: "var(--r-3)", padding: "var(--s-3)", marginBottom: "var(--s-3)",
         }}>
-          <div className="card-sub" style={{ marginBottom: "var(--s-2)" }}>Add a geographic zone</div>
+          <div className="card-sub" style={{ marginBottom: "var(--s-2)" }}>{editScope ? "Edit geographic zone" : "Add a geographic zone"}</div>
           {/* Ligne 1 : Pays (multi) + Admin 1 */}
           <div className="grid grid-2">
             {projectCountryIso3s.length > 1 && (
@@ -243,17 +245,17 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
           <div className="row">
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
               onClick={handleAdd}
-              disabled={!selAdmin1 || addMutation.isPending}>
+              disabled={!selAdmin1 || addMutation.isPending || editMutation.isPending || removeMutation.isPending}>
               <Icon name="check" size={14} />
-              {addMutation.isPending ? "Saving…" : "Save"}
+              {(addMutation.isPending || editMutation.isPending) ? "Saving…" : "Save"}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setShowForm(false); setSelAdmin1(""); setSelAdmin2(""); }}>Cancel</button>
+            <button className="btn btn-ghost btn-sm" onClick={closeForm}>Cancel</button>
           </div>
         </div>
       )}
 
       {canEdit && !showForm && (
-        <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => setShowForm(true)}>
+        <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={() => { setEditScope(null); setShowForm(true); }}>
           <IconPlus size={14} /> Add zone
         </button>
       )}

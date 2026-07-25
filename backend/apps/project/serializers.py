@@ -476,11 +476,15 @@ class ProjectGadmScopeSerializer(serializers.ModelSerializer):
     area_level = serializers.IntegerField(source="area.level",  read_only=True)
     area_uid   = serializers.CharField(source="area.gadm_uid",  read_only=True)
     parent_name = serializers.SerializerMethodField()
+    parent_id   = serializers.SerializerMethodField()
 
     class Meta:
         from apps.project.models import ProjectGadmScope
         model = ProjectGadmScope
-        fields = ["id", "area", "area_uid", "area_name", "area_level", "parent_name", "is_primary", "notes"]
+        fields = ["id", "area", "area_uid", "area_name", "area_level", "parent_name", "parent_id", "is_primary", "notes"]
 
     def get_parent_name(self, obj):
         return obj.area.parent.name if obj.area.parent else None
+
+    def get_parent_id(self, obj):
+        return obj.area.parent.id if obj.area.parent else None
