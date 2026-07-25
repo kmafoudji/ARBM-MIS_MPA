@@ -272,6 +272,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         const hasReporting = !!project.reporting_frequency;
         const hasClassif  = !!project.primary_sdg && !!project.gender_marker;
 
+        const hasPad   = !!project.pad_reference_url;
+        const hasDates = !!project.start_date && !!project.end_date;
+
         const items = [
           {
             key: "toc",
@@ -298,7 +301,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             done: envSources > 0,
             detail: envSources > 0 ? `${envSources} source${envSources > 1 ? "s" : ""} · ${Number(envelope?.total_amount_usd || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD` : "No sources",
             action: null,
-            anchor: "envelope",
           },
           {
             key: "partners",
@@ -307,7 +309,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             done: partners.length > 0,
             detail: partners.length > 0 ? `${partners.length} partner${partners.length > 1 ? "s" : ""}` : "None assigned",
             action: null,
-            anchor: "partners",
           },
           {
             key: "classif",
@@ -316,7 +317,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             done: hasClassif,
             detail: hasClassif ? "SDG & gender marker set" : "Incomplete",
             action: null,
-            anchor: "classification",
           },
           {
             key: "reporting",
@@ -325,7 +325,24 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             done: hasReporting,
             detail: hasReporting ? project.reporting_frequency_display : "Not configured",
             action: null,
-            anchor: "reporting",
+          },
+          {
+            key: "pad",
+            icon: "file-text",
+            label: "PAD Document",
+            done: hasPad,
+            detail: hasPad ? project.pad_reference_name : "Not uploaded",
+            action: null,
+          },
+          {
+            key: "dates",
+            icon: "calendar",
+            label: "Project Dates",
+            done: hasDates,
+            detail: hasDates
+              ? `${new Date(project.start_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} → ${new Date(project.end_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`
+              : "Start / end dates missing",
+            action: null,
           },
         ];
 
@@ -358,7 +375,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               }} />
             </div>
             {/* Grille des sections */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
               {items.map((item) => (
                 <div key={item.key} style={{
                   display: "flex", alignItems: "center", gap: 10,
