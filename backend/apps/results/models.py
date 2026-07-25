@@ -130,7 +130,6 @@ class Indicator(models.Model):
     denominator        = models.TextField(blank=True)
     calculation_method = models.TextField(blank=True)
     formula            = models.TextField(blank=True)
-    disaggregation     = models.TextField(blank=True)
     data_source        = models.TextField(blank=True)
     collection_method  = models.TextField(blank=True)
     reporting_frequency = models.CharField(

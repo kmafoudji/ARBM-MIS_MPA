@@ -4,11 +4,23 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 
+// Référentiel LLF2 / OCDE DAC — dimensions et catégories standard
+const PRESET_DIMENSIONS = [
+  { name: "Sex",              categories: ["Male", "Female", "Non-binary", "Not specified"] },
+  { name: "Age group",        categories: ["<18", "18-35", "36-60", "60+", "Not specified"] },
+  { name: "Location type",    categories: ["Urban", "Rural", "Peri-urban", "Not specified"] },
+  { name: "Vulnerability",    categories: ["IDP", "Refugee", "Host community", "Non-displaced", "Not specified"] },
+  { name: "Disability",       categories: ["With disability", "Without disability", "Not specified"] },
+];
+
 function DisaggregationDimensionsPanel({ indicatorId }) {
   const qc = useQueryClient();
   const dialog = useDialog();
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", categories: "" });
+
+  // Formulaire : dimension sélectionnée + catégories cochées + custom
+  const EMPTY_FORM = { preset: "", customName: "", selectedCats: [], customCat: "" };
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const { data: dims = [], isLoading } = useQuery({
     queryKey: ["indicator-disagg", indicatorId],
@@ -22,7 +34,7 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["indicator-disagg", indicatorId] });
       setAdding(false);
-      setForm({ name: "", categories: "" });
+      setForm(EMPTY_FORM);
     },
   });
 
@@ -31,11 +43,39 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["indicator-disagg", indicatorId] }),
   });
 
-  function handleAdd() {
-    const cats = form.categories.split(",").map(c => c.trim()).filter(Boolean);
-    if (!form.name || cats.length === 0) return;
-    addMutation.mutate({ name: form.name, categories: cats, order: dims.length });
+  // Quand on sélectionne un preset → pré-cocher toutes ses catégories
+  function selectPreset(name) {
+    const preset = PRESET_DIMENSIONS.find(p => p.name === name);
+    setForm(f => ({ ...f, preset: name, selectedCats: preset ? [...preset.categories] : [] }));
   }
+
+  function toggleCat(cat) {
+    setForm(f => ({
+      ...f,
+      selectedCats: f.selectedCats.includes(cat)
+        ? f.selectedCats.filter(c => c !== cat)
+        : [...f.selectedCats, cat],
+    }));
+  }
+
+  function addCustomCat() {
+    const cat = form.customCat.trim();
+    if (!cat || form.selectedCats.includes(cat)) return;
+    setForm(f => ({ ...f, selectedCats: [...f.selectedCats, cat], customCat: "" }));
+  }
+
+  function handleSave() {
+    const name = form.preset === "__custom__" ? form.customName.trim() : form.preset;
+    if (!name || form.selectedCats.length === 0) return;
+    addMutation.mutate({ name, categories: form.selectedCats, order: dims.length });
+  }
+
+  const presetCats = PRESET_DIMENSIONS.find(p => p.name === form.preset)?.categories || [];
+  const allCats    = form.preset === "__custom__"
+    ? form.selectedCats
+    : [...new Set([...presetCats, ...form.selectedCats.filter(c => !presetCats.includes(c))])];
+
+  const existingNames = new Set(dims.map(d => d.name));
 
   return (
     <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
@@ -57,17 +97,18 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
         <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>No disaggregation dimensions configured.</p>
       )}
 
+      {/* Dimensions existantes */}
       {dims.map(dim => (
-        <div key={dim.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 10px", background: "#f9fafb", borderRadius: 8, border: "1px solid #f0f0ee" }}>
-          <span style={{ fontWeight: 600, fontSize: 12, minWidth: 80 }}>{dim.name}</span>
+        <div key={dim.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "8px 12px", background: "#f9fafb", borderRadius: 8, border: "1px solid #f0f0ee" }}>
+          <span style={{ fontWeight: 600, fontSize: 12, minWidth: 100, color: "#374151" }}>{dim.name}</span>
           <span style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
             {dim.categories.map(cat => (
-              <span key={cat} style={{ fontSize: 11, background: "#e0e7ff", color: "#3730a3", padding: "1px 8px", borderRadius: 99 }}>{cat}</span>
+              <span key={cat} style={{ fontSize: 11, background: "#e0e7ff", color: "#3730a3", padding: "2px 8px", borderRadius: 99 }}>{cat}</span>
             ))}
           </span>
-          <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "#dc2626" }}
+          <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "#dc2626", flexShrink: 0 }}
             onClick={async () => {
-              const ok = await dialog.confirm(`Remove dimension "${dim.name}"?`, { title: "Remove dimension", confirmLabel: "Remove", danger: true });
+              const ok = await dialog.confirm(`Remove dimension "${dim.name}" and all its collected values?`, { title: "Remove dimension", confirmLabel: "Remove", danger: true });
               if (ok) deleteMutation.mutate(dim.id);
             }}>
             <Icon name="trash" size={11} />
@@ -75,25 +116,89 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
         </div>
       ))}
 
+      {/* Formulaire d'ajout */}
       {adding && (
-        <div style={{ background: "#f0f6dc", borderRadius: 8, padding: 12, border: "1px solid #A4C53F" }}>
-          <div className="grid grid-2" style={{ gap: 8, marginBottom: 8 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label className="field-label">Dimension name *</label>
-              <input className="field-input" placeholder="Ex. Sex, Age, Location"
-                value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label className="field-label">Categories (comma-separated) *</label>
-              <input className="field-input" placeholder="Male, Female, Not specified"
-                value={form.categories} onChange={e => setForm({ ...form, categories: e.target.value })} />
-            </div>
+        <div style={{ background: "#f0f6dc", borderRadius: 10, padding: 14, border: "1px solid #A4C53F", marginTop: 8 }}>
+
+          {/* Sélection de la dimension */}
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label className="field-label">Dimension *</label>
+            <select className="field-select" value={form.preset}
+              onChange={e => selectPreset(e.target.value)}>
+              <option value="">Select a dimension…</option>
+              {PRESET_DIMENSIONS
+                .filter(p => !existingNames.has(p.name))
+                .map(p => (
+                  <option key={p.name} value={p.name}>{p.name}</option>
+                ))}
+              <option value="__custom__">+ Custom dimension…</option>
+            </select>
           </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+
+          {/* Nom custom */}
+          {form.preset === "__custom__" && (
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label className="field-label">Custom dimension name *</label>
+              <input className="field-input" placeholder="e.g. Ethnicity, Income level…"
+                value={form.customName}
+                onChange={e => setForm(f => ({ ...f, customName: e.target.value }))} />
+            </div>
+          )}
+
+          {/* Catégories */}
+          {form.preset && (
+            <div style={{ marginBottom: 12 }}>
+              <label className="field-label">Categories *</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                {allCats.map(cat => (
+                  <label key={cat} style={{
+                    display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+                    background: form.selectedCats.includes(cat) ? "#A4C53F" : "#fff",
+                    color: form.selectedCats.includes(cat) ? "#111" : "#374151",
+                    border: `1px solid ${form.selectedCats.includes(cat) ? "#7a9420" : "#e5e7eb"}`,
+                    borderRadius: 99, padding: "4px 12px", fontSize: 12, fontWeight: 500,
+                    transition: "all .15s",
+                  }}>
+                    <input type="checkbox" style={{ display: "none" }}
+                      checked={form.selectedCats.includes(cat)}
+                      onChange={() => toggleCat(cat)} />
+                    {form.selectedCats.includes(cat) && <Icon name="check" size={11} />}
+                    {cat}
+                  </label>
+                ))}
+              </div>
+
+              {/* Catégorie custom */}
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <input className="field-input" style={{ flex: 1 }}
+                  placeholder="Add a custom category…"
+                  value={form.customCat}
+                  onChange={e => setForm(f => ({ ...f, customCat: e.target.value }))}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomCat())} />
+                <button className="btn btn-ghost btn-sm" onClick={addCustomCat}
+                  disabled={!form.customCat.trim()}>
+                  <Icon name="plus" size={13} />
+                </button>
+              </div>
+
+              {form.selectedCats.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 11, color: "#6b7280" }}>
+                  {form.selectedCats.length} categor{form.selectedCats.length > 1 ? "ies" : "y"} selected
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setForm(EMPTY_FORM); }}>
+              Cancel
+            </button>
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
-              onClick={handleAdd} disabled={addMutation.isPending || !form.name}>
-              <Icon name="check" size={12} /> {addMutation.isPending ? "Saving…" : "Save dimension"}
+              onClick={handleSave}
+              disabled={addMutation.isPending || !form.preset || form.selectedCats.length === 0 ||
+                (form.preset === "__custom__" && !form.customName.trim())}>
+              <Icon name="check" size={12} />
+              {addMutation.isPending ? "Saving…" : "Save dimension"}
             </button>
           </div>
         </div>
@@ -307,12 +412,6 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                     <div className="dl-desc">{detail.unit}</div>
                   </div>
                 )}
-                {detail.disaggregation && (
-                  <div>
-                    <div className="dl-term">Disaggregation</div>
-                    <div className="dl-desc">{detail.disaggregation}</div>
-                  </div>
-                )}
                 {detail.responsible && (
                   <div>
                     <div className="dl-term">Responsible</div>
@@ -469,13 +568,6 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                   )}
                 </div>
               ))}
-
-              <ComboField
-                label="Disaggregation"
-                choices={choices?.disaggregations || []}
-                value={form.disaggregation || ""}
-                onChange={(v) => setForm({ ...form, disaggregation: v })}
-              />
 
               <ComboField
                 label="Responsible"

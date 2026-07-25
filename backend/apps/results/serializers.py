@@ -63,7 +63,7 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
             "name", "indicator_type", "indicator_type_display",
             "direction", "direction_display", "definition", "unit",
             "numerator", "denominator", "calculation_method", "formula",
-            "disaggregation", "data_source", "collection_method",
+            "data_source", "collection_method",
             "reporting_frequency", "reporting_frequency_display",
             "means_of_verification", "responsible",
             "assumptions", "limitations",
