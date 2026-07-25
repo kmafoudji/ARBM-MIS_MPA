@@ -9,9 +9,31 @@ const DIRECTION_LABEL = {
   neutral: "→ Neutral",
 };
 const TYPE_COLOR = {
-  output: "badge",
-  outcome: "badge badge-orange",
-  impact: "badge badge-lime",
+  output:      "badge",
+  outcome:     "badge badge-orange",
+  impact:      "badge badge-lime",
+  numeric:     "badge",
+  percentage:  "badge badge-blue",
+  yes_no:      "badge badge-violet",
+  count:       "badge badge-teal",
+};
+
+const AGGREGATION_LABELS = {
+  sum:              "Sum",
+  average:          "Average",
+  weighted_average: "Weighted avg",
+  ratio:            "Ratio",
+  last_value:       "Last value",
+  maximum:          "Maximum",
+};
+
+const CCT_COLORS = {
+  gender:      { bg: "#fce7f3", color: "#9d174d" },
+  climate:     { bg: "#d1fae5", color: "#065f46" },
+  youth:       { bg: "#fef3c7", color: "#92400e" },
+  disability:  { bg: "#e0e7ff", color: "#3730a3" },
+  idp_refugee: { bg: "#fee2e2", color: "#991b1b" },
+  equity:      { bg: "#f3e8ff", color: "#6b21a8" },
 };
 
 // Champs texte/textarea generiques dans la fiche IRS
@@ -127,6 +149,15 @@ function IndicatorRow({ ind, isLast, canEdit }) {
         </span>
         <span style={{ flex: 1, fontSize: 13 }}>{ind.name}</span>
         <span className="text-muted text-sm" style={{ flexShrink: 0 }}>{ind.unit}</span>
+        {ind.chain_level && (
+          <span className="badge" style={{ fontSize: 10, flexShrink: 0, opacity: 0.75 }}>
+            {ind.chain_level.replace("_", " ")}
+          </span>
+        )}
+        {ind.cross_cutting_tags?.length > 0 && ind.cross_cutting_tags.map((t) => {
+          const style = CCT_COLORS[t] || {};
+          return <span key={t} style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: style.bg, color: style.color, flexShrink: 0 }}>{t}</span>;
+        })}
         <Icon
           name={expanded ? "chevron-up" : "chevron-down"}
           size={14}
@@ -194,6 +225,38 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                     <div className="dl-desc">{detail.reporting_frequency_display}</div>
                   </div>
                 )}
+                {detail.aggregation_rule && (
+                  <div>
+                    <div className="dl-term">Aggregation rule</div>
+                    <div className="dl-desc">{detail.aggregation_rule_display || detail.aggregation_rule}</div>
+                  </div>
+                )}
+                {detail.chain_level && (
+                  <div>
+                    <div className="dl-term">Chain level</div>
+                    <div className="dl-desc">{detail.chain_level_display || detail.chain_level}</div>
+                  </div>
+                )}
+                {detail.cross_cutting_tags?.length > 0 && (
+                  <div>
+                    <div className="dl-term">Cross-cutting tags</div>
+                    <div className="dl-desc row" style={{ gap: 6, flexWrap: "wrap" }}>
+                      {detail.cross_cutting_tags.map((t) => {
+                        const style = CCT_COLORS[t] || {};
+                        return (
+                          <span key={t} style={{
+                            fontSize: 11, fontWeight: 600, padding: "2px 8px",
+                            borderRadius: 99, background: style.bg, color: style.color,
+                          }}>{t}</span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="dl-term">Version</div>
+                  <div className="dl-desc">v{detail.version || 1}</div>
+                </div>
                 {detail.related_sdg_numbers?.length > 0 && (
                   <div>
                     <div className="dl-term">Related SDGs</div>
@@ -242,10 +305,35 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                   <select className="field-select" value={form.reporting_frequency || ""}
                     onChange={(e) => setForm({ ...form, reporting_frequency: e.target.value })}>
                     <option value="">Not specified</option>
+                    <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
                     <option value="semi_annual">Semi-annual</option>
                     <option value="annual">Annual</option>
                     <option value="end_of_project">End of project</option>
+                  </select>
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label className="field-label">Aggregation rule</label>
+                  <select className="field-select" value={form.aggregation_rule || "sum"}
+                    onChange={(e) => setForm({ ...form, aggregation_rule: e.target.value })}>
+                    <option value="sum">Sum</option>
+                    <option value="average">Average</option>
+                    <option value="weighted_average">Weighted average</option>
+                    <option value="ratio">Ratio</option>
+                    <option value="last_value">Last value</option>
+                    <option value="maximum">Maximum</option>
+                  </select>
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label className="field-label">Chain level</label>
+                  <select className="field-select" value={form.chain_level || ""}
+                    onChange={(e) => setForm({ ...form, chain_level: e.target.value })}>
+                    <option value="">Not specified</option>
+                    <option value="activity">Activity</option>
+                    <option value="output">Output</option>
+                    <option value="immediate_outcome">Immediate outcome</option>
+                    <option value="intermediate_outcome">Intermediate outcome</option>
+                    <option value="ultimate_outcome">Ultimate outcome</option>
                   </select>
                 </div>
               </div>
@@ -289,6 +377,26 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                 value={form.responsible || ""}
                 onChange={(v) => setForm({ ...form, responsible: v })}
               />
+
+              <div className="field">
+                <label className="field-label">Cross-cutting tags</label>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                  {["gender","climate","youth","disability","idp_refugee","equity"].map((tag) => {
+                    const tags = form.cross_cutting_tags || [];
+                    const checked = tags.includes(tag);
+                    return (
+                      <label key={tag} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 12 }}>
+                        <input type="checkbox" checked={checked}
+                          onChange={() => {
+                            const next = checked ? tags.filter(t => t !== tag) : [...tags, tag];
+                            setForm({ ...form, cross_cutting_tags: next });
+                          }} />
+                        {tag.replace("_", " ")}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
 
               {updateMutation.isError && (
                 <div className="field-error mb-3">{JSON.stringify(updateMutation.error.detail)}</div>

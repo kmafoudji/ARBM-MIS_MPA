@@ -196,12 +196,26 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                 <span className="text-muted">Targets: </span>
                 <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
                   {rowTargets.map((t) => (
-                    <span key={t.id} className="badge badge-lime" style={{ fontSize: 10 }}>
+                    <span key={t.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 8px", borderRadius: 99,
+                      background: t.status === "approved" ? "#dcfce7" : t.status === "revised" ? "#f3f4f6" : "#fef9c3",
+                      color: t.status === "approved" ? "#166534" : t.status === "revised" ? "#6b7280" : "#854d0e",
+                      textDecoration: t.status === "revised" ? "line-through" : "none",
+                    }}>
+                      {t.is_original_pad && <span title="Original PAD target" style={{ fontWeight: 700 }}>PAD·</span>}
                       {t.label || new Date(t.target_date).getFullYear()} : {Number(t.target_value).toLocaleString()}
+                      {t.status === "approved" && !t.is_original_pad && (
+                        <button type="button" title="Revise this target"
+                          style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 2px", color: "#166534", fontSize: 9, fontWeight: 700 }}
+                          onClick={(e) => { e.stopPropagation(); alert("Revision workflow: POST /logframe/" + node.logframe_row_id + "/targets/" + t.id + "/revise/ — à brancher"); }}>
+                          ✎
+                        </button>
+                      )}
+                      {!t.is_original_pad && t.status !== "revised" && (
                       <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
                         onClick={() => window.confirm("Delete target?") && deleteTargetMutation.mutate(t.id)}>
                         ×
                       </button>
+                      )}
                     </span>
                   ))}
                 </span>
