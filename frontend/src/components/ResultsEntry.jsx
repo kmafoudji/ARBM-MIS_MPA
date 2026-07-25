@@ -8,19 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
-
-
-// Formate un nombre : supprime les décimales inutiles
-// "1500.0000" → "1 500" | "3.5000" → "3.5" | null → "—"
-function fmtNum(val) {
-  if (val === null || val === undefined || val === "") return "—";
-  const n = parseFloat(val);
-  if (isNaN(n)) return val;
-  // Si entier, pas de décimales
-  if (Number.isInteger(n)) return n.toLocaleString();
-  // Sinon supprimer les zéros trailing
-  return parseFloat(n.toFixed(4)).toLocaleString(undefined, { maximumFractionDigits: 4 });
-}
+import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
 const RAG_CONFIG = {
   green: { color: "#16a34a", bg: "#dcfce7", border: "#86efac", label: "On track",  icon: "circle-check" },
@@ -434,7 +422,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
                   </td>
                   <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11 }}>
                     {row.baseline_value
-                      ? `${Number(row.baseline_value).toLocaleString()} (${row.baseline_year || "—"})`
+                      ? `${fmtNum(row.baseline_value)} (${row.baseline_year || "—"})`
                       : "—"}
                   </td>
                   {row.periods.map((p) => (

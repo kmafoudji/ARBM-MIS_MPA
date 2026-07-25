@@ -6,6 +6,7 @@ import RichText, { stripHtml } from "../components/RichText";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import RichTextEditor from "../components/RichTextEditor";
 import TagInput from "../components/TagInput";
+import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
 const LEVELS = [
   { key: "activity",             label: "Activities",            parentKey: null,                 icon: "zap"          },
@@ -192,7 +193,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12 }}>
             <span>
               <span className="text-muted">Baseline: </span>
-              <strong>{node.logframe_baseline_value != null ? `${Number(node.logframe_baseline_value).toLocaleString()} ${node.logframe_indicator_unit}` : "—"}</strong>
+              <strong>{node.logframe_baseline_value != null ? `${fmtNum(node.logframe_baseline_value)} ${node.logframe_indicator_unit}` : "—"}</strong>
               {node.logframe_baseline_year ? <span className="text-muted"> ({node.logframe_baseline_year})</span> : ""}
             </span>
             {rowTargets.length > 0 && (
@@ -206,7 +207,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                       textDecoration: t.status === "revised" ? "line-through" : "none",
                     }}>
                       {t.is_original_pad && <span title="Original PAD target" style={{ fontWeight: 700 }}>PAD·</span>}
-                      {t.label || new Date(t.target_date).getFullYear()} : {(parseFloat(t.target_value) % 1 === 0 ? parseInt(t.target_value).toLocaleString() : parseFloat(t.target_value).toLocaleString())}
+                      {t.label || new Date(t.target_date).getFullYear()} : {fmtNum(t.target_value)}
                       {t.status === "approved" && !t.is_original_pad && (
                         <button type="button" title="Revise this target"
                           style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 2px", color: "#166534", fontSize: 9, fontWeight: 700 }}
@@ -358,7 +359,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
             <div style={{ marginBottom: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
               {rowTargets.map((t) => (
                 <span key={t.id} className="badge badge-lime" style={{ fontSize: 11 }}>
-                  {t.label || new Date(t.target_date).getFullYear()} : {(parseFloat(t.target_value) % 1 === 0 ? parseInt(t.target_value).toLocaleString() : parseFloat(t.target_value).toLocaleString())}
+                  {t.label || new Date(t.target_date).getFullYear()} : {fmtNum(t.target_value)}
                   <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
                     onClick={async () => { const ok = await dialog.confirm("This target will be permanently deleted.", { title: "Delete target?", confirmLabel: "Delete", danger: true }); if (ok) deleteTargetMutation.mutate(t.id); }}>
                     ×

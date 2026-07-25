@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Modal from "./Modal.jsx";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
+import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
 function fmt(n) {
   if (!n) return "—";
@@ -149,7 +150,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
                   <td>{s.donor_name || <span className="text-muted text-xs">—</span>}</td>
                   <td className="text-muted">{s.label || "—"}</td>
                   <td className="text-mono text-xs">
-                    {Number(s.amount).toLocaleString("fr-FR")} {s.currency_code}
+                    {fmtNum(s.amount)} {s.currency_code}
                   </td>
                   <td className="text-mono text-xs" style={{ fontWeight: 600 }}>
                     {fmt(s.amount_usd)}

@@ -10,6 +10,7 @@ import ResultsEntry from "../components/ResultsEntry";
 import Toast from "../components/Toast";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
+import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
 const STAGE_BADGE = {
   concept_note: "badge",
@@ -402,7 +403,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             icon: "wallet",
             label: "Financial Envelope",
             done: envSources > 0,
-            detail: envSources > 0 ? `${envSources} source${envSources > 1 ? "s" : ""} · ${Number(envelope?.total_amount_usd || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD` : "No sources",
+            detail: envSources > 0 ? `${envSources} source${envSources > 1 ? "s" : ""} · ${fmtNum(envelope?.total_amount_usd || 0)} USD` : "No sources",
             action: null,
           },
           {
@@ -536,7 +537,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <Dt term="Regional Hub">{project.hub_name || "—"}</Dt>
               <Dt term="Indicative Budget">
                 {project.budget_amount
-                  ? `${Number(project.budget_amount).toLocaleString("fr-FR")} USD`
+                  ? `${fmtNum(project.budget_amount)} USD`
                   : "—"}
               </Dt>
               <Dt term="Registered by">{project.created_by_email}</Dt>
