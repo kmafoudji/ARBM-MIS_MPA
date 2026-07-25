@@ -52,6 +52,18 @@ export const IconCatalogue = () => (
 );
 
 /* Logo ARBM-MIS — double losange (variante C) */
+export const IconPortfolio = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="10" width="3" height="7" rx="0.5"/>
+    <rect x="6" y="6"  width="3" height="11" rx="0.5"/>
+    <rect x="11" y="3" width="3" height="14" rx="0.5"/>
+    <path d="M2.5 8 L7.5 4.5 L12.5 2" strokeWidth="1.4"/>
+    <circle cx="2.5" cy="8"   r="1" fill="currentColor" stroke="none"/>
+    <circle cx="7.5" cy="4.5" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="12.5" cy="2"  r="1" fill="currentColor" stroke="none"/>
+  </svg>
+);
+
 export const BrandMark = ({ size = 32 }) => (
   <svg width={size} height={size} viewBox="0 0 38 38" aria-hidden="true">
     <polygon points="19,2 36,19 19,36 2,19" fill="#111111"/>

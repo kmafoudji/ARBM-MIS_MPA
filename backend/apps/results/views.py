@@ -986,8 +986,7 @@ class PortfolioAggregationView(APIView):
 
         # Projets Effective uniquement (workspace actif)
         projects = Project.objects.filter(
-            workspace__exists=True,
-            workspace__m2_results_ready=True,
+            workspace__isnull=False,
         ).select_related("hub", "primary_sector")
 
         if hub_id:
