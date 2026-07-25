@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
 from apps.project.models import Project
 
-from .models import Indicator, LogframeRow, LogframeTarget, TheoryOfChange, ToCNode
+from .models import Indicator, LogframeRow, LogframeTarget, TargetRevision, TheoryOfChange, ToCNode
 from .serializers import (
     IndicatorDetailSerializer,
     IndicatorListSerializer,
@@ -342,4 +342,213 @@ class ToCNodeDetailView(APIView):
 
     def delete(self, request, pk, node_pk):
         self._get_node(pk, node_pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# SF-3 — Révision auditable des cibles (RG-3.3 / RG-3.5)
+# ---------------------------------------------------------------------------
+
+class TargetRevisionView(APIView):
+    """
+    POST /api/projects/{pk}/logframe/{row_pk}/targets/{t_pk}/revise/
+         Initie une révision : crée TargetRevision (pending) + nouvelle LogframeTarget draft.
+
+    GET  /api/projects/{pk}/logframe/{row_pk}/targets/{t_pk}/revisions/
+         Liste l'historique des révisions (immuable).
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get_target(self, pk, row_pk, t_pk):
+        return LogframeTarget.objects.select_related("logframe_row__project").get(
+            pk=t_pk, logframe_row_id=row_pk, logframe_row__project_id=pk
+        )
+
+    def get(self, request, pk, row_pk, t_pk):
+        target = self._get_target(pk, row_pk, t_pk)
+        from .serializers import TargetRevisionSerializer
+        return Response(TargetRevisionSerializer(target.revisions.all(), many=True).data)
+
+    def post(self, request, pk, row_pk, t_pk):
+        from django.utils import timezone
+        from .models import TargetRevision
+        from .serializers import (
+            TargetRevisionRequestSerializer,
+            TargetRevisionSerializer,
+            LogframeTargetSerializer,
+        )
+
+        target = self._get_target(pk, row_pk, t_pk)
+
+        # Seules les cibles approved peuvent être révisées (pas draft, pas PAD)
+        if target.is_original_pad:
+            return Response(
+                {"detail": "La cible PAD originale ne peut pas être révisée (RG-3.4)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if target.status == "draft":
+            return Response(
+                {"detail": "Seule une cible approuvée peut faire l'objet d'une révision (RG-3.3)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        req = TargetRevisionRequestSerializer(data=request.data)
+        req.is_valid(raise_exception=True)
+        d = req.validated_data
+
+        # Créer la nouvelle cible draft
+        new_target = LogframeTarget.objects.create(
+            logframe_row=target.logframe_row,
+            target_value=d["new_value"],
+            target_date=d["new_date"],
+            label=d.get("new_label", ""),
+            status="draft",
+        )
+
+        # Enregistrer la révision
+        revision = TargetRevision.objects.create(
+            target=new_target,
+            previous_value=target.target_value,
+            previous_date=target.target_date,
+            justification=d["justification"],
+            revised_by=request.user,
+            revision_status="pending",
+        )
+
+        # Marquer l'ancienne cible comme révisée
+        target.status = "revised"
+        target.save(update_fields=["status"])
+
+        return Response(
+            {
+                "revision": TargetRevisionSerializer(revision).data,
+                "new_target": LogframeTargetSerializer(new_target).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class TargetRevisionActionView(APIView):
+    """
+    POST /api/projects/{pk}/logframe/{row_pk}/targets/{t_pk}/revisions/{rev_pk}/action/
+         action=approve → approuve la nouvelle cible (status draft → approved)
+         action=reject  → rejette (commentaire obligatoire, ancienne cible redevient active)
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def post(self, request, pk, row_pk, t_pk, rev_pk):
+        from django.utils import timezone
+        from .models import TargetRevision
+        from .serializers import TargetRevisionActionSerializer, TargetRevisionSerializer
+
+        revision = TargetRevision.objects.select_related("target__logframe_row").get(
+            pk=rev_pk,
+            target_id=t_pk,
+            target__logframe_row_id=row_pk,
+            target__logframe_row__project_id=pk,
+        )
+
+        if revision.revision_status != "pending":
+            return Response(
+                {"detail": "Cette révision a déjà été traitée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Principe des quatre yeux : l'initiateur ne peut pas approuver (POL-2.03)
+        if revision.revised_by == request.user:
+            return Response(
+                {"detail": "Le principe des quatre yeux s'applique : vous ne pouvez pas approuver votre propre révision (POL-2.03)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ser = TargetRevisionActionSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        action  = ser.validated_data["action"]
+        comment = ser.validated_data.get("comment", "")
+
+        now = timezone.now()
+
+        if action == "approve":
+            revision.revision_status = "approved"
+            revision.approved_by     = request.user
+            revision.revision_comment = comment
+            revision.resolved_at     = now
+            revision.save()
+            revision.target.status      = "approved"
+            revision.target.approved_by = request.user
+            revision.target.approved_at = now
+            revision.target.save(update_fields=["status", "approved_by", "approved_at"])
+        else:  # reject
+            if not comment:
+                return Response(
+                    {"detail": "Un commentaire est obligatoire en cas de rejet (RG-3.3)."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            revision.revision_status  = "rejected"
+            revision.approved_by      = request.user
+            revision.revision_comment = comment
+            revision.resolved_at      = now
+            revision.save()
+            # Remettre la cible précédente en approved
+            prev = LogframeTarget.objects.filter(
+                logframe_row=revision.target.logframe_row,
+                target_value=revision.previous_value,
+                target_date=revision.previous_date,
+                status="revised",
+            ).first()
+            if prev:
+                prev.status = "approved"
+                prev.save(update_fields=["status"])
+            # La nouvelle cible draft reste mais est désormais orpheline (pas supprimée)
+            revision.target.status = "draft"
+            revision.target.save(update_fields=["status"])
+
+        return Response(TargetRevisionSerializer(revision).data)
+
+
+# ---------------------------------------------------------------------------
+# SF-2 — Liaisons cross-pathway sur un nœud
+# ---------------------------------------------------------------------------
+
+class ToCNodeCrossPathwayView(APIView):
+    """
+    GET  /api/projects/{pk}/toc/nodes/{node_pk}/cross-pathways/
+         Liste les liaisons non linéaires sortantes du nœud.
+
+    POST /api/projects/{pk}/toc/nodes/{node_pk}/cross-pathways/
+         Ajoute une liaison (body: {"target_node_id": <int>}).
+
+    DELETE /api/projects/{pk}/toc/nodes/{node_pk}/cross-pathways/{target_pk}/
+           Retire la liaison.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get_node(self, pk, node_pk):
+        return ToCNode.objects.get(pk=node_pk, toc__project_id=pk)
+
+    def get(self, request, pk, node_pk):
+        node    = self._get_node(pk, node_pk)
+        targets = node.cross_pathways.all()
+        from .serializers import ToCNodeSerializer
+        return Response(ToCNodeSerializer(targets, many=True).data)
+
+    def post(self, request, pk, node_pk):
+        node      = self._get_node(pk, node_pk)
+        target_id = request.data.get("target_node_id")
+        if not target_id:
+            return Response({"detail": "target_node_id requis."}, status=status.HTTP_400_BAD_REQUEST)
+        target = ToCNode.objects.get(pk=target_id, toc__project_id=pk)
+        if target == node:
+            return Response({"detail": "Un nœud ne peut pas pointer vers lui-même."}, status=400)
+        node.cross_pathways.add(target)
+        from .serializers import ToCNodeSerializer
+        return Response(ToCNodeSerializer(target).data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk, node_pk, target_pk):
+        node   = self._get_node(pk, node_pk)
+        target = ToCNode.objects.get(pk=target_pk, toc__project_id=pk)
+        node.cross_pathways.remove(target)
         return Response(status=status.HTTP_204_NO_CONTENT)

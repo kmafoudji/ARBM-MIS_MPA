@@ -1,12 +1,17 @@
 """
-Domaine results — Theorie du Changement (SF-1 Etape 2, BRQ-1.35) +
-Catalogue d'indicateurs et Logframe (Module 2).
+Domaine results — Module 2 : Results Framework & Indicators.
 
-Architecture :
-  Indicator      — bibliotheque institutionnelle LLF2 (LLFMU uniquement)
-  LogframeRow    — une ligne du cadre logique par projet
-  LogframeTarget — cibles a date libre par ligne logframe
-  ToCNode        — key_result_indicator remplace par FK nullable vers LogframeRow
+Architecture (v2 — complétée SF-1/SF-2/SF-3) :
+  Indicator        — bibliothèque centralisée LLF2 (SF-1)
+                     Ajouts : aggregation_rule, chain_level, cross_cutting_tags, version
+  TheoryOfChange   — ToC structurée (SF-2)
+                     Ajout : local_actors
+  ToCNode          — nœuds de la chaîne causale (SF-2)
+                     Ajouts : niveau ultimate, liaisons cross-pathway N→N
+  LogframeRow      — ligne du cadre logique par projet
+  LogframeTarget   — cibles par période (SF-3)
+                     Ajouts : statut workflow, cible PAD originale, révision auditable
+  TargetRevision   — historique immuable des révisions de cibles (SF-3, RG-3.3/3.4)
 """
 from django.db import models
 
@@ -14,81 +19,149 @@ from apps.identity.models import AppUser
 from apps.project.models import Project
 from apps.reference.models import Sdg, Sector
 
+# ---------------------------------------------------------------------------
+# Vocabulaires partagés
+# ---------------------------------------------------------------------------
+
 TOC_STATUS_CHOICES = [
     ("draft",   "Draft"),
     ("active",  "Active"),
     ("locked",  "Locked — Effective (SF-10)"),
 ]
 
+# SF-2 RG-2.1 — 5 niveaux de chaîne (+ ultimate porté par TheoryOfChange.ultimate_outcome)
 CHAIN_LEVEL_CHOICES = [
-    ("activity", "Activity"),
-    ("output", "Output"),
-    ("immediate_outcome", "Immediate outcome"),
-    ("intermediate_outcome", "Intermediate outcome"),
+    ("activity",              "Activity"),
+    ("output",                "Output"),
+    ("immediate_outcome",     "Immediate outcome"),
+    ("intermediate_outcome",  "Intermediate outcome"),
+    ("ultimate_outcome",      "Ultimate outcome"),
 ]
 
+# Logframe inclut impact comme niveau de synthèse hors ToC
 CHAIN_LEVEL_WITH_IMPACT_CHOICES = CHAIN_LEVEL_CHOICES + [("impact", "Impact")]
 
 PARENT_LEVEL = {
-    "activity": None,
-    "output": "activity",
-    "immediate_outcome": "output",
+    "activity":             None,
+    "output":               "activity",
+    "immediate_outcome":    "output",
     "intermediate_outcome": "immediate_outcome",
+    "ultimate_outcome":     "intermediate_outcome",
 }
 
 INDICATOR_TYPE_CHOICES = [
-    ("output", "Output"),
-    ("outcome", "Outcome"),
-    ("impact", "Impact"),
+    ("numeric",     "Numeric"),
+    ("percentage",  "Percentage"),
+    ("yes_no",      "Yes / No"),
+    ("count",       "Count"),
 ]
 
 DIRECTION_CHOICES = [
     ("increase", "Upward (+)"),
     ("decrease", "Downward (-)"),
-    ("neutral", "Neutral"),
+    ("neutral",  "Neutral"),
 ]
 
 MEASUREMENT_FREQUENCY_CHOICES = [
-    ("quarterly", "Quarterly"),
-    ("semi_annual", "Semi-annual"),
-    ("annual", "Annual"),
-    ("end_of_project", "End of project"),
+    ("monthly",       "Monthly"),
+    ("quarterly",     "Quarterly"),
+    ("semi_annual",   "Semi-annual"),
+    ("annual",        "Annual"),
+    ("end_of_project","End of project"),
+]
+
+# SF-1 BRQ-2.02 — règle d'agrégation par indicateur
+AGGREGATION_RULE_CHOICES = [
+    ("sum",              "Sum"),
+    ("average",          "Average"),
+    ("weighted_average", "Weighted average"),
+    ("ratio",            "Ratio"),
+    ("last_value",       "Last value"),
+    ("maximum",          "Maximum"),
+]
+
+# SF-1 — tags transversaux (cross-cutting themes)
+CROSS_CUTTING_TAG_CHOICES = [
+    ("gender",      "Gender"),
+    ("climate",     "Climate"),
+    ("youth",       "Youth"),
+    ("disability",  "Disability"),
+    ("idp_refugee", "IDP / Refugee"),
+    ("equity",      "Equity"),
+]
+
+# SF-3 — statut d'une cible
+TARGET_STATUS_CHOICES = [
+    ("draft",    "Draft"),
+    ("approved", "Approved"),
+    ("revised",  "Revised"),
 ]
 
 
+# ---------------------------------------------------------------------------
+# SF-1 — Bibliothèque centralisée d'indicateurs
+# ---------------------------------------------------------------------------
+
 class Indicator(models.Model):
     """
-    Catalogue institutionnel LLF2. Alimente par LLFMU uniquement via
-    l'admin Django. Tous les champs de la fiche IRS (Indicator Reference
-    Sheet) sont stockes pour eviter une migration a chaque nouveau handbook.
+    Catalogue institutionnel LLF2. Géré par LLFMU uniquement (POL-2.01).
+
+    v2 — ajouts SF-1 :
+      aggregation_rule  : règle de roll-up portefeuille (BRQ-2.02)
+      chain_level       : niveau de chaîne de l'indicateur (BRQ-2.02)
+      cross_cutting_tags: tags Genre/Climat/Jeunes… (BRQ-2.02)
+      version           : versionnement (RG-1.1) — entier auto-incrémenté
     """
 
-    code = models.CharField(max_length=20, unique=True)
-    sector = models.ForeignKey(
-        Sector, on_delete=models.PROTECT, related_name="indicators"
-    )
+    code    = models.CharField(max_length=20, unique=True)
+    sector  = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name="indicators")
     subsector = models.CharField(max_length=150, blank=True)
-    name = models.TextField()
-    indicator_type = models.CharField(max_length=10, choices=INDICATOR_TYPE_CHOICES)
+    name    = models.TextField()
+
+    # SF-1 : type étendu aux 4 types SFD (BRQ-2.02)
+    indicator_type = models.CharField(
+        max_length=15, choices=INDICATOR_TYPE_CHOICES, default="numeric"
+    )
     direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
-    definition = models.TextField()
-    unit = models.CharField(max_length=100)
-    numerator = models.TextField(blank=True)
-    denominator = models.TextField(blank=True)
+
+    definition         = models.TextField()
+    unit               = models.CharField(max_length=100)
+    numerator          = models.TextField(blank=True)
+    denominator        = models.TextField(blank=True)
     calculation_method = models.TextField(blank=True)
-    formula = models.TextField(blank=True)
-    disaggregation = models.TextField(blank=True)
-    data_source = models.TextField(blank=True)
-    collection_method = models.TextField(blank=True)
+    formula            = models.TextField(blank=True)
+    disaggregation     = models.TextField(blank=True)
+    data_source        = models.TextField(blank=True)
+    collection_method  = models.TextField(blank=True)
     reporting_frequency = models.CharField(
         max_length=15, choices=MEASUREMENT_FREQUENCY_CHOICES, blank=True
     )
     means_of_verification = models.TextField(blank=True)
-    responsible = models.CharField(max_length=200, blank=True)
-    assumptions = models.TextField(blank=True)
-    limitations = models.TextField(blank=True)
+    responsible           = models.CharField(max_length=200, blank=True)
+    assumptions           = models.TextField(blank=True)
+    limitations           = models.TextField(blank=True)
     related_sdgs = models.ManyToManyField(Sdg, blank=True, related_name="indicators")
-    is_active = models.BooleanField(default=True)
+
+    # ── Nouveaux champs SF-1 ──────────────────────────────────────────────
+    aggregation_rule = models.CharField(
+        max_length=20, choices=AGGREGATION_RULE_CHOICES, default="sum",
+        help_text="Règle de roll-up Site→Projet→Portefeuille (BRQ-2.02).",
+    )
+    chain_level = models.CharField(
+        max_length=25, choices=CHAIN_LEVEL_CHOICES, blank=True,
+        help_text="Niveau de chaîne auquel cet indicateur est attaché (BRQ-2.02).",
+    )
+    cross_cutting_tags = models.JSONField(
+        default=list, blank=True,
+        help_text="Tags transversaux : Genre, Climat, Jeunes, Handicap, IDP/Réfugié, Équité.",
+    )
+    version = models.PositiveIntegerField(
+        default=1,
+        help_text="Numéro de version. Auto-incrémenté à chaque modification validée (RG-1.1).",
+    )
+    # ─────────────────────────────────────────────────────────────────────
+
+    is_active  = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -99,15 +172,39 @@ class Indicator(models.Model):
     def __str__(self):
         return f"{self.code} — {self.name[:60]}"
 
+    def bump_version(self):
+        """Incrémente la version et sauvegarde (RG-1.1)."""
+        self.version += 1
+        self.save(update_fields=["version", "updated_at"])
+
+
+# ---------------------------------------------------------------------------
+# SF-2 — Théorie du Changement
+# ---------------------------------------------------------------------------
 
 class TheoryOfChange(models.Model):
+    """
+    ToC comme objet de première classe (SF-2, BRQ-2.06).
+
+    v2 — ajout :
+      local_actors : acteurs locaux ayant participé à l'élaboration (BRQ-2.06b).
+    """
+
     project = models.OneToOneField(
         Project, on_delete=models.CASCADE, related_name="theory_of_change"
     )
-    version = models.PositiveIntegerField(default=1)
-    status = models.CharField(max_length=10, choices=TOC_STATUS_CHOICES, default="draft")
+    version          = models.PositiveIntegerField(default=1)
+    status           = models.CharField(max_length=20, choices=TOC_STATUS_CHOICES, default="draft")
     problem_statement = models.TextField(blank=True)
-    ultimate_outcome = models.TextField(blank=True)
+    ultimate_outcome  = models.TextField(blank=True)
+
+    # ── Nouveau champ SF-2 ────────────────────────────────────────────────
+    local_actors = models.TextField(
+        blank=True,
+        help_text="Acteurs locaux ayant participé à l'élaboration de la ToC (BRQ-2.06b).",
+    )
+    # ─────────────────────────────────────────────────────────────────────
+
     created_by = models.ForeignKey(
         AppUser, on_delete=models.SET_NULL, null=True,
         related_name="theories_of_change_created"
@@ -122,88 +219,43 @@ class TheoryOfChange(models.Model):
         return f"ToC - {self.project.code or self.project.name}"
 
 
-class LogframeRow(models.Model):
-    """
-    Ligne du cadre logique — source de verite pour indicateur + projet + noeud.
-    toc_node nullable : l'Impact (sommet de la chaine) vit sur TheoryOfChange,
-    pas sur un ToCNode.
-    """
-
-    project = models.ForeignKey(
-        Project, on_delete=models.CASCADE, related_name="logframe_rows"
-    )
-    # toc_node renseigne APRES la creation du noeud (ou pas du tout pour Impact)
-    indicator = models.ForeignKey(
-        Indicator, on_delete=models.PROTECT, related_name="logframe_rows"
-    )
-    chain_level = models.CharField(
-        max_length=25, choices=CHAIN_LEVEL_WITH_IMPACT_CHOICES
-    )
-    baseline_value = models.DecimalField(
-        max_digits=18, decimal_places=4, null=True, blank=True
-    )
-    baseline_year = models.PositiveIntegerField(null=True, blank=True)
-    baseline_source = models.TextField(blank=True)
-    measurement_frequency = models.CharField(
-        max_length=15, choices=MEASUREMENT_FREQUENCY_CHOICES, blank=True
-    )
-    notes = models.TextField(blank=True)
-    order = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "logframe_row"
-        ordering = ["chain_level", "order", "id"]
-        unique_together = [("project", "indicator")]
-
-    def __str__(self):
-        return f"{self.project.code} | {self.indicator.code}"
-
-
-class LogframeTarget(models.Model):
-    """Cible a date libre par ligne logframe."""
-
-    logframe_row = models.ForeignKey(
-        LogframeRow, on_delete=models.CASCADE, related_name="targets"
-    )
-    target_value = models.DecimalField(max_digits=18, decimal_places=4)
-    target_date = models.DateField()
-    label = models.CharField(max_length=50, blank=True)
-    disaggregation_note = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "logframe_target"
-        ordering = ["target_date"]
-
-    def __str__(self):
-        return f"{self.logframe_row} → {self.target_value} ({self.target_date})"
-
-
 class ToCNode(models.Model):
     """
-    Noeud de la chaine causale. logframe_row remplace key_result_indicator
-    (texte libre provisoire) — FK nullable vers LogframeRow.
+    Nœud de la chaîne causale (SF-2).
+
+    v2 — ajouts :
+      cross_pathways : liaisons N→N vers d'autres nœuds (pathways non linéaires, RG-2.6).
+      Le niveau ultimate_outcome est maintenant dans CHAIN_LEVEL_CHOICES.
     """
 
-    toc = models.ForeignKey(TheoryOfChange, on_delete=models.CASCADE, related_name="nodes")
+    toc    = models.ForeignKey(TheoryOfChange, on_delete=models.CASCADE, related_name="nodes")
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
-    code = models.CharField(max_length=20, blank=True, editable=False)
+    code        = models.CharField(max_length=20, blank=True, editable=False)
     chain_level = models.CharField(max_length=25, choices=CHAIN_LEVEL_CHOICES)
-    statement = models.TextField()
+    statement   = models.TextField()
+
     logframe_row = models.ForeignKey(
-        LogframeRow, on_delete=models.SET_NULL, null=True, blank=True,
+        "LogframeRow", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="toc_nodes"
     )
+
     means_of_verification = models.TextField(blank=True)
-    assumptions = models.TextField(blank=True)
-    risks_mitigation = models.TextField(blank=True)
-    adaptation_strategy = models.TextField(blank=True)
-    gender_climate_tag = models.CharField(max_length=100, blank=True)
-    order = models.PositiveIntegerField(default=0)
+    assumptions           = models.TextField(blank=True)
+    risks_mitigation      = models.TextField(blank=True)
+    adaptation_strategy   = models.TextField(blank=True)
+    gender_climate_tag    = models.CharField(max_length=100, blank=True)
+
+    # ── Nouveau champ SF-2 (RG-2.6) ──────────────────────────────────────
+    cross_pathways = models.ManyToManyField(
+        "self", blank=True, symmetrical=False,
+        related_name="incoming_pathways",
+        help_text="Liaisons non linéaires vers d'autres nœuds de la chaîne (RG-2.6).",
+    )
+    # ─────────────────────────────────────────────────────────────────────
+
+    order      = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -213,3 +265,151 @@ class ToCNode(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.statement[:40]}"
+
+
+# ---------------------------------------------------------------------------
+# Logframe
+# ---------------------------------------------------------------------------
+
+class LogframeRow(models.Model):
+    """
+    Ligne du cadre logique — source de vérité pour indicateur + projet + nœud.
+    """
+
+    project   = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="logframe_rows")
+    indicator = models.ForeignKey(Indicator, on_delete=models.PROTECT, related_name="logframe_rows")
+    chain_level = models.CharField(max_length=25, choices=CHAIN_LEVEL_WITH_IMPACT_CHOICES)
+
+    baseline_value  = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    baseline_year   = models.PositiveIntegerField(null=True, blank=True)
+    baseline_source = models.TextField(blank=True)
+
+    measurement_frequency = models.CharField(
+        max_length=15, choices=MEASUREMENT_FREQUENCY_CHOICES, blank=True
+    )
+    notes     = models.TextField(blank=True)
+    order     = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table    = "logframe_row"
+        ordering    = ["chain_level", "order", "id"]
+        unique_together = [("project", "indicator")]
+
+    def __str__(self):
+        return f"{self.project.code} | {self.indicator.code}"
+
+
+# ---------------------------------------------------------------------------
+# SF-3 — Cibles et révision adaptative
+# ---------------------------------------------------------------------------
+
+class LogframeTarget(models.Model):
+    """
+    Cible par période pour une ligne logframe (SF-3).
+
+    v2 — ajouts SF-3 :
+      status          : Draft / Approved / Revised (RG-3.3)
+      is_original_pad : True = cible PAD originale, jamais modifiable (RG-3.4)
+      approved_by     : approbateur LLFMU (RG-3.5)
+      approved_at     : horodatage d'approbation
+    """
+
+    logframe_row = models.ForeignKey(
+        LogframeRow, on_delete=models.CASCADE, related_name="targets"
+    )
+    target_value = models.DecimalField(max_digits=18, decimal_places=4)
+    target_date  = models.DateField()
+    label        = models.CharField(max_length=50, blank=True)
+    disaggregation_note = models.TextField(blank=True)
+
+    # ── Nouveaux champs SF-3 ─────────────────────────────────────────────
+    status = models.CharField(
+        max_length=10, choices=TARGET_STATUS_CHOICES, default="draft",
+        help_text="Statut de la cible : Draft (en cours) / Approved (officielle) / Revised (remplacée).",
+    )
+    is_original_pad = models.BooleanField(
+        default=False,
+        help_text="True = cible issue du PAD. Jamais écrasée, toujours consultable (RG-3.4).",
+    )
+    approved_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="targets_approved",
+        help_text="Approbateur LLFMU/IsDB (RG-3.5).",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    # ─────────────────────────────────────────────────────────────────────
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "logframe_target"
+        ordering = ["target_date"]
+
+    def __str__(self):
+        pad = " [PAD]" if self.is_original_pad else ""
+        return f"{self.logframe_row} → {self.target_value} ({self.target_date}){pad}"
+
+
+class TargetRevision(models.Model):
+    """
+    Historique immuable des révisions de cibles (SF-3, RG-3.3 / RG-3.4).
+
+    Créé automatiquement quand une cible Approved est modifiée :
+      - l'ancienne cible passe à status='revised'
+      - une nouvelle LogframeTarget est créée (status='approved' après workflow)
+      - une entrée TargetRevision capture la justification et l'approbateur
+
+    La cible originale PAD (is_original_pad=True) ne génère JAMAIS de révision :
+    elle est figée pour toujours et sert de référence de comparaison.
+    """
+
+    target = models.ForeignKey(
+        LogframeTarget, on_delete=models.CASCADE, related_name="revisions",
+        help_text="Nouvelle cible résultant de la révision.",
+    )
+    previous_value = models.DecimalField(
+        max_digits=18, decimal_places=4,
+        help_text="Valeur de la cible avant révision.",
+    )
+    previous_date = models.DateField(
+        help_text="Date cible avant révision.",
+    )
+    justification = models.TextField(
+        help_text="Justification narrative obligatoire (RG-3.3).",
+    )
+    revised_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True,
+        related_name="target_revisions_initiated",
+    )
+    approved_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="target_revisions_approved",
+        help_text="Approbateur LLFMU/IsDB (RG-3.5).",
+    )
+    revision_status = models.CharField(
+        max_length=15,
+        choices=[
+            ("pending",  "Pending approval"),
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending",
+    )
+    revision_comment = models.TextField(
+        blank=True,
+        help_text="Commentaire de l'approbateur (obligatoire si rejet).",
+    )
+    created_at  = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "target_revision"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return (
+            f"Revision {self.target.logframe_row} "
+            f"{self.previous_value}→{self.target.target_value} ({self.revision_status})"
+        )

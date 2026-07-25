@@ -8,26 +8,38 @@ from .views import (
     LogframeTargetDetailView,
     LogframeTargetListView,
     LogframeView,
+    TargetRevisionView,
+    TargetRevisionActionView,
     TheoryOfChangeView,
     ToCNodeDetailView,
     ToCNodeListView,
+    ToCNodeCrossPathwayView,
 )
 
-# Routes du catalogue (independantes du projet)
+# Routes catalogue (indépendantes du projet)
 indicator_urlpatterns = [
-    path("indicators/", IndicatorListView.as_view(), name="indicator-list"),
-    path("indicators/choices/", IndicatorChoicesView.as_view(), name="indicator-choices"),
-    path("indicators/<int:pk>/", IndicatorDetailView.as_view(), name="indicator-detail"),
+    path("indicators/",          IndicatorListView.as_view(),    name="indicator-list"),
+    path("indicators/choices/",  IndicatorChoicesView.as_view(), name="indicator-choices"),
+    path("indicators/<int:pk>/", IndicatorDetailView.as_view(),  name="indicator-detail"),
 ]
 
-# Routes imbriquees sous /api/projects/{pk}/
+# Routes imbriquées sous /api/projects/{pk}/
 project_urlpatterns = [
-    path("toc/", TheoryOfChangeView.as_view(), name="project-toc"),
-    path("toc/nodes/", ToCNodeListView.as_view(), name="project-toc-nodes"),
-    path("toc/nodes/<int:node_pk>/", ToCNodeDetailView.as_view(), name="project-toc-node-detail"),
-    path("logframe/", LogframeView.as_view(), name="project-logframe"),
-    path("logframe/choices/", LogframeChoicesView.as_view(), name="project-logframe-choices"),
-    path("logframe/<int:row_pk>/", LogframeRowDetailView.as_view(), name="project-logframe-row"),
-    path("logframe/<int:row_pk>/targets/", LogframeTargetListView.as_view(), name="project-logframe-targets"),
-    path("logframe/<int:row_pk>/targets/<int:t_pk>/", LogframeTargetDetailView.as_view(), name="project-logframe-target-detail"),
+    # ToC
+    path("toc/",                                     TheoryOfChangeView.as_view(),       name="project-toc"),
+    path("toc/nodes/",                               ToCNodeListView.as_view(),           name="project-toc-nodes"),
+    path("toc/nodes/<int:node_pk>/",                 ToCNodeDetailView.as_view(),         name="project-toc-node-detail"),
+    # SF-2 : liaisons cross-pathway
+    path("toc/nodes/<int:node_pk>/cross-pathways/",                    ToCNodeCrossPathwayView.as_view(), name="project-toc-node-cross-pathways"),
+    path("toc/nodes/<int:node_pk>/cross-pathways/<int:target_pk>/",    ToCNodeCrossPathwayView.as_view(), name="project-toc-node-cross-pathway-detail"),
+    # Logframe
+    path("logframe/",                                LogframeView.as_view(),              name="project-logframe"),
+    path("logframe/choices/",                        LogframeChoicesView.as_view(),        name="project-logframe-choices"),
+    path("logframe/<int:row_pk>/",                   LogframeRowDetailView.as_view(),      name="project-logframe-row"),
+    path("logframe/<int:row_pk>/targets/",           LogframeTargetListView.as_view(),     name="project-logframe-targets"),
+    path("logframe/<int:row_pk>/targets/<int:t_pk>/",LogframeTargetDetailView.as_view(),  name="project-logframe-target-detail"),
+    # SF-3 : révision auditable
+    path("logframe/<int:row_pk>/targets/<int:t_pk>/revise/",                          TargetRevisionView.as_view(),       name="project-target-revise"),
+    path("logframe/<int:row_pk>/targets/<int:t_pk>/revisions/",                       TargetRevisionView.as_view(),       name="project-target-revisions"),
+    path("logframe/<int:row_pk>/targets/<int:t_pk>/revisions/<int:rev_pk>/action/",   TargetRevisionActionView.as_view(), name="project-target-revision-action"),
 ]

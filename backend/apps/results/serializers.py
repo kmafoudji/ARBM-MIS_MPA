@@ -1,48 +1,63 @@
 from rest_framework import serializers
 from .models import (
+    AGGREGATION_RULE_CHOICES,
+    CHAIN_LEVEL_CHOICES,
     CHAIN_LEVEL_WITH_IMPACT_CHOICES,
-    INDICATOR_TYPE_CHOICES,
+    CROSS_CUTTING_TAG_CHOICES,
     DIRECTION_CHOICES,
+    INDICATOR_TYPE_CHOICES,
     MEASUREMENT_FREQUENCY_CHOICES,
+    TARGET_STATUS_CHOICES,
     Indicator,
     LogframeRow,
     LogframeTarget,
+    TargetRevision,
     TheoryOfChange,
     ToCNode,
-    CHAIN_LEVEL_CHOICES,
 )
 
 
 # ---------------------------------------------------------------------------
-# Catalogue indicateurs
+# SF-1 — Indicateurs
 # ---------------------------------------------------------------------------
 
 class IndicatorListSerializer(serializers.ModelSerializer):
-    sector_name = serializers.CharField(source="sector.name", read_only=True)
+    sector_name            = serializers.CharField(source="sector.name", read_only=True)
     indicator_type_display = serializers.CharField(source="get_indicator_type_display", read_only=True)
-    direction_display = serializers.CharField(source="get_direction_display", read_only=True)
+    direction_display      = serializers.CharField(source="get_direction_display", read_only=True)
+    aggregation_rule_display = serializers.CharField(
+        source="get_aggregation_rule_display", read_only=True
+    )
+    chain_level_display = serializers.CharField(source="get_chain_level_display", read_only=True)
 
     class Meta:
-        model = Indicator
+        model  = Indicator
         fields = [
             "id", "code", "sector", "sector_name", "subsector",
             "name", "indicator_type", "indicator_type_display",
             "direction", "direction_display", "unit",
-            "reporting_frequency", "is_active",
+            "aggregation_rule", "aggregation_rule_display",
+            "chain_level", "chain_level_display",
+            "cross_cutting_tags",
+            "reporting_frequency", "version", "is_active",
         ]
 
 
 class IndicatorDetailSerializer(serializers.ModelSerializer):
-    sector_name = serializers.CharField(source="sector.name", read_only=True)
-    indicator_type_display = serializers.CharField(source="get_indicator_type_display", read_only=True)
-    direction_display = serializers.CharField(source="get_direction_display", read_only=True)
+    sector_name                = serializers.CharField(source="sector.name", read_only=True)
+    indicator_type_display     = serializers.CharField(source="get_indicator_type_display", read_only=True)
+    direction_display          = serializers.CharField(source="get_direction_display", read_only=True)
     reporting_frequency_display = serializers.CharField(
         source="get_reporting_frequency_display", read_only=True
     )
+    aggregation_rule_display = serializers.CharField(
+        source="get_aggregation_rule_display", read_only=True
+    )
+    chain_level_display = serializers.CharField(source="get_chain_level_display", read_only=True)
     related_sdg_numbers = serializers.SerializerMethodField()
 
     class Meta:
-        model = Indicator
+        model  = Indicator
         fields = [
             "id", "code", "sector", "sector_name", "subsector",
             "name", "indicator_type", "indicator_type_display",
@@ -52,7 +67,10 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
             "reporting_frequency", "reporting_frequency_display",
             "means_of_verification", "responsible",
             "assumptions", "limitations",
-            "related_sdg_numbers", "is_active",
+            "aggregation_rule", "aggregation_rule_display",
+            "chain_level", "chain_level_display",
+            "cross_cutting_tags",
+            "version", "related_sdg_numbers", "is_active",
             "created_at", "updated_at",
         ]
         read_only_fields = fields
@@ -62,41 +80,102 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
 
 
 # ---------------------------------------------------------------------------
-# Logframe
+# SF-3 — Cibles et révision
 # ---------------------------------------------------------------------------
 
-class LogframeTargetSerializer(serializers.ModelSerializer):
+class TargetRevisionSerializer(serializers.ModelSerializer):
+    revised_by_email  = serializers.CharField(source="revised_by.email",  read_only=True)
+    approved_by_email = serializers.CharField(source="approved_by.email", read_only=True)
+    revision_status_display = serializers.CharField(
+        source="get_revision_status_display", read_only=True
+    )
+
     class Meta:
-        model = LogframeTarget
-        fields = ["id", "target_value", "target_date", "label", "disaggregation_note", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        model  = TargetRevision
+        fields = [
+            "id", "previous_value", "previous_date",
+            "justification", "revision_status", "revision_status_display",
+            "revision_comment",
+            "revised_by_email", "approved_by_email",
+            "created_at", "resolved_at",
+        ]
+        read_only_fields = fields
+
+
+class LogframeTargetSerializer(serializers.ModelSerializer):
+    status_display    = serializers.CharField(source="get_status_display", read_only=True)
+    approved_by_email = serializers.CharField(source="approved_by.email", read_only=True)
+    revisions         = TargetRevisionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model  = LogframeTarget
+        fields = [
+            "id", "target_value", "target_date", "label",
+            "disaggregation_note",
+            "status", "status_display",
+            "is_original_pad",
+            "approved_by_email", "approved_at",
+            "revisions",
+            "created_at",
+        ]
+        read_only_fields = ["id", "approved_by_email", "revisions", "created_at"]
 
 
 class LogframeTargetCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = LogframeTarget
-        fields = ["target_value", "target_date", "label", "disaggregation_note"]
+        model  = LogframeTarget
+        fields = [
+            "target_value", "target_date", "label",
+            "disaggregation_note", "is_original_pad",
+        ]
 
+
+class TargetRevisionRequestSerializer(serializers.Serializer):
+    """Payload pour initier une révision de cible (SF-3, RG-3.3)."""
+    new_value     = serializers.DecimalField(max_digits=18, decimal_places=4)
+    new_date      = serializers.DateField()
+    new_label     = serializers.CharField(required=False, allow_blank=True, default="")
+    justification = serializers.CharField(
+        help_text="Justification narrative obligatoire (RG-3.3)."
+    )
+
+
+class TargetRevisionActionSerializer(serializers.Serializer):
+    """Payload pour approuver ou rejeter une révision (SF-3, RG-3.5)."""
+    action  = serializers.ChoiceField(choices=["approve", "reject"])
+    comment = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+# ---------------------------------------------------------------------------
+# Logframe
+# ---------------------------------------------------------------------------
 
 class LogframeRowSerializer(serializers.ModelSerializer):
-    indicator_code = serializers.CharField(source="indicator.code", read_only=True)
-    indicator_name = serializers.CharField(source="indicator.name", read_only=True)
-    indicator_unit = serializers.CharField(source="indicator.unit", read_only=True)
-    indicator_type = serializers.CharField(source="indicator.indicator_type", read_only=True)
-    indicator_direction = serializers.CharField(source="indicator.direction", read_only=True)
+    indicator_code     = serializers.CharField(source="indicator.code",           read_only=True)
+    indicator_name     = serializers.CharField(source="indicator.name",           read_only=True)
+    indicator_unit     = serializers.CharField(source="indicator.unit",           read_only=True)
+    indicator_type     = serializers.CharField(source="indicator.indicator_type", read_only=True)
+    indicator_direction = serializers.CharField(source="indicator.direction",     read_only=True)
+    indicator_aggregation_rule = serializers.CharField(
+        source="indicator.aggregation_rule", read_only=True
+    )
+    indicator_cross_cutting_tags = serializers.JSONField(
+        source="indicator.cross_cutting_tags", read_only=True
+    )
     chain_level_display = serializers.CharField(source="get_chain_level_display", read_only=True)
     measurement_frequency_display = serializers.CharField(
         source="get_measurement_frequency_display", read_only=True
     )
-    targets = LogframeTargetSerializer(many=True, read_only=True)
-    toc_node_code = serializers.SerializerMethodField()
+    targets        = LogframeTargetSerializer(many=True, read_only=True)
+    toc_node_code  = serializers.SerializerMethodField()
     toc_node_statement = serializers.SerializerMethodField()
 
     class Meta:
-        model = LogframeRow
+        model  = LogframeRow
         fields = [
             "id", "project", "indicator", "indicator_code", "indicator_name",
             "indicator_unit", "indicator_type", "indicator_direction",
+            "indicator_aggregation_rule", "indicator_cross_cutting_tags",
             "chain_level", "chain_level_display",
             "toc_node_code", "toc_node_statement",
             "baseline_value", "baseline_year", "baseline_source",
@@ -106,8 +185,10 @@ class LogframeRowSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id", "indicator_code", "indicator_name", "indicator_unit",
-            "indicator_type", "indicator_direction", "chain_level_display",
-            "measurement_frequency_display", "toc_node_code", "toc_node_statement",
+            "indicator_type", "indicator_direction",
+            "indicator_aggregation_rule", "indicator_cross_cutting_tags",
+            "chain_level_display", "measurement_frequency_display",
+            "toc_node_code", "toc_node_statement",
             "targets", "created_at", "updated_at",
         ]
 
@@ -122,7 +203,7 @@ class LogframeRowSerializer(serializers.ModelSerializer):
 
 class LogframeRowCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = LogframeRow
+        model  = LogframeRow
         fields = [
             "indicator", "chain_level",
             "baseline_value", "baseline_year", "baseline_source",
@@ -137,30 +218,23 @@ class LogframeRowCreateSerializer(serializers.ModelSerializer):
 
 
 # ---------------------------------------------------------------------------
-# ToC (mise a jour pour inclure les infos logframe_row sur les noeuds)
+# SF-2 — ToC et nœuds
 # ---------------------------------------------------------------------------
 
 class ToCNodeSerializer(serializers.ModelSerializer):
-    chain_level_display = serializers.CharField(source="get_chain_level_display", read_only=True)
-    logframe_row_id = serializers.IntegerField(source="logframe_row.id", read_only=True)
-    logframe_indicator_code = serializers.CharField(
-        source="logframe_row.indicator.code", read_only=True
-    )
-    logframe_indicator_name = serializers.CharField(
-        source="logframe_row.indicator.name", read_only=True
-    )
-    logframe_indicator_unit = serializers.CharField(
-        source="logframe_row.indicator.unit", read_only=True
-    )
-    logframe_baseline_value = serializers.DecimalField(
+    chain_level_display        = serializers.CharField(source="get_chain_level_display", read_only=True)
+    logframe_row_id            = serializers.IntegerField(source="logframe_row.id",               read_only=True)
+    logframe_indicator_code    = serializers.CharField(source="logframe_row.indicator.code",      read_only=True)
+    logframe_indicator_name    = serializers.CharField(source="logframe_row.indicator.name",      read_only=True)
+    logframe_indicator_unit    = serializers.CharField(source="logframe_row.indicator.unit",      read_only=True)
+    logframe_baseline_value    = serializers.DecimalField(
         source="logframe_row.baseline_value", max_digits=18, decimal_places=4, read_only=True
     )
-    logframe_baseline_year = serializers.IntegerField(
-        source="logframe_row.baseline_year", read_only=True
-    )
+    logframe_baseline_year     = serializers.IntegerField(source="logframe_row.baseline_year",    read_only=True)
+    cross_pathway_ids          = serializers.SerializerMethodField()
 
     class Meta:
-        model = ToCNode
+        model  = ToCNode
         fields = [
             "id", "parent", "code", "chain_level", "chain_level_display",
             "statement",
@@ -168,62 +242,86 @@ class ToCNodeSerializer(serializers.ModelSerializer):
             "logframe_indicator_name", "logframe_indicator_unit",
             "logframe_baseline_value", "logframe_baseline_year",
             "means_of_verification", "assumptions", "risks_mitigation",
-            "adaptation_strategy", "gender_climate_tag", "order",
-            "created_at", "updated_at",
+            "adaptation_strategy", "gender_climate_tag",
+            "cross_pathway_ids",
+            "order", "created_at", "updated_at",
         ]
         read_only_fields = [
             "id", "parent", "code", "chain_level", "chain_level_display",
             "logframe_row_id", "logframe_indicator_code",
             "logframe_indicator_name", "logframe_indicator_unit",
             "logframe_baseline_value", "logframe_baseline_year",
+            "cross_pathway_ids",
             "created_at", "updated_at",
         ]
 
+    def get_cross_pathway_ids(self, obj):
+        return list(obj.cross_pathways.values_list("id", flat=True))
+
 
 class ToCNodeCreateSerializer(serializers.Serializer):
-    chain_level = serializers.ChoiceField(choices=CHAIN_LEVEL_CHOICES)
-    parent = serializers.PrimaryKeyRelatedField(
+    chain_level  = serializers.ChoiceField(choices=CHAIN_LEVEL_CHOICES)
+    parent       = serializers.PrimaryKeyRelatedField(
         queryset=ToCNode.objects.all(), required=False, allow_null=True
     )
-    statement = serializers.CharField()
+    statement    = serializers.CharField()
     logframe_row = serializers.PrimaryKeyRelatedField(
         queryset=LogframeRow.objects.all(), required=False, allow_null=True
     )
     means_of_verification = serializers.CharField(required=False, allow_blank=True, default="")
-    assumptions = serializers.CharField(required=False, allow_blank=True, default="")
-    risks_mitigation = serializers.CharField(required=False, allow_blank=True, default="")
-    adaptation_strategy = serializers.CharField(required=False, allow_blank=True, default="")
-    gender_climate_tag = serializers.CharField(required=False, allow_blank=True, default="")
+    assumptions           = serializers.CharField(required=False, allow_blank=True, default="")
+    risks_mitigation      = serializers.CharField(required=False, allow_blank=True, default="")
+    adaptation_strategy   = serializers.CharField(required=False, allow_blank=True, default="")
+    gender_climate_tag    = serializers.CharField(required=False, allow_blank=True, default="")
+    cross_pathway_ids     = serializers.ListField(
+        child=serializers.IntegerField(), required=False, default=list,
+        help_text="IDs des nœuds cibles pour liaisons non linéaires (RG-2.6).",
+    )
     order = serializers.IntegerField(required=False, default=0)
 
 
 class ToCNodeUpdateSerializer(serializers.ModelSerializer):
-    """Champs editables apres creation (pas parent/chain_level/code)."""
-    logframe_row = serializers.PrimaryKeyRelatedField(
+    """Champs éditables après création (pas parent/chain_level/code)."""
+    logframe_row  = serializers.PrimaryKeyRelatedField(
         queryset=LogframeRow.objects.all(), required=False, allow_null=True
+    )
+    cross_pathway_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False,
+        help_text="Remplace la liste complète des liaisons non linéaires.",
     )
 
     class Meta:
-        model = ToCNode
+        model  = ToCNode
         fields = [
             "statement", "logframe_row",
             "means_of_verification", "assumptions", "risks_mitigation",
-            "adaptation_strategy", "gender_climate_tag", "order",
+            "adaptation_strategy", "gender_climate_tag",
+            "cross_pathway_ids",
+            "order",
         ]
+
+    def update(self, instance, validated_data):
+        cross_ids = validated_data.pop("cross_pathway_ids", None)
+        instance = super().update(instance, validated_data)
+        if cross_ids is not None:
+            targets = ToCNode.objects.filter(id__in=cross_ids, toc=instance.toc)
+            instance.cross_pathways.set(targets)
+        return instance
 
 
 class TheoryOfChangeSerializer(serializers.ModelSerializer):
-    nodes = ToCNodeSerializer(many=True, read_only=True)
+    nodes        = ToCNodeSerializer(many=True, read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     project_name = serializers.CharField(source="project.name", read_only=True)
     project_code = serializers.CharField(source="project.code", read_only=True)
 
     class Meta:
-        model = TheoryOfChange
+        model  = TheoryOfChange
         fields = [
             "id", "project", "project_name", "project_code",
             "version", "status", "status_display",
             "problem_statement", "ultimate_outcome",
+            "local_actors",
             "nodes", "created_at", "updated_at",
         ]
         read_only_fields = [
@@ -234,18 +332,21 @@ class TheoryOfChangeSerializer(serializers.ModelSerializer):
 
 class TheoryOfChangeUpdateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TheoryOfChange
-        fields = ["status", "problem_statement", "ultimate_outcome"]
+        model  = TheoryOfChange
+        fields = ["status", "problem_statement", "ultimate_outcome", "local_actors"]
 
 
 # ---------------------------------------------------------------------------
-# Vocabulaires (pour peupler les selects frontend)
+# Vocabulaires pour les selects frontend
 # ---------------------------------------------------------------------------
 
 def get_logframe_choices():
     return {
-        "indicator_types": [{"value": v, "label": l} for v, l in INDICATOR_TYPE_CHOICES],
-        "directions": [{"value": v, "label": l} for v, l in DIRECTION_CHOICES],
-        "chain_levels": [{"value": v, "label": l} for v, l in CHAIN_LEVEL_WITH_IMPACT_CHOICES],
-        "measurement_frequencies": [{"value": v, "label": l} for v, l in MEASUREMENT_FREQUENCY_CHOICES],
+        "indicator_types":        [{"value": v, "label": l} for v, l in INDICATOR_TYPE_CHOICES],
+        "directions":             [{"value": v, "label": l} for v, l in DIRECTION_CHOICES],
+        "chain_levels":           [{"value": v, "label": l} for v, l in CHAIN_LEVEL_WITH_IMPACT_CHOICES],
+        "measurement_frequencies":[{"value": v, "label": l} for v, l in MEASUREMENT_FREQUENCY_CHOICES],
+        "aggregation_rules":      [{"value": v, "label": l} for v, l in AGGREGATION_RULE_CHOICES],
+        "cross_cutting_tags":     [{"value": v, "label": l} for v, l in CROSS_CUTTING_TAG_CHOICES],
+        "target_statuses":        [{"value": v, "label": l} for v, l in TARGET_STATUS_CHOICES],
     }
