@@ -40,7 +40,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
 
   const { data: agencies = [] } = useQuery({
     queryKey: ["implementing-agencies"],
-    queryFn: () => apiFetch("/api/reference/implementing-agencies/"),
+    queryFn: () => apiFetch("/api/reference/agencies/"),
     staleTime: 60_000,
   });
 
@@ -316,7 +316,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                   step="0.01"
                   value={form.allocated_amount_usd}
                   onChange={(e) => setForm({ ...form, allocated_amount_usd: e.target.value })}
-                  placeholder="Indicative — detail in Module 9"
+                  placeholder="0.00"
                 />
               </div>
 
