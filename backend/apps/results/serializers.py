@@ -427,3 +427,32 @@ class ResultsDataUpdateSerializer(serializers.Serializer):
     actual_value = serializers.DecimalField(max_digits=18, decimal_places=4, required=False)
     narrative    = serializers.CharField(required=False, allow_blank=True)
     approve      = serializers.BooleanField(required=False)
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Désagrégation
+# ---------------------------------------------------------------------------
+
+class IndicatorDisaggregationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = __import__("apps.results.models", fromlist=["IndicatorDisaggregation"]).IndicatorDisaggregation
+        fields = ["id", "indicator", "name", "categories", "order"]
+        read_only_fields = ["id"]
+
+
+class DisaggregationValueSerializer(serializers.ModelSerializer):
+    dimension_name = serializers.CharField(source="dimension.name", read_only=True)
+
+    class Meta:
+        model  = __import__("apps.results.models", fromlist=["DisaggregationValue"]).DisaggregationValue
+        fields = ["id", "dimension", "dimension_name", "category", "value"]
+        read_only_fields = ["id", "dimension_name"]
+
+
+class DisaggregationValueWriteSerializer(serializers.Serializer):
+    """Payload pour sauvegarder toutes les valeurs d'une dimension en une fois."""
+    dimension_id = serializers.IntegerField()
+    values       = serializers.ListField(
+        child=serializers.DictField(),
+        help_text='[{"category": "Homme", "value": 120}, ...]',
+    )

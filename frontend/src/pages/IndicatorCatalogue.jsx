@@ -2,6 +2,106 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
+import { useDialog, DialogModal } from "../components/Dialog.jsx";
+
+function DisaggregationDimensionsPanel({ indicatorId }) {
+  const qc = useQueryClient();
+  const dialog = useDialog();
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", categories: "" });
+
+  const { data: dims = [], isLoading } = useQuery({
+    queryKey: ["indicator-disagg", indicatorId],
+    queryFn:  () => apiFetch(`/api/results/indicators/${indicatorId}/disaggregations/`),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (payload) => apiFetch(`/api/results/indicators/${indicatorId}/disaggregations/`, {
+      method: "POST", body: JSON.stringify(payload),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["indicator-disagg", indicatorId] });
+      setAdding(false);
+      setForm({ name: "", categories: "" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (dimId) => apiFetch(`/api/results/indicators/${indicatorId}/disaggregations/${dimId}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["indicator-disagg", indicatorId] }),
+  });
+
+  function handleAdd() {
+    const cats = form.categories.split(",").map(c => c.trim()).filter(Boolean);
+    if (!form.name || cats.length === 0) return;
+    addMutation.mutate({ name: form.name, categories: cats, order: dims.length });
+  }
+
+  return (
+    <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+      <DialogModal {...dialog.dialogProps} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ fontWeight: 700, fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+          Disaggregation dimensions
+        </span>
+        {!adding && (
+          <button className="btn btn-ghost btn-sm row" style={{ gap: 5, fontSize: 11 }} onClick={() => setAdding(true)}>
+            <Icon name="plus" size={12} /> Add dimension
+          </button>
+        )}
+      </div>
+
+      {isLoading && <span className="spinner" />}
+
+      {dims.length === 0 && !adding && (
+        <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>No disaggregation dimensions configured.</p>
+      )}
+
+      {dims.map(dim => (
+        <div key={dim.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 10px", background: "#f9fafb", borderRadius: 8, border: "1px solid #f0f0ee" }}>
+          <span style={{ fontWeight: 600, fontSize: 12, minWidth: 80 }}>{dim.name}</span>
+          <span style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {dim.categories.map(cat => (
+              <span key={cat} style={{ fontSize: 11, background: "#e0e7ff", color: "#3730a3", padding: "1px 8px", borderRadius: 99 }}>{cat}</span>
+            ))}
+          </span>
+          <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "#dc2626" }}
+            onClick={async () => {
+              const ok = await dialog.confirm(`Remove dimension "${dim.name}"?`, { title: "Remove dimension", confirmLabel: "Remove", danger: true });
+              if (ok) deleteMutation.mutate(dim.id);
+            }}>
+            <Icon name="trash" size={11} />
+          </button>
+        </div>
+      ))}
+
+      {adding && (
+        <div style={{ background: "#f0f6dc", borderRadius: 8, padding: 12, border: "1px solid #A4C53F" }}>
+          <div className="grid grid-2" style={{ gap: 8, marginBottom: 8 }}>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label className="field-label">Dimension name *</label>
+              <input className="field-input" placeholder="Ex. Sex, Age, Location"
+                value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label className="field-label">Categories (comma-separated) *</label>
+              <input className="field-input" placeholder="Male, Female, Not specified"
+                value={form.categories} onChange={e => setForm({ ...form, categories: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+              onClick={handleAdd} disabled={addMutation.isPending || !form.name}>
+              <Icon name="check" size={12} /> {addMutation.isPending ? "Saving…" : "Save dimension"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 const DIRECTION_LABEL = {
   increase: "↑ Upward",
@@ -257,7 +357,13 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                   <div className="dl-term">Version</div>
                   <div className="dl-desc">v{detail.version || 1}</div>
                 </div>
-                {detail.related_sdg_numbers?.length > 0 && (
+              </div>
+
+              {/* SF-6 : dimensions de désagrégation */}
+              <DisaggregationDimensionsPanel indicatorId={detail.id} />
+
+              {detail.related_sdg_numbers?.length > 0 && (
+                <div className="dl" style={{ marginTop: 12 }}>
                   <div>
                     <div className="dl-term">Related SDGs</div>
                     <div className="dl-desc row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -269,8 +375,8 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                       ))}
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
 

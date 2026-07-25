@@ -772,3 +772,159 @@ class ResultsSummaryView(APIView):
                 {"detail": f"{type(exc).__name__}: {exc}", "trace": traceback.format_exc()},
                 status=500,
             )
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Désagrégation : dimensions par indicateur
+# ---------------------------------------------------------------------------
+
+class IndicatorDisaggregationView(APIView):
+    """
+    GET  /api/results/indicators/<ind_pk>/disaggregations/
+         Liste les dimensions de désagrégation de l'indicateur.
+
+    POST /api/results/indicators/<ind_pk>/disaggregations/
+         Ajoute une dimension (LLFMU).
+         Body: { "name": "Sexe", "categories": ["Homme","Femme","Non précisé"], "order": 0 }
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get_indicator(self, ind_pk):
+        return get_object_or_404(Indicator, pk=ind_pk)
+
+    def get(self, request, ind_pk):
+        from .models import IndicatorDisaggregation
+        from .serializers import IndicatorDisaggregationSerializer
+        qs = IndicatorDisaggregation.objects.filter(indicator_id=ind_pk)
+        return Response(IndicatorDisaggregationSerializer(qs, many=True).data)
+
+    def post(self, request, ind_pk):
+        from .models import IndicatorDisaggregation
+        from .serializers import IndicatorDisaggregationSerializer
+        indicator = self._get_indicator(ind_pk)
+        ser = IndicatorDisaggregationSerializer(data={**request.data, "indicator": indicator.id})
+        ser.is_valid(raise_exception=True)
+        dim = ser.save()
+        return Response(IndicatorDisaggregationSerializer(dim).data, status=status.HTTP_201_CREATED)
+
+
+class IndicatorDisaggregationDetailView(APIView):
+    """
+    PATCH  /api/results/indicators/<ind_pk>/disaggregations/<dim_pk>/
+    DELETE /api/results/indicators/<ind_pk>/disaggregations/<dim_pk>/
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get(self, ind_pk, dim_pk):
+        from .models import IndicatorDisaggregation
+        return get_object_or_404(IndicatorDisaggregation, pk=dim_pk, indicator_id=ind_pk)
+
+    def patch(self, request, ind_pk, dim_pk):
+        from .serializers import IndicatorDisaggregationSerializer
+        dim = self._get(ind_pk, dim_pk)
+        ser = IndicatorDisaggregationSerializer(dim, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+    def delete(self, request, ind_pk, dim_pk):
+        self._get(ind_pk, dim_pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Désagrégation : valeurs par ResultsData
+# ---------------------------------------------------------------------------
+
+class DisaggregationValueView(APIView):
+    """
+    GET  /api/projects/<pk>/results/<rd_pk>/disaggregation/
+         Retourne toutes les valeurs désagrégées + les dimensions disponibles
+         pour cet indicateur + avertissement somme ≠ total.
+
+    POST /api/projects/<pk>/results/<rd_pk>/disaggregation/
+         Sauvegarde les valeurs d'une dimension.
+         Body: { "dimension_id": 3, "values": [{"category":"Homme","value":120}, ...] }
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get_rd(self, pk, rd_pk):
+        from .models import ResultsData
+        return get_object_or_404(ResultsData, pk=rd_pk, logframe_row__project_id=pk)
+
+    def get(self, request, pk, rd_pk):
+        from .models import DisaggregationValue, IndicatorDisaggregation
+        from .serializers import DisaggregationValueSerializer, IndicatorDisaggregationSerializer
+
+        rd = self._get_rd(pk, rd_pk)
+        indicator = rd.logframe_row.indicator
+
+        # Dimensions disponibles pour cet indicateur
+        dimensions = IndicatorDisaggregation.objects.filter(indicator=indicator)
+
+        # Valeurs saisies
+        values = DisaggregationValue.objects.filter(results_data=rd).select_related("dimension")
+
+        # Avertissements : somme par dimension vs actual_value
+        warnings = []
+        for dim in dimensions:
+            dim_values = values.filter(dimension=dim)
+            total = sum(v.value for v in dim_values)
+            if dim_values.exists() and total != rd.actual_value:
+                warnings.append({
+                    "dimension": dim.name,
+                    "sum": str(total),
+                    "actual": str(rd.actual_value),
+                    "message": f"La somme des valeurs pour « {dim.name} » ({total}) ≠ valeur totale ({rd.actual_value}).",
+                })
+
+        return Response({
+            "results_data_id": rd.id,
+            "actual_value":    str(rd.actual_value),
+            "dimensions":      IndicatorDisaggregationSerializer(dimensions, many=True).data,
+            "values":          DisaggregationValueSerializer(values, many=True).data,
+            "warnings":        warnings,
+        })
+
+    def post(self, request, pk, rd_pk):
+        from decimal import Decimal
+        from .models import DisaggregationValue, IndicatorDisaggregation
+        from .serializers import DisaggregationValueSerializer, DisaggregationValueWriteSerializer
+
+        rd  = self._get_rd(pk, rd_pk)
+        ser = DisaggregationValueWriteSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+
+        dim = get_object_or_404(
+            IndicatorDisaggregation,
+            pk=d["dimension_id"],
+            indicator=rd.logframe_row.indicator,
+        )
+
+        # Upsert de chaque valeur
+        saved = []
+        for item in d["values"]:
+            category = str(item.get("category", "")).strip()
+            value    = Decimal(str(item.get("value", 0)))
+            if not category:
+                continue
+            dv, _ = DisaggregationValue.objects.update_or_create(
+                results_data=rd, dimension=dim, category=category,
+                defaults={"value": value},
+            )
+            saved.append(dv)
+
+        # Vérification somme (avertissement non bloquant)
+        total   = sum(Decimal(str(item.get("value", 0))) for item in d["values"])
+        warning = None
+        if total != rd.actual_value:
+            warning = f"La somme des valeurs ({total}) ≠ valeur totale ({rd.actual_value})."
+
+        return Response({
+            "saved":   DisaggregationValueSerializer(saved, many=True).data,
+            "warning": warning,
+        }, status=status.HTTP_200_OK)

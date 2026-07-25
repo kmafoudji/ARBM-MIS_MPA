@@ -31,9 +31,118 @@ function RagBadge({ rag, rate }) {
   );
 }
 
+function DisaggregationPanel({ projectId, rd, onClose }) {
+  const qc = useQueryClient();
+  const [localValues, setLocalValues] = useState({});
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["disaggregation", projectId, rd.id],
+    queryFn:  () => apiFetch(`/api/projects/${projectId}/results/${rd.id}/disaggregation/`),
+  });
+
+  const mutation = useMutation({
+    mutationFn: (payload) => apiFetch(`/api/projects/${projectId}/results/${rd.id}/disaggregation/`, {
+      method: "POST", body: JSON.stringify(payload),
+    }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["disaggregation", projectId, rd.id] }),
+  });
+
+  if (isLoading) return <div style={{ padding: 12 }}><span className="spinner" /></div>;
+
+  if (!data?.dimensions?.length) return (
+    <div style={{ padding: 12, fontSize: 12, color: "#9ca3af" }}>
+      No disaggregation dimensions configured for this indicator.
+      Add dimensions in the Indicator Catalogue.
+    </div>
+  );
+
+  function getVal(dimId, cat) {
+    const key = `${dimId}:${cat}`;
+    if (localValues[key] !== undefined) return localValues[key];
+    const existing = data.values?.find(v => v.dimension === dimId && v.category === cat);
+    return existing ? String(existing.value) : "";
+  }
+
+  function setVal(dimId, cat, val) {
+    setLocalValues(prev => ({ ...prev, [`${dimId}:${cat}`]: val }));
+  }
+
+  function saveAll() {
+    data.dimensions.forEach(dim => {
+      const values = dim.categories.map(cat => ({
+        category: cat,
+        value: parseFloat(getVal(dim.id, cat) || 0),
+      }));
+      mutation.mutate({ dimension_id: dim.id, values });
+    });
+  }
+
+  return (
+    <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, marginTop: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <span style={{ fontWeight: 600, fontSize: 12, color: "#374151" }}>
+          Disaggregation — Total: <strong>{Number(rd.actual_value).toLocaleString()}</strong>
+        </span>
+        <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ fontSize: 11 }}>
+          <Icon name="x" size={12} /> Close
+        </button>
+      </div>
+
+      {data.warnings?.map((w, i) => (
+        <div key={i} style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 8, color: "#854d0e" }}>
+          ⚠️ {w.message}
+        </div>
+      ))}
+
+      {data.dimensions.map(dim => {
+        const dimSum = dim.categories.reduce((s, cat) => s + parseFloat(getVal(dim.id, cat) || 0), 0);
+        const total  = parseFloat(rd.actual_value);
+        const sumOk  = Math.abs(dimSum - total) < 0.001;
+        return (
+          <div key={dim.id} style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {dim.name}
+              </span>
+              <span style={{ fontSize: 11, color: sumOk ? "#16a34a" : "#d97706", fontWeight: 600 }}>
+                Σ = {dimSum.toLocaleString()} {sumOk ? "✓" : `≠ ${total}`}
+              </span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
+              {dim.categories.map(cat => (
+                <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <label style={{ fontSize: 10, color: "#6b7280", fontWeight: 500 }}>{cat}</label>
+                  <input
+                    type="number" step="any" min="0"
+                    className="field-input"
+                    style={{ padding: "4px 8px", fontSize: 12 }}
+                    value={getVal(dim.id, cat)}
+                    onChange={e => setVal(dim.id, cat, e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+        <button
+          className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+          onClick={saveAll} disabled={mutation.isPending}
+        >
+          <Icon name="check" size={12} /> {mutation.isPending ? "Saving…" : "Save disaggregation"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
   const isLocked = period.period_status === "upcoming" || period.period_status === "approved";
-  const [open, setOpen]   = useState(false);
+  const [open, setOpen]         = useState(false);
+  const [showDisagg, setShowDisagg] = useState(false);
   const [value, setValue] = useState(existingData?.actual_value ?? "");
   const [narrative, setNarrative] = useState(existingData?.narrative ?? "");
   const dialog = useDialog();
@@ -96,6 +205,20 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
               >
                 <Icon name="pencil" size={10} /> Edit
               </button>
+            )}
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ fontSize: 10, padding: "1px 6px", color: "#1B5A8C" }}
+              onClick={() => setShowDisagg(s => !s)}
+            >
+              <Icon name="layers" size={10} /> {showDisagg ? "Hide" : "Disaggregate"}
+            </button>
+            {showDisagg && data && (
+              <DisaggregationPanel
+                projectId={projectId}
+                rd={{ id: data.id, actual_value: data.actual_value }}
+                onClose={() => setShowDisagg(false)}
+              />
             )}
           </div>
         ) : isLocked ? (

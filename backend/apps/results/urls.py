@@ -2,6 +2,8 @@ from django.urls import path
 from .views import (
     IndicatorChoicesView,
     IndicatorDetailView,
+    IndicatorDisaggregationView,
+    IndicatorDisaggregationDetailView,
     IndicatorListView,
     LogframeChoicesView,
     LogframeRowDetailView,
@@ -11,6 +13,7 @@ from .views import (
     ResultsDataView,
     ResultsDataDetailView,
     ResultsSummaryView,
+    DisaggregationValueView,
     TargetRevisionView,
     TargetRevisionActionView,
     TheoryOfChangeView,
@@ -24,6 +27,9 @@ indicator_urlpatterns = [
     path("indicators/",          IndicatorListView.as_view(),    name="indicator-list"),
     path("indicators/choices/",  IndicatorChoicesView.as_view(), name="indicator-choices"),
     path("indicators/<int:pk>/", IndicatorDetailView.as_view(),  name="indicator-detail"),
+    # SF-6 : dimensions de désagrégation par indicateur
+    path("indicators/<int:ind_pk>/disaggregations/",             IndicatorDisaggregationView.as_view(),       name="indicator-disaggregations"),
+    path("indicators/<int:ind_pk>/disaggregations/<int:dim_pk>/",IndicatorDisaggregationDetailView.as_view(), name="indicator-disaggregation-detail"),
 ]
 
 # Routes imbriquées sous /api/projects/{pk}/
@@ -49,4 +55,6 @@ project_urlpatterns = [
     path("results/",                  ResultsDataView.as_view(),       name="project-results"),
     path("results/summary/",          ResultsSummaryView.as_view(),    name="project-results-summary"),
     path("results/<int:rd_pk>/",      ResultsDataDetailView.as_view(), name="project-results-detail"),
+    # SF-6 : désagrégation par ResultsData
+    path("results/<int:rd_pk>/disaggregation/", DisaggregationValueView.as_view(), name="project-results-disaggregation"),
 ]

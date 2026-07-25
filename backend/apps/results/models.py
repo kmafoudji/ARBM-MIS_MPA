@@ -549,3 +549,63 @@ class ResultsData(models.Model):
                 self.rag_status = "red"
 
         self.save(update_fields=["rag_status", "achievement_rate"])
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — Désagrégation structurée
+# ---------------------------------------------------------------------------
+
+class IndicatorDisaggregation(models.Model):
+    """
+    Dimension de désagrégation configurable par indicateur (LLFMU).
+
+    Exemples :
+      Indicateur AGR-001 → dimensions : Sexe ["Homme","Femme","Non précisé"]
+                                        Âge  ["<18","18-35","36-60","60+"]
+    """
+    indicator  = models.ForeignKey(
+        Indicator, on_delete=models.CASCADE,
+        related_name="disaggregation_dimensions",
+    )
+    name       = models.CharField(max_length=100, help_text="Ex. Sexe, Âge, Localisation.")
+    categories = models.JSONField(
+        default=list,
+        help_text='Liste ordonnée des catégories. Ex. ["Homme","Femme","Non précisé"].',
+    )
+    order      = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table   = "indicator_disaggregation"
+        ordering   = ["order", "id"]
+        unique_together = [("indicator", "name")]
+
+    def __str__(self):
+        return f"{self.indicator.code} — {self.name}"
+
+
+class DisaggregationValue(models.Model):
+    """
+    Valeur saisie pour une catégorie d'une dimension de désagrégation,
+    liée à un enregistrement ResultsData.
+
+    La somme des valeurs d'une dimension doit être ≤ actual_value
+    (avertissement, non bloquant — POL-2.04).
+    """
+    results_data = models.ForeignKey(
+        ResultsData, on_delete=models.CASCADE,
+        related_name="disaggregation_values",
+    )
+    dimension = models.ForeignKey(
+        IndicatorDisaggregation, on_delete=models.CASCADE,
+        related_name="values",
+    )
+    category = models.CharField(max_length=100)
+    value    = models.DecimalField(max_digits=18, decimal_places=4)
+
+    class Meta:
+        db_table      = "disaggregation_value"
+        unique_together = [("results_data", "dimension", "category")]
+        ordering      = ["dimension__order", "category"]
+
+    def __str__(self):
+        return f"{self.results_data} | {self.dimension.name}: {self.category} = {self.value}"
