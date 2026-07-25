@@ -86,6 +86,7 @@ class CurrencyViewSet(ReferenceViewSet):
 class CrossCuttingThemeViewSet(ReferenceViewSet):
     from apps.reference.serializers import CrossCuttingThemeSerializer
     serializer_class = CrossCuttingThemeSerializer
+    queryset = CrossCuttingTheme.objects.all().order_by("name")
 
 class SdgViewSet(ReferenceViewSet):
     """
