@@ -122,14 +122,14 @@ export default function SplashScreen({ exiting = false }) {
         width="68"
         height="68"
         viewBox="0 0 38 38"
-        aria-label="ARBM-MES logo"
+        aria-label="ARBM-MIS logo"
       >
         <polygon points="19,2 36,19 19,36 2,19" fill="#1a1a1a" />
         <polygon points="19,7 31,19 19,31 7,19" fill="#A4C53F" />
       </svg>
 
       {/* Nom */}
-      <div className="arbm-splash-name">ARBM-MES</div>
+      <div className="arbm-splash-name">ARBM-MIS</div>
 
       {/* Sous-titre IsDB / LLF2 */}
       <div className="arbm-splash-fund">Lives &amp; Livelihoods Fund · LLF2</div>

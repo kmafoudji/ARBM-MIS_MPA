@@ -1,6 +1,6 @@
 /**
  * PIRSView — SF-7 Module 2 (RG-7.1 / RG-7.2 / RG-7.3)
- * Performance Indicator Reference Sheet — couleurs ARBM-MES
+ * Performance Indicator Reference Sheet — couleurs ARBM-MIS
  */
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
@@ -324,7 +324,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", textAlign: "center", fontSize: 11, color: "#9ca3af" }}>
-        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · ARBM-MES · IsDB LLF2
+        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · ARBM-MIS · IsDB LLF2
       </div>
     </div>
   );
