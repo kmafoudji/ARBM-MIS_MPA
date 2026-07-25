@@ -119,14 +119,29 @@ export default function PIRSView({ projectId, rowId, onBack }) {
   const { project, indicator, baseline, targets, actuals, disaggregations, generated_at } = data;
   const genDate = new Date(generated_at).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
-  function handleExportDocx() {
-    const url = `/api/projects/${projectId}/logframe/${rowId}/pirs/?format=docx`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `PIRS_${project.code}_${indicator.code}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  async function handleExportDocx() {
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/logframe/${rowId}/pirs/?export=docx`,
+        { credentials: "include" }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || `Export failed (${res.status})`);
+        return;
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `PIRS_${project.code}_${indicator.code}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + e.message);
+    }
   }
 
   return (

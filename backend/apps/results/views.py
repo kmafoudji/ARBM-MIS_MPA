@@ -1375,7 +1375,7 @@ class PIRSDataView(APIView):
             "generated_at": __import__("django.utils.timezone", fromlist=["now"]).now().isoformat(),
         }
 
-        fmt = request.query_params.get("format", "json")
+        fmt = request.query_params.get("format", request.query_params.get("export", "json"))
         if fmt == "docx":
             return self._generate_docx(pirs_data)
 
