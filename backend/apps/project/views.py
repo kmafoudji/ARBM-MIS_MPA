@@ -457,11 +457,20 @@ class ProjectImplementingPartnerListView(APIView):
     def post(self, request, pk):
         from apps.project.models import ProjectImplementingPartner
         from apps.project.serializers import ProjectImplementingPartnerSerializer
+        from apps.reference.models import ImplementingAgency
         project = self._get_project(pk)
         serializer = ProjectImplementingPartnerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(project=project)
-        return Response(serializer.data, status=201)
+        d = serializer.validated_data
+        partner = ProjectImplementingPartner.objects.create(
+            project=project,
+            agency=d["agency"],
+            role=d.get("role", "lead"),
+            allocated_amount_usd=d.get("allocated_amount_usd"),
+            notes=d.get("notes", ""),
+            order=d.get("order", 0),
+        )
+        return Response(ProjectImplementingPartnerSerializer(partner).data, status=201)
 
 
 class ProjectImplementingPartnerDetailView(APIView):
@@ -480,8 +489,12 @@ class ProjectImplementingPartnerDetailView(APIView):
         partner = self._get_partner(pk, partner_pk)
         serializer = ProjectImplementingPartnerSerializer(partner, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        d = serializer.validated_data
+        for field in ("agency", "role", "allocated_amount_usd", "notes", "order"):
+            if field in d:
+                setattr(partner, field, d[field])
+        partner.save()
+        return Response(ProjectImplementingPartnerSerializer(partner).data)
 
     def delete(self, request, pk, partner_pk):
         partner = self._get_partner(pk, partner_pk)

@@ -44,7 +44,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
           <h1 className="view-title">Portfolio</h1>
           <p className="view-lead">
             Projects registered in the system, from Concept Note to closure.
-            Selectionnez un projet pour consulter sa fiche et son cycle de vie.
+            Select a project to view its details and lifecycle.
           </p>
         </div>
         <button className="btn btn-primary" onClick={onCreateClick}>
