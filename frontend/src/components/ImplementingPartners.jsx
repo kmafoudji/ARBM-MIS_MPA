@@ -2,6 +2,16 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
+
+const AGENCY_TYPE_EN = {
+  "Gouvernement": "Government",
+  "Agence nationale": "National agency",
+  "Agence ONU": "UN agency",
+  "ONG": "NGO",
+  "Secteur prive": "Private sector",
+  "Secteur privé": "Private sector",
+};
+function agencyTypeEn(label) { return AGENCY_TYPE_EN[label] || label; }
 import Flag from "./Flag.jsx";
 
 function fmt(n) {
@@ -143,9 +153,9 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
         <table className="data-table mb-3" style={{ width: "100%" }}>
           <thead>
             <tr>
-              <th>Agency</th>
-              <th>Type</th>
-              <th>Role</th>
+              <th style={{ textAlign: "left" }}>Agency</th>
+              <th style={{ textAlign: "left" }}>Type</th>
+              <th style={{ textAlign: "left" }}>Role</th>
               <th style={{ textAlign: "right" }}>Allocated (USD)</th>
               <th style={{ width: 80 }}></th>
             </tr>
@@ -165,7 +175,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                   )}
                 </td>
                 <td>
-                  <span className="text-muted text-sm">{p.agency_type}</span>
+                  <span className="text-muted text-sm">{agencyTypeEn(p.agency_type)}</span>
                 </td>
                 <td>
                   <span className={ROLE_BADGE[p.role] || "badge"}>

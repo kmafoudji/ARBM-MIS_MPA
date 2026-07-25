@@ -59,10 +59,10 @@ export default function App() {
 
   // Le backend re-verifie systematiquement : masquer un bouton n'est qu'un
   // confort d'usage, jamais la barriere de securite.
+  // RBAC neutralisé (RBAC_ENFORCED=False) — le backend reste le garde-fou.
+  // canEdit = true pour tout utilisateur authentifié.
   const perms = user?.permissions || [];
-  const canEditReference =
-    perms.includes("*") ||
-    (perms.includes("m1_config_access:create") && perms.includes("m1_config_access:update"));
+  const canEditReference = !!user;
 
   return (
     <AppShell view={nav} onNavigate={setNav} user={user} counts={counts}>
