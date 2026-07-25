@@ -61,11 +61,17 @@ function Modal({ title, onClose, children }) {
 /* ══════════════════════════════════════════════════════════════════════════ */
 /*  ONGLET USERS                                                              */
 /* ══════════════════════════════════════════════════════════════════════════ */
+const PAGE_SIZE_USERS = 10;
+
 function TabUsers({ currentUser }) {
   const qc = useQueryClient();
   const [showInvite, setShowInvite] = useState(false);
   const [form, setForm] = useState({ email: "", first_name: "", last_name: "", user_type: "internal", auth_method: "sso" });
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sortCol, setSortCol] = useState("date_joined");
+  const [sortDir, setSortDir] = useState("desc");
+  const [page, setPage] = useState(1);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users-full"],
@@ -85,6 +91,37 @@ function TabUsers({ currentUser }) {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("asc"); }
+    setPage(1);
+  }
+
+  function SortIcon({ col }) {
+    if (sortCol !== col) return <span style={{ opacity: 0.3, marginLeft: 4, fontSize: 10 }}>↕</span>;
+    return <Icon name={sortDir === "asc" ? "chevron-up" : "chevron-down"} size={11} style={{ marginLeft: 4, color: "var(--lime)" }} />;
+  }
+
+  const q = search.toLowerCase();
+  const filtered = users.filter((u) =>
+    !q ||
+    u.email?.toLowerCase().includes(q) ||
+    u.full_name?.toLowerCase().includes(q) ||
+    u.user_type?.toLowerCase().includes(q)
+  );
+
+  const sorted = [...filtered].sort((a, b) => {
+    let va = a[sortCol] ?? "";
+    let vb = b[sortCol] ?? "";
+    if (sortCol === "date_joined") { va = va || ""; vb = vb || ""; }
+    const cmp = String(va).localeCompare(String(vb), undefined, { numeric: true });
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE_USERS));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE_USERS, safePage * PAGE_SIZE_USERS);
+
   return (
     <>
       <div className="card card-flush">
@@ -93,94 +130,130 @@ function TabUsers({ currentUser }) {
             <h2 className="card-title">Accounts</h2>
             <div className="card-sub">Provisioned via Microsoft Entra ID</div>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={() => { setShowInvite(true); setError(null); }}>
-            <Icon name="plus" size={14} /> Invite user
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              className="field-input"
+              style={{ width: 220, height: 32, fontSize: 13 }}
+              placeholder="Search email, name, type…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+            <button className="btn btn-primary btn-sm" onClick={() => { setShowInvite(true); setError(null); }}>
+              <Icon name="plus" size={14} /> Invite user
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
           <div className="empty"><span className="spinner" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="empty">
+            <div className="empty-title">No results</div>
+            <p className="text-sm">No account matches "{search}".</p>
+          </div>
         ) : (
-          <div className="table-wrap"><table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}></th>
-                <th>Email</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Auth</th>
-                <th>Roles</th>
-                <th style={{ width: 100 }}>Joined</th>
-                <th style={{ width: 80 }}>Status</th>
-                <th style={{ width: 40 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => {
-                const isMe = u.email === currentUser?.email;
-                const isSso = u.auth_method === "sso";
-                return (
-                  <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
-                    <td>
-                      <div className="avatar-sm" style={{ background: isMe ? "var(--lime)" : "#1B5A8C" }}>
-                        {initials(u)}
-                      </div>
-                    </td>
-                    <td className="text-mono text-xs">
-                      {u.email}
-                      {isMe && <span className="badge badge-lime" style={{ marginLeft: 6 }}>You</span>}
-                    </td>
-                    <td style={{ fontWeight: 500 }}>
-                      {u.full_name || <span className="text-muted">—</span>}
-                    </td>
-                    <td>
-                      <span className={`badge ${u.user_type === "internal" ? "badge-violet" : "badge"}`}>
-                        {u.user_type === "internal" ? "Internal" : "External"}
-                      </span>
-                    </td>
-                    <td>
-                      {isSso ? (
-                        <span className="badge badge-blue" style={{ gap: 4, display: "inline-flex", alignItems: "center" }}>
-                          <Icon name="cloud" size={11} /> Entra ID
-                        </span>
-                      ) : (
-                        <span className="badge">Local</span>
-                      )}
-                    </td>
-                    <td>
-                      {u.role_labels?.length ? (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                          {u.role_labels.map((r) => (
-                            <span key={r} className="badge badge-lime" style={{ fontSize: 10 }}>{r}</span>
-                          ))}
+          <>
+            <div className="table-wrap"><table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}></th>
+                  <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("email")}>
+                    Email <SortIcon col="email" />
+                  </th>
+                  <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("full_name")}>
+                    Name <SortIcon col="full_name" />
+                  </th>
+                  <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("user_type")}>
+                    Type <SortIcon col="user_type" />
+                  </th>
+                  <th>Auth</th>
+                  <th>Roles</th>
+                  <th style={{ width: 110, cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("date_joined")}>
+                    Joined <SortIcon col="date_joined" />
+                  </th>
+                  <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("is_active")}>
+                    Status <SortIcon col="is_active" />
+                  </th>
+                  <th style={{ width: 40 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((u) => {
+                  const isMe = u.email === currentUser?.email;
+                  const isSso = u.auth_method === "sso";
+                  return (
+                    <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
+                      <td>
+                        <div className="avatar-sm" style={{ background: isMe ? "var(--lime)" : "#1B5A8C" }}>
+                          {initials(u)}
                         </div>
-                      ) : (
-                        <span className="text-muted text-xs">No role</span>
-                      )}
-                    </td>
-                    <td className="text-mono text-xs">{fmtDate(u.date_joined)}</td>
-                    <td>
-                      <span className={`badge ${u.is_active ? "badge-lime" : "badge-off"}`}>
-                        {u.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>
-                      {!isMe && (
-                        <button
-                          className="btn-square"
-                          title={u.is_active ? "Deactivate" : "Reactivate"}
-                          aria-label={u.is_active ? "Deactivate" : "Reactivate"}
-                          onClick={() => toggleMutation.mutate(u.id)}
-                        >
-                          <Icon name={u.is_active ? "x" : "check"} size={13} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table></div>
+                      </td>
+                      <td className="text-mono text-xs">
+                        {u.email}
+                        {isMe && <span className="badge badge-lime" style={{ marginLeft: 6 }}>You</span>}
+                      </td>
+                      <td style={{ fontWeight: 500 }}>
+                        {u.full_name || <span className="text-muted">—</span>}
+                      </td>
+                      <td>
+                        <span className={`badge ${u.user_type === "internal" ? "badge-violet" : "badge"}`}>
+                          {u.user_type === "internal" ? "Internal" : "External"}
+                        </span>
+                      </td>
+                      <td>
+                        {isSso ? (
+                          <span className="badge badge-blue" style={{ gap: 4, display: "inline-flex", alignItems: "center" }}>
+                            <Icon name="cloud" size={11} /> Entra ID
+                          </span>
+                        ) : (
+                          <span className="badge">Local</span>
+                        )}
+                      </td>
+                      <td>
+                        {u.role_labels?.length ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {u.role_labels.map((r) => (
+                              <span key={r} className="badge badge-lime" style={{ fontSize: 10 }}>{r}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted text-xs">No role</span>
+                        )}
+                      </td>
+                      <td className="text-mono text-xs">{fmtDate(u.date_joined)}</td>
+                      <td>
+                        <span className={`badge ${u.is_active ? "badge-lime" : "badge-off"}`}>
+                          {u.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td>
+                        {!isMe && (
+                          <button
+                            className="btn-square"
+                            title={u.is_active ? "Deactivate" : "Reactivate"}
+                            aria-label={u.is_active ? "Deactivate" : "Reactivate"}
+                            onClick={() => toggleMutation.mutate(u.id)}
+                          >
+                            <Icon name={u.is_active ? "x" : "check"} size={13} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table></div>
+
+            {/* Pagination */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: "1px solid var(--rule)", fontSize: 12, color: "var(--text-muted)" }}>
+              <span>{filtered.length} account{filtered.length !== 1 ? "s" : ""}{search ? ` matching "${search}"` : ""}</span>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <button className="btn btn-ghost btn-sm" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>‹ Prev</button>
+                <span style={{ padding: "0 8px" }}>Page {safePage} / {totalPages}</span>
+                <button className="btn btn-ghost btn-sm" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>Next ›</button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -319,12 +392,18 @@ function TabRoles({ currentUser }) {
 /* ══════════════════════════════════════════════════════════════════════════ */
 /*  ONGLET ASSIGNMENTS                                                        */
 /* ══════════════════════════════════════════════════════════════════════════ */
+const PAGE_SIZE_ASSIGN = 10;
+
 function TabAssignments({ currentUser }) {
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [showRevoked, setShowRevoked] = useState(false);
   const [form, setForm] = useState({ user: "", role: "", scope_type: "global", scope_id: "" });
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sortCol, setSortCol] = useState("granted_at");
+  const [sortDir, setSortDir] = useState("desc");
+  const [page, setPage] = useState(1);
 
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ["role-assignments"],
@@ -335,7 +414,7 @@ function TabAssignments({ currentUser }) {
 
   const active = assignments.filter((a) => !a.revoked_at);
   const revoked = assignments.filter((a) => a.revoked_at);
-  const displayed = showRevoked ? assignments : active;
+  const pool = showRevoked ? assignments : active;
 
   const addMutation = useMutation({
     mutationFn: (body) => apiFetch("/api/identity/role-assignments/", { method: "POST", body: JSON.stringify(body) }),
@@ -360,6 +439,37 @@ function TabAssignments({ currentUser }) {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const needsScopeId = ["hub", "project", "donor"].includes(form.scope_type);
 
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("asc"); }
+    setPage(1);
+  }
+
+  function SortIcon({ col }) {
+    if (sortCol !== col) return <span style={{ opacity: 0.3, marginLeft: 4, fontSize: 10 }}>↕</span>;
+    return <Icon name={sortDir === "asc" ? "chevron-up" : "chevron-down"} size={11} style={{ marginLeft: 4, color: "var(--lime)" }} />;
+  }
+
+  const q = search.toLowerCase();
+  const filtered = pool.filter((a) =>
+    !q ||
+    a.user_email?.toLowerCase().includes(q) ||
+    a.user_name?.toLowerCase().includes(q) ||
+    a.role_label?.toLowerCase().includes(q) ||
+    a.scope_type_display?.toLowerCase().includes(q)
+  );
+
+  const sorted = [...filtered].sort((a, b) => {
+    let va = a[sortCol] ?? "";
+    let vb = b[sortCol] ?? "";
+    const cmp = String(va).localeCompare(String(vb), undefined, { numeric: true });
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE_ASSIGN));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE_ASSIGN, safePage * PAGE_SIZE_ASSIGN);
+
   return (
     <>
       <div className="card card-flush">
@@ -369,8 +479,15 @@ function TabAssignments({ currentUser }) {
             <div className="card-sub">User × Role × Scope</div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <label style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-              <input type="checkbox" checked={showRevoked} onChange={(e) => setShowRevoked(e.target.checked)} />
+            <input
+              className="field-input"
+              style={{ width: 220, height: 32, fontSize: 13 }}
+              placeholder="Search user, role, scope…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+            <label style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <input type="checkbox" checked={showRevoked} onChange={(e) => { setShowRevoked(e.target.checked); setPage(1); }} />
               Show revoked
             </label>
             <button className="btn btn-primary btn-sm" onClick={() => { setShowAdd(true); setError(null); }}>
@@ -380,82 +497,99 @@ function TabAssignments({ currentUser }) {
         </div>
 
         {isLoading ? <div className="empty"><span className="spinner" /></div>
-          : displayed.length === 0 ? (
+          : filtered.length === 0 ? (
             <div className="empty">
-              <div className="empty-title">No assignments yet</div>
-              <p className="text-sm">Use the button above to assign a role to a user.</p>
+              <div className="empty-title">{search ? `No results for "${search}"` : "No assignments yet"}</div>
+              {!search && <p className="text-sm">Use the button above to assign a role to a user.</p>}
             </div>
           ) : (
-            <div className="table-wrap"><table className="table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Scope</th>
-                  <th style={{ width: 110 }}>Assigned</th>
-                  <th style={{ width: 110 }}>Revoked</th>
-                  <th style={{ width: 50 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayed.map((a) => (
-                  <tr key={a.id} style={{ opacity: a.revoked_at ? 0.5 : 1 }}>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div className="avatar-sm" style={{
-                          background: a.user_email === currentUser?.email ? "var(--lime)" : "#1B5A8C",
-                          flexShrink: 0,
-                        }}>
-                          {initials({ first_name: a.user_name?.split(" ")[0] || "", last_name: a.user_name?.split(" ").slice(1).join(" ") || "", email: a.user_email })}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 500, fontSize: 13 }}>
-                            {a.user_name || a.user_email}
-                            {a.user_email === currentUser?.email && (
-                              <span className="badge badge-lime" style={{ marginLeft: 6, fontSize: 10 }}>You</span>
-                            )}
-                          </div>
-                          <div className="text-mono text-xs text-muted">{a.user_name ? a.user_email : ""}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{a.role_label}</span>
-                      {a.role_code === "llfmu_arbm_specialist" && a.user_email === currentUser?.email && (
-                        <span className="badge badge-lime" style={{ marginLeft: 6, fontSize: 10 }}>You</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className="badge badge-lime">
-                        {a.scope_type_display}{a.scope_id ? ` #${a.scope_id}` : ""}
-                      </span>
-                    </td>
-                    <td className="text-mono text-xs">{fmtDateTime(a.granted_at)}</td>
-                    <td className="text-mono text-xs">{a.revoked_at ? fmtDateTime(a.revoked_at) : "—"}</td>
-                    <td>
-                      {!a.revoked_at && (
-                        <button
-                          className="btn-square danger"
-                          title="Revoke"
-                          aria-label="Revoke assignment"
-                          onClick={() => window.confirm(`Revoke role "${a.role_label}" for ${a.user_email}?`) && revokeMutation.mutate(a.id)}
-                        >
-                          <Icon name="x" size={13} />
-                        </button>
-                      )}
-                    </td>
+            <>
+              <div className="table-wrap"><table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("user_email")}>
+                      User <SortIcon col="user_email" />
+                    </th>
+                    <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("role_label")}>
+                      Role <SortIcon col="role_label" />
+                    </th>
+                    <th style={{ cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("scope_type")}>
+                      Scope <SortIcon col="scope_type" />
+                    </th>
+                    <th style={{ width: 110, cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("granted_at")}>
+                      Assigned <SortIcon col="granted_at" />
+                    </th>
+                    <th style={{ width: 110, cursor: "pointer", userSelect: "none" }} onClick={() => toggleSort("revoked_at")}>
+                      Revoked <SortIcon col="revoked_at" />
+                    </th>
+                    <th style={{ width: 50 }}></th>
                   </tr>
-                ))}
-              </tbody>
-            </table></div>
-          )}
+                </thead>
+                <tbody>
+                  {pageRows.map((a) => (
+                    <tr key={a.id} style={{ opacity: a.revoked_at ? 0.5 : 1 }}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div className="avatar-sm" style={{
+                            background: a.user_email === currentUser?.email ? "var(--lime)" : "#1B5A8C",
+                            flexShrink: 0,
+                          }}>
+                            {initials({ first_name: a.user_name?.split(" ")[0] || "", last_name: a.user_name?.split(" ").slice(1).join(" ") || "", email: a.user_email })}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 500, fontSize: 13 }}>
+                              {a.user_name || a.user_email}
+                              {a.user_email === currentUser?.email && (
+                                <span className="badge badge-lime" style={{ marginLeft: 6, fontSize: 10 }}>You</span>
+                              )}
+                            </div>
+                            <div className="text-mono text-xs text-muted">{a.user_name ? a.user_email : ""}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{a.role_label}</span>
+                      </td>
+                      <td>
+                        <span className="badge badge-lime">
+                          {a.scope_type_display}{a.scope_id ? ` #${a.scope_id}` : ""}
+                        </span>
+                      </td>
+                      <td className="text-mono text-xs">{fmtDateTime(a.granted_at)}</td>
+                      <td className="text-mono text-xs">{a.revoked_at ? fmtDateTime(a.revoked_at) : "—"}</td>
+                      <td>
+                        {!a.revoked_at && (
+                          <button
+                            className="btn-square danger"
+                            title="Revoke"
+                            aria-label="Revoke assignment"
+                            onClick={() => window.confirm(`Revoke role "${a.role_label}" for ${a.user_email}?`) && revokeMutation.mutate(a.id)}
+                          >
+                            <Icon name="x" size={13} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
 
-        {revoked.length > 0 && !showRevoked && (
-          <div style={{ padding: "8px 16px", fontSize: 12, color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>
-            {revoked.length} revoked assignment{revoked.length > 1 ? "s" : ""} hidden —{" "}
-            <button className="btn-link" onClick={() => setShowRevoked(true)}>show all</button>
-          </div>
-        )}
+              {/* Pagination */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: "1px solid var(--rule)", fontSize: 12, color: "var(--text-muted)" }}>
+                <span>
+                  {filtered.length} assignment{filtered.length !== 1 ? "s" : ""}
+                  {!showRevoked && revoked.length > 0 && (
+                    <> · <button className="btn-link" onClick={() => setShowRevoked(true)}>{revoked.length} revoked hidden</button></>
+                  )}
+                </span>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <button className="btn btn-ghost btn-sm" disabled={safePage === 1} onClick={() => setPage(safePage - 1)}>‹ Prev</button>
+                  <span style={{ padding: "0 8px" }}>Page {safePage} / {totalPages}</span>
+                  <button className="btn btn-ghost btn-sm" disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}>Next ›</button>
+                </div>
+              </div>
+            </>
+          )}
       </div>
 
       {showAdd && (
