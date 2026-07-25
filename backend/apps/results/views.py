@@ -1385,11 +1385,17 @@ class PIRSDataView(APIView):
         """Génère le PIRS en DOCX via python-docx."""
         import io
         from django.http import HttpResponse
-        from docx import Document
-        from docx.shared import Pt, RGBColor, Cm
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
-        from docx.oxml.ns import qn
-        from docx.oxml import OxmlElement
+        try:
+            from docx import Document
+            from docx.shared import Pt, RGBColor, Cm
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            from docx.oxml.ns import qn
+            from docx.oxml import OxmlElement
+        except ImportError:
+            return Response(
+                {"detail": "python-docx not installed. Run: pip install python-docx in the backend container."},
+                status=500
+            )
 
         def set_cell_bg(cell, hex_color):
             tc = cell._tc

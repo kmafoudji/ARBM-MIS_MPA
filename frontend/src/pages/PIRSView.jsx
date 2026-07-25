@@ -32,7 +32,7 @@ function SectionHeader({ title, icon }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
-      background: "#111", color: "#fff",
+      background: "#1B5A8C", color: "#fff",
       padding: "9px 14px", borderRadius: 8,
       marginBottom: 10, marginTop: 24,
     }}>
@@ -66,7 +66,7 @@ function DataTable({ headers, rows }) {
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "#111" }}>
+          <tr style={{ background: "#1B5A8C" }}>
             {headers.map((h, i) => (
               <th key={i} style={{
                 padding: "9px 12px", color: "#fff", textAlign: typeof h === "object" ? h.align : "left",
