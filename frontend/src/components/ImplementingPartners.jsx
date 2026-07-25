@@ -42,15 +42,29 @@ function fmt(n) {
 }
 
 const ROLE_CHOICES = [
-  { value: "lead",        label: "Lead Implementing Agency" },
-  { value: "co_executor", label: "Co-executing Agency" },
-  { value: "subcontract", label: "Subcontractor / Service provider" },
+  { value: "lead",              label: "Lead Implementing Agency" },
+  { value: "co_executor",       label: "Co-executing Agency" },
+  { value: "technical_partner", label: "Technical Partner" },
+  { value: "fiduciary",         label: "Fiduciary Agent" },
+  { value: "subcontract",       label: "Subcontractor / Service provider" },
+  { value: "ngo",               label: "NGO / Civil society" },
+  { value: "government",        label: "Government entity" },
+  { value: "un_agency",         label: "UN Agency" },
+  { value: "private_sector",    label: "Private sector" },
+  { value: "research",          label: "Research / Academic institution" },
 ];
 
 const ROLE_BADGE = {
-  lead:        "badge badge-lime",
-  co_executor: "badge badge-blue",
-  subcontract: "badge",
+  lead:              "badge badge-lime",
+  co_executor:       "badge badge-blue",
+  technical_partner: "badge badge-violet",
+  fiduciary:         "badge badge-orange",
+  subcontract:       "badge",
+  ngo:               "badge badge-teal",
+  government:        "badge badge-navy",
+  un_agency:         "badge badge-blue",
+  private_sector:    "badge badge-rose",
+  research:          "badge",
 };
 
 const EMPTY_FORM = { agency: "", role: "lead", allocated_amount_usd: "", notes: "" };
@@ -68,7 +82,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
   });
 
   const { data: agencies = [] } = useQuery({
-    queryKey: ["implementing-agencies"],
+    queryKey: ["ref", "agencies"],
     queryFn: () => apiFetch("/api/reference/agencies/"),
     staleTime: 60_000,
   });

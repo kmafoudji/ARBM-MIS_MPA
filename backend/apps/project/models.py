@@ -545,9 +545,16 @@ class ComponentAllocation(models.Model):
 # ---------------------------------------------------------------------------
 
 PARTNER_ROLE_CHOICES = [
-    ("lead",        "Lead Implementing Agency"),
-    ("co_executor", "Co-executing Agency"),
-    ("subcontract", "Subcontractor / Service provider"),
+    ("lead",              "Lead Implementing Agency"),
+    ("co_executor",       "Co-executing Agency"),
+    ("technical_partner", "Technical Partner"),
+    ("fiduciary",         "Fiduciary Agent"),
+    ("subcontract",       "Subcontractor / Service provider"),
+    ("ngo",               "NGO / Civil society"),
+    ("government",        "Government entity"),
+    ("un_agency",         "UN Agency"),
+    ("private_sector",    "Private sector"),
+    ("research",          "Research / Academic institution"),
 ]
 
 
