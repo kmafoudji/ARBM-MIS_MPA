@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
+import { useDialog } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
 
 export default function GeographicScope({ projectId, countries, canEdit }) {
@@ -18,6 +19,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
   const [isPrimary, setIsPrimary] = useState(false);
   const [notes,     setNotes]     = useState("");
   const [activeTab, setActiveTab] = useState(null); // admin1 name actif
+  const dialog = useDialog();
 
   const projectCountryIso3s = (countries || []).map((c) => c.iso3).filter(Boolean);
   const [selectedIso3, setSelectedIso3] = useState(projectCountryIso3s[0] || "");
@@ -231,8 +233,10 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
 
   if (isLoading) return <div className="card-body"><span className="spinner" /> Loading…</div>;
 
+
   return (
     <div className="card-body">
+      <dialog.Dialog />
       {scope.length === 0 && openFor === null && (
         <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>
           No geographic scope defined. Add Admin 1 regions or Admin 2 districts.
@@ -310,7 +314,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                       <IconEdit />
                     </button>
                     <button className="btn-square danger" title="Remove region"
-                      onClick={() => window.confirm(`Remove ${activeTabData.label} from scope?`) && removeMutation.mutate(activeTabData.scope.area)}>
+                      onClick={async () => { const ok = await dialog.confirm(`Remove "${activeTabData.label}" from the geographic scope?`, { title: "Remove zone", confirmLabel: "Remove", danger: true }); if (ok) removeMutation.mutate(activeTabData.scope.area); }}>
                       <IconDeactivate />
                     </button>
                   </span>
@@ -349,7 +353,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                             <Icon name="pencil" size={10} />
                           </button>
                           <button
-                            onClick={() => window.confirm(`Remove ${s.area_name}?`) && removeMutation.mutate(s.area)}
+                            onClick={async () => { const ok = await dialog.confirm(`Remove district "${s.area_name}" from scope?`, { title: "Remove district", confirmLabel: "Remove", danger: true }); if (ok) removeMutation.mutate(s.area); }}
                             style={{ background: "none", border: "none", cursor: "pointer", padding: 1, color: "var(--text-muted)", lineHeight: 1 }}
                             title="Remove">
                             <Icon name="x" size={10} />

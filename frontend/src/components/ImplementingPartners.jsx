@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
+import { useDialog } from "./Dialog.jsx";
 
 function AgencyLogo({ url, name }) {
   if (url) {
@@ -71,6 +72,7 @@ const EMPTY_FORM = { agency: "", role: "lead", allocated_amount_usd: "", notes: 
 
 export default function ImplementingPartners({ projectId, envelopeTotal, canEdit }) {
   const qc = useQueryClient();
+  const dialog = useDialog();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId]     = useState(null);
   const [form, setForm]         = useState(EMPTY_FORM);
@@ -187,7 +189,8 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
 
   return (
     <div className="card-body">
-      {/* Partner table */}
+      <dialog.Dialog />
+      {/* Partner table */
       {partners.length > 0 && (
         <table className="data-table mb-3" style={{ width: "100%" }}>
           <thead>
@@ -240,8 +243,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                       </button>
                       <button className="btn-square danger" title="Remove"
                         onClick={() => {
-                          if (window.confirm(`Remove ${p.agency_name} from this project?`))
-                            deleteMutation.mutate(p.id);
+                          dialog.confirm(`Remove "${p.agency_name}" from this project?`, { title: "Remove partner", confirmLabel: "Remove", danger: true }).then(ok => { if (ok) deleteMutation.mutate(p.id); });
                         }}>
                         <IconDeactivate />
                       </button>

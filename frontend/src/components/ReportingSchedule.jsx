@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
+import { useDialog } from "./Dialog.jsx";
 
 const STATUS_BADGE = {
   upcoming:  "badge",
@@ -34,6 +35,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
     staleTime: 30_000,
   });
 
+  const dialog = useDialog();
   const [generateError, setGenerateError] = useState(null);
   const generateMutation = useMutation({
     mutationFn: () => apiFetch(`/api/projects/${projectId}/reporting-periods/generate/`, { method: "POST", body: JSON.stringify({}) }),
@@ -72,7 +74,8 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
 
   return (
     <div className="card-body">
-      {/* Pas de fréquence configurée */}
+      <dialog.Dialog />
+      {/* Pas de fréquence configurée */
       {!reportingFrequency && (
         <p className="text-muted text-sm" style={{ margin: 0 }}>
           Reporting frequency not configured. Set it in the Reporting section above to generate the schedule.
@@ -137,7 +140,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
                 {projectEndDate && reportingFrequency && nextReportingDue && (
                   <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
                     title="Delete all periods and recalculate from current settings"
-                    onClick={() => window.confirm("Recalculate the reporting schedule? Existing periods will be deleted.") && resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() })}
+                    onClick={async () => { const ok = await dialog.confirm("All existing periods will be deleted and regenerated from current settings.", { title: "Recalculate schedule?", confirmLabel: "Recalculate", danger: false }); if (ok) resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() }); }}
                     disabled={generateMutation.isPending || resetMutation.isPending}>
                     <Icon name="refresh-cw" size={13} />
                     {resetMutation.isPending || generateMutation.isPending ? "Calculating…" : "Recalculate"}

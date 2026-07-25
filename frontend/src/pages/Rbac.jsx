@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import { useDialog } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
@@ -65,6 +66,7 @@ const PAGE_SIZE_USERS = 10;
 
 function TabUsers({ currentUser }) {
   const qc = useQueryClient();
+  const dialog = useDialog();
   const [showInvite, setShowInvite] = useState(false);
   const [form, setForm] = useState({ email: "", first_name: "", last_name: "", user_type: "internal", auth_method: "sso" });
   const [error, setError] = useState(null);
@@ -563,7 +565,7 @@ function TabAssignments({ currentUser }) {
                             className="btn-square danger"
                             title="Revoke"
                             aria-label="Revoke assignment"
-                            onClick={() => window.confirm(`Revoke role "${a.role_label}" for ${a.user_email}?`) && revokeMutation.mutate(a.id)}
+                            onClick={async () => { const ok = await dialog.confirm(`Role "${a.role_label}" will be revoked for ${a.user_email}.`, { title: "Revoke role?", confirmLabel: "Revoke", danger: true }); if (ok) revokeMutation.mutate(a.id); }}
                           >
                             <Icon name="x" size={13} />
                           </button>
@@ -667,6 +669,7 @@ export default function Rbac({ currentUser }) {
 
   return (
     <div className="view">
+      <dialog.Dialog />
       <div className="view-header">
         <div className="view-eyebrow">System</div>
         <h1 className="view-title">Users &amp; Roles</h1>

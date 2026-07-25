@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import { useDialog } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 
 const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
@@ -23,6 +24,7 @@ const CHAIN_LEVEL_ICON = {
 // Composant : fiche cible
 // ---------------------------------------------------------------------------
 function TargetCard({ target, rowId, projectId, onChanged }) {
+  const dialog = useDialog();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(target);
 
@@ -82,7 +84,7 @@ function TargetCard({ target, rowId, projectId, onChanged }) {
         <Icon name="pencil" size={11} />
       </button>
       <button type="button"
-        onClick={() => window.confirm("Delete this target?") && deleteMutation.mutate()}
+        onClick={async () => { const ok = await dialog.confirm("This target will be permanently deleted.", { title: "Delete target?", confirmLabel: "Delete", danger: true }); if (ok) deleteMutation.mutate(); }}
         disabled={deleteMutation.isPending}
         style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "inherit" }}>
         <Icon name="x" size={11} />
@@ -319,7 +321,7 @@ function LogframeRowCard({ row, projectId, onChanged }) {
           {/* Supprimer la ligne */}
           <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--rule)", paddingTop: "var(--s-2)" }}>
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "var(--rose, #E84A5F)" }}
-              onClick={() => window.confirm(`Delete row "${row.indicator_code}" from the logframe? Targets will be lost.`) && deleteMutation.mutate()}
+              onClick={async () => { const ok = await dialog.confirm(`All targets for "${row.indicator_code}" will be lost.`, { title: "Remove from logframe?", confirmLabel: "Remove", danger: true }); if (ok) deleteMutation.mutate(); }}
               disabled={deleteMutation.isPending}>
               <Icon name="trash" size={13} /> {deleteMutation.isPending ? "Suppression..." : "Remove from logframe"}
             </button>
@@ -610,6 +612,7 @@ export default function Logframe({ projectId, onBack }) {
 
   return (
     <div className="view">
+      <dialog.Dialog />
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
         ← Project
       </button>

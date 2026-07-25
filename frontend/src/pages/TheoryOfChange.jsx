@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import RichText, { stripHtml } from "../components/RichText";
+import { useDialog } from "../components/Dialog.jsx";
 import RichTextEditor from "../components/RichTextEditor";
 import TagInput from "../components/TagInput";
 
@@ -22,6 +23,7 @@ const EMPTY_NODE_FORM = {
 /* ── Formulaire inline indicateur + baseline + cibles ───────────────────── */
 function IndicatorPanel({ projectId, node, onSaved }) {
   const qc = useQueryClient();
+  const dialog = useDialog();
   const [mode, setMode]       = useState("view"); // view | attach | baseline | targets
   const [search, setSearch]   = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -159,7 +161,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                 <Icon name="plus" size={11} /> Target
               </button>
               <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11, color: "var(--red, #dc2626)" }}
-                onClick={() => window.confirm("Detach this indicator from the node? The logframe row and targets are preserved.") && detachMutation.mutate()}>
+                onClick={async () => { const ok = await dialog.confirm("The logframe row and targets will be preserved.", { title: "Detach indicator?", confirmLabel: "Detach", danger: true }); if (ok) detachMutation.mutate(); }}>
                 <Icon name="x" size={11} /> Detach
               </button>
             </>
@@ -212,7 +214,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                       )}
                       {!t.is_original_pad && t.status !== "revised" && (
                       <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
-                        onClick={() => window.confirm("Delete target?") && deleteTargetMutation.mutate(t.id)}>
+                        onClick={async () => { const ok = await dialog.confirm("This target will be permanently deleted.", { title: "Delete target?", confirmLabel: "Delete", danger: true }); if (ok) deleteTargetMutation.mutate(t.id); }}>
                         ×
                       </button>
                       )}
@@ -356,7 +358,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                 <span key={t.id} className="badge badge-lime" style={{ fontSize: 11 }}>
                   {t.label || new Date(t.target_date).getFullYear()} : {Number(t.target_value).toLocaleString()}
                   <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
-                    onClick={() => window.confirm("Delete target?") && deleteTargetMutation.mutate(t.id)}>
+                    onClick={async () => { const ok = await dialog.confirm("This target will be permanently deleted.", { title: "Delete target?", confirmLabel: "Delete", danger: true }); if (ok) deleteTargetMutation.mutate(t.id); }}>
                     ×
                   </button>
                 </span>
@@ -401,7 +403,8 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
 
   function submitEdit(e) {
     e.preventDefault();
-    const { parent, chain_level, code, id, toc, created_at, updated_at, chain_level_display,
+    const dialog = useDialog();
+  const { parent, chain_level, code, id, toc, created_at, updated_at, chain_level_display,
             logframe_row_id, logframe_indicator_code, logframe_indicator_name,
             logframe_indicator_unit, logframe_baseline_value, logframe_baseline_year,
             ...payload } = form;
@@ -451,7 +454,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
             </button>
             <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button"
               disabled={deleteMutation.isPending}
-              onClick={() => window.confirm(`Delete node ${node.code} ("${stripHtml(node.statement).slice(0, 60)}")? All child nodes will be deleted. This action is irreversible.`) && deleteMutation.mutate()}>
+              onClick={async () => { const ok = await dialog.confirm(`All child nodes will also be deleted. This action is irreversible.`, { title: `Delete node ${node.code}?`, confirmLabel: "Delete", danger: true }); if (ok) deleteMutation.mutate(); }}>
               <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </button>
           </div>
@@ -502,6 +505,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
         </form>
       )}
     </div>
+    </>
   );
 }
 

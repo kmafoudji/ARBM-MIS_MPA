@@ -7,6 +7,7 @@ import ImplementingPartners from "../components/ImplementingPartners";
 import GeographicScope from "../components/GeographicScope";
 import ReportingSchedule from "../components/ReportingSchedule";
 import Toast from "../components/Toast";
+import { useDialog } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 
 const STAGE_BADGE = {
@@ -121,6 +122,7 @@ function Dt({ term, children }) {
 
 export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogframe, canEdit = false }) {
   const queryClient = useQueryClient();
+  const dialog = useDialog();
   const [toast, setToast] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
@@ -340,6 +342,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   return (
     <div className="view">
       <Toast toast={toast} onClose={() => setToast(null)} />
+      <dialog.Dialog />
       <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
         ← Portefeuille
       </button>
@@ -1089,8 +1092,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                             <button
                               className="btn btn-ghost btn-sm"
                               style={{ fontSize: 11, padding: "2px 8px" }}
-                              onClick={() => {
-                                const justification = window.prompt("Edit justification:", t.justification || "");
+                              onClick={async () => {
+                                const justification = await dialog.prompt("Edit justification:", { title: "Edit transition", defaultValue: t.justification || "", confirmLabel: "Save" });
                                 if (justification === null) return;
                                 apiFetch(`/api/projects/${projectId}/transitions/${t.id}/`, {
                                   method: "PATCH",
@@ -1103,8 +1106,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                             <button
                               className="btn btn-ghost btn-sm"
                               style={{ fontSize: 11, padding: "2px 8px", color: "var(--danger, #dc2626)" }}
-                              onClick={() => {
-                                if (!window.confirm(`Delete this transition (${t.from_stage_display} → ${t.to_stage_display})? The project will revert to "${t.from_stage_display}".`)) return;
+                              onClick={async () => {
+                                const ok = await dialog.confirm(`The project will revert to "${t.from_stage_display}".`, { title: `Delete transition to ${t.to_stage_display}?`, confirmLabel: "Delete", danger: true }); if (!ok) return;
                                 apiFetch(`/api/projects/${projectId}/transitions/${t.id}/`, { method: "DELETE" })
                                   .then(() => {
                                     queryClient.invalidateQueries({ queryKey: ["project", projectId] });
