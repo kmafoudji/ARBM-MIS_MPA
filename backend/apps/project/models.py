@@ -530,3 +530,68 @@ class ComponentAllocation(models.Model):
 
     def __str__(self):
         return f"{self.get_component_display()} : {self.amount_usd:,.0f} USD"
+
+
+# ---------------------------------------------------------------------------
+# SF-3 — Partenaires d'exécution (Implementing Partners)
+# ---------------------------------------------------------------------------
+# Capture les agences d'exécution affectées au projet et leur allocation
+# budgétaire indicative. Précurseur de SF-3 complet (provisioning RBAC)
+# qui sera activé ultérieurement.
+# ---------------------------------------------------------------------------
+
+PARTNER_ROLE_CHOICES = [
+    ("lead",        "Lead Implementing Agency"),
+    ("co_executor", "Co-executing Agency"),
+    ("subcontract", "Subcontractor / Service provider"),
+]
+
+
+class ProjectImplementingPartner(models.Model):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="implementing_partners",
+    )
+    agency = models.ForeignKey(
+        "reference.ImplementingAgency",
+        on_delete=models.PROTECT,
+        related_name="project_assignments",
+        help_text="Agence d'exécution issue du référentiel.",
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=PARTNER_ROLE_CHOICES,
+        default="lead",
+        help_text="Rôle de l'agence dans le projet.",
+    )
+    allocated_amount_usd = models.DecimalField(
+        max_digits=16,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Montant délégué en USD (indicatif — budget détaillé au Module 9).",
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Remarques libres (périmètre d'intervention, composantes couvertes…).",
+    )
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Ordre d'affichage.",
+    )
+
+    class Meta:
+        db_table = "project_implementing_partner"
+        ordering = ["order", "pk"]
+        constraints = [
+            # Un seul Lead par projet
+            models.UniqueConstraint(
+                fields=["project"],
+                condition=models.Q(role="lead"),
+                name="unique_lead_partner_per_project",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.agency.name} ({self.get_role_display()}) — {self.project.code}"

@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -433,3 +434,56 @@ class ProjectDatesView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ProjectDetailSerializer(project).data)
+
+
+class ProjectImplementingPartnerListView(APIView):
+    """
+    GET  /api/projects/<pk>/partners/   — liste des partenaires d'exécution
+    POST /api/projects/<pk>/partners/   — ajouter un partenaire
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+
+    def _get_project(self, pk):
+        from apps.project.models import Project
+        return get_object_or_404(Project, pk=pk)
+
+    def get(self, request, pk):
+        from apps.project.models import ProjectImplementingPartner
+        from apps.project.serializers import ProjectImplementingPartnerSerializer
+        project = self._get_project(pk)
+        partners = ProjectImplementingPartner.objects.filter(project=project).select_related("agency", "agency__country")
+        return Response(ProjectImplementingPartnerSerializer(partners, many=True).data)
+
+    def post(self, request, pk):
+        from apps.project.models import ProjectImplementingPartner
+        from apps.project.serializers import ProjectImplementingPartnerSerializer
+        project = self._get_project(pk)
+        serializer = ProjectImplementingPartnerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(project=project)
+        return Response(serializer.data, status=201)
+
+
+class ProjectImplementingPartnerDetailView(APIView):
+    """
+    PATCH  /api/projects/<pk>/partners/<partner_pk>/
+    DELETE /api/projects/<pk>/partners/<partner_pk>/
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+
+    def _get_partner(self, pk, partner_pk):
+        from apps.project.models import ProjectImplementingPartner
+        return get_object_or_404(ProjectImplementingPartner, pk=partner_pk, project_id=pk)
+
+    def patch(self, request, pk, partner_pk):
+        from apps.project.serializers import ProjectImplementingPartnerSerializer
+        partner = self._get_partner(pk, partner_pk)
+        serializer = ProjectImplementingPartnerSerializer(partner, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk, partner_pk):
+        partner = self._get_partner(pk, partner_pk)
+        partner.delete()
+        return Response(status=204)

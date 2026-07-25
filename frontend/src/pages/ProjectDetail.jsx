@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiUpload } from "../api";
 import SectorIcon from "../components/SectorIcon";
 import FinancialEnvelope from "../components/FinancialEnvelope";
+import ImplementingPartners from "../components/ImplementingPartners";
 import Icon from "../components/Icon";
 
 const STAGE_BADGE = {
@@ -546,6 +547,22 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
       </div>
+      {/* SF-3 — Partenaires d'exécution */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">
+              <Icon name="users" size={15} style={{ marginRight: 6 }} />
+              Implementing Partners
+            </h2>
+            <div className="card-sub">
+              SF-3 · Executing agencies · Budget delegation — detail in Module 9
+            </div>
+          </div>
+        </div>
+        <ImplementingPartners projectId={project.id} canEdit={canEdit} />
+      </div>
+
       {/* SF-1 Etape 2 — Theorie du Changement */}
       <div className="card card-flush mt-3">
         <div className="card-header">

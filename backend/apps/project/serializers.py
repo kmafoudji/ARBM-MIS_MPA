@@ -3,7 +3,12 @@ from rest_framework import serializers
 from apps.identity.models import AppUser
 from apps.reference.models import Country, CrossCuttingTheme, Sdg, Sector
 
-from .models import LIFECYCLE_STAGE_CHOICES, Project, ProjectStageTransition
+from .models import (
+    LIFECYCLE_STAGE_CHOICES,
+    Project,
+    ProjectImplementingPartner,
+    ProjectStageTransition,
+)
 from .services import set_project_countries, set_project_sdgs, set_project_sectors
 
 
@@ -433,3 +438,19 @@ class ProjectFinancialEnvelopeSerializer(serializers.ModelSerializer):
 
     def get_component_choices(self, obj):
         return [{"value": v, "label": l} for v, l in COMPONENT_CHOICES]
+
+
+class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
+    agency_name = serializers.CharField(source="agency.name", read_only=True)
+    agency_type = serializers.CharField(source="agency.get_agency_type_display", read_only=True)
+    agency_country_iso2 = serializers.CharField(source="agency.country.iso2", read_only=True, default=None)
+    agency_country_name = serializers.CharField(source="agency.country.name", read_only=True, default=None)
+    role_display = serializers.CharField(source="get_role_display", read_only=True)
+
+    class Meta:
+        model = ProjectImplementingPartner
+        fields = [
+            "id", "agency", "agency_name", "agency_type",
+            "agency_country_iso2", "agency_country_name",
+            "role", "role_display", "allocated_amount_usd", "notes", "order",
+        ]

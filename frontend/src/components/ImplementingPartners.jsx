@@ -1,0 +1,384 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "../api";
+import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
+import Flag from "./Flag.jsx";
+
+
+function fmt(n) {
+  if (n === null || n === undefined || n === "") return "—";
+  const v = Number(n);
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)} Md USD`;
+  if (v >= 1_000_000)     return `${(v / 1_000_000).toFixed(2)} M USD`;
+  return `${v.toLocaleString("fr-FR")} USD`;
+}
+
+const ROLE_CHOICES = [
+  { value: "lead",        label: "Lead Implementing Agency" },
+  { value: "co_executor", label: "Co-executing Agency" },
+  { value: "subcontract", label: "Subcontractor / Service provider" },
+];
+
+const ROLE_BADGE = {
+  lead:        "badge badge-lime",
+  co_executor: "badge badge-blue",
+  subcontract: "badge",
+};
+
+const EMPTY_FORM = { agency: "", role: "lead", allocated_amount_usd: "", notes: "" };
+
+export default function ImplementingPartners({ projectId, canEdit }) {
+  // Chargement de l'enveloppe pour la barre de contrôle budgétaire
+  const { data: envelope } = useQuery({
+    queryKey: ["envelope", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`),
+  });
+  const envelopeTotal = envelope?.total_amount_usd ?? null;
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId]     = useState(null);
+  const [form, setForm]         = useState(EMPTY_FORM);
+
+  const { data: partners = [], isLoading } = useQuery({
+    queryKey: ["partners", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/partners/`),
+  });
+
+  const { data: agencies = [] } = useQuery({
+    queryKey: ["implementing-agencies"],
+    queryFn: () => apiFetch("/api/reference/implementing-agencies/"),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${projectId}/partners/`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["partners", projectId] });
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, payload }) =>
+      apiFetch(`/api/projects/${projectId}/partners/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["partners", projectId] });
+      setEditId(null);
+      setForm(EMPTY_FORM);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) =>
+      apiFetch(`/api/projects/${projectId}/partners/${id}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners", projectId] }),
+  });
+
+  function openAdd() {
+    setEditId(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  }
+
+  function openEdit(p) {
+    setEditId(p.id);
+    setForm({
+      agency: p.agency,
+      role: p.role,
+      allocated_amount_usd: p.allocated_amount_usd ?? "",
+      notes: p.notes ?? "",
+    });
+    setShowForm(true);
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const payload = {
+      agency: Number(form.agency),
+      role: form.role,
+      allocated_amount_usd: form.allocated_amount_usd !== "" ? form.allocated_amount_usd : null,
+      notes: form.notes,
+    };
+    if (editId) {
+      editMutation.mutate({ id: editId, payload });
+    } else {
+      addMutation.mutate(payload);
+    }
+  }
+
+  function handleCancel() {
+    setShowForm(false);
+    setEditId(null);
+    setForm(EMPTY_FORM);
+  }
+
+  // Total délégué = somme des montants renseignés
+  const totalAllocated = partners.reduce((sum, p) => {
+    return sum + (p.allocated_amount_usd ? Number(p.allocated_amount_usd) : 0);
+  }, 0);
+
+  const hasTotalEnv = envelopeTotal && Number(envelopeTotal) > 0;
+  const pctAllocated = hasTotalEnv
+    ? Math.min(100, (totalAllocated / Number(envelopeTotal)) * 100).toFixed(1)
+    : null;
+
+  // Agences déjà assignées (pour filtre optionnel)
+  const assignedAgencyIds = new Set(partners.map((p) => p.agency));
+
+  // Agences disponibles dans le select (toutes — on laisse l'API valider l'unicité du Lead)
+  const availableAgencies = agencies.filter(
+    (a) => a.is_active && (editId ? true : !assignedAgencyIds.has(a.id))
+  );
+
+  if (isLoading) {
+    return (
+      <div className="card-body">
+        <span className="spinner" /> Chargement…
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-body">
+      {/* Tableau des partenaires */}
+      {partners.length > 0 && (
+        <table className="data-table mb-3" style={{ width: "100%" }}>
+          <thead>
+            <tr>
+              <th>Agency</th>
+              <th>Type</th>
+              <th>Role</th>
+              <th style={{ textAlign: "right" }}>Allocated (USD)</th>
+              <th style={{ width: 80 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {partners.map((p) => (
+              <tr key={p.id}>
+                <td>
+                  <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                    {p.agency_country_iso2 && <Flag iso2={p.agency_country_iso2} size={16} />}
+                    <strong>{p.agency_name}</strong>
+                  </span>
+                  {p.notes && (
+                    <div className="text-muted text-sm" style={{ marginTop: 2 }}>
+                      {p.notes}
+                    </div>
+                  )}
+                </td>
+                <td>
+                  <span className="text-muted text-sm">{p.agency_type}</span>
+                </td>
+                <td>
+                  <span className={ROLE_BADGE[p.role] || "badge"}>
+                    {p.role_display}
+                  </span>
+                </td>
+                <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                  {fmt(p.allocated_amount_usd)}
+                </td>
+                <td>
+                  {canEdit && (
+                    <span className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                      <IconEdit onClick={() => openEdit(p)} title="Modifier" />
+                      <IconDeactivate
+                        onClick={() => {
+                          if (window.confirm(`Retirer ${p.agency_name} du projet ?`))
+                            deleteMutation.mutate(p.id);
+                        }}
+                        title="Retirer"
+                      />
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Barre de contrôle budgétaire */}
+      {totalAllocated > 0 && (
+        <div
+          style={{
+            background: "var(--paper)",
+            border: "1px solid var(--rule)",
+            borderRadius: "var(--r-3)",
+            padding: "var(--s-3)",
+            marginBottom: "var(--s-3)",
+          }}
+        >
+          <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}>
+            <span className="text-sm text-muted">Total délégué aux partenaires</span>
+            <span className="text-sm" style={{ fontWeight: 600 }}>
+              {fmt(totalAllocated)}
+              {pctAllocated && (
+                <span className="text-muted" style={{ fontWeight: 400, marginLeft: 6 }}>
+                  ({pctAllocated}% de l'enveloppe)
+                </span>
+              )}
+            </span>
+          </div>
+          {pctAllocated && (
+            <div
+              style={{
+                height: 6,
+                background: "var(--rule)",
+                borderRadius: 3,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${pctAllocated}%`,
+                  background:
+                    Number(pctAllocated) > 100
+                      ? "var(--danger, #e11d48)"
+                      : "var(--lime, #A4C53F)",
+                  borderRadius: 3,
+                  transition: "width 0.3s ease",
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {partners.length === 0 && !showForm && (
+        <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>
+          Aucun partenaire d'exécution enregistré pour ce projet.
+        </p>
+      )}
+
+      {/* Formulaire d'ajout / édition */}
+      {canEdit && showForm && (
+        <div
+          style={{
+            background: "var(--paper)",
+            border: "1px solid var(--rule)",
+            borderRadius: "var(--r-3)",
+            padding: "var(--s-3)",
+            marginBottom: "var(--s-3)",
+          }}
+        >
+          <div className="card-sub" style={{ marginBottom: "var(--s-3)" }}>
+            {editId ? "Modifier le partenaire" : "Ajouter un partenaire d'exécution"}
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-2">
+              <div className="field">
+                <label className="field-label" htmlFor="partnerAgency">
+                  Agence <span className="req">*</span>
+                </label>
+                <select
+                  id="partnerAgency"
+                  className="field-select"
+                  value={form.agency}
+                  onChange={(e) => setForm({ ...form, agency: e.target.value })}
+                  required
+                >
+                  <option value="">Sélectionner…</option>
+                  {availableAgencies.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                      {a.country_name ? ` — ${a.country_name}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="partnerRole">
+                  Rôle <span className="req">*</span>
+                </label>
+                <select
+                  id="partnerRole"
+                  className="field-select"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  required
+                >
+                  {ROLE_CHOICES.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="partnerAmount">
+                  Montant délégué (USD)
+                </label>
+                <input
+                  id="partnerAmount"
+                  className="field-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.allocated_amount_usd}
+                  onChange={(e) => setForm({ ...form, allocated_amount_usd: e.target.value })}
+                  placeholder="Indicatif — détail au Module 9"
+                />
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="partnerNotes">
+                  Notes
+                </label>
+                <input
+                  id="partnerNotes"
+                  className="field-input"
+                  type="text"
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Périmètre d'intervention, composantes couvertes…"
+                />
+              </div>
+            </div>
+
+            {(addMutation.isError || editMutation.isError) && (
+              <div className="field-error mb-3">
+                {JSON.stringify(
+                  (addMutation.error || editMutation.error)?.detail
+                )}
+              </div>
+            )}
+
+            <div className="row">
+              <button
+                className="btn btn-primary btn-sm row"
+                style={{ gap: 6 }}
+                type="submit"
+                disabled={addMutation.isPending || editMutation.isPending}
+              >
+                {(addMutation.isPending || editMutation.isPending)
+                  ? "Enregistrement…"
+                  : editId ? "Mettre à jour" : "Ajouter"}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                onClick={handleCancel}
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {canEdit && !showForm && (
+        <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openAdd}>
+          <IconPlus size={14} /> Ajouter un partenaire
+        </button>
+      )}
+    </div>
+  );
+}
