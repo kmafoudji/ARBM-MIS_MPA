@@ -85,7 +85,15 @@ class GadmArea(models.Model):
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="gadm_areas")
     level = models.PositiveSmallIntegerField(help_text="1 = region/etat, 2 = district/departement")
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=200)
+    name_alt = models.CharField(
+        max_length=200, blank=True,
+        help_text="Nom alternatif ou translittération (GADM VARNAME)."
+    )
+    gadm_uid = models.CharField(
+        max_length=40, unique=True,
+        help_text="Identifiant unique GADM (ex. SEN.1_1, SEN.1.2_1). Clé d'idempotence."
+    )
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
@@ -93,9 +101,13 @@ class GadmArea(models.Model):
 
     class Meta:
         db_table = "gadm_area"
+        ordering = ["country", "level", "name"]
+        indexes = [
+            models.Index(fields=["country", "level"], name="gadm_area_country_level_idx"),
+        ]
 
     def __str__(self):
-        return f"{self.name} (niv.{self.level})"
+        return f"{self.name} (L{self.level}, {self.country.iso3})"
 
 
 class Donor(models.Model):

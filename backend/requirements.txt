@@ -12,3 +12,4 @@ whitenoise==6.6.0
 # fichiers d'Azure Container Apps etant ephemere (tout televersement ecrit sur
 # le disque local disparait au redemarrage du conteneur).
 django-storages[azure]==1.14.4
+python-dateutil==2.9.0

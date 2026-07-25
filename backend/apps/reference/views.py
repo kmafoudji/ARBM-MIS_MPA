@@ -98,3 +98,30 @@ class SdgViewSet(ReferenceViewSet):
     queryset = Sdg.objects.all().order_by("number")
     serializer_class = SdgSerializer
     http_method_names = ["get", "patch", "put", "head", "options"]
+
+
+class GadmAreaViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    GET /api/reference/gadm/?country=SEN&level=1  — zones Admin 1 d'un pays
+    GET /api/reference/gadm/?parent=42            — zones Admin 2 d'un Admin 1
+    """
+    permission_classes = [IsAuthenticated]
+    pagination_class   = None
+
+    def get_queryset(self):
+        from apps.reference.models import GadmArea
+        qs = GadmArea.objects.select_related("country", "parent").order_by("name")
+        country_iso3 = self.request.query_params.get("country")
+        level        = self.request.query_params.get("level")
+        parent_id    = self.request.query_params.get("parent")
+        if country_iso3:
+            qs = qs.filter(country__iso3=country_iso3)
+        if level:
+            qs = qs.filter(level=int(level))
+        if parent_id:
+            qs = qs.filter(parent_id=int(parent_id))
+        return qs
+
+    def get_serializer_class(self):
+        from apps.reference.serializers import GadmAreaSerializer
+        return GadmAreaSerializer

@@ -595,3 +595,92 @@ class ProjectImplementingPartner(models.Model):
 
     def __str__(self):
         return f"{self.agency.name} ({self.get_role_display()}) — {self.project.code}"
+
+
+# ---------------------------------------------------------------------------
+# SF-7 — Périmètre géographique GADM (zones infra-nationales)
+# ---------------------------------------------------------------------------
+
+class ProjectGadmScope(models.Model):
+    """
+    Zone géographique d'intervention d'un projet au niveau Admin 1 ou 2.
+    Un projet peut couvrir plusieurs zones (multi-provinces, multi-districts).
+    Héritée par M5 (cartographie) lors de la génération du workspace (SF-10).
+    """
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="gadm_scope",
+    )
+    area = models.ForeignKey(
+        "reference.GadmArea",
+        on_delete=models.PROTECT,
+        related_name="project_scopes",
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Zone principale d'intervention (affichage prioritaire sur les cartes).",
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "project_gadm_scope"
+        unique_together = [("project", "area")]
+        ordering = ["-is_primary", "area__level", "area__name"]
+
+    def __str__(self):
+        return f"{self.project.code} — {self.area.name} (L{self.area.level})"
+
+
+# ---------------------------------------------------------------------------
+# SF-5 — Périodes de reporting (génération automatique)
+# ---------------------------------------------------------------------------
+
+REPORTING_PERIOD_STATUS_CHOICES = [
+    ("upcoming",   "Upcoming"),
+    ("open",       "Open"),
+    ("submitted",  "Submitted"),
+    ("approved",   "Approved"),
+    ("overdue",    "Overdue"),
+]
+
+
+class ReportingPeriod(models.Model):
+    """
+    Période de reporting générée automatiquement à partir de la fréquence
+    et de la première échéance du projet (SF-5).
+    Générée lors du passage à Effective (SF-10) ou manuellement via
+    POST /api/projects/<pk>/reporting-periods/generate/.
+    """
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="reporting_periods",
+    )
+    period_number = models.PositiveSmallIntegerField(
+        help_text="Numéro séquentiel de la période (1, 2, 3…)."
+    )
+    start_date = models.DateField()
+    end_date   = models.DateField()
+    due_date   = models.DateField(
+        help_text="Date limite de soumission (fin de période + délai de grâce)."
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=REPORTING_PERIOD_STATUS_CHOICES,
+        default="upcoming",
+    )
+    label = models.CharField(
+        max_length=50, blank=True,
+        help_text="Ex. 'Q1 2026', 'S2 2026', 'Annual 2026'."
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    approved_at  = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "reporting_period"
+        ordering = ["period_number"]
+        unique_together = [("project", "period_number")]
+
+    def __str__(self):
+        return f"{self.project.code} — {self.label or f'P{self.period_number}'}"

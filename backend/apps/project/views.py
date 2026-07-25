@@ -544,3 +544,110 @@ class ProjectImplementingPartnerDetailView(APIView):
         partner = self._get_partner(pk, partner_pk)
         partner.delete()
         return Response(status=204)
+
+
+class ProjectGadmScopeView(APIView):
+    """
+    GET    /api/projects/<pk>/gadm-scope/         — zones du projet
+    POST   /api/projects/<pk>/gadm-scope/         — ajouter une zone
+    DELETE /api/projects/<pk>/gadm-scope/<area_pk>/ — retirer une zone
+    PATCH  /api/projects/<pk>/gadm-scope/<area_pk>/ — marquer zone primaire
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request, pk):
+        from apps.project.models import ProjectGadmScope
+        from apps.project.serializers import ProjectGadmScopeSerializer
+        project = get_object_or_404(Project, pk=pk)
+        scopes  = ProjectGadmScope.objects.filter(project=project).select_related("area", "area__parent")
+        return Response(ProjectGadmScopeSerializer(scopes, many=True).data)
+
+    def post(self, request, pk):
+        from apps.project.models import ProjectGadmScope
+        from apps.project.serializers import ProjectGadmScopeSerializer
+        from apps.reference.models import GadmArea
+        project = get_object_or_404(Project, pk=pk)
+        area_id    = request.data.get("area")
+        is_primary = request.data.get("is_primary", False)
+        notes      = request.data.get("notes", "")
+        area = get_object_or_404(GadmArea, pk=area_id)
+        scope, created = ProjectGadmScope.objects.get_or_create(
+            project=project, area=area,
+            defaults={"is_primary": is_primary, "notes": notes},
+        )
+        if not created:
+            return Response({"detail": "Cette zone est déjà dans le périmètre."}, status=400)
+        return Response(ProjectGadmScopeSerializer(scope).data, status=201)
+
+    def delete(self, request, pk, area_pk):
+        from apps.project.models import ProjectGadmScope
+        scope = get_object_or_404(ProjectGadmScope, project_id=pk, area_id=area_pk)
+        scope.delete()
+        return Response(status=204)
+
+    def patch(self, request, pk, area_pk):
+        from apps.project.models import ProjectGadmScope
+        from apps.project.serializers import ProjectGadmScopeSerializer
+        scope = get_object_or_404(ProjectGadmScope, project_id=pk, area_id=area_pk)
+        if "is_primary" in request.data:
+            scope.is_primary = request.data["is_primary"]
+        if "notes" in request.data:
+            scope.notes = request.data["notes"]
+        scope.save()
+        return Response(ProjectGadmScopeSerializer(scope).data)
+
+
+class ReportingPeriodView(APIView):
+    """
+    GET  /api/projects/<pk>/reporting-periods/           — liste des périodes
+    POST /api/projects/<pk>/reporting-periods/generate/  — générer les périodes
+    PATCH /api/projects/<pk>/reporting-periods/<p_pk>/   — mettre à jour le statut
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request, pk):
+        from apps.project.models import ReportingPeriod
+        project = get_object_or_404(Project, pk=pk)
+        periods = ReportingPeriod.objects.filter(project=project)
+        data = [
+            {
+                "id":            p.id,
+                "period_number": p.period_number,
+                "label":         p.label,
+                "start_date":    str(p.start_date),
+                "end_date":      str(p.end_date),
+                "due_date":      str(p.due_date),
+                "status":        p.status,
+                "status_display": p.get_status_display(),
+            }
+            for p in periods
+        ]
+        return Response(data)
+
+    def post(self, request, pk):
+        """Génère les périodes manquantes. Idempotent."""
+        from apps.project.services import generate_reporting_periods
+        project = get_object_or_404(Project, pk=pk)
+        created = generate_reporting_periods(project)
+        return Response({"created": created, "message": f"{created} période(s) générée(s)."})
+
+
+class ReportingPeriodDetailView(APIView):
+    """PATCH /api/projects/<pk>/reporting-periods/<p_pk>/ — statut"""
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def patch(self, request, pk, p_pk):
+        from apps.project.models import ReportingPeriod
+        period = get_object_or_404(ReportingPeriod, pk=p_pk, project_id=pk)
+        allowed = {"status", "submitted_at", "approved_at"}
+        for field in allowed:
+            if field in request.data:
+                setattr(period, field, request.data[field] or None)
+        period.save()
+        return Response({
+            "id": period.id, "status": period.status,
+            "status_display": period.get_status_display(),
+        })

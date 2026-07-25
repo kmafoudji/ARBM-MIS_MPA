@@ -314,3 +314,87 @@ def check_transition_authorization(actor, to_stage, dual_authorized_by=None):
                 f"Le second approbateur n'a pas un role admissible pour ce gate. "
                 f"Roles attendus : {_role_labels(needed_dual)}."
             )
+
+
+# ---------------------------------------------------------------------------
+# SF-5 — Génération des périodes de reporting
+# ---------------------------------------------------------------------------
+
+from dateutil.relativedelta import relativedelta
+from datetime import timedelta
+
+GRACE_DAYS = {
+    "quarterly":   30,  # T+30 jours après fin de période
+    "semi_annual": 45,
+    "annual":      60,
+}
+
+PERIOD_MONTHS = {
+    "quarterly":   3,
+    "semi_annual": 6,
+    "annual":      12,
+}
+
+LABEL_FMT = {
+    "quarterly":   lambda d: f"Q{((d.month - 1) // 3) + 1} {d.year}",
+    "semi_annual": lambda d: f"S{1 if d.month <= 6 else 2} {d.year}",
+    "annual":      lambda d: f"Annual {d.year}",
+}
+
+
+def generate_reporting_periods(project, horizon_years=5):
+    """
+    Génère les périodes de reporting pour un projet à partir de
+    reporting_frequency et next_reporting_due.
+
+    Idempotent : ne crée que les périodes manquantes.
+    Retourne le nombre de périodes créées.
+    """
+    from apps.project.models import ReportingPeriod
+    from datetime import date
+
+    if not project.reporting_frequency or not project.next_reporting_due:
+        return 0
+
+    freq   = project.reporting_frequency
+    months = PERIOD_MONTHS.get(freq, 3)
+    grace  = timedelta(days=GRACE_DAYS.get(freq, 30))
+    fmt    = LABEL_FMT.get(freq, lambda d: str(d))
+
+    # Première période : se termine à next_reporting_due
+    # Début = next_reporting_due - durée de période + 1 jour
+    end_date   = project.next_reporting_due
+    start_date = end_date - relativedelta(months=months) + timedelta(days=1)
+
+    # Horizon : jusqu'à end_date projet ou horizon_years ans
+    horizon = project.end_date or (date.today() + relativedelta(years=horizon_years))
+
+    existing = set(
+        ReportingPeriod.objects.filter(project=project).values_list("period_number", flat=True)
+    )
+
+    periods = []
+    n = 1
+    current_start = start_date
+
+    while current_start <= horizon:
+        current_end = current_start + relativedelta(months=months) - timedelta(days=1)
+        if current_start > horizon:
+            break
+        due = current_end + grace
+        if n not in existing:
+            periods.append(ReportingPeriod(
+                project=project,
+                period_number=n,
+                start_date=current_start,
+                end_date=current_end,
+                due_date=due,
+                label=fmt(current_start),
+            ))
+        current_start = current_end + timedelta(days=1)
+        n += 1
+        if n > 60:  # sécurité
+            break
+
+    ReportingPeriod.objects.bulk_create(periods, ignore_conflicts=True)
+    return len(periods)

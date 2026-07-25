@@ -4,6 +4,8 @@ import { apiFetch, apiUpload } from "../api";
 import SectorIcon from "../components/SectorIcon";
 import FinancialEnvelope from "../components/FinancialEnvelope";
 import ImplementingPartners from "../components/ImplementingPartners";
+import GeographicScope from "../components/GeographicScope";
+import ReportingSchedule from "../components/ReportingSchedule";
 import Icon from "../components/Icon";
 
 const STAGE_BADGE = {
@@ -713,6 +715,29 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <ImplementingPartners projectId={project.id} canEdit={canEdit} envelopeTotal={envelope?.total_amount_usd} />
       </div>
 
+      {/* SF-7 — Périmètre géographique GADM */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">
+              <Icon name="map-pin" size={15} style={{ marginRight: 6 }} />
+              Geographic Scope
+            </h2>
+            <div className="card-sub">
+              SF-7 · GADM Admin 1/2 · Inherited by M5 (mapping) at Effective stage
+            </div>
+          </div>
+          <span className="badge text-mono text-xs">
+            {project.countries_detail?.map((c) => c.name).join(", ")}
+          </span>
+        </div>
+        <GeographicScope
+          projectId={project.id}
+          countries={project.countries_detail?.map((c) => ({ iso3: c.iso3 || c.name, name: c.name, flag: c.flag }))}
+          canEdit={canEdit}
+        />
+      </div>
+
       {/* SF-1 Etape 2 — Theorie du Changement */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -1043,13 +1068,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="trending-up" size={15} style={{marginRight:6}} />Reporting</h2>
-            <div className="card-sub">
-              SF-1 · Step 5 · Approval chain — open question, out of scope for now
-            </div>
+            <div className="card-sub">SF-5 · Reporting cycle and schedule</div>
           </div>
           {!showReportingForm && (
-            <button className="btn btn-primary btn-sm" onClick={openReportingForm}>
-              Edit
+            <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openReportingForm}>
+              <Icon name="pencil" size={13} /> Edit
             </button>
           )}
         </div>
@@ -1107,6 +1130,21 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </div>
           )}
         </div>
+      </div>
+
+      {/* SF-5 — Calendrier des périodes */}
+      <div className="card card-flush mt-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="calendar" size={15} style={{ marginRight: 6 }} />Reporting Schedule</h2>
+            <div className="card-sub">SF-5 · Auto-generated periods · Submit and approval tracking</div>
+          </div>
+        </div>
+        <ReportingSchedule
+          projectId={project.id}
+          reportingFrequency={project.reporting_frequency}
+          canEdit={canEdit}
+        />
       </div>
 
     </div>

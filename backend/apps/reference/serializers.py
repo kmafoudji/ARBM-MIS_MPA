@@ -150,3 +150,15 @@ class SdgSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sdg
         fields = ["number", "name", "color"]
+
+
+class GadmAreaSerializer(serializers.ModelSerializer):
+    children_count = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.reference.models import GadmArea
+        model = GadmArea
+        fields = ["id", "gadm_uid", "name", "name_alt", "level", "country", "parent", "children_count"]
+
+    def get_children_count(self, obj):
+        return obj.children.count()

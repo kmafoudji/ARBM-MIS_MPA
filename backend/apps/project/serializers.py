@@ -170,6 +170,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
                 "id": pc.country_id,
                 "name": pc.country.name,
                 "iso2": pc.country.iso2,
+                "iso3": pc.country.iso3,
                 "flag": pc.country.flag,
                 "is_lead": pc.is_lead,
             }
@@ -468,3 +469,18 @@ class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
 
     def get_agency_logo_url(self, obj):
         return obj.agency.logo_url if obj.agency else None
+
+
+class ProjectGadmScopeSerializer(serializers.ModelSerializer):
+    area_name  = serializers.CharField(source="area.name",      read_only=True)
+    area_level = serializers.IntegerField(source="area.level",  read_only=True)
+    area_uid   = serializers.CharField(source="area.gadm_uid",  read_only=True)
+    parent_name = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.project.models import ProjectGadmScope
+        model = ProjectGadmScope
+        fields = ["id", "area", "area_uid", "area_name", "area_level", "parent_name", "is_primary", "notes"]
+
+    def get_parent_name(self, obj):
+        return obj.area.parent.name if obj.area.parent else None
