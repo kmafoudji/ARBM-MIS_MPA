@@ -27,7 +27,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "id", "code", "name",
+            "id", "code", "name", "acronym",
             "lead_country_name", "lead_country_iso2", "country_names",
             "primary_sector", "primary_sector_name", "primary_sector_icon",
             "primary_sector_color", "contributing_sector_count",
@@ -74,7 +74,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "id", "name", "country_ids", "lead_country_id",
+            "id", "name", "acronym", "country_ids", "lead_country_id",
             "primary_sector", "contributing_sector_ids",
             "budget_amount", "primary_sdg", "contributing_sdg_ids",
         ]
@@ -138,7 +138,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "id", "code", "name", "official_reference_number",
+            "id", "code", "name", "acronym", "official_reference_number",
             "lifecycle_stage", "lifecycle_stage_display",
             "lead_country_name", "countries_detail",
             "hub_name", "hub_color",
@@ -242,7 +242,7 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "name", "budget_amount",
+            "name", "acronym", "budget_amount",
             "primary_sector", "contributing_sector_ids",
             "primary_sdg", "contributing_sdg_ids",
             "gender_marker", "implementation_modality", "geographic_typology",

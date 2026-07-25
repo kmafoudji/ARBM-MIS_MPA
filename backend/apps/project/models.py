@@ -119,6 +119,10 @@ RISK_RATING_CHOICES = [
 class Project(models.Model):
     # --- SF-1 Etape 1 : Identite de base (Core ID) ---
     name = models.CharField(max_length=255, help_text="Obligatoire des Concept Note.")
+    acronym = models.CharField(
+        max_length=20, blank=True,
+        help_text="Sigle court du projet (ex. PAAFS, WASH-IDN). Optionnel.",
+    )
     code = models.CharField(
         max_length=30, unique=True, null=True, blank=True,
         help_text="Code projet interne — genere automatiquement a partir du pays chef "

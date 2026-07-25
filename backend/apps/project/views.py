@@ -452,6 +452,8 @@ class ProjectBasicUpdateView(APIView):
 
         if "name" in data:
             project.name = data["name"]
+        if "acronym" in data:
+            project.acronym = data["acronym"]
         if "budget_amount" in data:
             project.budget_amount = data["budget_amount"] or None
         if "primary_sector" in data and data["primary_sector"]:

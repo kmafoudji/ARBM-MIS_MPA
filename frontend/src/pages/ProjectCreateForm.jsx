@@ -123,7 +123,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   /* ── Form state (toutes étapes) ── */
   const [f, setF] = useState({
     // Step 1
-    name: "", countryIds: [], leadCountryId: "", primarySector: "",
+    name: "", acronym: "", countryIds: [], leadCountryId: "", primarySector: "",
     contributingSectorIds: [], lifecycle_stage: "concept_note",
     // Step 2
     primary_sdg: "", contributingSdgIds: [],
@@ -181,6 +181,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         // Création initiale
         const payload = {
           name: f.name,
+          acronym: f.acronym || "",
           country_ids: f.countryIds,
           lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
           primary_sector: Number(f.primarySector),
@@ -201,6 +202,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         // Mise à jour step 1 via endpoint dédié
         await apiFetch(`/api/projects/${pid}/basic/`, { method: "PATCH", body: JSON.stringify({
           name: f.name,
+          acronym: f.acronym || "",
           country_ids: f.countryIds,
           lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
           primary_sector: Number(f.primarySector),
@@ -303,6 +305,13 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <label className="field-label" htmlFor="name">Project name <span className="req">*</span></label>
               <input id="name" className="field-input" name="name" value={f.name} onChange={handleChange}
                 placeholder="e.g. Livestock & Livelihood Development" />
+            </div>
+
+            <div className="field" style={{ maxWidth: 220 }}>
+              <label className="field-label" htmlFor="acronym">Acronym</label>
+              <input id="acronym" className="field-input" name="acronym" value={f.acronym} onChange={handleChange}
+                placeholder="e.g. PAAFS" maxLength={20} />
+              <span className="field-help">Short identifier — optional.</span>
             </div>
 
             <div className="grid grid-2">
