@@ -28,7 +28,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
   const [mode, setMode]       = useState("view"); // view | attach | baseline | targets
   const [search, setSearch]   = useState("");
   const [selectedId, setSelectedId] = useState("");
-  const [chainLevel, setChainLevel] = useState(node.chain_level || "");
+  const [chainLevel] = useState(node.chain_level || "output"); // verrouillé sur le niveau du nœud
   const [baselineForm, setBaselineForm] = useState({
     baseline_value: node.logframe_baseline_value ?? "",
     baseline_year:  node.logframe_baseline_year  ?? "",
@@ -245,12 +245,9 @@ function IndicatorPanel({ projectId, node, onSaved }) {
             </div>
             <div>
               <label className="field-label" style={{ fontSize: 11 }}>Level in chain</label>
-              <select className="field-select" value={chainLevel} onChange={(e) => setChainLevel(e.target.value)}>
-                <option value="">Select...</option>
-                {choices?.chain_levels?.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
+              <div className="field-input" style={{ background: "var(--surface-2)", color: "var(--muted)", cursor: "default", fontSize: 12 }}>
+                {node.chain_level_display || node.chain_level}
+              </div>
             </div>
           </div>
           <select className="field-select" style={{ marginBottom: 10 }} value={selectedId}
