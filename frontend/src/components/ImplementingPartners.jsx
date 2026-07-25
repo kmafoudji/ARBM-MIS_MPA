@@ -188,14 +188,16 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                 <td>
                   {canEdit && (
                     <span className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
-                      <IconEdit onClick={() => openEdit(p)} title="Edit" />
-                      <IconDeactivate
+                      <button className="btn-square" title="Edit" onClick={() => openEdit(p)}>
+                        <IconEdit />
+                      </button>
+                      <button className="btn-square danger" title="Remove"
                         onClick={() => {
                           if (window.confirm(`Remove ${p.agency_name} from this project?`))
                             deleteMutation.mutate(p.id);
-                        }}
-                        title="Remove"
-                      />
+                        }}>
+                        <IconDeactivate />
+                      </button>
                     </span>
                   )}
                 </td>
