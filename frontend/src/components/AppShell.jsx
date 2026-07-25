@@ -109,6 +109,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
         { key: "projects", label: t("nav.projects"), Icon: IconProjects, badgeKey: "projects" },
         { key: "new-project", label: t("project.new"), Icon: IconNewProject },
         { key: "indicator-catalogue", label: t("nav.indicator_catalogue"), Icon: IconCatalogue },
+        { key: "portfolio", label: "Portfolio Results", Icon: IconDashboard },
       ],
     },
     {
