@@ -29,11 +29,11 @@ import argparse
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
 
 from django.db import transaction
-from config.models import Project  # ajuster si nécessaire
+from apps.project.models import Project
 
 SEPARATOR = "─" * 60
 
