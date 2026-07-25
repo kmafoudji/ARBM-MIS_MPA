@@ -185,8 +185,8 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
           borderRadius: "var(--r-3)", padding: "var(--s-3)", marginBottom: "var(--s-3)",
         }}>
           <div className="card-sub" style={{ marginBottom: "var(--s-2)" }}>Add a geographic zone</div>
+          {/* Ligne 1 : Pays (multi) + Admin 1 */}
           <div className="grid grid-2">
-            {/* Pays (si projet multi-pays) */}
             {projectCountryIso3s.length > 1 && (
               <div className="field">
                 <label className="field-label">Country</label>
@@ -198,8 +198,6 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                 </select>
               </div>
             )}
-
-            {/* Admin 1 */}
             <div className="field">
               <label className="field-label">Region / State (Admin 1) <span className="req">*</span></label>
               <select className="field-select" value={selAdmin1}
@@ -210,29 +208,30 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                   .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
+          </div>
 
-            {/* Admin 2 (si disponible) */}
-            {selAdmin1 && hasAdmin2 && (
-              <div className="field">
-                <label className="field-label">District / Department (Admin 2)</label>
-                <select className="field-select" value={selAdmin2}
-                  onChange={(e) => setSelAdmin2(e.target.value)}>
-                  <option value="">All districts (keep Admin 1)</option>
-                  {admin2List
-                    .filter((a) => !scopedAreaIds.has(a.id))
-                    .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-                <span className="field-help">Leave empty to add the whole region.</span>
-              </div>
-            )}
-
-            <div className="field" style={{ alignSelf: "center" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
-                <input type="checkbox" checked={isPrimary}
-                  onChange={(e) => setIsPrimary(e.target.checked)} />
-                Primary intervention area
-              </label>
+          {/* Ligne 2 : Admin 2 (si disponible) */}
+          {selAdmin1 && hasAdmin2 && (
+            <div className="field">
+              <label className="field-label">District / Department (Admin 2)</label>
+              <select className="field-select" value={selAdmin2}
+                onChange={(e) => setSelAdmin2(e.target.value)}>
+                <option value="">— All districts (keep Admin 1 level) —</option>
+                {admin2List
+                  .filter((a) => !scopedAreaIds.has(a.id))
+                  .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+              <span className="field-help">Leave empty to add the entire region without specifying a district.</span>
             </div>
+          )}
+
+          {/* Ligne 3 : Primary */}
+          <div className="field">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
+              <input type="checkbox" checked={isPrimary}
+                onChange={(e) => setIsPrimary(e.target.checked)} />
+              Primary intervention area
+            </label>
           </div>
 
           {addMutation.isError && (
