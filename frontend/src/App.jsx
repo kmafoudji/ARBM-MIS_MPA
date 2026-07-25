@@ -9,6 +9,7 @@ import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 import TheoryOfChange from "./pages/TheoryOfChange.jsx";
 import Logframe from "./pages/Logframe.jsx";
+import Portfolio from "./pages/Portfolio.jsx";
 import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
@@ -143,6 +144,7 @@ export default function App() {
 
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}
       {nav === "indicator-catalogue" && <IndicatorCatalogue />}
+      {nav === "portfolio" && <Portfolio />}
       {nav === "rbac" && <Rbac currentUser={user} />}
     </AppShell>
     </ErrorBoundary>

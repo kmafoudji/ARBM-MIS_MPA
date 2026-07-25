@@ -10,6 +10,7 @@ from .views import (
     LogframeTargetDetailView,
     LogframeTargetListView,
     LogframeView,
+    PortfolioAggregationView,
     ResultsDataView,
     ResultsDataDetailView,
     ResultsSummaryView,
@@ -30,6 +31,8 @@ indicator_urlpatterns = [
     # SF-6 : dimensions de désagrégation par indicateur
     path("indicators/<int:ind_pk>/disaggregations/",             IndicatorDisaggregationView.as_view(),       name="indicator-disaggregations"),
     path("indicators/<int:ind_pk>/disaggregations/<int:dim_pk>/",IndicatorDisaggregationDetailView.as_view(), name="indicator-disaggregation-detail"),
+    # SF-4 : agrégation portefeuille
+    path("portfolio/",           PortfolioAggregationView.as_view(), name="portfolio-aggregation"),
 ]
 
 # Routes imbriquées sous /api/projects/{pk}/

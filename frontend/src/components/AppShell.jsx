@@ -28,6 +28,7 @@ const NAV_GROUPS = [
       { key: "projects", label: "Projects", Icon: IconProjects, badgeKey: "projects" },
       { key: "new-project", label: "New Project", Icon: IconNewProject },
       { key: "indicator-catalogue", label: "Indicator Catalogue", Icon: IconCatalogue },
+      { key: "portfolio", label: "Portfolio Results", Icon: IconDashboard },
     ],
   },
   {

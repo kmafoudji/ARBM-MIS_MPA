@@ -943,3 +943,205 @@ class DisaggregationValueView(APIView):
             "saved":   DisaggregationValueSerializer(saved, many=True).data,
             "warning": warning,
         }, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# SF-4 — Agrégation portefeuille (roll-up multi-niveaux)
+# ---------------------------------------------------------------------------
+
+class PortfolioAggregationView(APIView):
+    """
+    GET /api/results/portfolio/
+        Agrégation des valeurs réelles par indicateur sur l'ensemble du portefeuille.
+        Filtres optionnels : ?hub=<id> &sector=<id> &period=<id> &chain_level=<level>
+
+    Retourne pour chaque indicateur :
+      - les valeurs agrégées par projet, par hub, par secteur
+      - le taux d'atteinte global (actual / target cumulée)
+      - le statut RAG agrégé
+      - la règle d'agrégation appliquée
+
+    Règles d'agrégation (RG-4.1) :
+      sum              → somme des actuals approuvés
+      average          → moyenne simple
+      weighted_average → moyenne pondérée par budget projet
+      ratio            → somme numérateurs / somme dénominateurs (valeurs brutes)
+      last_value       → dernière valeur disponible (date la plus récente)
+      maximum          → maximum des actuals
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request):
+        from decimal import Decimal
+        from django.db.models import Sum, Avg, Max, Q
+        from apps.project.models import Project, ReportingPeriod
+        from .models import ResultsData, LogframeRow
+
+        # ── Filtres ──────────────────────────────────────────────────────────
+        hub_id      = request.query_params.get("hub")
+        sector_id   = request.query_params.get("sector")
+        period_id   = request.query_params.get("period")
+        chain_level = request.query_params.get("chain_level")
+
+        # Projets Effective uniquement (workspace actif)
+        projects = Project.objects.filter(
+            workspace__exists=True,
+            workspace__m2_results_ready=True,
+        ).select_related("hub", "primary_sector")
+
+        if hub_id:
+            projects = projects.filter(hub_id=hub_id)
+        if sector_id:
+            projects = projects.filter(primary_sector_id=sector_id)
+
+        project_ids = list(projects.values_list("id", flat=True))
+
+        # Lignes logframe dans le périmètre
+        rows_qs = LogframeRow.objects.filter(
+            project_id__in=project_ids
+        ).select_related("indicator", "indicator__sector", "project__hub", "project__primary_sector")
+        if chain_level:
+            rows_qs = rows_qs.filter(chain_level=chain_level)
+
+        # Valeurs approuvées uniquement (source officielle — RG-4.1)
+        rd_filter = Q(logframe_row__project_id__in=project_ids, status="approved")
+        if period_id:
+            rd_filter &= Q(reporting_period_id=period_id)
+
+        rd_all = ResultsData.objects.filter(rd_filter).select_related(
+            "logframe_row__indicator",
+            "logframe_row__project",
+            "reporting_period",
+        )
+
+        # Index : indicator_id → list of (ResultsData, project)
+        from collections import defaultdict
+        by_indicator = defaultdict(list)
+        for rd in rd_all:
+            by_indicator[rd.logframe_row.indicator_id].append(rd)
+
+        # Budget par projet (pour weighted_average)
+        budget_by_project = {p.id: float(p.budget_amount or 0) for p in projects}
+        total_budget = sum(budget_by_project.values()) or 1
+
+        result = []
+        # Grouper les rows par indicateur
+        rows_by_indicator = defaultdict(list)
+        for row in rows_qs:
+            rows_by_indicator[row.indicator_id].append(row)
+
+        for ind_id, rows in rows_by_indicator.items():
+            indicator = rows[0].indicator
+            rule      = indicator.aggregation_rule or "sum"
+            rd_list   = by_indicator.get(ind_id, [])
+
+            if not rd_list:
+                # Aucune donnée approuvée — on retourne quand même la ligne
+                result.append({
+                    "indicator_id":   ind_id,
+                    "indicator_code": indicator.code,
+                    "indicator_name": indicator.name,
+                    "indicator_unit": indicator.unit,
+                    "chain_level":    indicator.chain_level,
+                    "aggregation_rule": rule,
+                    "aggregated_value": None,
+                    "achievement_rate": None,
+                    "rag_status":       "na",
+                    "projects_count":   0,
+                    "breakdown":        [],
+                })
+                continue
+
+            actuals = [float(rd.actual_value) for rd in rd_list]
+
+            # Appliquer la règle
+            if rule == "sum":
+                agg = sum(actuals)
+            elif rule == "average":
+                agg = sum(actuals) / len(actuals)
+            elif rule == "weighted_average":
+                weights = [budget_by_project.get(rd.logframe_row.project_id, 0) for rd in rd_list]
+                w_total = sum(weights) or 1
+                agg = sum(a * w for a, w in zip(actuals, weights)) / w_total
+            elif rule == "maximum":
+                agg = max(actuals)
+            elif rule == "last_value":
+                latest = max(rd_list, key=lambda r: r.reporting_period.end_date if r.reporting_period else r.updated_at)
+                agg = float(latest.actual_value)
+            else:
+                agg = sum(actuals)
+
+            # Cible agrégée (somme des cibles approuvées)
+            from .models import LogframeTarget
+            targets = LogframeTarget.objects.filter(
+                logframe_row__indicator_id=ind_id,
+                logframe_row__project_id__in=project_ids,
+                status="approved",
+            )
+            target_sum = float(targets.aggregate(s=Sum("target_value"))["s"] or 0)
+
+            # RAG agrégé
+            if target_sum > 0:
+                rate = (agg / target_sum) * 100
+                rag  = "green" if rate >= 90 else "amber" if rate >= 60 else "red"
+            else:
+                rate = None
+                rag  = "na"
+
+            # Ventilation par projet
+            breakdown = []
+            for rd in rd_list:
+                proj = rd.logframe_row.project
+                breakdown.append({
+                    "project_id":   proj.id,
+                    "project_code": proj.code,
+                    "project_name": proj.name[:60],
+                    "hub":          proj.hub.name if proj.hub else None,
+                    "sector":       proj.primary_sector.name if proj.primary_sector else None,
+                    "actual_value": fmt_decimal(rd.actual_value),
+                    "rag_status":   rd.rag_status,
+                })
+
+            result.append({
+                "indicator_id":     ind_id,
+                "indicator_code":   indicator.code,
+                "indicator_name":   indicator.name,
+                "indicator_unit":   indicator.unit,
+                "chain_level":      indicator.chain_level,
+                "aggregation_rule": rule,
+                "aggregated_value": fmt_decimal(Decimal(str(round(agg, 4)))),
+                "achievement_rate": fmt_decimal(Decimal(str(round(rate, 2)))) if rate is not None else None,
+                "rag_status":       rag,
+                "projects_count":   len(rd_list),
+                "breakdown":        breakdown,
+            })
+
+        # Trier par chain_level puis code indicateur
+        level_order = ["activity", "output", "immediate_outcome", "intermediate_outcome", "ultimate_outcome"]
+        result.sort(key=lambda x: (
+            level_order.index(x["chain_level"]) if x["chain_level"] in level_order else 99,
+            x["indicator_code"],
+        ))
+
+        # Méta-résumé
+        approved_count = len([r for r in result if r["aggregated_value"] is not None])
+        green = len([r for r in result if r["rag_status"] == "green"])
+        amber = len([r for r in result if r["rag_status"] == "amber"])
+        red   = len([r for r in result if r["rag_status"] == "red"])
+
+        return Response({
+            "meta": {
+                "projects_count":  len(project_ids),
+                "indicators_count": len(result),
+                "with_data":       approved_count,
+                "rag_summary":     {"green": green, "amber": amber, "red": red, "na": len(result) - green - amber - red},
+            },
+            "filters": {
+                "hub":         hub_id,
+                "sector":      sector_id,
+                "period":      period_id,
+                "chain_level": chain_level,
+            },
+            "indicators": result,
+        })
