@@ -445,13 +445,14 @@ class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
     agency_type = serializers.CharField(source="agency.get_agency_type_display", read_only=True)
     agency_country_iso2 = serializers.SerializerMethodField()
     agency_country_name = serializers.SerializerMethodField()
+    agency_logo_url = serializers.SerializerMethodField()
     role_display = serializers.CharField(source="get_role_display", read_only=True)
 
     class Meta:
         model = ProjectImplementingPartner
         fields = [
             "id", "agency", "agency_name", "agency_type",
-            "agency_country_iso2", "agency_country_name",
+            "agency_country_iso2", "agency_country_name", "agency_logo_url",
             "role", "role_display", "allocated_amount_usd", "notes", "order",
         ]
 
@@ -460,3 +461,6 @@ class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
 
     def get_agency_country_name(self, obj):
         return obj.agency.country.name if obj.agency and obj.agency.country else None
+
+    def get_agency_logo_url(self, obj):
+        return obj.agency.logo_url if obj.agency else None

@@ -3,6 +3,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 
+function AgencyLogo({ url, name }) {
+  if (url) {
+    return <img src={url} alt="" style={{ width: 24, height: 24, objectFit: "contain", borderRadius: 4 }} loading="lazy" />;
+  }
+  const initials = name
+    ? name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+    : "?";
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      width: 24, height: 24, borderRadius: 4, fontSize: 9, fontWeight: 700,
+      background: "color-mix(in srgb, var(--lime) 20%, var(--surface))",
+      color: "var(--lime-dark, var(--lime))", flexShrink: 0, letterSpacing: "0.02em",
+    }}>
+      {initials}
+    </span>
+  );
+}
+
 const AGENCY_TYPE_EN = {
   "Gouvernement": "Government",
   "Agence nationale": "National agency",
@@ -165,6 +184,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
               <tr key={p.id}>
                 <td>
                   <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <AgencyLogo url={p.agency_logo_url} name={p.agency_name} />
                     {p.agency_country_iso2 && <Flag iso2={p.agency_country_iso2} size={16} />}
                     <strong>{p.agency_name}</strong>
                   </span>
