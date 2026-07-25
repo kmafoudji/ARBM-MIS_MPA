@@ -1382,124 +1382,275 @@ class PIRSDataView(APIView):
         return Response(pirs_data)
 
     def _generate_docx(self, data):
-        """Génère le PIRS en DOCX via python-docx."""
-        import io
+        """Génère le PIRS en DOCX via python-docx.
+        Couleurs ARBM-MES : Navy #1B5A8C · Lime #A4C53F
+        """
+        import io, base64, tempfile, os
         from django.http import HttpResponse
+        from django.utils import timezone
         try:
             from docx import Document
-            from docx.shared import Pt, RGBColor, Cm
+            from docx.shared import Pt, RGBColor, Cm, Inches
             from docx.enum.text import WD_ALIGN_PARAGRAPH
             from docx.oxml.ns import qn
             from docx.oxml import OxmlElement
         except ImportError:
-            return Response(
-                {"detail": "python-docx not installed. Run: pip install python-docx in the backend container."},
-                status=500
-            )
+            return Response({"detail": "python-docx not installed."}, status=500)
+
+        NAVY_HEX  = "1B5A8C"
+        LIME_HEX  = "A4C53F"
+        GRAY_HEX  = "6B7280"
+        LIGHT_HEX = "F0F6DC"
+        NAVY_RGB  = RGBColor(0x1B, 0x5A, 0x8C)
+        LIME_RGB  = RGBColor(0xA4, 0xC5, 0x3F)
+        WHITE_RGB = RGBColor(0xFF, 0xFF, 0xFF)
+        GRAY_RGB  = RGBColor(0x9C, 0xA3, 0xAF)
+
+        # Logo ARBM-MES embarqué (PNG base64)
+        LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAACl0lEQVR4nO3czZnTMBSF4S9TBy1NBZTAksXUwIIlJVABLdFHWOkZIGP7Sro/R3bO1pHkvI/tOLaubvf7nWfG81K9A6vnCTgZecBPn79LX2OkARueMqIs4P9oqoiSgFtYiohygEdIaohSgFYcJUQZwF4UFUQJwD2Mb19+DbXLSjmgBU8ZsRSw58hTRSwDHDltFRFLAEeveUfbKxDTAWfwLJ/LRkwF9MCzfD4TMQ3QE8/SLgsxBTACz9I+AzEcMBLP0k80YihgBp6lv0jEMMBMPEu/UYghgBV4lv4jEN0BK/Es43gjugIq4FnG80R0A1TCs4zrhegCqIhnGd8DcRpQGa8lEnEKcAW8lijEYcCV8FoiEIcAV8Rr8UbsBlwZr8UTsQvwDHgtXohmwDPhtXggmgDPiNcyi3gIeGa8lhnEXcAr4LWMIm4CXgmvZQTxQ8Ar4rX0Ij4AXhmvpQfxZW+jtdMzxor4D+Dvn19vW43efry67Ngq2fu+fzs9nMJPRDsebPyIXBmxBw92bmOuiNiLBwc30ldCHMEDw1+5KyCO4oHxYcKZEWfwoONx1hkRZ/Gg84HqmRA98GDgkf4ZEL3wYPCl0sqInngw8VpzRURvPJh8sb4SYgQeOEztWAExCg+cJhcpI0bigeP0NkXEaDxwnmCphJiBBwFTfBUQs/AgaJJ5JWImHgSWOVQgZuNBcKFNJmIFHiSUemUgVuFBUrFhJGIlHiSWu0YgVuNBcsG1J6ICHhSU/HsgquBB0aITM4hKeFC47MkIohoeFC+804OoiAcCSz9ZEFXxAG4qyyCPFLlU44HAEdjSi6GAB0KAYEdRwQMxQDjGUcIDQUDYRlLDA1FAeMRSxANhQHhHU8UDoduYVSN9BK6QP4t76VRD74/PAAAAAElFTkSuQmCC"
 
         def set_cell_bg(cell, hex_color):
-            tc = cell._tc
-            tcPr = tc.get_or_add_tcPr()
-            shd = OxmlElement("w:shd")
-            shd.set(qn("w:val"), "clear")
+            tcPr = cell._tc.get_or_add_tcPr()
+            shd  = OxmlElement("w:shd")
+            shd.set(qn("w:val"),   "clear")
             shd.set(qn("w:color"), "auto")
-            shd.set(qn("w:fill"), hex_color)
+            shd.set(qn("w:fill"),  hex_color)
             tcPr.append(shd)
 
-        def add_section_heading(doc, title):
+        def set_cell_borders(cell, color="E5E7EB"):
+            tcPr = cell._tc.get_or_add_tcPr()
+            tcBorders = OxmlElement("w:tcBorders")
+            for side in ["top","left","bottom","right"]:
+                el = OxmlElement(f"w:{side}")
+                el.set(qn("w:val"), "single")
+                el.set(qn("w:sz"),  "4")
+                el.set(qn("w:color"), color)
+                tcBorders.append(el)
+            tcPr.append(tcBorders)
+
+        def add_header_row(table, headers, widths):
+            row = table.add_row()
+            for i, (hdr, w) in enumerate(zip(headers, widths)):
+                cell = row.cells[i]
+                set_cell_bg(cell, NAVY_HEX)
+                set_cell_borders(cell, "2C4A6E")
+                cell.width = Cm(w)
+                p = cell.paragraphs[0]
+                p.paragraph_format.space_before = Pt(3)
+                p.paragraph_format.space_after  = Pt(3)
+                run = p.add_run(hdr)
+                run.bold = True
+                run.font.size = Pt(8)
+                run.font.color.rgb = WHITE_RGB
+
+        def add_data_row(table, values, widths, bg="FFFFFF"):
+            row = table.add_row()
+            for i, (val, w) in enumerate(zip(values, widths)):
+                cell = row.cells[i]
+                set_cell_bg(cell, bg)
+                set_cell_borders(cell)
+                cell.width = Cm(w)
+                p = cell.paragraphs[0]
+                p.paragraph_format.space_before = Pt(2)
+                p.paragraph_format.space_after  = Pt(2)
+                run = p.add_run(str(val) if val else "—")
+                run.font.size = Pt(9)
+
+        def add_section_heading(doc, letter, title):
             p = doc.add_paragraph()
-            p.paragraph_format.space_before = Pt(12)
+            p.paragraph_format.space_before = Pt(10)
             p.paragraph_format.space_after  = Pt(4)
-            run = p.add_run(title.upper())
-            run.bold = True
-            run.font.size = Pt(10)
-            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            p.paragraph_format.left_indent  = Cm(0)
+            # Lettre lime
+            r1 = p.add_run(f"{letter}.  ")
+            r1.bold = True
+            r1.font.size = Pt(11)
+            r1.font.color.rgb = LIME_RGB
+            # Titre blanc sur fond navy
+            r2 = p.add_run(title.upper())
+            r2.bold = True
+            r2.font.size = Pt(10)
+            r2.font.color.rgb = WHITE_RGB
             pPr = p._p.get_or_add_pPr()
-            shd = OxmlElement("w:shd")
-            shd.set(qn("w:val"), "clear")
+            shd  = OxmlElement("w:shd")
+            shd.set(qn("w:val"),   "clear")
             shd.set(qn("w:color"), "auto")
-            shd.set(qn("w:fill"), "111111")
+            shd.set(qn("w:fill"),  NAVY_HEX)
             pPr.append(shd)
-            p.paragraph_format.left_indent = Cm(0.3)
 
         def add_info_table(doc, rows):
-            table = doc.add_table(rows=len(rows), cols=2)
+            """Tableau label | valeur."""
+            filtered = [(l, v) for l, v in rows if v or v == 0]
+            if not filtered:
+                return
+            table = doc.add_table(rows=0, cols=2)
             table.style = "Table Grid"
-            table.columns[0].width = Cm(5)
-            table.columns[1].width = Cm(12)
-            for i, (label, value) in enumerate(rows):
-                if not value and value != 0:
-                    continue
-                row = table.rows[i]
-                c0, c1 = row.cells[0], row.cells[1]
-                set_cell_bg(c0, "F9FAFB")
+            W_LABEL = 5.0
+            W_VALUE = 12.0
+            for i, (label, value) in enumerate(filtered):
+                row = table.add_row()
+                # Label
+                c0 = row.cells[0]; c0.width = Cm(W_LABEL)
+                set_cell_bg(c0, "F8FAFC" if i % 2 == 0 else "F0F4F8")
+                set_cell_borders(c0)
+                c0.paragraphs[0].paragraph_format.space_before = Pt(2)
+                c0.paragraphs[0].paragraph_format.space_after  = Pt(2)
                 r0 = c0.paragraphs[0].add_run(str(label))
-                r0.bold = True
-                r0.font.size = Pt(8)
-                r0.font.color.rgb = RGBColor(0x37, 0x41, 0x51)
+                r0.bold = True; r0.font.size = Pt(8.5)
+                r0.font.color.rgb = NAVY_RGB
+                # Valeur
+                c1 = row.cells[1]; c1.width = Cm(W_VALUE)
+                set_cell_bg(c1, "FFFFFF" if i % 2 == 0 else "F9FAFB")
+                set_cell_borders(c1)
+                c1.paragraphs[0].paragraph_format.space_before = Pt(2)
+                c1.paragraphs[0].paragraph_format.space_after  = Pt(2)
                 r1 = c1.paragraphs[0].add_run(str(value))
                 r1.font.size = Pt(9)
-            doc.add_paragraph()
+            doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
-        doc  = Document()
+        # ── Données ────────────────────────────────────────────────────
         proj = data["project"]
         ind  = data["indicator"]
         base = data["baseline"]
         tgts = data["targets"]
         acts = data["actuals"]
-        gen_date = data["generated_at"][:10]
+        now_local = timezone.localtime(timezone.now())
+        gen_datetime = now_local.strftime("%d %B %Y at %H:%M")
+        gen_date     = now_local.strftime("%d %B %Y")
+        editor_name  = proj.get("code", "LLFMU")
 
-        # ── Titre ──────────────────────────────────────────────────────
+        # ── Document ───────────────────────────────────────────────────
+        doc = Document()
+
+        # Marges
+        for section in doc.sections:
+            section.top_margin    = Cm(2)
+            section.bottom_margin = Cm(2)
+            section.left_margin   = Cm(2)
+            section.right_margin  = Cm(1.5)
+            section.page_width    = Cm(21)
+            section.page_height   = Cm(29.7)
+
+            # En-tête (header)
+            header = section.header
+            header.is_linked_to_previous = False
+            htable = header.add_table(1, 3, Cm(17))
+            htable.style = "Table Grid"
+            # Cellule 1 : logo
+            logo_cell = htable.rows[0].cells[0]
+            logo_cell.width = Cm(2)
+            set_cell_borders(logo_cell, "E5E7EB")
+            logo_p = logo_cell.paragraphs[0]
+            logo_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run_logo = logo_p.add_run()
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                tmp.write(base64.b64decode(LOGO_B64))
+                tmp_path = tmp.name
+            try:
+                run_logo.add_picture(tmp_path, width=Cm(1.2))
+            finally:
+                os.unlink(tmp_path)
+            # Cellule 2 : titre
+            title_cell = htable.rows[0].cells[1]
+            title_cell.width = Cm(12)
+            set_cell_borders(title_cell, "E5E7EB")
+            tp = title_cell.paragraphs[0]
+            tp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            tr1 = tp.add_run("PERFORMANCE INDICATOR REFERENCE SHEET  ")
+            tr1.bold = True; tr1.font.size = Pt(10)
+            tr1.font.color.rgb = NAVY_RGB
+            tp.add_run(f"\n{ind.get('code')} · {proj.get('code')} · LLF2 / IsDB").font.size = Pt(7.5)
+            # Cellule 3 : date
+            date_cell = htable.rows[0].cells[2]
+            date_cell.width = Cm(4)
+            set_cell_borders(date_cell, "E5E7EB")
+            dp = date_cell.paragraphs[0]
+            dp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            dr1 = dp.add_run(gen_date + "\n")
+            dr1.font.size = Pt(8); dr1.font.color.rgb = GRAY_RGB
+            dr2 = dp.add_run(f"v{ind.get('version', 1)}")
+            dr2.font.size = Pt(8); dr2.font.color.rgb = LIME_RGB; dr2.bold = True
+
+            # Pied de page (footer)
+            footer = section.footer
+            footer.is_linked_to_previous = False
+            ftable = footer.add_table(1, 2, Cm(17))
+            ftable.style = "Table Grid"
+            fl = ftable.rows[0].cells[0]
+            fl.width = Cm(11)
+            set_cell_borders(fl, "E5E7EB")
+            fp = fl.paragraphs[0]
+            fp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            fp_run = fp.add_run(f"Generated by {editor_name} · ARBM-MES · MillenniumPromise / IsDB LLF2 · {gen_datetime}")
+            fp_run.font.size = Pt(7.5); fp_run.font.color.rgb = GRAY_RGB
+            fr = ftable.rows[0].cells[1]
+            fr.width = Cm(6)
+            set_cell_borders(fr, "E5E7EB")
+            frp = fr.paragraphs[0]
+            frp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            frp.add_run("Page ").font.size = Pt(7.5)
+            fld = OxmlElement("w:fldChar")
+            fld.set(qn("w:fldCharType"), "begin")
+            frp.runs[-1]._r.append(fld)
+            instr = OxmlElement("w:instrText")
+            instr.set(qn("xml:space"), "preserve")
+            instr.text = " PAGE "
+            frp.runs[-1]._r.append(instr)
+            fld2 = OxmlElement("w:fldChar")
+            fld2.set(qn("w:fldCharType"), "end")
+            frp.runs[-1]._r.append(fld2)
+
+        # ── Titre principal ────────────────────────────────────────────
         title_p = doc.add_paragraph()
-        run = title_p.add_run("PERFORMANCE INDICATOR REFERENCE SHEET")
-        run.bold = True
-        run.font.size = Pt(14)
-        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
         title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_p.paragraph_format.space_before = Pt(0)
+        title_p.paragraph_format.space_after  = Pt(8)
         pPr = title_p._p.get_or_add_pPr()
-        shd = OxmlElement("w:shd"); shd.set(qn("w:val"),"clear"); shd.set(qn("w:color"),"auto"); shd.set(qn("w:fill"),"111111"); pPr.append(shd)
+        shd = OxmlElement("w:shd"); shd.set(qn("w:val"),"clear"); shd.set(qn("w:color"),"auto"); shd.set(qn("w:fill"), NAVY_HEX); pPr.append(shd)
+        t1 = title_p.add_run(f"  {ind.get('code')} — {ind.get('name')}  ")
+        t1.bold = True; t1.font.size = Pt(13); t1.font.color.rgb = WHITE_RGB
 
         sub_p = doc.add_paragraph()
-        sub_r = sub_p.add_run(f"Lives & Livelihoods Fund 2 · IsDB · Generated {gen_date}")
-        sub_r.font.size = Pt(9)
-        sub_r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
         sub_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        sub_p.paragraph_format.space_after = Pt(12)
         pPr2 = sub_p._p.get_or_add_pPr()
-        shd2 = OxmlElement("w:shd"); shd2.set(qn("w:val"),"clear"); shd2.set(qn("w:color"),"auto"); shd2.set(qn("w:fill"),"333333"); pPr2.append(shd2)
+        shd2 = OxmlElement("w:shd"); shd2.set(qn("w:val"),"clear"); shd2.set(qn("w:color"),"auto"); shd2.set(qn("w:fill"), LIGHT_HEX); pPr2.append(shd2)
+        s1 = sub_p.add_run(f"  {proj.get('name')} · {proj.get('code')} · {proj.get('sector','—')} · {proj.get('hub','—')}  ")
+        s1.font.size = Pt(9.5); s1.font.color.rgb = NAVY_RGB
 
-        doc.add_paragraph()
-
-        # ── A. Projet ──────────────────────────────────────────────────
-        add_section_heading(doc, "A. Project Identification")
+        # ── A. Identification ──────────────────────────────────────────
+        add_section_heading(doc, "A", "Project Identification")
         add_info_table(doc, [
-            ("Project Code",  proj.get("code")),
-            ("Project Name",  proj.get("name")),
-            ("Acronym",       proj.get("acronym")),
-            ("Sector",        proj.get("sector")),
-            ("Hub",           proj.get("hub")),
-            ("Country",       proj.get("country")),
-            ("Period",        f"{proj.get('start_date','—')} → {proj.get('end_date','—')}"),
-            ("Stage",         (proj.get("lifecycle_stage") or "").replace("_"," ").upper()),
-            ("PAD Document",  proj.get("pad_name") or "—"),
+            ("Project Code",    proj.get("code")),
+            ("Project Name",    proj.get("name")),
+            ("Acronym",         proj.get("acronym")),
+            ("Sector",          proj.get("sector")),
+            ("Hub",             proj.get("hub")),
+            ("Country",         proj.get("country")),
+            ("Period",          f"{proj.get('start_date','—')} → {proj.get('end_date','—')}"),
+            ("Stage",           (proj.get("lifecycle_stage") or "").replace("_"," ").upper()),
+            ("PAD Document",    proj.get("pad_name") or "—"),
         ])
 
         # ── B. Définition ──────────────────────────────────────────────
-        add_section_heading(doc, "B. Indicator Definition")
+        add_section_heading(doc, "B", "Indicator Definition")
         add_info_table(doc, [
             ("Code",               ind.get("code")),
             ("Full Name",          ind.get("name")),
             ("Chain Level",        ind.get("chain_level_display")),
             ("Definition",         ind.get("definition")),
-            ("Unit",               ind.get("unit")),
+            ("Unit of Measure",    ind.get("unit")),
             ("Type",               ind.get("indicator_type")),
             ("Direction",          ind.get("direction")),
             ("Aggregation Rule",   ind.get("aggregation_rule")),
             ("Calculation Method", ind.get("calculation_method")),
             ("Formula",            ind.get("formula")),
+            ("Numerator",          ind.get("numerator")),
+            ("Denominator",        ind.get("denominator")),
         ])
 
         # ── C. Collecte ────────────────────────────────────────────────
-        add_section_heading(doc, "C. Data Collection")
+        add_section_heading(doc, "C", "Data Collection")
         add_info_table(doc, [
             ("Data Source",           ind.get("data_source")),
             ("Collection Method",     ind.get("collection_method")),
@@ -1511,59 +1662,95 @@ class PIRSDataView(APIView):
         ])
 
         # ── D. Baseline ────────────────────────────────────────────────
-        add_section_heading(doc, "D. Baseline")
+        add_section_heading(doc, "D", "Baseline")
         add_info_table(doc, [
             ("Baseline Value", f"{base.get('value','—')} {ind.get('unit','')}"),
-            ("Reference Year", base.get("year")),
+            ("Reference Year", str(base.get("year","—"))),
             ("Source",         base.get("source")),
             ("Notes",          base.get("notes")),
         ])
 
         # ── E. Cibles ──────────────────────────────────────────────────
-        add_section_heading(doc, "E. Targets")
+        add_section_heading(doc, "E", "Targets")
         if tgts:
-            tbl = doc.add_table(rows=1+len(tgts), cols=4)
-            tbl.style = "Table Grid"
-            for i, hdr in enumerate(["Label","Target Value","Deadline","Status"]):
-                cell = tbl.rows[0].cells[i]
-                set_cell_bg(cell, "111111")
-                r = cell.paragraphs[0].add_run(hdr)
-                r.bold = True; r.font.size = Pt(8); r.font.color.rgb = RGBColor(255,255,255)
-            for ri, t in enumerate(tgts, 1):
-                cells = tbl.rows[ri].cells
-                cells[0].paragraphs[0].add_run(t.get("label","—")).font.size = Pt(9)
-                cells[1].paragraphs[0].add_run(f"{t.get('target_value','—')} {ind.get('unit','')}").font.size = Pt(9)
-                cells[2].paragraphs[0].add_run(str(t.get("target_date","—"))).font.size = Pt(9)
-                cells[3].paragraphs[0].add_run(t.get("status","").upper()).font.size = Pt(9)
-            doc.add_paragraph()
+            WIDTHS_T = [3.5, 3, 2.8, 2.5, 1.2]
+            HDRS_T   = ["Label", f"Target ({ind.get('unit','')})", "Deadline", "Status", "PAD"]
+            table = doc.add_table(rows=0, cols=5)
+            table.style = "Table Grid"
+            add_header_row(table, HDRS_T, WIDTHS_T)
+            for i, t in enumerate(tgts):
+                bg = "FFFFFF" if i % 2 == 0 else "F8FAFC"
+                add_data_row(table, [
+                    t.get("label","—"),
+                    t.get("target_value","—"),
+                    str(t.get("target_date","—")),
+                    t.get("status","").upper(),
+                    "✓ PAD" if t.get("is_original_pad") else "",
+                ], WIDTHS_T, bg)
+            doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
         # ── F. Actuals ─────────────────────────────────────────────────
-        add_section_heading(doc, "F. Results by Reporting Period")
+        add_section_heading(doc, "F", "Results by Reporting Period")
         if acts:
-            tbl = doc.add_table(rows=1+len(acts), cols=5)
-            tbl.style = "Table Grid"
-            for i, hdr in enumerate(["Period","Actual","Target","Achievement","RAG"]):
-                cell = tbl.rows[0].cells[i]
-                set_cell_bg(cell, "111111")
-                r = cell.paragraphs[0].add_run(hdr)
-                r.bold = True; r.font.size = Pt(8); r.font.color.rgb = RGBColor(255,255,255)
-            for ri, a in enumerate(acts, 1):
-                cells = tbl.rows[ri].cells
-                cells[0].paragraphs[0].add_run(a.get("period_label","")).font.size = Pt(9)
-                cells[1].paragraphs[0].add_run(f"{a.get('actual_value','—')} {ind.get('unit','')}").font.size = Pt(9)
-                cells[2].paragraphs[0].add_run(f"{a.get('target_value','—')} {ind.get('unit','')}").font.size = Pt(9)
-                cells[3].paragraphs[0].add_run(f"{a.get('achievement_rate','—')}%" if a.get("achievement_rate") else "—").font.size = Pt(9)
-                cells[4].paragraphs[0].add_run({"green":"On Track","amber":"At Risk","red":"Off Track"}.get(a.get("rag_status",""),"No Data")).font.size = Pt(9)
-            doc.add_paragraph()
+            WIDTHS_A = [2.5, 2.5, 2.5, 2.2, 2.0, 5.3]
+            HDRS_A   = ["Period", f"Actual ({ind.get('unit','')})", f"Target ({ind.get('unit','')})", "Achievement", "RAG", "Narrative"]
+            RAG_LBL  = {"green":"On Track","amber":"At Risk","red":"Off Track"}
+            table = doc.add_table(rows=0, cols=6)
+            table.style = "Table Grid"
+            add_header_row(table, HDRS_A, WIDTHS_A)
+            for i, a in enumerate(acts):
+                bg = "FFFFFF" if i % 2 == 0 else "F8FAFC"
+                add_data_row(table, [
+                    a.get("period_label",""),
+                    a.get("actual_value","—"),
+                    a.get("target_value","—"),
+                    f"{a.get('achievement_rate','—')}%" if a.get("achievement_rate") else "—",
+                    RAG_LBL.get(a.get("rag_status",""),"No Data"),
+                    a.get("narrative","—"),
+                ], WIDTHS_A, bg)
+            doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
-        # ── Pied de page ────────────────────────────────────────────────
-        footer_p = doc.add_paragraph()
-        footer_r = footer_p.add_run(f"PIRS · {ind.get('code')} · {proj.get('code')} · v{ind.get('version',1)} · {gen_date} · ARBM-MES")
-        footer_r.font.size = Pt(7)
-        footer_r.font.color.rgb = RGBColor(0x9C, 0xA3, 0xAF)
-        footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # ── G. Désagrégation ───────────────────────────────────────────
+        disagg = data.get("disaggregations", [])
+        has_disagg = any(d["categories"] for d in disagg)
+        if has_disagg:
+            add_section_heading(doc, "G", "Disaggregation")
+            for dim in disagg:
+                if not dim["categories"]:
+                    continue
+                dp = doc.add_paragraph()
+                dr = dp.add_run(dim["dimension"].upper())
+                dr.bold = True; dr.font.size = Pt(8.5); dr.font.color.rgb = NAVY_RGB
+                all_cats = list(dict.fromkeys(
+                    v["cat"] for p in dim["categories"] for v in p["values"]
+                ))
+                if all_cats:
+                    n_cols = len(all_cats) + 1
+                    col_w  = [2.5] + [round(14.5 / len(all_cats), 2)] * len(all_cats)
+                    table  = doc.add_table(rows=0, cols=n_cols)
+                    table.style = "Table Grid"
+                    add_header_row(table, ["Period"] + all_cats, col_w)
+                    for i, period_data in enumerate(dim["categories"]):
+                        bg = "FFFFFF" if i % 2 == 0 else "F8FAFC"
+                        vals = [period_data["period_label"]]
+                        for cat in all_cats:
+                            found = next((v["val"] for v in period_data["values"] if v["cat"] == cat), None)
+                            vals.append(f"{found} {ind.get('unit','')}" if found else "—")
+                        add_data_row(table, vals, col_w, bg)
+                    doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
-        # ── Sérialisation ───────────────────────────────────────────────
+        # ── H. Transversaux ────────────────────────────────────────────
+        tags = ind.get("cross_cutting_tags", [])
+        sdgs = ind.get("related_sdgs", [])
+        if tags or sdgs:
+            add_section_heading(doc, "H", "Cross-cutting Themes & SDGs")
+            add_info_table(doc, [
+                ("Cross-cutting Tags", ", ".join(tags) if tags else "—"),
+                ("Related SDGs",       ", ".join(f"SDG {n}" for n in sdgs) if sdgs else "—"),
+                ("Indicator Version",  f"v{ind.get('version', 1)}"),
+            ])
+
+        # ── Serialisation ───────────────────────────────────────────────
         buf = io.BytesIO()
         doc.save(buf)
         buf.seek(0)
@@ -1576,3 +1763,4 @@ class PIRSDataView(APIView):
         )
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
+
