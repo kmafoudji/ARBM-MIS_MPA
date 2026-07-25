@@ -6,7 +6,7 @@ import { useDialog, DialogModal } from "../components/Dialog.jsx";
 
 // Référentiel LLF2 / OCDE DAC — dimensions et catégories standard
 const PRESET_DIMENSIONS = [
-  { name: "Sex",              categories: ["Male", "Female", "Non-binary", "Not specified"] },
+  { name: "Sex",              categories: ["Male", "Female", "Not specified"] },
   { name: "Age group",        categories: ["<18", "18-35", "36-60", "60+", "Not specified"] },
   { name: "Location type",    categories: ["Urban", "Rural", "Peri-urban", "Not specified"] },
   { name: "Vulnerability",    categories: ["IDP", "Refugee", "Host community", "Non-displaced", "Not specified"] },
