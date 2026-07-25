@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import ValidationError as DRFValidationError
@@ -990,7 +991,11 @@ class PortfolioAggregationView(APIView):
         ).select_related("hub", "primary_sector")
 
         if hub_id:
-            projects = projects.filter(hub_id=hub_id)
+            # Hub peut être sur Project.hub directement OU sur le pays chef de file
+            projects = projects.filter(
+                models.Q(hub_id=hub_id) |
+                models.Q(project_countries__is_lead=True, project_countries__country__hub_id=hub_id)
+            ).distinct()
         if sector_id:
             projects = projects.filter(primary_sector_id=sector_id)
 

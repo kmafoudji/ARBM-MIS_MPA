@@ -379,11 +379,43 @@ export default function Portfolio() {
           color="#A4C53F"
         />
         <KpiCard
-          value={`${healthPct}%`}
+          value={withData ? `${healthPct}%` : "—"}
           label="On track"
-          sub={`${rag.green || 0} green · ${rag.amber || 0} amber · ${rag.red || 0} red`}
-          color={healthPct >= 80 ? "#16a34a" : healthPct >= 60 ? "#d97706" : "#dc2626"}
+          sub={withData
+            ? `${rag.green || 0} green · ${rag.amber || 0} amber · ${rag.red || 0} red`
+            : "No approved data yet"}
+          color={!withData ? "#9ca3af" : healthPct >= 80 ? "#16a34a" : healthPct >= 60 ? "#d97706" : "#dc2626"}
         />
+      </div>
+
+      {/* ── Légende RAG ─────────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center",
+        padding: "10px 16px",
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 10,
+        marginBottom: 16,
+        fontSize: 12,
+      }}>
+        <span style={{ fontWeight: 700, color: "#6b7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+          RAG Scale
+        </span>
+        {[
+          { color: "#16a34a", bg: "#dcfce7", label: "On track",  desc: "≥ 90% of target" },
+          { color: "#d97706", bg: "#fef9c3", label: "At risk",   desc: "60–89% of target" },
+          { color: "#dc2626", bg: "#fee2e2", label: "Off track", desc: "< 60% of target" },
+          { color: "#9ca3af", bg: "#f3f4f6", label: "No data",   desc: "No approved data or target" },
+        ].map(({ color, bg, label, desc }) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99,
+              background: bg, color,
+            }}>{label}</span>
+            <span style={{ color: "#9ca3af", fontSize: 11 }}>{desc}</span>
+          </div>
+        ))}
       </div>
 
       {/* ── Filtre strip ────────────────────────────────────────────────── */}
