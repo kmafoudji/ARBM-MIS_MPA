@@ -630,8 +630,22 @@ class ReportingPeriodView(APIView):
         """Génère les périodes manquantes. Idempotent."""
         from apps.project.services import generate_reporting_periods
         project = get_object_or_404(Project, pk=pk)
-        created = generate_reporting_periods(project)
-        return Response({"created": created, "message": f"{created} période(s) générée(s)."})
+        created, error = generate_reporting_periods(project)
+        if error:
+            return Response({"detail": error}, status=400)
+        return Response({"created": created, "message": f"{created} period(s) generated."})
+
+
+class ReportingPeriodResetView(APIView):
+    """DELETE /api/projects/<pk>/reporting-periods/reset/ — purge et régénère"""
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def delete(self, request, pk):
+        from apps.project.models import ReportingPeriod
+        project = get_object_or_404(Project, pk=pk)
+        count, _ = ReportingPeriod.objects.filter(project=project).delete()
+        return Response({"deleted": count})
 
 
 class ReportingPeriodDetailView(APIView):

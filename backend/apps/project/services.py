@@ -342,32 +342,37 @@ LABEL_FMT = {
 }
 
 
-def generate_reporting_periods(project, horizon_years=5):
+def generate_reporting_periods(project):
     """
-    Génère les périodes de reporting pour un projet à partir de
-    reporting_frequency et next_reporting_due.
+    Génère les périodes de reporting pour un projet.
+
+    Prérequis :
+      - reporting_frequency  : fréquence (quarterly / semi_annual / annual)
+      - next_reporting_due   : date de la première échéance (fin P1)
+      - end_date             : date de fin du projet (borne le schedule)
 
     Idempotent : ne crée que les périodes manquantes.
-    Retourne le nombre de périodes créées.
+    Retourne (nb_créées, message_erreur_ou_None).
     """
     from apps.project.models import ReportingPeriod
-    from datetime import date
 
-    if not project.reporting_frequency or not project.next_reporting_due:
-        return 0
+    if not project.reporting_frequency:
+        return 0, "Reporting frequency not set."
+    if not project.next_reporting_due:
+        return 0, "First deadline (next_reporting_due) not set."
+    if not project.end_date:
+        return 0, "Project end date is required to generate the reporting schedule."
 
     freq   = project.reporting_frequency
     months = PERIOD_MONTHS.get(freq, 3)
     grace  = timedelta(days=GRACE_DAYS.get(freq, 30))
     fmt    = LABEL_FMT.get(freq, lambda d: str(d))
 
-    # Première période : se termine à next_reporting_due
-    # Début = next_reporting_due - durée de période + 1 jour
-    end_date   = project.next_reporting_due
-    start_date = end_date - relativedelta(months=months) + timedelta(days=1)
-
-    # Horizon : jusqu'à end_date projet ou horizon_years ans
-    horizon = project.end_date or (date.today() + relativedelta(years=horizon_years))
+    # Période 1 : first_deadline = fin de P1
+    # Début P1 = first_deadline - durée + 1 jour
+    p1_end   = project.next_reporting_due
+    p1_start = p1_end - relativedelta(months=months) + timedelta(days=1)
+    horizon  = project.end_date
 
     existing = set(
         ReportingPeriod.objects.filter(project=project).values_list("period_number", flat=True)
@@ -375,12 +380,13 @@ def generate_reporting_periods(project, horizon_years=5):
 
     periods = []
     n = 1
-    current_start = start_date
+    current_start = p1_start
 
     while current_start <= horizon:
         current_end = current_start + relativedelta(months=months) - timedelta(days=1)
-        if current_start > horizon:
-            break
+        # Tronquer la dernière période à la date de fin du projet
+        if current_end > horizon:
+            current_end = horizon
         due = current_end + grace
         if n not in existing:
             periods.append(ReportingPeriod(
@@ -393,8 +399,8 @@ def generate_reporting_periods(project, horizon_years=5):
             ))
         current_start = current_end + timedelta(days=1)
         n += 1
-        if n > 60:  # sécurité
+        if n > 120:  # sécurité max 10 ans mensuel
             break
 
     ReportingPeriod.objects.bulk_create(periods, ignore_conflicts=True)
-    return len(periods)
+    return len(periods), None

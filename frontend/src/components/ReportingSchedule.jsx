@@ -2,6 +2,7 @@
  * SF-5 — Calendrier de reporting
  * Affiche les périodes générées et permet de les générer si absentes.
  */
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
@@ -24,7 +25,7 @@ function isOverdue(dueDate, status) {
   return new Date(dueDate) < new Date();
 }
 
-export default function ReportingSchedule({ projectId, reportingFrequency, canEdit }) {
+export default function ReportingSchedule({ projectId, reportingFrequency, projectEndDate, canEdit }) {
   const qc = useQueryClient();
 
   const { data: periods = [], isLoading } = useQuery({
@@ -33,9 +34,19 @@ export default function ReportingSchedule({ projectId, reportingFrequency, canEd
     staleTime: 30_000,
   });
 
+  const [generateError, setGenerateError] = useState(null);
   const generateMutation = useMutation({
     mutationFn: () => apiFetch(`/api/projects/${projectId}/reporting-periods/generate/`, { method: "POST", body: JSON.stringify({}) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reporting-periods", projectId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["reporting-periods", projectId] }); setGenerateError(null); },
+    onError: (e) => setGenerateError(e?.detail || "Generation failed."),
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: () => apiFetch(`/api/projects/${projectId}/reporting-periods/reset/`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reporting-periods", projectId] });
+      setGenerateError(null);
+    },
   });
 
   const patchMutation = useMutation({
@@ -63,8 +74,18 @@ export default function ReportingSchedule({ projectId, reportingFrequency, canEd
         </p>
       )}
 
-      {/* Fréquence configurée mais pas de périodes */}
-      {reportingFrequency && periods.length === 0 && (
+      {/* Prérequis manquants */}
+      {reportingFrequency && !projectEndDate && (
+        <div className="notice notice-warn" style={{ fontSize: 12, marginBottom: 8 }}>
+          <Icon name="alert-circle" size={13} style={{ marginRight: 6, flexShrink: 0 }} />
+          <span>
+            <strong>Project end date required.</strong> Set the end date in the Lifecycle section to generate the reporting schedule.
+          </span>
+        </div>
+      )}
+
+      {/* Fréquence configurée, end_date présent, pas de périodes */}
+      {reportingFrequency && projectEndDate && periods.length === 0 && (
         <div className="row" style={{ alignItems: "center", gap: 12 }}>
           <p className="text-muted text-sm" style={{ margin: 0 }}>
             No periods generated yet.
@@ -77,6 +98,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, canEd
               {generateMutation.isPending ? "Generating…" : "Generate schedule"}
             </button>
           )}
+          {generateError && <span className="field-error" style={{ fontSize: 12 }}>{generateError}</span>}
         </div>
       )}
 
@@ -97,12 +119,23 @@ export default function ReportingSchedule({ projectId, reportingFrequency, canEd
               </div>
             ))}
             {canEdit && (
-              <button className="btn btn-ghost btn-sm row" style={{ gap: 6, marginLeft: "auto", alignSelf: "center" }}
-                onClick={() => generateMutation.mutate()}
-                disabled={generateMutation.isPending}>
-                <Icon name="refresh-cw" size={13} />
-                {generateMutation.isPending ? "…" : "Refresh"}
-              </button>
+              <div className="row" style={{ gap: 8, marginLeft: "auto", alignSelf: "center" }}>
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
+                  onClick={() => generateMutation.mutate()}
+                  disabled={generateMutation.isPending || resetMutation.isPending}>
+                  <Icon name="refresh-cw" size={13} />
+                  {generateMutation.isPending ? "…" : "Add missing"}
+                </button>
+                {projectEndDate && (
+                  <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
+                    title="Delete all periods and regenerate from scratch"
+                    onClick={() => window.confirm("Reset all periods and regenerate?") && resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() })}
+                    disabled={generateMutation.isPending || resetMutation.isPending}>
+                    <Icon name="trash-2" size={13} />
+                    {resetMutation.isPending ? "…" : "Reset & regenerate"}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
