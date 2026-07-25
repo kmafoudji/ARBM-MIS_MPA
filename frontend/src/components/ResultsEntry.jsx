@@ -183,10 +183,11 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
 }
 
 export default function ResultsEntry({ projectId, canEdit }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["results-summary", projectId],
     queryFn: () => apiFetch(`/api/projects/${projectId}/results/summary/`),
     staleTime: 30_000,
+    retry: false,
   });
 
   if (isLoading) return (
@@ -195,11 +196,22 @@ export default function ResultsEntry({ projectId, canEdit }) {
     </div>
   );
 
+  if (error) return (
+    <div className="card-body">
+      <p className="text-muted text-sm" style={{ margin: 0, color: "#dc2626" }}>
+        Error loading results: {error?.detail || error?.message || JSON.stringify(error)}
+      </p>
+    </div>
+  );
+
   if (!data?.rows?.length) return (
     <div className="card-body">
       <p className="text-muted text-sm" style={{ margin: 0 }}>
         No indicators in the logframe. Add indicators to the Theory of Change first.
       </p>
+      <pre style={{ fontSize: 10, color: "#999", marginTop: 8 }}>
+        {JSON.stringify({ rows: data?.rows?.length, periods: data?.periods?.length }, null, 2)}
+      </pre>
     </div>
   );
 
