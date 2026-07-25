@@ -1879,11 +1879,25 @@ class DQPortfolioView(APIView):
         for row in rows_qs:
             scores = compute_dq_score(row)
             composite = float(scores["composite"])
+            # Hub via Project.hub ou pays lead
+            hub_name = None
+            if row.project.hub_id:
+                hub_name = row.project.hub.name
+            else:
+                lead = row.project.project_countries.filter(
+                    is_lead=True
+                ).select_related("country__hub").first()
+                if lead and lead.country.hub_id:
+                    hub_name = lead.country.hub.name
+
             results.append({
                 "project_code":    row.project.code,
                 "project_name":    row.project.name[:50],
                 "indicator_code":  row.indicator.code,
                 "indicator_name":  row.indicator.name[:60],
+                "hub":             hub_name,
+                "sector":          row.project.primary_sector.name if row.project.primary_sector else None,
+                "chain_level":     row.chain_level,
                 "composite_score": str(scores["composite"]),
                 "completeness":    str(scores["completeness"]),
                 "timeliness":      str(scores["timeliness"]),
