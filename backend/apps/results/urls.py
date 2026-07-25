@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import (
+    DQScoreView,
+    DQPortfolioView,
     IndicatorChoicesView,
     IndicatorDetailView,
     IndicatorDisaggregationView,
@@ -34,6 +36,8 @@ indicator_urlpatterns = [
     path("indicators/<int:ind_pk>/disaggregations/<int:dim_pk>/",IndicatorDisaggregationDetailView.as_view(), name="indicator-disaggregation-detail"),
     # SF-4 : agrégation portefeuille
     path("portfolio/",           PortfolioAggregationView.as_view(), name="portfolio-aggregation"),
+    # SF-9 : DQ Score portefeuille
+    path("dq-portfolio/",        DQPortfolioView.as_view(),          name="dq-portfolio"),
 ]
 
 # Routes imbriquées sous /api/projects/{pk}/
@@ -60,7 +64,9 @@ project_urlpatterns = [
     path("results/summary/",          ResultsSummaryView.as_view(),    name="project-results-summary"),
     path("results/<int:rd_pk>/",      ResultsDataDetailView.as_view(), name="project-results-detail"),
     # SF-7 : PIRS par indicateur
-    path("logframe/<int:row_pk>/pirs/", PIRSDataView.as_view(), name="project-pirs"),
+    path("logframe/<int:row_pk>/pirs/",     PIRSDataView.as_view(),  name="project-pirs"),
+    # SF-9 : DQ Score par indicateur
+    path("logframe/<int:row_pk>/dq-score/", DQScoreView.as_view(),   name="project-dq-score"),
     # SF-6 : désagrégation par ResultsData
     path("results/<int:rd_pk>/disaggregation/", DisaggregationValueView.as_view(), name="project-results-disaggregation"),
 ]

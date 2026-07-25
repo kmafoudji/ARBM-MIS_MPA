@@ -1784,3 +1784,130 @@ class PIRSDataView(APIView):
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
+
+
+# ---------------------------------------------------------------------------
+# SF-9 — DQ Score (Data Quality Score)
+# BRQ-2.23a / BRQ-2.23b
+# ---------------------------------------------------------------------------
+
+class DQScoreView(APIView):
+    """
+    GET  /api/projects/<pk>/logframe/<row_pk>/dq-score/
+         Retourne le DQ Score calculé à la volée (pas de snapshot requis).
+         ?period=<id> pour une période spécifique.
+
+    POST /api/projects/<pk>/logframe/<row_pk>/dq-score/
+         Sauvegarde un snapshot DQ en base.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request, pk, row_pk):
+        from .dq_service import compute_dq_score
+        from apps.project.models import ReportingPeriod
+
+        row    = get_object_or_404(LogframeRow, pk=row_pk, project_id=pk)
+        period = None
+        period_id = request.query_params.get("period")
+        if period_id:
+            period = get_object_or_404(ReportingPeriod, pk=period_id, project_id=pk)
+
+        scores = compute_dq_score(row, period)
+
+        return Response({
+            "indicator_code":  row.indicator.code,
+            "indicator_name":  row.indicator.name,
+            "project_code":    row.project.code,
+            "period":          period.label if period else "All periods",
+            "scores": {
+                "completeness": str(scores["completeness"]),
+                "timeliness":   str(scores["timeliness"]),
+                "consistency":  str(scores["consistency"]),
+                "accuracy":     str(scores["accuracy"]),
+                "composite":    str(scores["composite"]),
+            },
+            "weights": {
+                "completeness": "30%",
+                "timeliness":   "25%",
+                "consistency":  "25%",
+                "accuracy":     "20%",
+            },
+            "details":    scores["details"],
+            "computed_at": timezone.now().isoformat(),
+        })
+
+    def post(self, request, pk, row_pk):
+        from .dq_service import save_dq_snapshot
+        from apps.project.models import ReportingPeriod
+
+        row    = get_object_or_404(LogframeRow, pk=row_pk, project_id=pk)
+        period = None
+        period_id = request.data.get("period")
+        if period_id:
+            period = get_object_or_404(ReportingPeriod, pk=period_id, project_id=pk)
+
+        snapshot = save_dq_snapshot(row, period)
+        return Response({
+            "composite_score": str(snapshot.composite_score),
+            "computed_at":     snapshot.computed_at.isoformat(),
+        }, status=201)
+
+
+class DQPortfolioView(APIView):
+    """
+    GET /api/results/dq-portfolio/
+        DQ Score agrégé sur tout le portefeuille ou filtré par projet.
+        ?project=<id>
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request):
+        from .dq_service import compute_dq_score
+        from apps.project.models import Project
+
+        project_id = request.query_params.get("project")
+        rows_qs = LogframeRow.objects.select_related(
+            "indicator", "project"
+        ).filter(project__workspace__isnull=False)
+
+        if project_id:
+            rows_qs = rows_qs.filter(project_id=project_id)
+
+        results = []
+        for row in rows_qs:
+            scores = compute_dq_score(row)
+            composite = float(scores["composite"])
+            results.append({
+                "project_code":    row.project.code,
+                "project_name":    row.project.name[:50],
+                "indicator_code":  row.indicator.code,
+                "indicator_name":  row.indicator.name[:60],
+                "composite_score": str(scores["composite"]),
+                "completeness":    str(scores["completeness"]),
+                "timeliness":      str(scores["timeliness"]),
+                "consistency":     str(scores["consistency"]),
+                "accuracy":        str(scores["accuracy"]),
+                "grade": (
+                    "A" if composite >= 80
+                    else "B" if composite >= 60
+                    else "C" if composite >= 40
+                    else "D"
+                ),
+            })
+
+        # Tri par score composite décroissant
+        results.sort(key=lambda x: float(x["composite_score"]), reverse=True)
+
+        # Agrégat global
+        if results:
+            avg = round(sum(float(r["composite_score"]) for r in results) / len(results), 2)
+        else:
+            avg = 0
+
+        return Response({
+            "portfolio_average": str(avg),
+            "indicators_count":  len(results),
+            "results":           results,
+        })

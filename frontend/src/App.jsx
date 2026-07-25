@@ -10,6 +10,7 @@ import ProjectDetail from "./pages/ProjectDetail.jsx";
 import TheoryOfChange from "./pages/TheoryOfChange.jsx";
 import Logframe from "./pages/Logframe.jsx";
 import Portfolio from "./pages/Portfolio.jsx";
+import DQPortfolio from "./pages/DQPortfolio.jsx";
 import PIRSView from "./pages/PIRSView.jsx";
 import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
@@ -151,6 +152,7 @@ export default function App() {
       {nav === "masterdata" && <MasterData canEdit={canEditReference} />}
       {nav === "indicator-catalogue" && <IndicatorCatalogue />}
       {nav === "portfolio" && <Portfolio />}
+      {nav === "dq-portfolio" && <DQPortfolio />}
       {nav === "pirs" && selectedRowId && (
         <PIRSView
           projectId={selectedProjectId}

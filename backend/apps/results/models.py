@@ -608,3 +608,50 @@ class DisaggregationValue(models.Model):
 
     def __str__(self):
         return f"{self.results_data} | {self.dimension.name}: {self.category} = {self.value}"
+
+
+# ---------------------------------------------------------------------------
+# SF-9 — Scoring qualité des données (Data Quality Score)
+# BRQ-2.23a / BRQ-2.23b
+# ---------------------------------------------------------------------------
+
+class DQScoreSnapshot(models.Model):
+    """
+    Instantané du score de qualité des données par indicateur et par période.
+    Recalculé à chaque approbation ou fin de période.
+
+    Score composite 0–100 % pondéré :
+      Complétude  30 % — rapports reçus vs attendus
+      Ponctualité 25 % — soumissions dans les délais
+      Cohérence   25 % — écarts vs tendance historique
+      Exactitude  20 % — preuves vérifiées (SF-10, placeholder)
+    """
+    logframe_row     = models.ForeignKey(
+        LogframeRow, on_delete=models.CASCADE,
+        related_name="dq_snapshots",
+    )
+    reporting_period = models.ForeignKey(
+        "project.ReportingPeriod", on_delete=models.CASCADE,
+        related_name="dq_snapshots", null=True, blank=True,
+        help_text="Null = score global du projet (toutes périodes).",
+    )
+    # Dimensions
+    completeness_score  = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    timeliness_score    = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    consistency_score   = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    accuracy_score      = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    # Composite
+    composite_score     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    # Méta
+    computed_at = models.DateTimeField(auto_now=True)
+    notes       = models.TextField(blank=True)
+
+    class Meta:
+        db_table        = "dq_score_snapshot"
+        ordering        = ["-computed_at"]
+        unique_together = [("logframe_row", "reporting_period")]
+        verbose_name    = "DQ Score Snapshot"
+
+    def __str__(self):
+        period = self.reporting_period.label if self.reporting_period else "Global"
+        return f"{self.logframe_row.indicator.code} | {period} | {self.composite_score}%"

@@ -50,6 +50,7 @@ const CRUMBS = {
   "project-logframe": { label: "Logframe", parent: "project-detail" },
   "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
   portfolio: { label: "Portfolio Results", parent: "overview" },
+  "dq-portfolio": { label: "Data Quality", parent: "overview" },
   pirs:      { label: "PIRS", parent: "project-logframe" },
   rbac: { label: "Users & Roles", parent: "overview" },
 };
@@ -72,6 +73,7 @@ const API_PATHS = {
   "project-detail": "/api/projects/:id",
   "indicator-catalogue": "/api/results/indicators",
   portfolio: "/api/results/portfolio",
+  "dq-portfolio": "/api/results/dq-portfolio",
   pirs:      "/api/projects/:id/logframe/:row/pirs",
   rbac: "/api/identity/roles",
 };
@@ -122,6 +124,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
         { key: "new-project", label: t("project.new"), Icon: IconNewProject },
         { key: "indicator-catalogue", label: t("nav.indicator_catalogue"), Icon: IconCatalogue },
         { key: "portfolio", label: "Portfolio Results", Icon: IconPortfolio },
+        { key: "dq-portfolio", label: "Data Quality", Icon: IconCatalogue },
       ],
     },
     {

@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
+import DQScoreWidget from "../components/DQScoreWidget";
 
 const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
 const CHAIN_LEVEL_LABEL = {
@@ -318,6 +319,11 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
                 onCancel={() => setAddingTarget(false)}
               />
             )}
+          </div>
+
+          {/* DQ Score */}
+          <div style={{ marginTop: 10 }}>
+            <DQScoreWidget projectId={projectId} rowId={row.id} />
           </div>
 
           {/* Actions */}
