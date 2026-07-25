@@ -314,6 +314,15 @@ function LevelSection({ level, indicators }) {
 export default function Portfolio() {
   const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "", country: "", donor: "", fragility: "", rag: "" });
 
+  // Quand le hub change, réinitialiser le pays
+  function setFilter(key, value) {
+    setFilters(f => ({
+      ...f,
+      [key]: value,
+      ...(key === "hub" ? { country: "" } : {}),
+    }));
+  }
+
   const { data: hubs     = [] } = useQuery({ queryKey: ["hubs"],     queryFn: () => apiFetch("/api/reference/hubs/") });
   const { data: sectors  = [] } = useQuery({ queryKey: ["sectors"],  queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: countries= [] } = useQuery({ queryKey: ["countries"],queryFn: () => apiFetch("/api/reference/countries/") });
@@ -338,6 +347,11 @@ export default function Portfolio() {
   const indicators = data?.indicators || [];
 
   // Grouper par niveau
+  // Pays filtrés selon le hub sélectionné
+  const filteredCountries = filters.hub
+    ? countries.filter(c => c.is_active && String(c.hub) === filters.hub)
+    : countries.filter(c => c.is_active);
+
   const byLevel = {};
   CHAIN_LEVELS.forEach(l => { byLevel[l.key] = []; });
   indicators.forEach(ind => {
@@ -437,8 +451,8 @@ export default function Portfolio() {
 
         {[
           { key: "hub",       label: "Hub",       options: hubs.map(h => ({ value: String(h.id), label: h.name })) },
+          { key: "country",   label: filters.hub ? "Country (Hub)" : "Country", options: filteredCountries.map(c => ({ value: String(c.id), label: c.name })) },
           { key: "sector",    label: "Sector",    options: sectors.map(s => ({ value: String(s.id), label: s.name })) },
-          { key: "country",   label: "Country",   options: countries.filter(c=>c.is_active).map(c => ({ value: String(c.id), label: c.name })) },
           { key: "donor",     label: "Donor",     options: donors.map(d => ({ value: String(d.id), label: d.short_name || d.name })) },
           { key: "chain_level", label: "Level",   options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })) },
           { key: "fragility", label: "Fragility", options: [
@@ -463,7 +477,7 @@ export default function Portfolio() {
               fontFamily: "inherit", cursor: "pointer", outline: "none",
             }}
             value={filters[key]}
-            onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))}
+            onChange={e => setFilter(key, e.target.value)}
           >
             <option value="">All {label}s</option>
             {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
