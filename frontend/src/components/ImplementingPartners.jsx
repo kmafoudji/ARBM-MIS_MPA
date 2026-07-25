@@ -190,7 +190,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
   return (
     <div className="card-body">
       <dialog.Dialog />
-      {/* Partner table */
+      {/* Partner table */}
       {partners.length > 0 && (
         <table className="data-table mb-3" style={{ width: "100%" }}>
           <thead>

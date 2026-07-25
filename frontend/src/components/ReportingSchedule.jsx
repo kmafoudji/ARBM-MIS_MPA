@@ -75,7 +75,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
   return (
     <div className="card-body">
       <dialog.Dialog />
-      {/* Pas de fréquence configurée */
+      {/* Pas de fréquence configurée */}
       {!reportingFrequency && (
         <p className="text-muted text-sm" style={{ margin: 0 }}>
           Reporting frequency not configured. Set it in the Reporting section above to generate the schedule.
