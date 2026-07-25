@@ -25,7 +25,7 @@ function isOverdue(dueDate, status) {
   return new Date(dueDate) < new Date();
 }
 
-export default function ReportingSchedule({ projectId, reportingFrequency, projectEndDate, canEdit }) {
+export default function ReportingSchedule({ projectId, reportingFrequency, projectEndDate, nextReportingDue, canEdit }) {
   const qc = useQueryClient();
 
   const { data: periods = [], isLoading } = useQuery({
@@ -127,13 +127,15 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
                   <Icon name="plus" size={13} />
                   {generateMutation.isPending ? "…" : "Add missing"}
                 </button>
-                <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
-                  title="Delete all periods and recalculate from current settings"
-                  onClick={() => window.confirm("Recalculate the reporting schedule? Existing periods will be deleted.") && resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() })}
-                  disabled={generateMutation.isPending || resetMutation.isPending || !projectEndDate}>
-                  <Icon name="refresh-cw" size={13} />
-                  {resetMutation.isPending || generateMutation.isPending ? "Calculating…" : "Recalculate"}
-                </button>
+                {projectEndDate && reportingFrequency && nextReportingDue && (
+                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+                    title="Delete all periods and recalculate from current settings"
+                    onClick={() => window.confirm("Recalculate the reporting schedule? Existing periods will be deleted.") && resetMutation.mutate(null, { onSuccess: () => generateMutation.mutate() })}
+                    disabled={generateMutation.isPending || resetMutation.isPending}>
+                    <Icon name="refresh-cw" size={13} />
+                    {resetMutation.isPending || generateMutation.isPending ? "Calculating…" : "Recalculate"}
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -1144,6 +1144,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           projectId={project.id}
           reportingFrequency={project.reporting_frequency}
           projectEndDate={project.end_date}
+          nextReportingDue={project.next_reporting_due}
           canEdit={canEdit}
         />
       </div>
