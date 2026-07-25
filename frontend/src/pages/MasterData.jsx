@@ -70,7 +70,7 @@ const TABS = [
     key: "countries",
     label: "Countries",
     url: "/api/reference/countries/",
-    singular: "a country",
+    singular: "country",
     sub: "GADM Admin 0 reference · assignment to regional hubs",
     fields: [
       { name: "name", label: "Country Name", type: "text", required: true },
@@ -85,7 +85,7 @@ const TABS = [
     key: "hubs",
     label: "Regional Hubs",
     url: "/api/reference/hubs/",
-    singular: "un hub",
+    singular: "hub",
     sub: "Regional offices and linked countries",
     layout: "hubs",
     fields: [
@@ -99,7 +99,7 @@ const TABS = [
     key: "donors",
     label: "Donors",
     url: "/api/reference/donors/",
-    singular: "a donor",
+    singular: "donor",
     sub: "Les 6 contributeurs du LLF2",
     fields: [
       { name: "short_name", label: "Short Name", type: "text", required: true },
@@ -119,7 +119,7 @@ const TABS = [
     key: "agencies",
     label: "Implementing Agencies",
     url: "/api/reference/agencies/",
-    singular: "une agence",
+    singular: "agency",
     sub: "Ministeres, agences nationales, agences ONU et ONG d'execution",
     fields: [
       { name: "name", label: "Agency Name", type: "text", required: true },
@@ -134,7 +134,7 @@ const TABS = [
     key: "sectors",
     label: "Sectors",
     url: "/api/reference/sectors/",
-    singular: "un secteur",
+    singular: "sector",
     sub: "Piliers LLF2 et themes transversaux",
     fields: [
       { name: "name", label: "Sector Name", type: "text", required: true },
@@ -149,7 +149,7 @@ const TABS = [
     key: "sdgs",
     label: "SDGs",
     url: "/api/reference/sdgs/",
-    singular: "un ODD",
+    singular: "SDG",
     sub: "Sustainable Development Goals · United Nations",
     idField: "number",
     // Closed reference : les 17 ODD sont fixes par l'ONU. Ni ajout, ni
