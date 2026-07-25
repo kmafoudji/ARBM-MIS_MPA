@@ -1409,6 +1409,12 @@ class PIRSDataView(APIView):
         # Logo ARBM-MES embarqué (PNG base64)
         LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAACl0lEQVR4nO3czZnTMBSF4S9TBy1NBZTAksXUwIIlJVABLdFHWOkZIGP7Sro/R3bO1pHkvI/tOLaubvf7nWfG81K9A6vnCTgZecBPn79LX2OkARueMqIs4P9oqoiSgFtYiohygEdIaohSgFYcJUQZwF4UFUQJwD2Mb19+DbXLSjmgBU8ZsRSw58hTRSwDHDltFRFLAEeveUfbKxDTAWfwLJ/LRkwF9MCzfD4TMQ3QE8/SLgsxBTACz9I+AzEcMBLP0k80YihgBp6lv0jEMMBMPEu/UYghgBV4lv4jEN0BK/Es43gjugIq4FnG80R0A1TCs4zrhegCqIhnGd8DcRpQGa8lEnEKcAW8lijEYcCV8FoiEIcAV8Rr8UbsBlwZr8UTsQvwDHgtXohmwDPhtXggmgDPiNcyi3gIeGa8lhnEXcAr4LWMIm4CXgmvZQTxQ8Ar4rX0Ij4AXhmvpQfxZW+jtdMzxor4D+Dvn19vW43efry67Ngq2fu+fzs9nMJPRDsebPyIXBmxBw92bmOuiNiLBwc30ldCHMEDw1+5KyCO4oHxYcKZEWfwoONx1hkRZ/Gg84HqmRA98GDgkf4ZEL3wYPCl0sqInngw8VpzRURvPJh8sb4SYgQeOEztWAExCg+cJhcpI0bigeP0NkXEaDxwnmCphJiBBwFTfBUQs/AgaJJ5JWImHgSWOVQgZuNBcKFNJmIFHiSUemUgVuFBUrFhJGIlHiSWu0YgVuNBcsG1J6ICHhSU/HsgquBB0aITM4hKeFC47MkIohoeFC+804OoiAcCSz9ZEFXxAG4qyyCPFLlU44HAEdjSi6GAB0KAYEdRwQMxQDjGUcIDQUDYRlLDA1FAeMRSxANhQHhHU8UDoduYVSN9BK6QP4t76VRD74/PAAAAAElFTkSuQmCC"
 
+        import re as _re
+        def strip_html(s):
+            if not s:
+                return ""
+            return _re.sub(r"<[^>]+>", "", str(s)).replace("&amp;","&").replace("&nbsp;"," ").strip()
+
         def fmt_val(v):
             """Normalise une valeur numérique pour l'affichage DOCX — pas de notation scientifique."""
             if v is None or v == "" or v == "—":
@@ -1652,13 +1658,13 @@ class PIRSDataView(APIView):
             ("Code",               ind.get("code")),
             ("Full Name",          ind.get("name")),
             ("Chain Level",        ind.get("chain_level_display")),
-            ("Definition",         ind.get("definition")),
+            ("Definition",         strip_html(ind.get("definition"))),
             ("Unit of Measure",    ind.get("unit")),
             ("Type",               ind.get("indicator_type")),
             ("Direction",          ind.get("direction")),
             ("Aggregation Rule",   ind.get("aggregation_rule")),
-            ("Calculation Method", ind.get("calculation_method")),
-            ("Formula",            ind.get("formula")),
+            ("Calculation Method", strip_html(ind.get("calculation_method"))),
+            ("Formula",            strip_html(ind.get("formula"))),
             ("Numerator",          ind.get("numerator")),
             ("Denominator",        ind.get("denominator")),
         ])
@@ -1671,8 +1677,8 @@ class PIRSDataView(APIView):
             ("Reporting Frequency",   ind.get("reporting_frequency")),
             ("Means of Verification", ind.get("means_of_verification")),
             ("Responsible Party",     ind.get("responsible")),
-            ("Assumptions",           ind.get("assumptions")),
-            ("Limitations",           ind.get("limitations")),
+            ("Assumptions",           strip_html(ind.get("assumptions"))),
+            ("Limitations",           strip_html(ind.get("limitations"))),
         ])
 
         # ── D. Baseline ────────────────────────────────────────────────
@@ -1688,7 +1694,7 @@ class PIRSDataView(APIView):
         add_section_heading(doc, "E", "Targets")
         if tgts:
             WIDTHS_T = [3.5, 3, 2.8, 2.5, 1.2]
-            HDRS_T   = ["Label", f"Target ({ind.get('unit','')})", "Deadline", "Status", "PAD"]
+            HDRS_T   = ["Label", f"Target\n({ind.get('unit','')})", "Deadline", "Status", ""]
             table = doc.add_table(rows=0, cols=5)
             table.style = "Table Grid"
             add_header_row(table, HDRS_T, WIDTHS_T)
@@ -1696,7 +1702,7 @@ class PIRSDataView(APIView):
                 bg = "FFFFFF" if i % 2 == 0 else "F8FAFC"
                 add_data_row(table, [
                     t.get("label","—"),
-                    f"{fmt_val(t.get('target_value'))}",
+                    fmt_val(t.get("target_value")),
                     str(t.get("target_date","—")),
                     t.get("status","").upper(),
                     "✓" if t.get("is_original_pad") else "",
@@ -1707,7 +1713,7 @@ class PIRSDataView(APIView):
         add_section_heading(doc, "F", "Results by Reporting Period")
         if acts:
             WIDTHS_A = [2.5, 2.5, 2.5, 2.2, 2.0, 5.3]
-            HDRS_A   = ["Period", f"Actual ({ind.get('unit','')})", f"Target ({ind.get('unit','')})", "Achievement", "RAG", "Narrative"]
+            HDRS_A   = ["Period", f"Actual\n({ind.get('unit','')})", f"Target\n({ind.get('unit','')})", "Achievement %", "RAG", "Narrative"]
             RAG_LBL  = {"green":"On Track","amber":"At Risk","red":"Off Track"}
             table = doc.add_table(rows=0, cols=6)
             table.style = "Table Grid"
@@ -1718,7 +1724,7 @@ class PIRSDataView(APIView):
                     a.get("period_label",""),
                     fmt_val(a.get("actual_value")),
                     fmt_val(a.get("target_value")),
-                    f"{fmt_val(a.get('achievement_rate'))}%" if a.get("achievement_rate") else "—",
+                    fmt_val(a.get("achievement_rate")) if a.get("achievement_rate") else "—",
                     RAG_LBL.get(a.get("rag_status",""),"No Data"),
                     a.get("narrative","—") or "—",
                 ], WIDTHS_A, bg)
@@ -1749,7 +1755,7 @@ class PIRSDataView(APIView):
                         vals = [period_data["period_label"]]
                         for cat in all_cats:
                             found = next((v["val"] for v in period_data["values"] if v["cat"] == cat), None)
-                            vals.append(f"{fmt_val(found)} {ind.get('unit','')}" if found else "—")
+                            vals.append(fmt_val(found) if found else "—")
                         add_data_row(table, vals, col_w, bg)
                     doc.add_paragraph().paragraph_format.space_after = Pt(2)
 

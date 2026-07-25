@@ -7,6 +7,11 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import { fmtNum, fmtPct } from "../utils.js";
 
+function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, "").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&nbsp;/g," ").trim();
+}
+
 const RAG = {
   green: { color: "#16a34a", bg: "#dcfce7", label: "On Track",  icon: "circle-check" },
   amber: { color: "#d97706", bg: "#fef9c3", label: "At Risk",   icon: "alert-triangle" },
@@ -204,15 +209,15 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         ["Code",               indicator.code, true],
         ["Full Name",          indicator.name],
         ["Chain Level",        indicator.chain_level_display],
-        ["Definition",         indicator.definition],
+        ["Definition",         stripHtml(indicator.definition)],
         ["Unit of Measure",    indicator.unit],
         ["Type",               indicator.indicator_type],
         ["Direction",          indicator.direction],
         ["Aggregation Rule",   indicator.aggregation_rule],
-        ["Calculation Method", indicator.calculation_method],
+        ["Calculation Method", stripHtml(indicator.calculation_method)],
         ["Numerator",          indicator.numerator],
         ["Denominator",        indicator.denominator],
-        ["Formula",            indicator.formula, true],
+        ["Formula",            stripHtml(indicator.formula), true],
       ]} />
 
       {/* ── C. Data Collection ──────────────────────────────────────── */}
@@ -221,10 +226,10 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         ["Data Source",           indicator.data_source],
         ["Collection Method",     indicator.collection_method],
         ["Reporting Frequency",   indicator.reporting_frequency],
-        ["Means of Verification", indicator.means_of_verification],
+        ["Means of Verification", stripHtml(indicator.means_of_verification)],
         ["Responsible Party",     indicator.responsible],
-        ["Assumptions",           indicator.assumptions],
-        ["Limitations",           indicator.limitations],
+        ["Assumptions",           stripHtml(indicator.assumptions)],
+        ["Limitations",           stripHtml(indicator.limitations)],
       ]} />
 
       {/* ── D. Baseline ─────────────────────────────────────────────── */}
@@ -242,10 +247,10 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       {targets.length === 0
         ? <p style={{ color: "#9ca3af", fontSize: 13, fontStyle: "italic" }}>No targets defined.</p>
         : <DataTable
-            headers={["Label", { label: "Target Value", align: "right" }, "Deadline", "Status", "PAD"]}
+            headers={[`Label`, { label: `Target (${indicator.unit})`, align: "right" }, "Deadline", "Status", "PAD"]}
             rows={targets.map(t => [
               t.label || "—",
-              <span style={{ fontWeight: 700 }}>{fmtNum(t.target_value)} <span style={{ color: "#9ca3af", fontWeight: 400, fontSize: 11 }}>{indicator.unit}</span></span>,
+              <span style={{ fontWeight: 700 }}>{fmtNum(t.target_value)}</span>,
               t.target_date,
               <span style={{ fontSize: 11, fontWeight: 700, color: t.status === "approved" ? "#16a34a" : "#d97706" }}>{t.status.toUpperCase()}</span>,
               t.is_original_pad ? <span style={{ fontSize: 12, color: "#A4C53F" }}>✓</span> : null,
@@ -268,8 +273,8 @@ export default function PIRSView({ projectId, rowId, onBack }) {
             ]}
             rows={actuals.map(a => [
               <span style={{ fontWeight: 500 }}>{a.period_label}</span>,
-              <span style={{ fontWeight: 700 }}>{fmtNum(a.actual_value)} <span style={{ color: "#9ca3af", fontWeight: 400 }}>{indicator.unit}</span></span>,
-              a.target_value ? <span>{fmtNum(a.target_value)} <span style={{ color: "#9ca3af" }}>{indicator.unit}</span></span> : "—",
+              <span style={{ fontWeight: 700 }}>{fmtNum(a.actual_value)}</span>,
+              a.target_value ? <span>{fmtNum(a.target_value)}</span> : "—",
               a.achievement_rate ? <span style={{ fontWeight: 700, color: RAG[a.rag_status]?.color || "#111" }}>{fmtPct(a.achievement_rate)}</span> : "—",
               <RagBadge rag={a.rag_status} />,
               <span style={{ color: "#374151" }}>{a.narrative || "—"}</span>,
@@ -295,7 +300,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
                     period_data.period_label,
                     ...allCats.map(cat => {
                       const found = period_data.values.find(v => v.cat === cat);
-                      return found ? `${fmtNum(found.val)} ${indicator.unit}` : "—";
+                      return found ? fmtNum(found.val) : "—";
                     }),
                   ])}
                 />
@@ -319,7 +324,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", textAlign: "center", fontSize: 11, color: "#9ca3af" }}>
-        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · ARBM-MES · MillenniumPromise / IsDB LLF2
+        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · ARBM-MES · IsDB LLF2
       </div>
     </div>
   );
