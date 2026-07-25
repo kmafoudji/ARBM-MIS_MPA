@@ -1,6 +1,6 @@
 /**
  * SF-7 — Périmètre géographique GADM
- * Affichage hiérarchique Admin1 → Admin2 avec accordéon inline.
+ * Onglets horizontaux par Admin 1, districts en chips à l'intérieur.
  */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,12 +11,13 @@ import Icon from "./Icon.jsx";
 export default function GeographicScope({ projectId, countries, canEdit }) {
   const qc = useQueryClient();
 
-  const [openFor,   setOpenFor]   = useState(null); // null | "add" | area_id
+  const [openFor,   setOpenFor]   = useState(null);
   const [editScope, setEditScope] = useState(null);
   const [selAdmin1, setSelAdmin1] = useState("");
   const [selAdmin2, setSelAdmin2] = useState([]);
   const [isPrimary, setIsPrimary] = useState(false);
   const [notes,     setNotes]     = useState("");
+  const [activeTab, setActiveTab] = useState(null); // admin1 name actif
 
   const projectCountryIso3s = (countries || []).map((c) => c.iso3).filter(Boolean);
   const [selectedIso3, setSelectedIso3] = useState(projectCountryIso3s[0] || "");
@@ -114,33 +115,53 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
     return !scopedAreaIds.has(a.id);
   });
 
-  /* ── Groupement hiérarchique ── */
-  // Séparer Admin1 standalone et Admin2 groupés par parent
+  /* ── Groupement ── */
   const admin1Scope = scope.filter((s) => s.area_level === 1);
   const admin2Scope = scope.filter((s) => s.area_level === 2);
 
-  // Construire les groupes : Admin1 présents directement OU parents d'Admin2
-  const groupMap = {}; // parent_name → [admin2 scopes]
+  // Grouper Admin2 par parent
+  const groupMap = {};
   admin2Scope.forEach((s) => {
-    const key = s.parent_name || "Unknown region";
+    const key = s.parent_name || "Other";
     if (!groupMap[key]) groupMap[key] = { parentId: s.parent_id, items: [] };
     groupMap[key].items.push(s);
   });
 
-  // Admin1 dans le scope mais sans enfants Admin2 → affichés seuls
-  const admin1WithChildren = new Set(admin2Scope.map((s) => s.parent_id));
+  // Construire les onglets : Admin1 standalone + groupes Admin1→Admin2
+  const tabs = [];
 
-  /* ── Formulaire inline ── */
-  const formRow = (
+  // Admin1 seuls
+  const admin1WithChildren = new Set(admin2Scope.map((s) => s.parent_id));
+  admin1Scope
+    .filter((s) => !admin1WithChildren.has(s.area))
+    .forEach((s) => tabs.push({ key: s.area_name, label: s.area_name, scope: s, children: [] }));
+
+  // Groupes Admin1 + leurs Admin2
+  Object.entries(groupMap).forEach(([name, group]) => {
+    const parent = admin1Scope.find((s) => s.area === group.parentId);
+    tabs.push({ key: name, label: name, scope: parent || null, children: group.items });
+  });
+
+  // Tri alphabétique
+  tabs.sort((a, b) => a.label.localeCompare(b.label));
+
+  // Onglet actif par défaut
+  const currentTab = activeTab && tabs.find((t) => t.key === activeTab)
+    ? activeTab
+    : tabs[0]?.key || null;
+  const activeTabData = tabs.find((t) => t.key === currentTab);
+
+  /* ── Formulaire ── */
+  const formJsx = (
     <div style={{
-      background: "color-mix(in srgb, var(--lime) 5%, var(--surface))",
+      background: "color-mix(in srgb, var(--lime) 4%, var(--surface))",
       border: "1px solid color-mix(in srgb, var(--lime) 25%, transparent)",
       borderRadius: "var(--r-3)",
       padding: "var(--s-3)",
-      margin: "var(--s-2) 0",
+      marginTop: "var(--s-3)",
     }}>
       <div className="card-sub" style={{ marginBottom: 10 }}>
-        {editScope ? "Edit geographic zone" : "Add a geographic zone"}
+        {editScope ? "Edit zone" : "Add a geographic zone"}
       </div>
 
       {projectCountryIso3s.length > 1 && (
@@ -179,7 +200,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
           <span className="field-help">
             {editScope
               ? "Select a district, or leave empty to keep the whole region."
-              : "Ctrl/Cmd + click for multiple districts. Leave empty to add the entire region."}
+              : "Ctrl/Cmd + click for multiple. Leave empty to add the entire region."}
           </span>
         </div>
       )}
@@ -208,158 +229,152 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
     </div>
   );
 
-  /* ── Ligne de zone ── */
-  function ZoneRow({ s, indent = false }) {
-    const isEditing = openFor === s.area;
-    return (
-      <>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "8px 12px",
-          marginLeft: indent ? 24 : 0,
-          borderRadius: "var(--r-2)",
-          background: isEditing ? "color-mix(in srgb, var(--lime) 6%, var(--surface))" : undefined,
-          borderLeft: indent ? "2px solid color-mix(in srgb, var(--lime) 30%, transparent)" : undefined,
-        }}>
-          {/* Icône niveau */}
-          <div style={{
-            width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: indent
-              ? "color-mix(in srgb, var(--navy, #1B5A8C) 10%, var(--surface))"
-              : "color-mix(in srgb, var(--lime) 15%, var(--surface))",
-            color: indent ? "var(--navy, #1B5A8C)" : "var(--lime-dark, var(--lime))",
-          }}>
-            <Icon name={indent ? "map-pin" : "map"} size={13} />
-          </div>
-
-          {/* Nom */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>{s.area_name}</span>
-            {s.notes && (
-              <span className="text-muted" style={{ fontSize: 11, marginLeft: 8 }}>{s.notes}</span>
-            )}
-          </div>
-
-          {/* Primary */}
-          {s.is_primary && (
-            <span className="badge badge-lime" style={{ fontSize: 10 }}>Primary</span>
-          )}
-
-          {/* Actions */}
-          {canEdit && (
-            <span className="row" style={{ gap: 4, flexShrink: 0 }}>
-              <button className="btn-square" title="Edit"
-                onClick={() => isEditing ? closeForm() : openEdit(s)}>
-                <IconEdit />
-              </button>
-              <button className="btn-square danger" title="Remove"
-                onClick={() => window.confirm(`Remove ${s.area_name}?`) && removeMutation.mutate(s.area)}>
-                <IconDeactivate />
-              </button>
-            </span>
-          )}
-        </div>
-
-        {/* Formulaire inline sous la ligne */}
-        {canEdit && isEditing && (
-          <div style={{ marginLeft: indent ? 24 : 0 }}>
-            {formRow}
-          </div>
-        )}
-      </>
-    );
-  }
-
   if (isLoading) return <div className="card-body"><span className="spinner" /> Loading…</div>;
-
-  const isEmpty = scope.length === 0;
 
   return (
     <div className="card-body">
-      {isEmpty && openFor === null && (
+      {scope.length === 0 && openFor === null && (
         <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>
           No geographic scope defined. Add Admin 1 regions or Admin 2 districts.
         </p>
       )}
 
-      {/* Affichage hiérarchique */}
-      {!isEmpty && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: "var(--s-3)" }}>
+      {/* Onglets horizontaux */}
+      {tabs.length > 0 && (
+        <div>
+          {/* Barre d'onglets */}
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 0, borderBottom: "2px solid var(--rule)" }}>
+            {tabs.map((t) => {
+              const isActive = t.key === currentTab;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveTab(t.key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "7px 14px",
+                    fontSize: 13, fontWeight: isActive ? 600 : 400,
+                    color: isActive ? "var(--lime-dark, var(--lime))" : "var(--text-muted)",
+                    background: "none", border: "none", cursor: "pointer",
+                    borderBottom: isActive ? "2px solid var(--lime, #A4C53F)" : "2px solid transparent",
+                    marginBottom: -2,
+                    borderRadius: 0,
+                  }}
+                >
+                  <Icon name="layers" size={13} />
+                  {t.label}
+                  {t.children.length > 0 && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600,
+                      background: isActive ? "var(--lime, #A4C53F)" : "var(--rule)",
+                      color: isActive ? "#fff" : "var(--text-muted)",
+                      borderRadius: 10, padding: "1px 6px",
+                    }}>
+                      {t.children.length}
+                    </span>
+                  )}
+                  {(t.scope?.is_primary) && (
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--lime)", flexShrink: 0 }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Admin 1 seuls (sans enfants Admin2 dans le scope) */}
-          {admin1Scope
-            .filter((s) => !admin1WithChildren.has(s.area))
-            .map((s) => <ZoneRow key={s.id} s={s} indent={false} />)}
-
-          {/* Groupes Admin1 → Admin2 */}
-          {Object.entries(groupMap).map(([parentName, group]) => {
-            // Vérifier si Admin1 lui-même est dans le scope
-            const admin1InScope = admin1Scope.find((s) => s.area === group.parentId);
-            return (
-              <div key={parentName} style={{
-                border: "1px solid var(--rule)",
-                borderRadius: "var(--r-3)",
-                overflow: "hidden",
-              }}>
-                {/* Header Admin 1 */}
+          {/* Contenu de l'onglet actif */}
+          {activeTabData && (
+            <div style={{ padding: "var(--s-3) 0" }}>
+              {/* Infos Admin1 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: activeTabData.children.length > 0 ? 12 : 0 }}>
                 <div style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "8px 12px",
-                  background: "var(--paper)",
-                  borderBottom: "1px solid var(--rule)",
+                  display: "flex", alignItems: "center", gap: 8, flex: 1,
                 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "color-mix(in srgb, var(--lime) 15%, var(--surface))",
-                    color: "var(--lime-dark, var(--lime))",
-                  }}>
-                    <Icon name="map" size={13} />
-                  </div>
-                  <span style={{ fontWeight: 600, fontSize: 13, flex: 1 }}>{parentName}</span>
-                  <span className="text-muted text-sm">{group.items.length} district{group.items.length > 1 ? "s" : ""}</span>
-                  {admin1InScope?.is_primary && (
+                  <Icon name="flag" size={14} style={{ color: "var(--lime-dark, var(--lime))", flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{activeTabData.label}</span>
+                  {activeTabData.scope?.is_primary && (
                     <span className="badge badge-lime" style={{ fontSize: 10 }}>Primary</span>
                   )}
-                  {canEdit && admin1InScope && (
-                    <span className="row" style={{ gap: 4 }}>
-                      <button className="btn-square" title="Edit Admin 1"
-                        onClick={() => openFor === admin1InScope.area ? closeForm() : openEdit(admin1InScope)}>
-                        <IconEdit />
-                      </button>
-                      <button className="btn-square danger" title="Remove"
-                        onClick={() => window.confirm(`Remove ${parentName}?`) && removeMutation.mutate(admin1InScope.area)}>
-                        <IconDeactivate />
-                      </button>
+                  {activeTabData.children.length === 0 && activeTabData.scope && (
+                    <span className="text-muted text-sm">· Whole region</span>
+                  )}
+                  {activeTabData.children.length > 0 && (
+                    <span className="text-muted text-sm">
+                      · {activeTabData.children.length} district{activeTabData.children.length > 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
-                {admin1InScope && canEdit && openFor === admin1InScope.area && (
-                  <div style={{ padding: "0 12px" }}>{formRow}</div>
+                {canEdit && activeTabData.scope && (
+                  <span className="row" style={{ gap: 4 }}>
+                    <button className="btn-square" title="Edit"
+                      onClick={() => openFor === activeTabData.scope.area ? closeForm() : openEdit(activeTabData.scope)}>
+                      <IconEdit />
+                    </button>
+                    <button className="btn-square danger" title="Remove region"
+                      onClick={() => window.confirm(`Remove ${activeTabData.label} from scope?`) && removeMutation.mutate(activeTabData.scope.area)}>
+                      <IconDeactivate />
+                    </button>
+                  </span>
                 )}
+              </div>
 
-                {/* Admin 2 */}
-                <div style={{ padding: "4px 0" }}>
-                  {group.items.map((s) => (
-                    <div key={s.id} style={{ padding: "0 8px" }}>
-                      <ZoneRow s={s} indent={true} />
+              {/* Formulaire édition Admin1 */}
+              {canEdit && activeTabData.scope && openFor === activeTabData.scope.area && formJsx}
+
+              {/* Chips Admin2 */}
+              {activeTabData.children.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                  {activeTabData.children.map((s) => (
+                    <div key={s.id} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "5px 10px 5px 8px",
+                      background: s.is_primary
+                        ? "color-mix(in srgb, var(--lime) 15%, var(--surface))"
+                        : "var(--paper)",
+                      border: `1px solid ${s.is_primary ? "color-mix(in srgb, var(--lime) 40%, transparent)" : "var(--rule)"}`,
+                      borderRadius: 20,
+                      fontSize: 12, fontWeight: s.is_primary ? 600 : 400,
+                    }}>
+                      <Icon name="map-pin" size={11}
+                        style={{ color: s.is_primary ? "var(--lime-dark, var(--lime))" : "var(--text-muted)", flexShrink: 0 }} />
+                      <span>{s.area_name}</span>
+                      {s.is_primary && (
+                        <span style={{ fontSize: 9, color: "var(--lime-dark, var(--lime))", fontWeight: 700 }}>★</span>
+                      )}
+                      {canEdit && (
+                        <span className="row" style={{ gap: 2, marginLeft: 2 }}>
+                          <button
+                            onClick={() => openFor === s.area ? closeForm() : openEdit(s)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 1, color: "var(--text-muted)", lineHeight: 1 }}
+                            title="Edit">
+                            <Icon name="pencil" size={10} />
+                          </button>
+                          <button
+                            onClick={() => window.confirm(`Remove ${s.area_name}?`) && removeMutation.mutate(s.area)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 1, color: "var(--text-muted)", lineHeight: 1 }}
+                            title="Remove">
+                            <Icon name="x" size={10} />
+                          </button>
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
-            );
-          })}
+              )}
+
+              {/* Formulaire édition Admin2 */}
+              {canEdit && activeTabData.children.some((s) => openFor === s.area) && formJsx}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Formulaire d'ajout en bas */}
-      {canEdit && openFor === "add" && formRow}
+      {/* Formulaire d'ajout */}
+      {canEdit && openFor === "add" && formJsx}
 
+      {/* Bouton Add zone */}
       {canEdit && openFor === null && (
-        <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openAdd}>
+        <button className="btn btn-primary btn-sm row" style={{ gap: 6, marginTop: scope.length > 0 ? "var(--s-3)" : 0 }}
+          onClick={openAdd}>
           <IconPlus size={14} /> Add zone
         </button>
       )}
