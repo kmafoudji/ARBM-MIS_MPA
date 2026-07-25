@@ -80,8 +80,8 @@ const API_PATHS = {
 // active dans la navigation laterale.
 const NAV_ALIAS = {
   "project-detail":   "projects",
-  "project-toc":      "projects",
-  "project-logframe": "projects",
+  "project-toc":      "/api/projects/:id/toc",
+  "project-logframe": "/api/projects/:id/logframe",
   "pirs":             "projects",
 };
 

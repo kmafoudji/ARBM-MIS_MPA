@@ -16,7 +16,7 @@ const RAG = {
   green: { color: "#16a34a", bg: "#dcfce7", label: "On Track",  icon: "circle-check" },
   amber: { color: "#d97706", bg: "#fef9c3", label: "At Risk",   icon: "alert-triangle" },
   red:   { color: "#dc2626", bg: "#fee2e2", label: "Off Track", icon: "circle-x" },
-  na:    { color: "#9ca3af", bg: "#f3f4f6", label: "No Data",   icon: "minus" },
+  na:    { color: "#6b7280", bg: "#f3f4f6", label: "No Data",   icon: "minus" },
 };
 
 function RagBadge({ rag }) {
@@ -37,7 +37,7 @@ function SectionHeader({ title, icon }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
-      background: "#1B5A8C", color: "#fff",
+      background: "#2d5a1b", color: "#fff",
       padding: "9px 14px", borderRadius: 8,
       marginBottom: 10, marginTop: 24,
     }}>
@@ -54,7 +54,7 @@ function InfoBlock({ rows }) {
     <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
       {rows.filter(([, v]) => v || v === 0).map(([label, value, mono], i) => (
         <div key={i} style={{ display: "flex", borderBottom: i < rows.length - 1 ? "1px solid #f0f0ee" : "none" }}>
-          <div style={{ width: 200, flexShrink: 0, padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "#374151", background: "#f9fafb" }}>
+          <div style={{ width: 200, flexShrink: 0, padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "#2d5a1b", background: "#f0f6dc" }}>
             {label}
           </div>
           <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, color: "#111", fontFamily: mono ? "monospace" : "inherit", lineHeight: 1.5 }}>
@@ -71,12 +71,13 @@ function DataTable({ headers, rows }) {
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "#1B5A8C" }}>
+          <tr style={{ background: "#2d5a1b" }}>
             {headers.map((h, i) => (
               <th key={i} style={{
-                padding: "9px 12px", color: "#fff", textAlign: typeof h === "object" ? h.align : "left",
+                padding: "9px 12px", color: "#fff",
+                textAlign: typeof h === "object" ? h.align : "left",
                 fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-                whiteSpace: "nowrap",
+                whiteSpace: "nowrap", verticalAlign: "middle",
               }}>
                 {typeof h === "object" ? h.label : h}
               </th>
@@ -90,6 +91,8 @@ function DataTable({ headers, rows }) {
                 <td key={ci} style={{
                   padding: "8px 12px",
                   textAlign: typeof headers[ci] === "object" ? headers[ci].align : "left",
+                  verticalAlign: "middle",
+                  fontSize: 12,
                 }}>
                   {cell}
                 </td>
@@ -158,7 +161,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
           <div>
             <div className="view-eyebrow">Module 2 · SF-7 · Performance Indicator Reference Sheet</div>
             <h1 className="view-title" style={{ fontSize: 20, margin: "4px 0", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontFamily: "monospace", fontSize: 13, background: "#f0f6dc", color: "#7a9420", padding: "2px 8px", borderRadius: 6 }}>
+              <span style={{ fontFamily: "monospace", fontSize: 13, background: "#f0f6dc", color: "#2d5a1b", padding: "2px 8px", borderRadius: 6 }}>
                 {indicator.code}
               </span>
               {indicator.name}
@@ -197,7 +200,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         ["Stage",         project.lifecycle_stage?.replace(/_/g, " ").toUpperCase()],
         ["PAD Document",  project.pad_name ? (
           <a href={project.pad_url} target="_blank" rel="noreferrer"
-            style={{ color: "#A4C53F", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            style={{ color: "#2d5a1b", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name="download" size={12} /> {project.pad_name}
           </a>
         ) : null],
@@ -252,7 +255,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
               t.label || "—",
               <span style={{ fontWeight: 700 }}>{fmtNum(t.target_value)}</span>,
               t.target_date,
-              <span style={{ fontSize: 11, fontWeight: 700, color: t.status === "approved" ? "#16a34a" : "#d97706" }}>{t.status.toUpperCase()}</span>,
+              <span style={{ fontSize: 11, fontWeight: 700, color: t.status === "approved" ? "#2d5a1b" : "#d97706" }}>{t.status.toUpperCase()}</span>,
               t.is_original_pad ? <span style={{ fontSize: 12, color: "#A4C53F" }}>✓</span> : null,
             ])}
           />
@@ -291,7 +294,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
             const allCats = [...new Set(dim.categories.flatMap(c => c.values.map(v => v.cat)))];
             return (
               <div key={di} style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 11, color: "#374151", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <div style={{ fontWeight: 700, fontSize: 11, color: "#2d5a1b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                   {dim.dimension}
                 </div>
                 <DataTable
