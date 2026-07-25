@@ -199,7 +199,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
   if (error) return (
     <div className="card-body">
       <p className="text-muted text-sm" style={{ margin: 0, color: "#dc2626" }}>
-        Error loading results: {error?.detail || error?.message || JSON.stringify(error)}
+        Error loading results: {JSON.stringify(error?.detail || error?.message || error)}
       </p>
     </div>
   );
