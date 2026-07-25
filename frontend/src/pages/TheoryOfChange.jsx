@@ -138,7 +138,8 @@ function IndicatorPanel({ projectId, node, onSaved }) {
       background: "var(--surface-2)", border: "1px solid var(--border)",
       borderRadius: "var(--r-2)", padding: "12px 14px", marginTop: 10,
     }}>
-      <dialog.Dialog />      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
+      <dialog.Dialog />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Indicator &amp; Measurement
         </span>
@@ -384,6 +385,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
   const [expanded, setExpanded] = useState(false);
   const [editing,  setEditing]  = useState(false);
   const [form,     setForm]     = useState(node);
+  const dialog = useDialog();
 
   const updateMutation = useMutation({
     mutationFn: (payload) =>
@@ -403,8 +405,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
 
   function submitEdit(e) {
     e.preventDefault();
-    const dialog = useDialog();
-  const { parent, chain_level, code, id, toc, created_at, updated_at, chain_level_display,
+    const { parent, chain_level, code, id, toc, created_at, updated_at, chain_level_display,
             logframe_row_id, logframe_indicator_code, logframe_indicator_name,
             logframe_indicator_unit, logframe_baseline_value, logframe_baseline_year,
             ...payload } = form;
