@@ -108,14 +108,14 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
                 Σ = {dimSum.toLocaleString()} {sumOk ? "✓" : `≠ ${total}`}
               </span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
               {dim.categories.map(cat => (
-                <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <label style={{ fontSize: 10, color: "#6b7280", fontWeight: 500 }}>{cat}</label>
+                <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 90 }}>
+                  <label style={{ fontSize: 10, color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>{cat}</label>
                   <input
                     type="number" step="any" min="0"
                     className="field-input"
-                    style={{ padding: "4px 8px", fontSize: 12 }}
+                    style={{ padding: "5px 8px", fontSize: 13, width: 90 }}
                     value={getVal(dim.id, cat)}
                     onChange={e => setVal(dim.id, cat, e.target.value)}
                     placeholder="0"
