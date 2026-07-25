@@ -443,8 +443,8 @@ class ProjectFinancialEnvelopeSerializer(serializers.ModelSerializer):
 class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
     agency_name = serializers.CharField(source="agency.name", read_only=True)
     agency_type = serializers.CharField(source="agency.get_agency_type_display", read_only=True)
-    agency_country_iso2 = serializers.CharField(source="agency.country.iso2", read_only=True, default=None)
-    agency_country_name = serializers.CharField(source="agency.country.name", read_only=True, default=None)
+    agency_country_iso2 = serializers.SerializerMethodField()
+    agency_country_name = serializers.SerializerMethodField()
     role_display = serializers.CharField(source="get_role_display", read_only=True)
 
     class Meta:
@@ -454,3 +454,9 @@ class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
             "agency_country_iso2", "agency_country_name",
             "role", "role_display", "allocated_amount_usd", "notes", "order",
         ]
+
+    def get_agency_country_iso2(self, obj):
+        return obj.agency.country.iso2 if obj.agency and obj.agency.country else None
+
+    def get_agency_country_name(self, obj):
+        return obj.agency.country.name if obj.agency and obj.agency.country else None
