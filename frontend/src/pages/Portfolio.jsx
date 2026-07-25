@@ -118,10 +118,15 @@ function IndicatorRow({ ind, projectId, isLast }) {
         <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700, fontSize: 14, color: "#111", whiteSpace: "nowrap" }}>
           {ind.aggregated_value != null ? fmtNum(ind.aggregated_value) : <span style={{ color: "#d1d5db" }}>—</span>}
           <span style={{ fontSize: 10, color: "#9ca3af", marginLeft: 4, fontWeight: 400 }}>{ind.indicator_unit}</span>
+          {ind.target_value && (
+            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginTop: 1 }}>
+              / {fmtNum(ind.target_value)} target
+            </div>
+          )}
         </td>
         {/* Progression */}
         <td style={{ padding: "12px 12px", textAlign: "center" }}>
-          <ProgressBar actual={ind.aggregated_value} target={null} rag={ind.rag_status} />
+          <ProgressBar actual={ind.aggregated_value} target={ind.target_value} rag={ind.rag_status} />
         </td>
         {/* RAG */}
         <td style={{ padding: "12px 8px", textAlign: "center" }}>
@@ -162,9 +167,9 @@ function IndicatorRow({ ind, projectId, isLast }) {
               <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    {["Project", "Hub", "Sector", "Value", "RAG"].map(h => (
+                    {["Project", "Hub", "Sector", "Actual", "Target", "RAG"].map(h => (
                       <th key={h} style={{
-                        padding: "7px 12px", textAlign: h === "Value" ? "right" : "left",
+                        padding: "7px 12px", textAlign: h === "Actual" || h === "Target" ? "right" : "left",
                         fontSize: 10, fontWeight: 700, color: "#9ca3af",
                         textTransform: "uppercase", letterSpacing: "0.06em",
                       }}>{h}</th>
@@ -185,8 +190,11 @@ function IndicatorRow({ ind, projectId, isLast }) {
                       <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "#111" }}>
                         {fmtNum(b.actual_value)}
                       </td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", color: "#6b7280" }}>
+                        {b.target_value ? fmtNum(b.target_value) : "—"}
+                      </td>
                       <td style={{ padding: "8px 12px" }}>
-                        <RagPill rag={b.rag_status} />
+                        <RagPill rag={b.rag_status} rate={b.achievement_rate} />
                       </td>
                     </tr>
                   ))}
