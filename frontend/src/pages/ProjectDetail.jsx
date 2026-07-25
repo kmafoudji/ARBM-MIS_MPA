@@ -77,6 +77,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
+  const { data: toc } = useQuery({ queryKey: ["toc", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/toc/`), staleTime: 30_000 });
+  const { data: partners = [] } = useQuery({ queryKey: ["partners", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/partners/`), staleTime: 30_000 });
+  const { data: logframeRows = [] } = useQuery({ queryKey: ["logframe", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/`), staleTime: 30_000 });
 
   const mutation = useMutation({
     mutationFn: (payload) =>
@@ -261,6 +264,135 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           </span>
         </div>
       </div>
+
+      {/* ── Bandeau de complétion ── */}
+      {(() => {
+        const tocNodes    = toc?.nodes?.length || 0;
+        const envSources  = envelope?.financing_sources?.length || 0;
+        const hasReporting = !!project.reporting_frequency;
+        const hasClassif  = !!project.primary_sdg && !!project.gender_marker;
+
+        const items = [
+          {
+            key: "toc",
+            icon: "globe",
+            label: "Theory of Change",
+            done: tocNodes > 0,
+            detail: tocNodes > 0 ? `${tocNodes} node${tocNodes > 1 ? "s" : ""}` : "Not started",
+            action: onOpenToC,
+            actionLabel: tocNodes > 0 ? "Open" : "Start",
+          },
+          {
+            key: "logframe",
+            icon: "bar-chart",
+            label: "Logical Framework",
+            done: logframeRows.length > 0,
+            detail: logframeRows.length > 0 ? `${logframeRows.length} indicator${logframeRows.length > 1 ? "s" : ""}` : "No indicators",
+            action: onOpenLogframe,
+            actionLabel: logframeRows.length > 0 ? "Open" : "Start",
+          },
+          {
+            key: "envelope",
+            icon: "wallet",
+            label: "Financial Envelope",
+            done: envSources > 0,
+            detail: envSources > 0 ? `${envSources} source${envSources > 1 ? "s" : ""} · ${Number(envelope?.total_amount_usd || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD` : "No sources",
+            action: null,
+            anchor: "envelope",
+          },
+          {
+            key: "partners",
+            icon: "users",
+            label: "Implementing Partners",
+            done: partners.length > 0,
+            detail: partners.length > 0 ? `${partners.length} partner${partners.length > 1 ? "s" : ""}` : "None assigned",
+            action: null,
+            anchor: "partners",
+          },
+          {
+            key: "classif",
+            icon: "layers",
+            label: "Classification",
+            done: hasClassif,
+            detail: hasClassif ? "SDG & gender marker set" : "Incomplete",
+            action: null,
+            anchor: "classification",
+          },
+          {
+            key: "reporting",
+            icon: "trending-up",
+            label: "Reporting",
+            done: hasReporting,
+            detail: hasReporting ? project.reporting_frequency_display : "Not configured",
+            action: null,
+            anchor: "reporting",
+          },
+        ];
+
+        const doneCount = items.filter((i) => i.done).length;
+        const pct = Math.round((doneCount / items.length) * 100);
+
+        return (
+          <div style={{
+            background: "var(--paper)",
+            border: "1px solid var(--rule)",
+            borderRadius: "var(--r-3)",
+            padding: "var(--s-3) var(--s-4)",
+            marginBottom: "var(--s-4)",
+          }}>
+            {/* Header barre */}
+            <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
+                Project setup — {doneCount}/{items.length} sections completed
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: pct === 100 ? "var(--lime-dark, var(--lime))" : "var(--text-muted)" }}>
+                {pct}%
+              </span>
+            </div>
+            {/* Barre de progression */}
+            <div style={{ height: 4, background: "var(--rule)", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", width: `${pct}%`,
+                background: "var(--lime, #A4C53F)",
+                borderRadius: 2, transition: "width 0.4s ease",
+              }} />
+            </div>
+            {/* Grille des sections */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {items.map((item) => (
+                <div key={item.key} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "8px 10px",
+                  background: item.done ? "color-mix(in srgb, var(--lime) 8%, var(--surface))" : "var(--surface)",
+                  border: `1px solid ${item.done ? "color-mix(in srgb, var(--lime) 30%, transparent)" : "var(--rule)"}`,
+                  borderRadius: "var(--r-2)",
+                }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: item.done ? "var(--lime, #A4C53F)" : "var(--rule)",
+                    color: item.done ? "#fff" : "var(--text-muted)",
+                  }}>
+                    {item.done
+                      ? <Icon name="check" size={13} />
+                      : <Icon name={item.icon} size={13} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>{item.label}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.detail}</div>
+                  </div>
+                  {item.action && (
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", flexShrink: 0 }}
+                      onClick={item.action}>
+                      {item.actionLabel}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-2 mb-3">
         <div className="card card-flush">
