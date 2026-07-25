@@ -287,12 +287,16 @@ def _role_labels(codes):
 
 def check_transition_authorization(actor, to_stage, dual_authorized_by=None):
     """
-    Verifie que `actor` porte un role habilite a faire entrer un projet dans
-    `to_stage`, et que le second approbateur (le cas echeant) porte lui aussi
+    Vérifie que `actor` porte un role habilité à faire entrer un projet dans
+    `to_stage`, et que le second approbateur (le cas échéant) porte lui aussi
     un role admissible.
 
-    Sans ce controle, tout compte authentifie pouvait franchir un gate BED.
+    Désactivé si RBAC_ENFORCED=False (settings) — permet de tester sans
+    avoir à créer des RoleAssignment. À activer en production.
     """
+    from django.conf import settings
+    if not getattr(settings, "RBAC_ENFORCED", False):
+        return  # RBAC neutralisé — toute transition est autorisée
     from apps.identity.services import get_user_role_codes
 
     # Compte technique d'exploitation : hors RBAC applicatif, comme partout

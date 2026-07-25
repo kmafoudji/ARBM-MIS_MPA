@@ -164,3 +164,9 @@ ENTRA_SCOPES = ["User.Read"]
 AZURE_STORAGE_ACCOUNT_NAME = env("AZURE_STORAGE_ACCOUNT_NAME", default="")
 AZURE_STORAGE_ACCOUNT_KEY = env("AZURE_STORAGE_ACCOUNT_KEY", default="")
 AZURE_STORAGE_CONTAINER = env("AZURE_STORAGE_CONTAINER", default="arbm-mis-media")
+
+# ---------------------------------------------------------------------------
+# RBAC applicatif — désactivé en dev jusqu'à la mise en place des rôles
+# Mettre à True en production une fois les RoleAssignment configurés.
+# ---------------------------------------------------------------------------
+RBAC_ENFORCED = False
