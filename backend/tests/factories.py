@@ -70,6 +70,16 @@ class SdgFactory(DjangoModelFactory):
     color = "#FFFFFF"
 
 
+class CurrencyFactory(DjangoModelFactory):
+    class Meta:
+        model = "reference.Currency"
+        django_get_or_create = ("code",)
+
+    code = "USD"
+    name = "US Dollar"
+    symbol = "$"
+
+
 class ProjectFactory(DjangoModelFactory):
     class Meta:
         model = "project.Project"
