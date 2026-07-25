@@ -77,6 +77,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["toc", projectId] });
       qc.invalidateQueries({ queryKey: ["logframe", projectId] });
+      qc.invalidateQueries({ queryKey: ["results-summary", projectId] });
       onSaved();
       setMode("view");
     },

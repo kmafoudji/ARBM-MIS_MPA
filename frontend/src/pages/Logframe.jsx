@@ -578,6 +578,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
 // ---------------------------------------------------------------------------
 export default function Logframe({ projectId, onBack }) {
   const queryClient = useQueryClient();
+  const dialog = useDialog();
   // addingRow retiré — les indicateurs s'attachent depuis la ToC
 
   const { data: rows, isLoading } = useQuery({
