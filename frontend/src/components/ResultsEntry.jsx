@@ -59,9 +59,18 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 
   function getVal(dimId, cat) {
     const key = `${dimId}:${cat}`;
-    if (localValues[key] !== undefined) return localValues[key];
-    const existing = data.values?.find(v => v.dimension === dimId && v.category === cat);
-    return existing ? String(existing.value) : "";
+    let raw;
+    if (localValues[key] !== undefined) {
+      raw = localValues[key];
+    } else {
+      const existing = data.values?.find(v => v.dimension === dimId && v.category === cat);
+      raw = existing ? String(existing.value) : "";
+    }
+    if (raw === "" || raw === null || raw === undefined) return "";
+    const n = parseFloat(raw);
+    if (isNaN(n)) return raw;
+    // Convertir en notation fixe sans zéros inutiles
+    return Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(10)));
   }
 
   function setVal(dimId, cat, val) {
@@ -153,7 +162,12 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggregate, disaggActive }) {
   const isLocked = period.period_status === "upcoming" || period.period_status === "approved";
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(existingData?.actual_value ?? "");
+  const [value, setValue] = useState(() => {
+    const v = existingData?.actual_value ?? "";
+    if (v === "") return "";
+    const n = parseFloat(v);
+    return isNaN(n) ? v : (Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(10))));
+  });
   const [narrative, setNarrative] = useState(existingData?.narrative ?? "");
   const dialog = useDialog();
   const qc = useQueryClient();
