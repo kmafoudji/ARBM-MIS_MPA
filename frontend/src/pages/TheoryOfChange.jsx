@@ -138,7 +138,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
       background: "var(--surface-2)", border: "1px solid var(--border)",
       borderRadius: "var(--r-2)", padding: "12px 14px", marginTop: 10,
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
+      <dialog.Dialog />      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Indicator &amp; Measurement
         </span>
@@ -416,6 +416,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
       background: "var(--surface)", border: "1px solid var(--border)",
       borderRadius: "var(--r-3)", padding: "var(--s-3)",
     }}>
+      <dialog.Dialog />
       <div className="row" style={{ justifyContent: "space-between", cursor: "pointer" }}
         onClick={() => !editing && setExpanded(!expanded)}>
         <div className="row" style={{ gap: 10 }}>
@@ -505,7 +506,6 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
         </form>
       )}
     </div>
-    </>
   );
 }
 
