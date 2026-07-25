@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppShell from "./components/AppShell.jsx";
+import SplashScreen from "./components/SplashScreen.jsx";
 import Login from "./pages/Login.jsx";
 import Overview from "./pages/Overview.jsx";
 import ProjectList from "./pages/ProjectList.jsx";
@@ -45,13 +46,20 @@ export default function App() {
     enabled: authed,
   });
 
-  if (authState === "checking") {
-    return (
-      <div className="loading-wrap">
-        <span className="spinner" /> Verification de la session...
-      </div>
-    );
-  }
+  const [splashExiting, setSplashExiting] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Déclenche le fondu de sortie dès que la session est résolue,
+  // puis retire le splash du DOM après la transition (0.4s).
+  useEffect(() => {
+    if (authState !== "checking") {
+      setSplashExiting(true);
+      const t = setTimeout(() => setShowSplash(false), 420);
+      return () => clearTimeout(t);
+    }
+  }, [authState]);
+
+  if (showSplash) return <SplashScreen exiting={splashExiting} />;
 
   if (authState === "anonymous") return <Login />;
 
