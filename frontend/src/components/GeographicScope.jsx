@@ -15,7 +15,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
   const [openFor, setOpenFor]     = useState(null);
   const [editScope, setEditScope] = useState(null);
   const [selAdmin1, setSelAdmin1] = useState("");
-  const [selAdmin2, setSelAdmin2] = useState("");
+  const [selAdmin2, setSelAdmin2] = useState([]); // multi-select
   const [isPrimary, setIsPrimary] = useState(false);
   const [notes, setNotes]         = useState("");
 
@@ -63,14 +63,14 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
 
   function openAdd() {
     setEditScope(null);
-    setSelAdmin1(""); setSelAdmin2(""); setIsPrimary(false); setNotes("");
+    setSelAdmin1(""); setSelAdmin2([]); setIsPrimary(false); setNotes("");
     setOpenFor("add");
   }
 
   function openEdit(s) {
     setEditScope(s);
     setSelAdmin1(String(s.area_level === 2 ? (s.parent_id || "") : s.area));
-    setSelAdmin2(s.area_level === 2 ? String(s.area) : "");
+    setSelAdmin2(s.area_level === 2 ? [String(s.area)] : []);
     setIsPrimary(s.is_primary);
     setNotes(s.notes || "");
     setOpenFor(s.area);
@@ -78,13 +78,13 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
 
   function closeForm() {
     setOpenFor(null); setEditScope(null);
-    setSelAdmin1(""); setSelAdmin2(""); setIsPrimary(false); setNotes("");
+    setSelAdmin1(""); setSelAdmin2([]); setIsPrimary(false); setNotes("");
   }
 
   function handleSave() {
-    const areaId = selAdmin2 || selAdmin1;
-    if (!areaId) return;
     if (editScope) {
+      const areaId = selAdmin2.length === 1 ? selAdmin2[0] : selAdmin1;
+      if (!areaId) return;
       if (String(editScope.area) !== String(areaId)) {
         removeMutation.mutate(editScope.area, {
           onSuccess: () => addMutation.mutate({ area: Number(areaId), is_primary: isPrimary, notes }),
@@ -93,7 +93,11 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
         editMutation.mutate({ areaId: editScope.area, payload: { is_primary: isPrimary, notes } });
       }
     } else {
-      addMutation.mutate({ area: Number(areaId), is_primary: isPrimary, notes });
+      const areaIds = selAdmin2.length > 0 ? selAdmin2 : (selAdmin1 ? [selAdmin1] : []);
+      if (!areaIds.length) return;
+      areaIds.forEach((id, i) => {
+        addMutation.mutate({ area: Number(id), is_primary: isPrimary && i === 0, notes });
+      });
     }
   }
 
@@ -117,7 +121,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                 <div className="field">
                   <label className="field-label">Country</label>
                   <select className="field-select" value={selectedCountryIso3}
-                    onChange={(e) => { setSelectedCountryIso3(e.target.value); setSelAdmin1(""); setSelAdmin2(""); }}>
+                    onChange={(e) => { setSelectedCountryIso3(e.target.value); setSelAdmin1(""); setSelAdmin2([]); }}>
                     {(countries || []).map((c) => (
                       <option key={c.iso3} value={c.iso3}>{c.flag} {c.name}</option>
                     ))}
@@ -127,7 +131,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
               <div className="field">
                 <label className="field-label">Region / State (Admin 1) <span className="req">*</span></label>
                 <select className="field-select" value={selAdmin1}
-                  onChange={(e) => { setSelAdmin1(e.target.value); setSelAdmin2(""); }}>
+                  onChange={(e) => { setSelAdmin1(e.target.value); setSelAdmin2([]); }}>
                   <option value="">Select…</option>
                   {admin1List
                     .filter((a) => {
@@ -143,17 +147,21 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
             {selAdmin1 && hasAdmin2 && (
               <div className="field" style={{ marginBottom: 8 }}>
                 <label className="field-label">District / Department (Admin 2)</label>
-                <select className="field-select" value={selAdmin2}
-                  onChange={(e) => setSelAdmin2(e.target.value)}>
-                  <option value="">— All districts (keep Admin 1 level) —</option>
+                <select className="field-select field-multi" multiple
+                  value={selAdmin2}
+                  onChange={(e) => setSelAdmin2(Array.from(e.target.selectedOptions).map((o) => o.value))}>
                   {admin2List
                     .filter((a) => {
-                      if (editScope && String(a.id) === String(selAdmin2)) return true;
+                      if (editScope && selAdmin2.includes(String(a.id))) return true;
                       return !scopedAreaIds.has(a.id);
                     })
                     .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
-                <span className="field-help">Leave empty to add the entire region.</span>
+                <span className="field-help">
+                  {editScope
+                    ? "Select a district, or leave empty to keep the whole region."
+                    : "Ctrl/Cmd + click to select multiple districts. Leave empty to add the entire region."}
+                </span>
               </div>
             )}
 
