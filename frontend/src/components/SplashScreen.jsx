@@ -44,8 +44,9 @@ export default function SplashScreen({ exiting = false }) {
         }
         @keyframes arbm-bar-fill {
           0%   { width: 0%; }
-          55%  { width: 72%; }
-          80%  { width: 88%; }
+          50%  { width: 65%; }
+          75%  { width: 82%; }
+          92%  { width: 93%; }
           100% { width: 100%; }
         }
         @keyframes arbm-dot-pulse {
@@ -111,7 +112,7 @@ export default function SplashScreen({ exiting = false }) {
           background: #A4C53F;
           border-radius: 0 2px 2px 0;
           width: 0%;
-          animation: arbm-bar-fill 1.9s 0.2s cubic-bezier(0.4,0,0.2,1) forwards;
+          animation: arbm-bar-fill 2.8s 0.2s cubic-bezier(0.4,0,0.2,1) forwards;
         }
       `}</style>
 

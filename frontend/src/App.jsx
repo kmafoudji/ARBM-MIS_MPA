@@ -55,7 +55,7 @@ export default function App() {
   useEffect(() => {
     if (authState === "checking") return;
 
-    const MIN_DISPLAY = 2100; // ms — laisse la barre atteindre 100%
+    const MIN_DISPLAY = 3000; // ms — laisse la barre atteindre 100%
     const elapsed = performance.now();
 
     const remaining = Math.max(0, MIN_DISPLAY - elapsed);
