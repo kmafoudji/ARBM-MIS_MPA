@@ -217,17 +217,17 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         ["Calculation Method", stripHtml(indicator.calculation_method)],
         ["Numerator",          indicator.numerator],
         ["Denominator",        indicator.denominator],
-        ["Formula",            stripHtml(indicator.formula), true],
+        ["Formula",            stripHtml(indicator.formula)],
       ]} />
 
       {/* ── C. Data Collection ──────────────────────────────────────── */}
       <SectionHeader title="C. Data Collection" icon="database" />
       <InfoBlock rows={[
-        ["Data Source",           indicator.data_source],
-        ["Collection Method",     indicator.collection_method],
+        ["Data Source",           stripHtml(indicator.data_source)],
+        ["Collection Method",     stripHtml(indicator.collection_method)],
         ["Reporting Frequency",   indicator.reporting_frequency],
         ["Means of Verification", stripHtml(indicator.means_of_verification)],
-        ["Responsible Party",     indicator.responsible],
+        ["Responsible Party",     stripHtml(indicator.responsible)],
         ["Assumptions",           stripHtml(indicator.assumptions)],
         ["Limitations",           stripHtml(indicator.limitations)],
       ]} />
@@ -237,9 +237,9 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       <InfoBlock rows={[
         ["Baseline Value", baseline.value ? `${fmtNum(baseline.value)} ${indicator.unit}` : "Not set"],
         ["Reference Year", baseline.year ? String(baseline.year) : null],
-        ["Source",         baseline.source],
+        ["Source",         stripHtml(baseline.source)],
         ["Frequency",      baseline.measurement_frequency],
-        ["Notes",          baseline.notes],
+        ["Notes",          stripHtml(baseline.notes)],
       ]} />
 
       {/* ── E. Targets ──────────────────────────────────────────────── */}
