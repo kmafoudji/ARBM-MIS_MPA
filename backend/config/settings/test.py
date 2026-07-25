@@ -27,3 +27,14 @@ STORAGES = {
 
 # Celery synchrone en test
 CELERY_TASK_ALWAYS_EAGER = True
+
+# Authentification en test — force_authenticate fonctionne avec n'importe quel backend
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}

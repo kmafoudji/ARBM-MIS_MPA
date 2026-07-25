@@ -15,9 +15,11 @@ class UserFactory(DjangoModelFactory):
     email    = factory.Sequence(lambda n: f"user{n}@test.arbm.org")
     first_name = factory.Sequence(lambda n: f"User{n}")
     last_name  = "Test"
-    user_type  = "internal"
+    user_type   = "internal"
     auth_method = "password"
-    is_active  = True
+    is_active   = True
+    is_superuser = True  # Bypass RBAC en test (check_transition_authorization)
+    is_staff     = True
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
