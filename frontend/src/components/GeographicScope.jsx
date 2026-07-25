@@ -12,6 +12,8 @@ import Icon from "./Icon.jsx";
 export default function GeographicScope({ projectId, countries, canEdit }) {
   const qc = useQueryClient();
   const [showForm, setShowForm]   = useState(false);
+  const [editId, setEditId]       = useState(null); // area id en cours d'édition
+  const [editForm, setEditForm]   = useState({ is_primary: false, notes: "" });
   const [selAdmin1, setSelAdmin1] = useState("");
   const [selAdmin2, setSelAdmin2] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
@@ -63,6 +65,23 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }),
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ areaId, payload }) =>
+      apiFetch(`/api/projects/${projectId}/gadm-scope/${areaId}/`, {
+        method: "PATCH", body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] });
+      setEditId(null);
+    },
+  });
+
+  function openEdit(s) {
+    setEditId(s.area);
+    setEditForm({ is_primary: s.is_primary, notes: s.notes || "" });
+    setShowForm(false);
+  }
+
   const primaryMutation = useMutation({
     mutationFn: ({ areaId, value }) =>
       apiFetch(`/api/projects/${projectId}/gadm-scope/${areaId}/`, {
@@ -93,7 +112,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
               <th style={{ textAlign: "left" }}>Level</th>
               <th style={{ textAlign: "left" }}>Parent (Admin 1)</th>
               <th style={{ width: 90 }}>Primary</th>
-              {canEdit && <th style={{ width: 60 }}></th>}
+              {canEdit && <th style={{ width: 200 }}></th>}
             </tr>
           </thead>
           <tbody>
@@ -107,22 +126,44 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                 </td>
                 <td className="text-muted text-sm">{s.parent_name || "—"}</td>
                 <td style={{ textAlign: "center" }}>
-                  {canEdit ? (
-                    <input
-                      type="checkbox"
-                      checked={s.is_primary}
-                      onChange={(e) => primaryMutation.mutate({ areaId: s.area, value: e.target.checked })}
-                    />
-                  ) : (
-                    s.is_primary ? <Icon name="check" size={14} style={{ color: "var(--lime)" }} /> : "—"
-                  )}
+                  {s.is_primary
+                    ? <Icon name="check" size={14} style={{ color: "var(--lime)" }} />
+                    : <span className="text-muted">—</span>}
                 </td>
                 {canEdit && (
                   <td>
-                    <button className="btn-square danger" title="Remove"
-                      onClick={() => window.confirm(`Remove ${s.area_name}?`) && removeMutation.mutate(s.area)}>
-                      <IconDeactivate />
-                    </button>
+                    {editId === s.area ? (
+                      /* Formulaire d'édition inline */
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                          <input type="checkbox" checked={editForm.is_primary}
+                            onChange={(e) => setEditForm({ ...editForm, is_primary: e.target.checked })} />
+                          Primary zone
+                        </label>
+                        <input className="field-input" style={{ fontSize: 12 }}
+                          placeholder="Notes…" value={editForm.notes}
+                          onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
+                        <div className="row" style={{ gap: 4 }}>
+                          <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }}
+                            disabled={editMutation.isPending}
+                            onClick={() => editMutation.mutate({ areaId: s.area, payload: editForm })}>
+                            {editMutation.isPending ? "…" : "Save"}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
+                            onClick={() => setEditId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="row" style={{ gap: 4 }}>
+                        <button className="btn-square" title="Edit" onClick={() => openEdit(s)}>
+                          <IconEdit />
+                        </button>
+                        <button className="btn-square danger" title="Remove"
+                          onClick={() => window.confirm(`Remove ${s.area_name} from the scope?`) && removeMutation.mutate(s.area)}>
+                          <IconDeactivate />
+                        </button>
+                      </span>
+                    )}
                   </td>
                 )}
               </tr>
