@@ -1244,14 +1244,32 @@ class PIRSDataView(APIView):
                 logframe_row=row, reporting_period=p
             ).first()
             if rd:
+                # Recalculer achievement à la volée (cibles draft incluses)
+                target_at_period = row.targets.filter(
+                    target_date__lte=p.end_date,
+                    status__in=["approved", "draft"],
+                ).order_by("target_date").last() or row.targets.filter(
+                    status__in=["approved", "draft"],
+                ).order_by("target_date").first()
+
+                live_rate = None
+                live_rag  = rd.rag_status
+                if target_at_period and target_at_period.target_value:
+                    t_val = float(target_at_period.target_value)
+                    a_val = float(rd.actual_value)
+                    if t_val > 0:
+                        live_rate = round((a_val / t_val) * 100, 2)
+                        live_rag  = "green" if live_rate >= 90 else "amber" if live_rate >= 60 else "red"
+
                 actuals.append({
                     "period_id":        p.id,
                     "period_label":     p.label,
                     "period_end":       str(p.end_date),
                     "actual_value":     fmt_decimal(rd.actual_value),
+                    "target_value":     fmt_decimal(target_at_period.target_value) if target_at_period else None,
                     "narrative":        rd.narrative,
-                    "rag_status":       rd.rag_status,
-                    "achievement_rate": fmt_decimal(rd.achievement_rate) if rd.achievement_rate else None,
+                    "rag_status":       live_rag,
+                    "achievement_rate": fmt_decimal(Decimal(str(live_rate))) if live_rate is not None else None,
                     "status":           rd.status,
                     "approved_at":      rd.approved_at.isoformat() if rd.approved_at else None,
                 })
@@ -1292,19 +1310,25 @@ class PIRSDataView(APIView):
         # ── SDGs ─────────────────────────────────────────────────────────
         sdg_numbers = list(ind.related_sdgs.values_list("number", flat=True))
 
+        # ── PAD ──────────────────────────────────────────────────────────────
+        pad_url  = project.pad_reference_file.url  if project.pad_reference_file else None
+        pad_name = project.pad_reference_file.name.rsplit("/", 1)[-1] if project.pad_reference_file else None
+
         pirs_data = {
             # En-tête projet
             "project": {
-                "id":           project.id,
-                "code":         project.code,
-                "name":         project.name,
-                "acronym":      project.acronym or "",
-                "sector":       project.primary_sector.name if project.primary_sector else None,
-                "hub":          hub_name,
-                "country":      lead_country.country.name if lead_country else None,
-                "start_date":   str(project.start_date) if project.start_date else None,
-                "end_date":     str(project.end_date) if project.end_date else None,
+                "id":             project.id,
+                "code":           project.code,
+                "name":           project.name,
+                "acronym":        project.acronym or "",
+                "sector":         project.primary_sector.name if project.primary_sector else None,
+                "hub":            hub_name,
+                "country":        lead_country.country.name if lead_country else None,
+                "start_date":     str(project.start_date) if project.start_date else None,
+                "end_date":       str(project.end_date) if project.end_date else None,
                 "lifecycle_stage": project.lifecycle_stage,
+                "pad_url":        pad_url,
+                "pad_name":       pad_name,
             },
             # Définition indicateur (RG-7.1)
             "indicator": {
@@ -1358,47 +1382,191 @@ class PIRSDataView(APIView):
         return Response(pirs_data)
 
     def _generate_docx(self, data):
-        """Génère le PIRS en DOCX via Node.js + docx-js."""
-        import json
-        import subprocess
-        import tempfile
-        import os
+        """Génère le PIRS en DOCX via python-docx."""
+        import io
         from django.http import HttpResponse
+        from docx import Document
+        from docx.shared import Pt, RGBColor, Cm
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
 
-        script_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "scripts", "generate_pirs.js"
+        def set_cell_bg(cell, hex_color):
+            tc = cell._tc
+            tcPr = tc.get_or_add_tcPr()
+            shd = OxmlElement("w:shd")
+            shd.set(qn("w:val"), "clear")
+            shd.set(qn("w:color"), "auto")
+            shd.set(qn("w:fill"), hex_color)
+            tcPr.append(shd)
+
+        def add_section_heading(doc, title):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(12)
+            p.paragraph_format.space_after  = Pt(4)
+            run = p.add_run(title.upper())
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            pPr = p._p.get_or_add_pPr()
+            shd = OxmlElement("w:shd")
+            shd.set(qn("w:val"), "clear")
+            shd.set(qn("w:color"), "auto")
+            shd.set(qn("w:fill"), "111111")
+            pPr.append(shd)
+            p.paragraph_format.left_indent = Cm(0.3)
+
+        def add_info_table(doc, rows):
+            table = doc.add_table(rows=len(rows), cols=2)
+            table.style = "Table Grid"
+            table.columns[0].width = Cm(5)
+            table.columns[1].width = Cm(12)
+            for i, (label, value) in enumerate(rows):
+                if not value and value != 0:
+                    continue
+                row = table.rows[i]
+                c0, c1 = row.cells[0], row.cells[1]
+                set_cell_bg(c0, "F9FAFB")
+                r0 = c0.paragraphs[0].add_run(str(label))
+                r0.bold = True
+                r0.font.size = Pt(8)
+                r0.font.color.rgb = RGBColor(0x37, 0x41, 0x51)
+                r1 = c1.paragraphs[0].add_run(str(value))
+                r1.font.size = Pt(9)
+            doc.add_paragraph()
+
+        doc  = Document()
+        proj = data["project"]
+        ind  = data["indicator"]
+        base = data["baseline"]
+        tgts = data["targets"]
+        acts = data["actuals"]
+        gen_date = data["generated_at"][:10]
+
+        # ── Titre ──────────────────────────────────────────────────────
+        title_p = doc.add_paragraph()
+        run = title_p.add_run("PERFORMANCE INDICATOR REFERENCE SHEET")
+        run.bold = True
+        run.font.size = Pt(14)
+        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        pPr = title_p._p.get_or_add_pPr()
+        shd = OxmlElement("w:shd"); shd.set(qn("w:val"),"clear"); shd.set(qn("w:color"),"auto"); shd.set(qn("w:fill"),"111111"); pPr.append(shd)
+
+        sub_p = doc.add_paragraph()
+        sub_r = sub_p.add_run(f"Lives & Livelihoods Fund 2 · IsDB · Generated {gen_date}")
+        sub_r.font.size = Pt(9)
+        sub_r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        sub_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        pPr2 = sub_p._p.get_or_add_pPr()
+        shd2 = OxmlElement("w:shd"); shd2.set(qn("w:val"),"clear"); shd2.set(qn("w:color"),"auto"); shd2.set(qn("w:fill"),"333333"); pPr2.append(shd2)
+
+        doc.add_paragraph()
+
+        # ── A. Projet ──────────────────────────────────────────────────
+        add_section_heading(doc, "A. Project Identification")
+        add_info_table(doc, [
+            ("Project Code",  proj.get("code")),
+            ("Project Name",  proj.get("name")),
+            ("Acronym",       proj.get("acronym")),
+            ("Sector",        proj.get("sector")),
+            ("Hub",           proj.get("hub")),
+            ("Country",       proj.get("country")),
+            ("Period",        f"{proj.get('start_date','—')} → {proj.get('end_date','—')}"),
+            ("Stage",         (proj.get("lifecycle_stage") or "").replace("_"," ").upper()),
+            ("PAD Document",  proj.get("pad_name") or "—"),
+        ])
+
+        # ── B. Définition ──────────────────────────────────────────────
+        add_section_heading(doc, "B. Indicator Definition")
+        add_info_table(doc, [
+            ("Code",               ind.get("code")),
+            ("Full Name",          ind.get("name")),
+            ("Chain Level",        ind.get("chain_level_display")),
+            ("Definition",         ind.get("definition")),
+            ("Unit",               ind.get("unit")),
+            ("Type",               ind.get("indicator_type")),
+            ("Direction",          ind.get("direction")),
+            ("Aggregation Rule",   ind.get("aggregation_rule")),
+            ("Calculation Method", ind.get("calculation_method")),
+            ("Formula",            ind.get("formula")),
+        ])
+
+        # ── C. Collecte ────────────────────────────────────────────────
+        add_section_heading(doc, "C. Data Collection")
+        add_info_table(doc, [
+            ("Data Source",           ind.get("data_source")),
+            ("Collection Method",     ind.get("collection_method")),
+            ("Reporting Frequency",   ind.get("reporting_frequency")),
+            ("Means of Verification", ind.get("means_of_verification")),
+            ("Responsible Party",     ind.get("responsible")),
+            ("Assumptions",           ind.get("assumptions")),
+            ("Limitations",           ind.get("limitations")),
+        ])
+
+        # ── D. Baseline ────────────────────────────────────────────────
+        add_section_heading(doc, "D. Baseline")
+        add_info_table(doc, [
+            ("Baseline Value", f"{base.get('value','—')} {ind.get('unit','')}"),
+            ("Reference Year", base.get("year")),
+            ("Source",         base.get("source")),
+            ("Notes",          base.get("notes")),
+        ])
+
+        # ── E. Cibles ──────────────────────────────────────────────────
+        add_section_heading(doc, "E. Targets")
+        if tgts:
+            tbl = doc.add_table(rows=1+len(tgts), cols=4)
+            tbl.style = "Table Grid"
+            for i, hdr in enumerate(["Label","Target Value","Deadline","Status"]):
+                cell = tbl.rows[0].cells[i]
+                set_cell_bg(cell, "111111")
+                r = cell.paragraphs[0].add_run(hdr)
+                r.bold = True; r.font.size = Pt(8); r.font.color.rgb = RGBColor(255,255,255)
+            for ri, t in enumerate(tgts, 1):
+                cells = tbl.rows[ri].cells
+                cells[0].paragraphs[0].add_run(t.get("label","—")).font.size = Pt(9)
+                cells[1].paragraphs[0].add_run(f"{t.get('target_value','—')} {ind.get('unit','')}").font.size = Pt(9)
+                cells[2].paragraphs[0].add_run(str(t.get("target_date","—"))).font.size = Pt(9)
+                cells[3].paragraphs[0].add_run(t.get("status","").upper()).font.size = Pt(9)
+            doc.add_paragraph()
+
+        # ── F. Actuals ─────────────────────────────────────────────────
+        add_section_heading(doc, "F. Results by Reporting Period")
+        if acts:
+            tbl = doc.add_table(rows=1+len(acts), cols=5)
+            tbl.style = "Table Grid"
+            for i, hdr in enumerate(["Period","Actual","Target","Achievement","RAG"]):
+                cell = tbl.rows[0].cells[i]
+                set_cell_bg(cell, "111111")
+                r = cell.paragraphs[0].add_run(hdr)
+                r.bold = True; r.font.size = Pt(8); r.font.color.rgb = RGBColor(255,255,255)
+            for ri, a in enumerate(acts, 1):
+                cells = tbl.rows[ri].cells
+                cells[0].paragraphs[0].add_run(a.get("period_label","")).font.size = Pt(9)
+                cells[1].paragraphs[0].add_run(f"{a.get('actual_value','—')} {ind.get('unit','')}").font.size = Pt(9)
+                cells[2].paragraphs[0].add_run(f"{a.get('target_value','—')} {ind.get('unit','')}").font.size = Pt(9)
+                cells[3].paragraphs[0].add_run(f"{a.get('achievement_rate','—')}%" if a.get("achievement_rate") else "—").font.size = Pt(9)
+                cells[4].paragraphs[0].add_run({"green":"On Track","amber":"At Risk","red":"Off Track"}.get(a.get("rag_status",""),"No Data")).font.size = Pt(9)
+            doc.add_paragraph()
+
+        # ── Pied de page ────────────────────────────────────────────────
+        footer_p = doc.add_paragraph()
+        footer_r = footer_p.add_run(f"PIRS · {ind.get('code')} · {proj.get('code')} · v{ind.get('version',1)} · {gen_date} · ARBM-MES")
+        footer_r.font.size = Pt(7)
+        footer_r.font.color.rgb = RGBColor(0x9C, 0xA3, 0xAF)
+        footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # ── Sérialisation ───────────────────────────────────────────────
+        buf = io.BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        content = buf.read()
+
+        filename = f"PIRS_{proj.get('code')}_{ind.get('code')}.docx"
+        response = HttpResponse(
+            content,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
-        script_path = os.path.normpath(script_path)
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            data_path = os.path.join(tmpdir, "pirs_data.json")
-            out_path  = os.path.join(tmpdir, "pirs.docx")
-
-            with open(data_path, "w") as f:
-                json.dump(data, f, ensure_ascii=False)
-
-            try:
-                result = subprocess.run(
-                    ["node", script_path, data_path, out_path],
-                    capture_output=True, text=True, timeout=30
-                )
-                if result.returncode != 0:
-                    return Response(
-                        {"detail": f"DOCX generation failed: {result.stderr}"},
-                        status=500
-                    )
-                with open(out_path, "rb") as f:
-                    content = f.read()
-
-                code = data["project"]["code"]
-                ind_code = data["indicator"]["code"]
-                filename = f"PIRS_{code}_{ind_code}.docx"
-
-                response = HttpResponse(
-                    content,
-                    content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                )
-                response["Content-Disposition"] = f'attachment; filename="{filename}"'
-                return response
-            except subprocess.TimeoutExpired:
-                return Response({"detail": "DOCX generation timed out."}, status=500)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response

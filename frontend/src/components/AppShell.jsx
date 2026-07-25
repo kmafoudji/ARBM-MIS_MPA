@@ -46,6 +46,8 @@ const CRUMBS = {
   projects: { label: "Projects", parent: "overview" },
   "new-project": { label: "New Project", parent: "projects" },
   "project-detail": { label: "Project", parent: "projects" },
+  "project-toc":      { label: "Theory of Change", parent: "project-detail" },
+  "project-logframe": { label: "Logframe", parent: "project-detail" },
   "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
   portfolio: { label: "Portfolio Results", parent: "overview" },
   pirs:      { label: "PIRS", parent: "project-logframe" },
@@ -76,7 +78,12 @@ const API_PATHS = {
 
 // La fiche projet est une sous-vue de Projets : on garde l'entree "Projets"
 // active dans la navigation laterale.
-const NAV_ALIAS = { "project-detail": "projects" };
+const NAV_ALIAS = {
+  "project-detail":   "projects",
+  "project-toc":      "projects",
+  "project-logframe": "projects",
+  "pirs":             "projects",
+};
 
 function initials(user) {
   const source = user?.name || user?.email || "?";
