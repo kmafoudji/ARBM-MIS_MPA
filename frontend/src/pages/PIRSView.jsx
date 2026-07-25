@@ -310,17 +310,22 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         </>
       )}
 
-      {/* ── H. Cross-cutting ────────────────────────────────────────── */}
-      {((indicator.cross_cutting_tags?.length > 0) || (indicator.related_sdgs?.length > 0)) && (
-        <>
-          <SectionHeader title="H. Cross-cutting Themes & SDGs" icon="globe" />
-          <InfoBlock rows={[
-            ["Cross-cutting Tags", (indicator.cross_cutting_tags || []).join(", ")],
-            ["Related SDGs",       (indicator.related_sdgs || []).map(n => `SDG ${n}`).join(", ")],
-            ["Indicator Version",  `v${indicator.version}`],
-          ]} />
-        </>
-      )}
+      {/* ── H. Cross-cutting Themes & SDGs ──────────────────────────── */}
+      <SectionHeader title="H. Cross-cutting Themes & SDGs" icon="globe" />
+      <InfoBlock rows={[
+        ["Cross-cutting Tags", indicator.cross_cutting_tags?.length > 0
+          ? (
+            <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {indicator.cross_cutting_tags.map(t => (
+                <span key={t} style={{ fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99, background: "#f0f6dc", color: "#7a9420" }}>{t}</span>
+              ))}
+            </span>
+          ) : "—"],
+        ["Related SDGs", indicator.related_sdgs?.length > 0
+          ? indicator.related_sdgs.map(n => `SDG ${n}`).join(", ")
+          : "—"],
+        ["Indicator Version", `v${indicator.version}`],
+      ]} />
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", textAlign: "center", fontSize: 11, color: "#9ca3af" }}>
