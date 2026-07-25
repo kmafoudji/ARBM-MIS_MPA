@@ -79,57 +79,63 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 
   return (
     <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, marginTop: 8 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <span style={{ fontWeight: 600, fontSize: 12, color: "#374151" }}>
+
+      {/* Titre */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={{ fontWeight: 700, fontSize: 12, color: "#374151" }}>
           Disaggregation — Total: <strong>{Number(rd.actual_value).toLocaleString()}</strong>
         </span>
-        <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ fontSize: 11 }}>
-          <Icon name="x" size={12} /> Close
-        </button>
       </div>
 
+      {/* Avertissements */}
       {data.warnings?.map((w, i) => (
-        <div key={i} style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 8, color: "#854d0e" }}>
+        <div key={i} style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 10, color: "#854d0e" }}>
           ⚠️ {w.message}
         </div>
       ))}
 
+      {/* Champs par dimension */}
       {data.dimensions.map(dim => {
         const dimSum = dim.categories.reduce((s, cat) => s + parseFloat(getVal(dim.id, cat) || 0), 0);
         const total  = parseFloat(rd.actual_value);
         const sumOk  = Math.abs(dimSum - total) < 0.001;
         return (
-          <div key={dim.id} style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {dim.name}
-              </span>
-              <span style={{ fontSize: 11, color: sumOk ? "#16a34a" : "#d97706", fontWeight: 600 }}>
-                Σ = {dimSum.toLocaleString()} {sumOk ? "✓" : `≠ ${total}`}
-              </span>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+          <div key={dim.id} style={{ marginBottom: 16 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
+              {dim.name}
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
               {dim.categories.map(cat => (
-                <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 90 }}>
+                <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 10, color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>{cat}</label>
                   <input
                     type="number" step="any" min="0"
                     className="field-input"
-                    style={{ padding: "5px 8px", fontSize: 13, width: 90 }}
+                    style={{ padding: "5px 10px", fontSize: 13, width: 100 }}
                     value={getVal(dim.id, cat)}
                     onChange={e => setVal(dim.id, cat, e.target.value)}
                     placeholder="0"
                   />
                 </div>
               ))}
+              {/* Somme inline à droite des champs */}
+              <div style={{ paddingBottom: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: sumOk ? "#16a34a" : "#d97706" }}>
+                  Σ = {dimSum.toLocaleString()} {sumOk ? "✓" : `≠ ${total.toLocaleString()}`}
+                </span>
+              </div>
             </div>
           </div>
         );
       })}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+      {/* Boutons en bas */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
+        <button className="btn btn-ghost btn-sm row" style={{ gap: 6, fontSize: 12 }} onClick={onClose}>
+          <Icon name="x" size={12} /> Close
+        </button>
         <button
-          className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+          className="btn btn-primary btn-sm row" style={{ gap: 6, fontSize: 12 }}
           onClick={saveAll} disabled={mutation.isPending}
         >
           <Icon name="check" size={12} /> {mutation.isPending ? "Saving…" : "Save disaggregation"}
