@@ -245,10 +245,10 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
               onClick={handleAdd}
               disabled={!selAdmin1 || addMutation.isPending}>
-              <Icon name="plus" size={14} />
-              {addMutation.isPending ? "Adding…" : "Add zone"}
+              <Icon name="check" size={14} />
+              {addMutation.isPending ? "Saving…" : "Save"}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowForm(false); setSelAdmin1(""); setSelAdmin2(""); }}>Cancel</button>
           </div>
         </div>
       )}
