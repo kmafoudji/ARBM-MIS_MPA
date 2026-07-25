@@ -67,7 +67,7 @@ const ROLE_BADGE = {
   research:          "badge",
 };
 
-const EMPTY_FORM = { agency: "", role: "lead", allocated_amount_usd: "", notes: "" };
+const EMPTY_FORM = { agency: "", role: "lead", allocated_amount_usd: "", notes: "", focal_point_name: "", focal_point_email: "", focal_point_phone: "" };
 
 export default function ImplementingPartners({ projectId, envelopeTotal, canEdit }) {
   const qc = useQueryClient();
@@ -132,6 +132,9 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
       role: p.role,
       allocated_amount_usd: p.allocated_amount_usd ?? "",
       notes: p.notes ?? "",
+      focal_point_name:  p.focal_point_name  ?? "",
+      focal_point_email: p.focal_point_email ?? "",
+      focal_point_phone: p.focal_point_phone ?? "",
     });
     setShowForm(true);
   }
@@ -143,6 +146,9 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
       role: form.role,
       allocated_amount_usd: form.allocated_amount_usd !== "" ? form.allocated_amount_usd : null,
       notes: form.notes,
+      focal_point_name:  form.focal_point_name,
+      focal_point_email: form.focal_point_email,
+      focal_point_phone: form.focal_point_phone,
     };
     if (editId) {
       editMutation.mutate({ id: editId, payload });
@@ -202,6 +208,13 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                     {p.agency_country_iso2 && <Flag iso2={p.agency_country_iso2} size={16} />}
                     <strong>{p.agency_name}</strong>
                   </span>
+                  {(p.focal_point_name || p.focal_point_email || p.focal_point_phone) && (
+                    <div className="text-muted text-sm" style={{ marginTop: 3, lineHeight: 1.6 }}>
+                      {p.focal_point_name && <span>{p.focal_point_name}</span>}
+                      {p.focal_point_email && <span> · <a href={`mailto:${p.focal_point_email}`} style={{ color: "var(--lime-dark, var(--lime))" }}>{p.focal_point_email}</a></span>}
+                      {p.focal_point_phone && <span> · {p.focal_point_phone}</span>}
+                    </div>
+                  )}
                   {p.notes && (
                     <div className="text-muted text-sm" style={{ marginTop: 2 }}>
                       {p.notes}
@@ -351,6 +364,42 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
               </div>
 
               <div className="field">
+                <label className="field-label" htmlFor="partnerFocalName">Focal point</label>
+                <input
+                  id="partnerFocalName"
+                  className="field-input"
+                  type="text"
+                  value={form.focal_point_name}
+                  onChange={(e) => setForm({ ...form, focal_point_name: e.target.value })}
+                  placeholder="Full name"
+                />
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="partnerFocalEmail">Focal point email</label>
+                <input
+                  id="partnerFocalEmail"
+                  className="field-input"
+                  type="email"
+                  value={form.focal_point_email}
+                  onChange={(e) => setForm({ ...form, focal_point_email: e.target.value })}
+                  placeholder="name@organisation.org"
+                />
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="partnerFocalPhone">Focal point phone</label>
+                <input
+                  id="partnerFocalPhone"
+                  className="field-input"
+                  type="text"
+                  value={form.focal_point_phone}
+                  onChange={(e) => setForm({ ...form, focal_point_phone: e.target.value })}
+                  placeholder="+xxx xx xx xx xx"
+                />
+              </div>
+
+              <div className="field">
                 <label className="field-label" htmlFor="partnerAmount">
                   Delegated Amount (USD)
                 </label>
@@ -367,9 +416,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
               </div>
 
               <div className="field">
-                <label className="field-label" htmlFor="partnerNotes">
-                  Notes
-                </label>
+                <label className="field-label" htmlFor="partnerNotes">Notes</label>
                 <input
                   id="partnerNotes"
                   className="field-input"
@@ -389,17 +436,7 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
               </div>
             )}
 
-            <div className="row">
-              <button
-                className="btn btn-primary btn-sm row"
-                style={{ gap: 6 }}
-                type="submit"
-                disabled={addMutation.isPending || editMutation.isPending}
-              >
-                {(addMutation.isPending || editMutation.isPending)
-                  ? "Saving..."
-                  : editId ? "Update" : "Add partner"}
-              </button>
+            <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
               <button
                 className="btn btn-ghost btn-sm"
                 type="button"
@@ -407,15 +444,27 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
               >
                 Cancel
               </button>
+              <button
+                className="btn btn-primary btn-sm row"
+                style={{ gap: 6 }}
+                type="submit"
+                disabled={addMutation.isPending || editMutation.isPending}
+              >
+                {(addMutation.isPending || editMutation.isPending)
+                  ? "Saving…"
+                  : editId ? "Save changes" : "Save partner"}
+              </button>
             </div>
           </form>
         </div>
       )}
 
       {canEdit && !showForm && (
-        <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openAdd}>
-          <IconPlus size={14} /> Add partner
-        </button>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openAdd}>
+            <IconPlus size={14} /> Add partner
+          </button>
+        </div>
       )}
     </div>
   );

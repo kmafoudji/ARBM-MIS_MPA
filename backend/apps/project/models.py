@@ -587,6 +587,18 @@ class ProjectImplementingPartner(models.Model):
         blank=True,
         help_text="Remarques libres (périmètre d'intervention, composantes couvertes…).",
     )
+    focal_point_name = models.CharField(
+        max_length=150, blank=True,
+        help_text="Nom du point focal pour ce projet.",
+    )
+    focal_point_email = models.EmailField(
+        blank=True,
+        help_text="Email du point focal.",
+    )
+    focal_point_phone = models.CharField(
+        max_length=30, blank=True,
+        help_text="Téléphone du point focal.",
+    )
     order = models.PositiveSmallIntegerField(
         default=0,
         help_text="Ordre d'affichage.",

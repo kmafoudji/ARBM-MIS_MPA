@@ -458,7 +458,9 @@ class ProjectImplementingPartnerSerializer(serializers.ModelSerializer):
         fields = [
             "id", "agency", "agency_name", "agency_type",
             "agency_country_iso2", "agency_country_name", "agency_logo_url",
-            "role", "role_display", "allocated_amount_usd", "notes", "order",
+            "role", "role_display", "allocated_amount_usd", "notes",
+            "focal_point_name", "focal_point_email", "focal_point_phone",
+            "order",
         ]
 
     def get_agency_country_iso2(self, obj):

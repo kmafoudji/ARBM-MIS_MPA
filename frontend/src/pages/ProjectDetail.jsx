@@ -1049,15 +1049,17 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               </div>
             </div>
           ) : (
-            <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
-              {padUploadMutation.isPending ? "Uploading..." : "Upload PAD (PDF)"}
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={handlePadFileChange}
-                style={{ display: "none" }}
-              />
-            </label>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
+                {padUploadMutation.isPending ? "Uploading..." : "Upload PAD (PDF)"}
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handlePadFileChange}
+                  style={{ display: "none" }}
+                />
+              </label>
+            </div>
           )}
           {(padUploadMutation.isError || padDeleteMutation.isError) && (
             <div className="field-error mt-2">
