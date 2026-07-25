@@ -18,7 +18,7 @@ from rest_framework.response import Response
 
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
 
-from .models import Country, Currency, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
+from .models import Country, CrossCuttingTheme, Currency, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
 from .serializers import (
     CurrencySerializer,
     CountrySerializer,
