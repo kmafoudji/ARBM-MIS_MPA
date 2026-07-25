@@ -139,10 +139,9 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
   );
 }
 
-function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
+function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggregate, disaggActive }) {
   const isLocked = period.period_status === "upcoming" || period.period_status === "approved";
-  const [open, setOpen]         = useState(false);
-  const [showDisagg, setShowDisagg] = useState(false);
+  const [open, setOpen] = useState(false);
   const [value, setValue] = useState(existingData?.actual_value ?? "");
   const [narrative, setNarrative] = useState(existingData?.narrative ?? "");
   const dialog = useDialog();
@@ -206,20 +205,16 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
                 <Icon name="pencil" size={10} /> Edit
               </button>
             )}
-            <button
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 10, padding: "1px 6px", color: "#1B5A8C" }}
-              onClick={() => setShowDisagg(s => !s)}
-            >
-              <Icon name="layers" size={10} /> {showDisagg ? "Hide" : "Disaggregate"}
-            </button>
-            {showDisagg && data && (
-              <DisaggregationPanel
-                projectId={projectId}
-                rd={{ id: data.id, actual_value: data.actual_value }}
-                onClose={() => setShowDisagg(false)}
-              />
+            {data && (
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: 10, padding: "1px 6px", color: disaggActive ? "#A4C53F" : "#1B5A8C", fontWeight: disaggActive ? 700 : 400 }}
+                onClick={() => onDisaggregate({ id: data.id, actual_value: data.actual_value })}
+              >
+                <Icon name="layers" size={10} /> {disaggActive ? "▲ Close" : "Disaggregate"}
+              </button>
             )}
+
           </div>
         ) : isLocked ? (
           <span style={{ fontSize: 10, color: "#d1d5db" }}>
@@ -312,6 +307,8 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
 }
 
 export default function ResultsEntry({ projectId, canEdit }) {
+  const [disaggState, setDisaggState] = useState(null); // { rowId, periodId, rd }
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["results-summary", projectId],
     queryFn: () => apiFetch(`/api/projects/${projectId}/results/summary/`),
@@ -391,44 +388,69 @@ export default function ResultsEntry({ projectId, canEdit }) {
           </tr>
         </thead>
         <tbody>
-          {data.rows.map((row, idx) => (
-            <tr key={row.row_id} style={{
-              borderBottom: "1px solid #f0f0ee",
-              background: idx % 2 === 0 ? "#fff" : "#fafaf8",
-            }}>
-              <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
-                <div style={{ fontWeight: 600, fontSize: 12, color: "#111" }}>
-                  <span className="badge" style={{ fontSize: 9, marginRight: 6 }}>
-                    {row.indicator_code}
-                  </span>
-                  {row.indicator_name.length > 60
-                    ? row.indicator_name.slice(0, 60) + "…"
-                    : row.indicator_name}
-                </div>
-                <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
-                  {row.chain_level?.replace(/_/g, " ")}
-                </div>
-              </td>
-              <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11, whiteSpace: "nowrap" }}>
-                {row.indicator_unit}
-              </td>
-              <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11 }}>
-                {row.baseline_value
-                  ? `${Number(row.baseline_value).toLocaleString()} (${row.baseline_year || "—"})`
-                  : "—"}
-              </td>
-              {row.periods.map((p) => (
-                <EntryCell
-                  key={p.period_id}
-                  projectId={projectId}
-                  rowId={row.row_id}
-                  period={p}
-                  existingData={p.data}
-                  onSaved={() => {}}
-                />
-              ))}
-            </tr>
-          ))}
+          {data.rows.map((row, idx) => {
+            const colCount = 3 + periods.length;
+            const rowDisagg = disaggState?.rowId === row.row_id ? disaggState : null;
+            return (
+              <>
+                <tr key={row.row_id} style={{
+                  borderBottom: rowDisagg ? "none" : "1px solid #f0f0ee",
+                  background: idx % 2 === 0 ? "#fff" : "#fafaf8",
+                }}>
+                  <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: "#111" }}>
+                      <span className="badge" style={{ fontSize: 9, marginRight: 6 }}>
+                        {row.indicator_code}
+                      </span>
+                      {row.indicator_name.length > 60
+                        ? row.indicator_name.slice(0, 60) + "…"
+                        : row.indicator_name}
+                    </div>
+                    <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
+                      {row.chain_level?.replace(/_/g, " ")}
+                    </div>
+                  </td>
+                  <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11, whiteSpace: "nowrap" }}>
+                    {row.indicator_unit}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11 }}>
+                    {row.baseline_value
+                      ? `${Number(row.baseline_value).toLocaleString()} (${row.baseline_year || "—"})`
+                      : "—"}
+                  </td>
+                  {row.periods.map((p) => (
+                    <EntryCell
+                      key={p.period_id}
+                      projectId={projectId}
+                      rowId={row.row_id}
+                      period={p}
+                      existingData={p.data}
+                      onSaved={() => {}}
+                      disaggActive={disaggState?.rowId === row.row_id && disaggState?.periodId === p.period_id}
+                      onDisaggregate={(rd) => {
+                        if (disaggState?.rowId === row.row_id && disaggState?.periodId === p.period_id) {
+                          setDisaggState(null);
+                        } else {
+                          setDisaggState({ rowId: row.row_id, periodId: p.period_id, rd });
+                        }
+                      }}
+                    />
+                  ))}
+                </tr>
+                {rowDisagg && (
+                  <tr key={`${row.row_id}-disagg`} style={{ background: idx % 2 === 0 ? "#fff" : "#fafaf8", borderBottom: "1px solid #f0f0ee" }}>
+                    <td colSpan={colCount} style={{ padding: "0 14px 16px" }}>
+                      <DisaggregationPanel
+                        projectId={projectId}
+                        rd={rowDisagg.rd}
+                        onClose={() => setDisaggState(null)}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </>
+            );
+          })}
         </tbody>
       </table>
     </div>
