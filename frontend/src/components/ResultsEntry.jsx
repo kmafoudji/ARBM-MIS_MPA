@@ -110,11 +110,15 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
                 <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 10, color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>{cat}</label>
                   <input
-                    type="number" step="any" min="0"
+                    type="text"
+                    inputMode="decimal"
                     className="field-input"
                     style={{ padding: "5px 10px", fontSize: 13, width: 100 }}
                     value={getVal(dim.id, cat)}
-                    onChange={e => setVal(dim.id, cat, e.target.value)}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === "" || v === "-" || /^-?\d*\.?\d*$/.test(v)) setVal(dim.id, cat, v);
+                    }}
                     placeholder="0"
                   />
                 </div>
@@ -246,10 +250,13 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <input
           autoFocus
-          type="number"
-          step="any"
+          type="text"
+          inputMode="decimal"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "" || v === "-" || /^-?\d*\.?\d*$/.test(v)) setValue(v);
+          }}
           placeholder="Actual value"
           style={{
             border: "1px solid #A4C53F", borderRadius: 6,

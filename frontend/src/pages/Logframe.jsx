@@ -49,9 +49,9 @@ function TargetCard({ target, rowId, projectId, onChanged }) {
   if (editing) {
     return (
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <input className="field-input" style={{ width: 120 }} type="number" step="any"
+        <input className="field-input" style={{ width: 120 }} type="text" inputMode="decimal"
           value={form.target_value}
-          onChange={(e) => setForm({ ...form, target_value: e.target.value })} />
+          onChange={(e) => { const v=e.target.value; if(v===""||/^-?\d*\.?\d*$/.test(v)) setForm({...form,target_value:v}); }} />
         <input className="field-input" style={{ width: 140 }} type="date"
           value={form.target_date}
           onChange={(e) => setForm({ ...form, target_date: e.target.value })} />
@@ -114,9 +114,9 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
       <div className="grid grid-2" style={{ gap: 8 }}>
         <div className="field" style={{ marginBottom: 0 }}>
           <label className="field-label">Target value ({unit})</label>
-          <input className="field-input" type="number" step="any"
+          <input className="field-input" type="text" inputMode="decimal"
             value={form.target_value}
-            onChange={(e) => setForm({ ...form, target_value: e.target.value })} required />
+            onChange={(e) => { const v=e.target.value; if(v===""||/^-?\d*\.?\d*$/.test(v)) setForm({...form,target_value:v}); }} required />
         </div>
         <div className="field" style={{ marginBottom: 0 }}>
           <label className="field-label">Deadline</label>
@@ -229,9 +229,9 @@ function LogframeRowCard({ row, projectId, onChanged }) {
                 <div className="grid grid-2" style={{ gap: 8 }}>
                   <div className="field" style={{ marginBottom: 0 }}>
                     <label className="field-label">Baseline value ({row.indicator_unit})</label>
-                    <input className="field-input" type="number" step="any"
+                    <input className="field-input" type="text" inputMode="decimal"
                       value={baselineForm.baseline_value}
-                      onChange={(e) => setBaselineForm({ ...baselineForm, baseline_value: e.target.value })} />
+                      onChange={(e) => { const v=e.target.value; if(v===""||/^-?\d*\.?\d*$/.test(v)) setBaselineForm({...baselineForm,baseline_value:v}); }} />
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
                     <label className="field-label">Reference Year</label>
