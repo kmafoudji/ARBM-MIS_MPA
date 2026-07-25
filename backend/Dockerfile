@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Installation explicite des packages critiques (persist au-delà du volume mount)
+RUN pip install --no-cache-dir python-docx==1.1.2
+
 COPY . .
 
 EXPOSE 8000
