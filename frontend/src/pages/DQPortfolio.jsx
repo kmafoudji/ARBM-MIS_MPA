@@ -113,53 +113,58 @@ export default function DQPortfolio() {
         </p>
       </div>
 
-      {/* ── KPI + Distribution ──────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 14, marginBottom: 24, flexWrap: "wrap" }}>
+      {/* ── KPI compact ─────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 0,
+        background: "#fff", border: "1px solid #e5e7eb",
+        borderRadius: 12, marginBottom: 20, overflow: "hidden",
+      }}>
+        {/* Score moyen */}
         <div style={{
-          flex: 1, minWidth: 180,
-          background: cfgAvg.bg, border: `1px solid ${cfgAvg.color}40`,
-          borderRadius: 14, padding: "18px 20px",
-          display: "flex", alignItems: "center", gap: 14,
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "14px 20px", background: cfgAvg.bg,
+          borderRight: `2px solid ${cfgAvg.color}30`, flexShrink: 0,
         }}>
           <span style={{
-            width: 48, height: 48, borderRadius: "50%",
+            width: 38, height: 38, borderRadius: "50%",
             background: cfgAvg.color, color: "#fff",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, fontWeight: 800, flexShrink: 0,
+            fontSize: 16, fontWeight: 800, flexShrink: 0,
           }}>{gradeAvg}</span>
           <div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: cfgAvg.color, lineHeight: 1 }}>{fmtNum(avg)}%</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Portfolio average DQ Score</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: cfgAvg.color, lineHeight: 1 }}>{fmtNum(avg)}%</div>
+            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2, whiteSpace: "nowrap" }}>Portfolio avg · {allResults.length} indicator{allResults.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
 
-        <div style={{ flex: 2, minWidth: 280, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "18px 20px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
-            Grade Distribution
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {Object.entries(GRADE_CONFIG).map(([g, cfg]) => (
-              <button key={g} onClick={() => setGradeFilter(f => f === g ? "" : g)}
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-                  padding: "8px 14px", borderRadius: 10,
-                  background: gradeFilter === g ? cfg.bg : "#f9fafb",
-                  border: `1px solid ${gradeFilter === g ? cfg.color : "#e5e7eb"}`,
-                  cursor: "pointer", transition: "all .15s",
-                }}>
-                <span style={{ fontSize: 18, fontWeight: 800, color: cfg.color }}>{dist[g]}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: cfg.color }}>Grade {g}</span>
-                <span style={{ fontSize: 9, color: "#9ca3af" }}>{cfg.range}</span>
-              </button>
-            ))}
-          </div>
+        {/* Séparateur label */}
+        <div style={{ padding: "0 16px", fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", flexShrink: 0 }}>
+          Grade
         </div>
 
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "18px 20px", minWidth: 130 }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: "#111", lineHeight: 1 }}>{filtered.length}</div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-            {hasFilter ? "Filtered" : "Total"} indicators
-          </div>
+        {/* Distribution inline */}
+        <div style={{ display: "flex", flex: 1, borderRight: "1px solid #f0f0ee" }}>
+          {Object.entries(GRADE_CONFIG).map(([g, cfg]) => (
+            <button key={g} onClick={() => setGradeFilter(f => f === g ? "" : g)}
+              style={{
+                flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+                padding: "12px 8px", gap: 2,
+                background: gradeFilter === g ? cfg.bg : "transparent",
+                borderLeft: `1px solid #f0f0ee`,
+                borderTop: "none", borderRight: "none", borderBottom: "none",
+                cursor: "pointer", transition: "background .15s",
+              }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: cfg.color }}>{dist[g]}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: cfg.color }}>Grade {g}</span>
+              <span style={{ fontSize: 9, color: "#9ca3af" }}>{cfg.range}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Count filtered */}
+        <div style={{ padding: "14px 20px", textAlign: "center", flexShrink: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#111", lineHeight: 1 }}>{filtered.length}</div>
+          <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{hasFilter ? "Filtered" : "Total"}</div>
         </div>
       </div>
 
