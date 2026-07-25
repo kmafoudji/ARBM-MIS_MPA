@@ -242,7 +242,17 @@ function IndicatorPanel({ projectId, node, onSaved }) {
             ))}
           </select>
           {attachMutation.isError && (
-            <div className="field-error" style={{ marginBottom: 8 }}>{JSON.stringify(attachMutation.error?.detail)}</div>
+            <div className="field-error" style={{ marginBottom: 8 }}>
+              {(() => {
+                const d = attachMutation.error?.detail;
+                if (!d) return "Error attaching indicator.";
+                if (typeof d === "string") return d;
+                if (Array.isArray(d)) return d.join(" ");
+                if (d.non_field_errors) return d.non_field_errors.join(" ");
+                if (d.indicator) return `Indicator: ${d.indicator.join(" ")}`;
+                return JSON.stringify(d);
+              })()}
+            </div>
           )}
           <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
             disabled={!selectedId || !chainLevel || attachMutation.isPending}
@@ -361,7 +371,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
 
   const updateMutation = useMutation({
     mutationFn: (payload) =>
-      apiFetch(`/api/projects/${node.toc}/toc/nodes/${node.id}/`, {
+      apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, {
         method: "PATCH", body: JSON.stringify(payload),
       }),
     onSuccess: () => { setEditing(false); onSaved(); },
@@ -369,7 +379,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
 
   const deleteMutation = useMutation({
     mutationFn: () =>
-      apiFetch(`/api/projects/${node.toc}/toc/nodes/${node.id}/`, { method: "DELETE" }),
+      apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, { method: "DELETE" }),
     onSuccess: onDeleted,
   });
 

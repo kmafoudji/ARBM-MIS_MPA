@@ -168,10 +168,18 @@ class LogframeView(APIView):
         return Response(LogframeRowSerializer(qs, many=True).data)
 
     def post(self, request, pk):
+        from django.db import IntegrityError
         project = Project.objects.get(pk=pk)
         serializer = LogframeRowCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        row = serializer.save(project=project)
+        try:
+            row = serializer.save(project=project)
+        except IntegrityError:
+            # unique_together (project, indicator) — l'indicateur est deja
+            # dans le cadre logique de ce projet. Retourner la ligne existante
+            # plutot que de bloquer : le frontend peut l'attacher au noeud.
+            indicator_id = serializer.validated_data["indicator"].id
+            row = LogframeRow.objects.get(project=project, indicator_id=indicator_id)
         return Response(
             LogframeRowSerializer(row).data,
             status=status.HTTP_201_CREATED,

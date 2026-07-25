@@ -80,6 +80,8 @@ class ImplementingAgencySerializer(serializers.ModelSerializer):
     country_iso2 = serializers.CharField(source="country.iso2", read_only=True)
     usage_count = serializers.SerializerMethodField()
     agency_type_display = serializers.CharField(source="get_agency_type_display", read_only=True)
+    # code est optionnel a la saisie : auto-genere si absent
+    code = serializers.SlugField(required=False)
 
     class Meta:
         model = ImplementingAgency
@@ -90,9 +92,36 @@ class ImplementingAgencySerializer(serializers.ModelSerializer):
         ]
 
     def get_usage_count(self, obj):
-        # Aucun projet ne reference encore d'agence d'implementation :
-        # le referentiel existe, le lien vers Project reste a construire.
-        return 0
+        return getattr(obj, "_usage_count", 0)
+
+    @staticmethod
+    def _generate_code(name, country_iso2=None):
+        """Genere un slug unique a partir du nom : type-iso2 ou sigle."""
+        import re, unicodedata
+        # Normaliser : supprimer accents, minuscules, remplacer espaces/ponctuation par -
+        nfkd = unicodedata.normalize("NFKD", name)
+        ascii_name = nfkd.encode("ascii", "ignore").decode("ascii")
+        slug = re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-")
+        # Limiter a 30 caracteres utiles
+        slug = slug[:28]
+        if country_iso2:
+            slug = f"{slug[:24]}-{country_iso2.lower()}"
+        # Garantir l'unicite en suffixant si collision
+        from apps.reference.models import ImplementingAgency as IA
+        base = slug
+        n = 1
+        while IA.objects.filter(code=slug).exists():
+            slug = f"{base[:26]}-{n}"
+            n += 1
+        return slug
+
+    def validate(self, data):
+        # Auto-generer le code si absent
+        if not data.get("code"):
+            country = data.get("country")
+            iso2 = country.iso2 if country else None
+            data["code"] = self._generate_code(data.get("name", "agency"), iso2)
+        return data
 
 
 class SectorSerializer(serializers.ModelSerializer):

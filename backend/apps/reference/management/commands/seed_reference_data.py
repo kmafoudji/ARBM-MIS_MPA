@@ -112,17 +112,25 @@ DONORS = [
 ]
 
 # (code, nom, type, iso2 du pays ou None si international)
+# Convention de codage des agences : <type_abrege>-<iso2_pays> pour les
+# entites nationales (ex. minagri-sn), <sigle> pour les entites internationales.
+# Le code est un slug unique, immuable apres creation (POL-1.05).
 AGENCIES = [
-    ("minsan-sn", "Ministry of Health & Social Action", "government", "SN"),
-    ("minsan-ml", "Ministry of Health", "government", "ML"),
-    ("minsan-bf", "Ministry of Health", "government", "BF"),
-    ("minsan-gn", "Ministry of Health & Public Hygiene", "government", "GN"),
-    ("minagri-ng", "Kano State Ministry of Agriculture", "government", "NG"),
-    ("knarda", "KNARDA", "national_agency", "NG"),
-    ("unicef", "UNICEF", "un_agency", None),
-    ("unfpa", "UNFPA", "un_agency", None),
-    ("who", "WHO", "un_agency", None),
-    ("sos-sahel", "SOS Sahel International", "ngo", None),
+    ("minsan-sn",      "Ministry of Health & Social Action",       "government",    "SN"),
+    ("minsan-ml",      "Ministry of Health",                        "government",    "ML"),
+    ("minsan-bf",      "Ministry of Health",                        "government",    "BF"),
+    ("minsan-gn",      "Ministry of Health & Public Hygiene",       "government",    "GN"),
+    ("minagri-ng",     "Kano State Ministry of Agriculture",        "government",    "NG"),
+    ("minagri-sn",     "Ministry of Agriculture and Food Security", "government",    "SN"),
+    ("minagri-ml",     "Ministry of Agriculture",                   "government",    "ML"),
+    ("minagri-bf",     "Ministry of Agriculture",                   "government",    "BF"),
+    ("knarda",         "KNARDA",                                    "national_agency","NG"),
+    ("unicef",         "UNICEF",                                    "un_agency",     None),
+    ("unfpa",          "UNFPA",                                     "un_agency",     None),
+    ("who",            "WHO",                                       "un_agency",     None),
+    ("fao",            "FAO",                                       "un_agency",     None),
+    ("sos-sahel",      "SOS Sahel International",                   "ngo",           None),
+    ("care-intl",      "CARE International",                        "ngo",           None),
 ]
 
 # 3 piliers LLF2 + 2 themes transversaux
@@ -177,12 +185,15 @@ MARKERS = [
 
 # Themes transversaux SF-2 (Module 1)
 CROSS_CUTTING_THEMES = [
-    ("climate", "Climate"),
-    ("fragility", "Fragility"),
-    ("youth_employment", "Youth employment"),
-    ("disability", "Disability"),
-    ("migration", "Migration"),
+    ("climate",           "Climate"),
+    ("fragility",         "Fragility"),
+    ("youth_employment",  "Youth employment"),
+    ("gender",            "Gender"),
+    ("disability",        "Disability & inclusion"),
+    ("migration",         "Migration"),
     ("digital_inclusion", "Digital inclusion"),
+    ("nutrition",         "Nutrition"),
+    ("governance",        "Governance"),
 ]
 
 

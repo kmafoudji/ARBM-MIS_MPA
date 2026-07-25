@@ -104,7 +104,7 @@ const TABS = [
     fields: [
       { name: "short_name", label: "Short Name", type: "text", required: true },
       { name: "name", label: "Full Name", type: "text", required: true },
-      { name: "code", label: "Code", type: "text", required: true },
+      { name: "code", label: "Code", type: "text", required: false, help: "Optional — auto-generated from name if left empty." },
       { name: "donor_type", label: "Type", type: "select", options: DONOR_TYPES },
       { name: "origin_iso2", label: "Country of Origin (ISO2)", type: "text", maxLength: 2,
         help: "Leave empty for multilateral institutions — they have no national flag." },
@@ -123,7 +123,7 @@ const TABS = [
     sub: "Ministeres, agences nationales, agences ONU et ONG d'execution",
     fields: [
       { name: "name", label: "Agency Name", type: "text", required: true },
-      { name: "code", label: "Code", type: "text", required: true },
+      { name: "code", label: "Code", type: "text", required: false, help: "Optional — auto-generated from name if left empty." },
       { name: "agency_type", label: "Type", type: "select", required: true, options: AGENCY_TYPES },
       { name: "country", label: "Countries", type: "select", optionsKey: "countries",
         help: "Leave empty for an international agency (UN, multi-country NGO)." },
@@ -138,7 +138,7 @@ const TABS = [
     sub: "Piliers LLF2 et themes transversaux",
     fields: [
       { name: "name", label: "Sector Name", type: "text", required: true },
-      { name: "code", label: "Code", type: "text", required: true },
+      { name: "code", label: "Code", type: "text", required: false, help: "Optional — auto-generated from name if left empty." },
       { name: "icon", label: "Pictogramme", type: "icon-select", options: ICON_OPTIONS },
       { name: "color", label: "Color", type: "color" },
       { name: "parent", label: "Parent Sector", type: "select", optionsKey: "sectors",
