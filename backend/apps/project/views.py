@@ -442,6 +442,7 @@ class ProjectImplementingPartnerListView(APIView):
     POST /api/projects/<pk>/partners/   — ajouter un partenaire
     """
     permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
 
     def _get_project(self, pk):
         from apps.project.models import Project
@@ -479,6 +480,7 @@ class ProjectImplementingPartnerDetailView(APIView):
     DELETE /api/projects/<pk>/partners/<partner_pk>/
     """
     permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module = "m1_config_access"
 
     def _get_partner(self, pk, partner_pk):
         from apps.project.models import ProjectImplementingPartner
