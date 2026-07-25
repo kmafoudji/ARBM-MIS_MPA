@@ -13,6 +13,30 @@ import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
 import { apiFetch } from "./api";
+import { Component } from "react";
+
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 32, fontFamily: "monospace", color: "#dc2626" }}>
+          <strong>Runtime Error:</strong>
+          <pre style={{ marginTop: 12, fontSize: 12, whiteSpace: "pre-wrap" }}>
+            {this.state.error?.message}
+            {"\n\n"}
+            {this.state.error?.stack}
+          </pre>
+          <button onClick={() => this.setState({ error: null })} style={{ marginTop: 16, padding: "8px 16px", cursor: "pointer" }}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [authState, setAuthState] = useState("checking");
@@ -82,6 +106,7 @@ export default function App() {
   const canEditReference = !!user;
 
   return (
+    <ErrorBoundary>
     <AppShell view={nav} onNavigate={setNav} user={user} counts={counts}>
       {nav === "overview" && <Overview user={user} />}
 
@@ -120,5 +145,6 @@ export default function App() {
       {nav === "indicator-catalogue" && <IndicatorCatalogue />}
       {nav === "rbac" && <Rbac currentUser={user} />}
     </AppShell>
+    </ErrorBoundary>
   );
 }
