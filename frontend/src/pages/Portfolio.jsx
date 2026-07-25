@@ -339,17 +339,13 @@ export default function Portfolio() {
   const healthPct = total ? Math.round(((rag.green || 0) / Math.max(withData, 1)) * 100) : 0;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 0 40px" }}>
+    <div className="view">
 
       {/* ── En-tête ─────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#A4C53F", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6 }}>
-          Module 2 · SF-4 · Lives & Livelihoods Fund
-        </div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111", letterSpacing: "-0.03em", margin: 0, lineHeight: 1.1 }}>
-          Portfolio Results
-        </h1>
-        <p style={{ fontSize: 13, color: "#6b7280", marginTop: 6, marginBottom: 0 }}>
+      <div className="view-header">
+        <div className="view-eyebrow">Results · SF-4 · Lives &amp; Livelihoods Fund</div>
+        <h1 className="view-title">Portfolio Results</h1>
+        <p className="view-lead">
           Aggregated performance across all active LLF2 projects · Approved data only
         </p>
       </div>
