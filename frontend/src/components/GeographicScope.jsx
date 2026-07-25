@@ -206,7 +206,10 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                 onChange={(e) => { setSelAdmin1(e.target.value); setSelAdmin2(""); }}>
                 <option value="">Select…</option>
                 {admin1List
-                  .filter((a) => !scopedAreaIds.has(a.id))
+                  .filter((a) => {
+                    if (editScope && String(a.id) === String(selAdmin1)) return true;
+                    return !scopedAreaIds.has(a.id);
+                  })
                   .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
@@ -220,7 +223,10 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
                 onChange={(e) => setSelAdmin2(e.target.value)}>
                 <option value="">— All districts (keep Admin 1 level) —</option>
                 {admin2List
-                  .filter((a) => !scopedAreaIds.has(a.id))
+                  .filter((a) => {
+                    if (editScope && String(a.id) === String(selAdmin2)) return true;
+                    return !scopedAreaIds.has(a.id);
+                  })
                   .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
               <span className="field-help">Leave empty to add the entire region without specifying a district.</span>
