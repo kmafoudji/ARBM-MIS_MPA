@@ -137,6 +137,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             )
         except ValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(ProjectDetailSerializer(project).data, status=status.HTTP_200_OK)
 

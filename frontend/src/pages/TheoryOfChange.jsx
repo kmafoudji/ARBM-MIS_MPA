@@ -583,7 +583,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
                     onChange={(e) => setForm({ ...form, parent: e.target.value })} required>
                     <option value="">Select</option>
                     {parentOptions.map((p) => (
-                      <option key={p.id} value={p.id}>{p.code} — {stripHtml(p.statement).slice(0, 60)}</option>
+                      <option key={p.id} value={p.id}>{p.code} — {stripHtml(p.statement)}</option>
                     ))}
                   </select>
                   {parentOptions.length === 0 && (

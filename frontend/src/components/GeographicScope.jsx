@@ -373,10 +373,12 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
 
       {/* Bouton Add zone */}
       {canEdit && openFor === null && (
-        <button className="btn btn-primary btn-sm row" style={{ gap: 6, marginTop: scope.length > 0 ? "var(--s-3)" : 0 }}
-          onClick={openAdd}>
-          <IconPlus size={14} /> Add zone
-        </button>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: scope.length > 0 ? "var(--s-3)" : 0 }}>
+          <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
+            onClick={openAdd}>
+            <IconPlus size={14} /> Add zone
+          </button>
+        </div>
       )}
     </div>
   );
