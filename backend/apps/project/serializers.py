@@ -74,10 +74,11 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "name", "country_ids", "lead_country_id",
+            "id", "name", "country_ids", "lead_country_id",
             "primary_sector", "contributing_sector_ids",
             "budget_amount", "primary_sdg", "contributing_sdg_ids",
         ]
+        read_only_fields = ["id"]
 
     def create(self, validated_data):
         country_ids = [c.id for c in validated_data.pop("country_ids")]
