@@ -548,6 +548,11 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
               <Icon name="plus" size={14} /> Add
             </button>
           )}
+          {adding && !readOnly && (
+            <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => { setAdding(false); setForm(EMPTY_NODE_FORM); }}>
+              <Icon name="x" size={14} /> Cancel
+            </button>
+          )}
           <button className="btn btn-ghost btn-sm" type="button" onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand" : "Collapse"}>
             <Icon name={collapsed ? "chevron-down" : "chevron-up"} size={16} />
@@ -621,13 +626,13 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
               {createMutation.isError && (
                 <div className="field-error mb-3">{JSON.stringify(createMutation.error?.detail)}</div>
               )}
-              <div className="row">
-                <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={createMutation.isPending}>
-                  <Icon name="plus" size={14} /> {createMutation.isPending ? "Saving..." : "Add node"}
-                </button>
+              <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button"
                   onClick={() => { setAdding(false); setForm(EMPTY_NODE_FORM); }}>
                   <Icon name="x" size={14} /> Cancel
+                </button>
+                <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={createMutation.isPending}>
+                  <Icon name="check" size={14} /> {createMutation.isPending ? "Saving…" : "Save node"}
                 </button>
               </div>
             </form>

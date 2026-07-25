@@ -299,8 +299,9 @@ class ToCNodeListView(APIView):
         serializer = ToCNodeCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)
-        chain_level = data.pop("chain_level")
-        parent = data.pop("parent", None)
+        chain_level       = data.pop("chain_level")
+        parent            = data.pop("parent", None)
+        cross_pathway_ids = data.pop("cross_pathway_ids", [])
 
         # Valider que le logframe_row appartient au meme projet
         logframe_row = data.get("logframe_row")
@@ -311,6 +312,11 @@ class ToCNodeListView(APIView):
             node = create_toc_node(toc, chain_level, parent.id if parent else None, **data)
         except ValidationError as exc:
             raise DRFValidationError({"detail": exc.messages if hasattr(exc, "messages") else [str(exc)]})
+
+        # Liaisons cross-pathway après création (M2M — pas dans create_toc_node)
+        if cross_pathway_ids:
+            targets = ToCNode.objects.filter(id__in=cross_pathway_ids, toc=toc)
+            node.cross_pathways.set(targets)
 
         return Response(ToCNodeSerializer(node).data, status=status.HTTP_201_CREATED)
 
