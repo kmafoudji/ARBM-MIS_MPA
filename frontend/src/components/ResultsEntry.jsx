@@ -32,6 +32,7 @@ function RagBadge({ rag, rate }) {
 }
 
 function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
+  const isLocked = period.period_status === "upcoming" || period.period_status === "approved";
   const [open, setOpen]   = useState(false);
   const [value, setValue] = useState(existingData?.actual_value ?? "");
   const [narrative, setNarrative] = useState(existingData?.narrative ?? "");
@@ -76,7 +77,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
 
   if (!open) {
     return (
-      <td style={{ padding: "6px 8px", textAlign: "center", minWidth: 120 }}>
+      <td style={{ padding: "6px 8px", textAlign: "center", minWidth: 120, opacity: isLocked && !hasData ? 0.4 : 1 }}>
         <DialogModal {...dialog.dialogProps} />
         {hasData ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -87,15 +88,20 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved }) {
             {data.status === "approved" && (
               <Icon name="lock" size={11} style={{ color: "#9ca3af" }} title="Approved" />
             )}
-            <button
-              className="btn btn-ghost btn-sm"
-              style={{ fontSize: 10, padding: "1px 6px", marginTop: 2 }}
-              onClick={() => { setValue(data.actual_value); setNarrative(data.narrative || ""); setOpen(true); }}
-              disabled={data.status === "approved"}
-            >
-              <Icon name="pencil" size={10} /> Edit
-            </button>
+            {!isLocked && (
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: 10, padding: "1px 6px", marginTop: 2 }}
+                onClick={() => { setValue(data.actual_value); setNarrative(data.narrative || ""); setOpen(true); }}
+              >
+                <Icon name="pencil" size={10} /> Edit
+              </button>
+            )}
           </div>
+        ) : isLocked ? (
+          <span style={{ fontSize: 10, color: "#d1d5db" }}>
+            {period.period_status === "upcoming" ? "🔒 Not open yet" : "—"}
+          </span>
         ) : (
           <button
             className="btn btn-ghost btn-sm"
@@ -251,7 +257,11 @@ export default function ResultsEntry({ projectId, canEdit }) {
               }}>
                 {p.label}
                 <div style={{ fontWeight: 400, fontSize: 10, color: "#999", marginTop: 2 }}>
-                  {p.status === "open" ? "🟢 Open" : p.status === "overdue" ? "🔴 Overdue" : p.status === "approved" ? "✅" : ""}
+                  {p.status === "open"     ? "🟢 Open"
+                  : p.status === "overdue" ? "🔴 Overdue"
+                  : p.status === "approved"? "✅ Approved"
+                  : p.status === "upcoming"? "🔒 Upcoming"
+                  : ""}
                 </div>
               </th>
             ))}

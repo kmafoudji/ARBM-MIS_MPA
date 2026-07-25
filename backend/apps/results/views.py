@@ -610,6 +610,16 @@ class ResultsDataView(APIView):
         from apps.project.models import ReportingPeriod
         period = get_object_or_404(ReportingPeriod, pk=d["reporting_period"], project_id=pk)
 
+        # Bloquer la saisie sur les périodes non ouvertes
+        if period.status == "upcoming":
+            raise DRFValidationError({
+                "detail": f"La période « {period.label} » n'est pas encore ouverte (statut : upcoming). La saisie sera disponible à partir du {period.start_date}."
+            })
+        if period.status == "approved":
+            raise DRFValidationError({
+                "detail": f"La période « {period.label} » est approuvée et verrouillée."
+            })
+
         # Upsert
         rd, created = ResultsData.objects.update_or_create(
             logframe_row=row,
