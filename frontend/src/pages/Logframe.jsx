@@ -645,11 +645,28 @@ export default function Logframe({ projectId, onBack, onOpenPIRS, embedded = fal
       </div>
       )}
 
+      {embedded && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, padding: "10px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Icon name="bar-chart-2" size={16} style={{ color: "#A4C53F" }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>Logframe — Indicator Summary</span>
+            <span style={{ fontSize: 12, background: "#f0f6dc", color: "#7a9420", padding: "2px 10px", borderRadius: 99, fontWeight: 600 }}>
+              {(rows || []).length} indicator{rows?.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <span style={{ fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>
+            Attach indicators from the Theory of Change tab
+          </span>
+        </div>
+      )}
+
+      {!embedded && (
       <div className="notice notice-info" style={{ marginBottom: 16, fontSize: 13 }}>
         <span style={{ marginRight: 8 }}>ℹ️</span>
         Indicators are attached to nodes directly from the <strong>Theory of Change</strong> screen.
         This view shows a consolidated read-only summary. Baseline and targets can be edited here.
       </div>
+      )}
 
       {(rows || []).length === 0 && (
         <div className="card card-flush">

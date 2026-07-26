@@ -685,6 +685,24 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false }) 
   return (
     <div className={embedded ? "" : "view"}>
       {!embedded && <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>← Project</button>}
+
+      {embedded && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, padding: "10px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Icon name="globe" size={16} style={{ color: "#A4C53F" }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>Theory of Change</span>
+            <span style={{ fontSize: 11, background: "#f0f6dc", color: "#7a9420", padding: "2px 10px", borderRadius: 99, fontWeight: 600 }}>
+              {toc.status_display}
+            </span>
+          </div>
+          {isLocked && (
+            <span style={{ fontSize: 11, color: "#d97706", display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="lock" size={12} /> Locked — structural changes disabled
+            </span>
+          )}
+        </div>
+      )}
+
       {isLocked && (
         <div className="notice notice-warn" style={{ marginBottom: "var(--s-3)", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="lock" size={14} style={{ flexShrink: 0 }} />
