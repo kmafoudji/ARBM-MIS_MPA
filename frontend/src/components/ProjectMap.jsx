@@ -227,7 +227,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       <button onClick={recenter}
         title="Recentrer sur le projet"
         style={{
-          position: "absolute", top: 90, left: 12, zIndex: 10,
+          position: "absolute", top: 142, left: 12, zIndex: 10,
           width: 32, height: 32, borderRadius: 8,
           background: "rgba(255,255,255,0.95)",
           border: "1px solid #e5e7eb",
