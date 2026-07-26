@@ -93,7 +93,7 @@ class Command(BaseCommand):
                 "denominator": row.get("denominator", ""),
                 "calculation_method": row.get("calculation_method", ""),
                 "formula": row.get("formula", ""),
-                "disaggregation": row.get("disaggregation", ""),
+                # "disaggregation" field removed in migration 0012
                 "data_source": row.get("data_source", ""),
                 "collection_method": row.get("collection_method", ""),
                 "reporting_frequency": row.get("reporting_frequency", ""),
