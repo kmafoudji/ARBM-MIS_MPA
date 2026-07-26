@@ -91,5 +91,22 @@ services:
     depends_on:
       - backend
 
+  # Martin — serveur de tuiles vectorielles PostGIS
+  # Expose les couches GADM Admin 1/2 comme tuiles MVT
+  # URL : http://localhost:3000/{layer}/{z}/{x}/{y}
+  martin:
+    image: ghcr.io/maplibre/martin:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-arbm_mes}:${POSTGRES_PASSWORD:-arbm_mes}@db:5432/${POSTGRES_DB:-arbm_mes}
+    volumes:
+      - ./martin/config.yaml:/config.yaml
+    command: --config /config.yaml
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   arbm_mes_pgdata:
