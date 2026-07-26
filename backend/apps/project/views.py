@@ -795,6 +795,7 @@ class ProjectGeoJSONView(APIView):
             cur.execute("""
                 SELECT
                     ga.id, ga.gadm_uid, ga.name, ga.level,
+                    ga.parent_id,
                     pgs.is_primary,
                     c.iso2, c.name as country_name,
                     ST_AsGeoJSON(ga.geometry)::json as geom
@@ -812,7 +813,7 @@ class ProjectGeoJSONView(APIView):
         # Admin 1 de tous les pays du projet
         # Admin 2 seulement si dans ProjectGadmScope
         for row in rows:
-            id_, uid, name, level, is_primary, iso2, country_name, geom = row
+            id_, uid, name, level, parent_id, is_primary, iso2, country_name, geom = row
             if geom is None:
                 continue
             features.append({
@@ -823,6 +824,7 @@ class ProjectGeoJSONView(APIView):
                     "gadm_uid":     uid,
                     "name":         name,
                     "level":        level,
+                    "parent_id":    parent_id,
                     "is_primary":   bool(is_primary) if is_primary is not None else False,
                     "iso2":         iso2,
                     "country_name": country_name,

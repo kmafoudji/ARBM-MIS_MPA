@@ -141,44 +141,26 @@ export default function ProjectMap({ projectId, countries = [] }) {
       .map(f => f.properties.iso2)
       .filter(Boolean);
 
-    // Admin 1 — différencier ceux qui ont des Admin 2 sélectionnés
+    // Admin 1 — bordures selon présence d'Admin 2 sélectionnés
     if (admin1.length) {
-      // Collecter les UIDs des Admin 1 parents des Admin 2 sélectionnés
       const admin2InScope = admin2.filter(f => f.properties.in_scope);
-      const parentUids = new Set(admin2InScope.map(f => {
-        // gadm_uid Admin 2 = "SEN.1.2_1" → parent Admin 1 = "SEN.1_1"
-        const uid = f.properties.gadm_uid || "";
-        const parts = uid.split(".");
-        if (parts.length >= 3) {
-          // Ex: SEN.1.2_1 → SEN.1_1
-          const lastPart = parts[parts.length - 1];
-          const parentSeq = lastPart.split("_")[0];
-          return parts.slice(0, parts.length - 1).join(".") + "_" + parentSeq;
-        }
-        return null;
-      }).filter(Boolean));
+      // Utiliser parent_id (fiable) pour trouver les Admin 1 parents
+      const parentIds = new Set(admin2InScope.map(f => f.properties.parent_id).filter(Boolean));
 
-      // Admin 1 avec enfants sélectionnés → bordure pleine lime
-      const admin1WithChildren = admin1.filter(f =>
-        parentUids.has(f.properties.gadm_uid) || admin2InScope.some(a2 =>
-          a2.properties.gadm_uid?.startsWith(f.properties.gadm_uid?.split("_")[0] + ".")
-        )
-      );
-      // Admin 1 sans enfants sélectionnés → tirets gris
-      const admin1WithoutChildren = admin1.filter(f => !admin1WithChildren.includes(f));
+      const admin1WithChildren = admin1.filter(f => parentIds.has(f.properties.id));
 
-      // Couche Admin 1 fond (tous)
+      // Tous les Admin 1 — fond tirets gris léger
       map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
       map.addLayer({ id: "proj-admin1-fill", type: "fill", source: "proj-admin1",
-        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.12 } });
+        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.08 } });
       map.addLayer({ id: "proj-admin1-line", type: "line", source: "proj-admin1",
-        paint: { "line-color": "#7a9420", "line-width": 0.8, "line-dasharray": [4, 3], "line-opacity": 0.5 } });
+        paint: { "line-color": "#7a9420", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } });
 
-      // Couche Admin 1 avec enfants sélectionnés — bordure pleine lime épaisse
+      // Admin 1 avec Admin 2 sélectionnés — bordure pleine lime épaisse
       if (admin1WithChildren.length) {
         map.addSource("proj-admin1-active", { type: "geojson", data: { type: "FeatureCollection", features: admin1WithChildren } });
         map.addLayer({ id: "proj-admin1-active-fill", type: "fill", source: "proj-admin1-active",
-          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.20 } });
+          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.18 } });
         map.addLayer({ id: "proj-admin1-active-line", type: "line", source: "proj-admin1-active",
           paint: { "line-color": "#7a9420", "line-width": 2.5, "line-opacity": 1 } });
       }

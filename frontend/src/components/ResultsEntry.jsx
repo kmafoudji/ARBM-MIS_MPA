@@ -3,7 +3,7 @@
  * Grille de saisie des valeurs réelles par indicateur et par période.
  * RAG calculé automatiquement côté serveur après chaque saisie.
  */
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
@@ -484,7 +484,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
             const colCount = 3 + periods.length;
             const rowDisagg = disaggState?.rowId === row.row_id ? disaggState : null;
             return (
-              <>
+              <React.Fragment key={row.row_id}>
                 <tr key={row.row_id} style={{
                   borderBottom: rowDisagg ? "none" : "1px solid #f0f0ee",
                   background: idx % 2 === 0 ? "#fff" : "#fafaf8",
@@ -517,7 +517,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
                       rowId={row.row_id}
                       period={p}
                       existingData={p.data}
-                      onSaved={() => {}}
+                      onSaved={() => qc.invalidateQueries({ queryKey: ["results-summary", projectId] })}
                       disaggActive={disaggState?.rowId === row.row_id && disaggState?.periodId === p.period_id}
                       onDisaggregate={(rd) => {
                         if (disaggState?.rowId === row.row_id && disaggState?.periodId === p.period_id) {
@@ -540,7 +540,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </tbody>
