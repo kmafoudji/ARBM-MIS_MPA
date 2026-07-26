@@ -757,3 +757,109 @@ class ProjectStageTransitionDetailView(APIView):
         project.lifecycle_stage = previous_stage
         project.save(update_fields=["lifecycle_stage", "updated_at"])
         return Response(ProjectDetailSerializer(project).data)
+
+
+# ---------------------------------------------------------------------------
+# Carte géographique — GeoJSON endpoint
+# ---------------------------------------------------------------------------
+
+class ProjectGeoJSONView(APIView):
+    """
+    GET /api/projects/<pk>/geojson/
+    Retourne les géométries GeoJSON du projet :
+      - Polygones pays (niveau 0 via Natural Earth bbox approximatif)
+      - Admin 1 et Admin 2 depuis gadm_area (si géométries chargées)
+      - Zones d'intervention ProjectGadmScope
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from django.db import connection
+        import json
+
+        project = get_object_or_404(Project, pk=pk)
+
+        # Pays du projet
+        project_countries = project.project_countries.select_related(
+            "country"
+        ).all()
+        country_ids = [pc.country_id for pc in project_countries]
+        lead_iso2s  = [pc.country.iso2 for pc in project_countries if pc.is_lead]
+
+        features = []
+
+        # Admin 1 et Admin 2 depuis gadm_area avec géométries
+        with connection.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    ga.id, ga.gadm_uid, ga.name, ga.level,
+                    ga.is_primary,
+                    c.iso2, c.name as country_name,
+                    ST_AsGeoJSON(ga.geometry)::json as geom
+                FROM gadm_area ga
+                JOIN country c ON c.id = ga.country_id
+                LEFT JOIN project_gadm_scope pgs ON pgs.area_id = ga.id AND pgs.project_id = %s
+                WHERE ga.country_id = ANY(%s)
+                  AND ga.geometry IS NOT NULL
+                  AND (pgs.id IS NOT NULL OR ga.level = 1)
+                ORDER BY ga.level, ga.name
+            """, [pk, country_ids])
+
+            rows = cur.fetchall()
+
+        # Admin 1 de tous les pays du projet
+        # Admin 2 seulement si dans ProjectGadmScope
+        for row in rows:
+            id_, uid, name, level, is_primary, iso2, country_name, geom = row
+            if geom is None:
+                continue
+            features.append({
+                "type": "Feature",
+                "geometry": geom,
+                "properties": {
+                    "id":           id_,
+                    "gadm_uid":     uid,
+                    "name":         name,
+                    "level":        level,
+                    "is_primary":   bool(is_primary) if is_primary is not None else False,
+                    "iso2":         iso2,
+                    "country_name": country_name,
+                    "in_scope":     is_primary is not None,
+                },
+            })
+
+        # Pays (niveau 0) — bbox depuis Admin 1
+        with connection.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    c.iso2, c.iso3, c.name,
+                    pc.is_lead,
+                    ST_AsGeoJSON(ST_Union(ga.geometry))::json as geom
+                FROM gadm_area ga
+                JOIN country c ON c.id = ga.country_id
+                JOIN project_country pc ON pc.country_id = c.id AND pc.project_id = %s
+                WHERE ga.country_id = ANY(%s)
+                  AND ga.level = 1
+                  AND ga.geometry IS NOT NULL
+                GROUP BY c.iso2, c.iso3, c.name, pc.is_lead
+            """, [pk, country_ids])
+            for iso2, iso3, cname, is_lead, geom in cur.fetchall():
+                if geom is None:
+                    continue
+                features.append({
+                    "type": "Feature",
+                    "geometry": geom,
+                    "properties": {
+                        "level":    0,
+                        "iso2":     iso2,
+                        "iso3":     iso3,
+                        "name":     cname,
+                        "is_lead":  bool(is_lead),
+                        "in_scope": True,
+                    },
+                })
+
+        return Response({
+            "type":     "FeatureCollection",
+            "features": features,
+        })
