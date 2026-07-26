@@ -428,37 +428,56 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     },
   };
 
-  const TAB_BAR = (
-    <div style={{ display:"flex", borderBottom:"2px solid #e5e7eb", marginBottom:24, marginTop:8, overflowX:"auto", gap:0 }}>
-      {TABS.map(tab => {
-        const lock = TAB_LOCKS[tab.key] || { locked: false };
-        const isActive = activeTab === tab.key;
-        return (
-          <button key={tab.key}
-            onClick={() => {
-              if (lock.locked) return;
-              setActiveTab(tab.key);
-            }}
-            title={lock.locked ? lock.reason : ""}
-            style={{
-              display:"flex", alignItems:"center", gap:6, padding:"10px 16px", fontSize:13,
-              fontWeight: isActive ? 700 : 500,
-              color: isActive ? "#A4C53F" : lock.locked ? "#d1d5db" : "#6b7280",
-              background:"none", border:"none",
-              borderBottom: isActive ? "2px solid #A4C53F" : "2px solid transparent",
-              marginBottom:-2,
-              cursor: lock.locked ? "not-allowed" : "pointer",
-              whiteSpace:"nowrap", fontFamily:"inherit", transition:"color .15s",
-              opacity: lock.locked ? 0.55 : 1,
-            }}>
-            <Icon name={tab.icon} size={14} />
-            {tab.label}
-            {lock.locked && <Icon name="lock" size={11} style={{ marginLeft:2, color:"#d1d5db" }} />}
-          </button>
-        );
-      })}
+  // ── Règles de modification par section ──────────────────────────────────
+  // Overview/Classification : modifiable avant Effective
+  const canEditClassification = !atLeast("effective");
+  // Basic Identity : modifiable avant BED Approved
+  const canEditBasicIdentity = !atLeast("bed_approved");
+  // Financial : modifiable avant BED Approved
+  const canEditFinancial = !atLeast("bed_approved");
+  // Reporting config : modifiable avant Effective
+  const canEditReporting = !atLeast("effective");
+  // Geographic : modifiable avant Effective
+  const canEditGeographic = !atLeast("effective");
+
+  // ── Bannière globale selon le stade ─────────────────────────────────────
+  const STAGE_BANNERS = {
+    effective: {
+      color: "#1B5A8C", bg: "#e0ebf6", border: "#93c5fd",
+      icon: "check-circle",
+      text: "This project is Effective — the Theory of Change, classification and reporting configuration are now locked. Data entry and partners remain editable.",
+    },
+    implementing: {
+      color: "#166534", bg: "#dcfce7", border: "#86efac",
+      icon: "trending-up",
+      text: "This project is under implementation. Results entry is open. Structural fields are locked.",
+    },
+    substantially_complete: {
+      color: "#854d0e", bg: "#fef9c3", border: "#fde047",
+      icon: "alert-triangle",
+      text: "This project is substantially complete. Only evidence and final reports can be added.",
+    },
+    closed: {
+      color: "#6b7280", bg: "#f3f4f6", border: "#e5e7eb",
+      icon: "lock",
+      text: "This project is closed. All fields are read-only.",
+    },
+  };
+  const stageBanner = project ? STAGE_BANNERS[project.lifecycle_stage] : null;
+
+  const GLOBAL_BANNER = stageBanner && (
+    <div style={{
+      display: "flex", alignItems: "flex-start", gap: 10,
+      padding: "10px 14px", borderRadius: 8, marginBottom: 16,
+      background: stageBanner.bg,
+      border: `1px solid ${stageBanner.border}`,
+      color: stageBanner.color, fontSize: 13,
+    }}>
+      <Icon name={stageBanner.icon} size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+      <span>{stageBanner.text}</span>
     </div>
   );
+
 
 
   // Panneau affiché quand un tab verrouillé est cliqué
@@ -496,6 +515,35 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     );
   }
 
+  const TAB_BAR = (
+    <div style={{ display:"flex", borderBottom:"2px solid #e5e7eb", marginBottom:24, marginTop:8, overflowX:"auto", gap:0 }}>
+      {TABS.map(tab => {
+        const lock = TAB_LOCKS[tab.key] || { locked: false };
+        const isActive = activeTab === tab.key;
+        return (
+          <button key={tab.key}
+            onClick={() => { if (lock.locked) return; setActiveTab(tab.key); }}
+            title={lock.locked ? lock.reason : ""}
+            style={{
+              display:"flex", alignItems:"center", gap:6, padding:"10px 16px", fontSize:13,
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? "#A4C53F" : lock.locked ? "#d1d5db" : "#6b7280",
+              background:"none", border:"none",
+              borderBottom: isActive ? "2px solid #A4C53F" : "2px solid transparent",
+              marginBottom:-2,
+              cursor: lock.locked ? "not-allowed" : "pointer",
+              whiteSpace:"nowrap", fontFamily:"inherit", transition:"color .15s",
+              opacity: lock.locked ? 0.55 : 1,
+            }}>
+            <Icon name={tab.icon} size={14} />
+            {tab.label}
+            {lock.locked && <Icon name="lock" size={11} style={{ marginLeft:2, color:"#d1d5db" }} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="view">
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -524,6 +572,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      {GLOBAL_BANNER}
       {TAB_BAR}
 
       {activeTab === "overview" && (<>
@@ -709,10 +758,15 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <h2 className="card-title"><Icon name="layers" size={15} style={{marginRight:6}} />Classification</h2>
               <div className="card-sub">SF-2 · required at BED Approved gate</div>
             </div>
-            {!showClassificationForm && (
+            {!showClassificationForm && canEditClassification && (
               <button className="btn btn-primary btn-sm" onClick={openClassificationForm}>
                 Edit
               </button>
+            )}
+            {!showClassificationForm && !canEditClassification && (
+              <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+                <Icon name="lock" size={11} /> Locked at Effective
+              </span>
             )}
           </div>
           <div className="card-body">
@@ -1019,7 +1073,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
           </div>
         </div>
-        <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
+        <FinancialEnvelope projectId={project.id} canEdit={canEditFinancial} />
       </div>
       
       </>)}
