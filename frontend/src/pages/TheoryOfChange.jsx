@@ -908,7 +908,7 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false, ca
           parentOptions={level.parentKey ? nodesWithToc.filter((n) => n.chain_level === level.parentKey) : []}
           projectId={projectId}
           onChanged={onChanged}
-          readOnly={!canEdit}
+          readOnly={!canEdit || isLocked}
           collapsed={!!collapsedSections[level.key]}
           onToggleCollapse={() => toggleSection(level.key)}
         />
