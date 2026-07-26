@@ -431,8 +431,6 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   // ── Règles de modification par section ──────────────────────────────────
   // Overview/Classification : modifiable avant Effective
   const canEditClassification = !atLeast("effective");
-  // Basic Identity : modifiable avant BED Approved
-  const canEditBasicIdentity = !atLeast("bed_approved");
   // Financial : modifiable avant BED Approved
   const canEditFinancial = !atLeast("bed_approved");
   // Reporting config : modifiable avant Effective
@@ -1604,7 +1602,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           reportingFrequency={project.reporting_frequency}
           projectEndDate={project.end_date}
           nextReportingDue={project.next_reporting_due}
-          canEdit={canEdit}
+          canEdit={canEditReporting}
         />
       </div>
 
@@ -1628,7 +1626,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             Enter actual values per indicator and reporting period. RAG status is calculated automatically.
           </div>
         </div>
-        <ResultsEntry projectId={projectId} canEdit={canEdit} />
+        <ResultsEntry projectId={projectId} canEdit={true} />
       </div>
 
       </>)}
