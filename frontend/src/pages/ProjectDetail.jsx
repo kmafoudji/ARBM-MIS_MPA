@@ -176,6 +176,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const { data: sectors } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: refCountries } = useQuery({ queryKey: ["ref-countries"], queryFn: () => apiFetch("/api/reference/countries/") });
+  const GATE_STAGES_SET = ["trc_endorsed", "ic_approved", "bed_approved"];
+  const isGate = GATE_STAGES_SET.includes(tForm.to_stage);
+  const needsDualAuth = isGate;
+  const needsJustification = true; // toujours requis
+
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
   const { data: workspace } = useQuery({ queryKey: ["workspace", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/workspace/`), staleTime: 30_000 });
@@ -312,7 +317,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   }
 
   const [showReportingForm, setShowReportingForm] = useState(false);
-  const [rForm, setRForm] = useState({ reporting_frequency: "", next_reporting_due: "" });
+  const [rForm, setRForm] = useState({ reporting_frequency: "", next_reporting_due: "", end_date: "" });
 
   const reportingMutation = useMutation({
     mutationFn: (payload) =>
@@ -330,6 +335,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     setRForm({
       reporting_frequency: project.reporting_frequency || "",
       next_reporting_due: project.next_reporting_due || "",
+      end_date: project.end_date || "",
     });
     setShowReportingForm(true);
   }
@@ -339,6 +345,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     reportingMutation.mutate({
       reporting_frequency: rForm.reporting_frequency || null,
       next_reporting_due: rForm.next_reporting_due || null,
+      end_date: rForm.end_date || null,
     });
   }
 
@@ -1403,12 +1410,18 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
                 <div className="field">
                   <label className="field-label" htmlFor="dual">
-                    Second approver
+                    Second approver {needsDualAuth && <span className="req">*</span>}
                   </label>
+                  {needsDualAuth && (
+                    <div style={{ fontSize:11, color:"#d97706", marginBottom:4, fontWeight:600 }}>
+                      ⚠️ Gate transition — second approver required
+                    </div>
+                  )}
                   <select
                     id="dual"
                     className="field-select"
                     value={tForm.dual_authorized_by}
+                    required={needsDualAuth}
                     onChange={(e) => setTForm({ ...tForm, dual_authorized_by: e.target.value })}
                   >
                     <option value="">None</option>
@@ -1426,7 +1439,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
               <div className="field">
                 <label className="field-label" htmlFor="justif">
-                  Justification
+                  Justification <span className="req">*</span>
                 </label>
                 <textarea
                   id="justif"
@@ -1652,16 +1665,37 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   </select>
                 </div>
                 <div className="field">
-                  <label className="field-label" htmlFor="nextDue">First Deadline</label>
+                  <label className="field-label" htmlFor="nextDue">First Deadline <span className="req">*</span></label>
                   <input
                     id="nextDue"
                     className="field-input"
                     type="date"
                     value={rForm.next_reporting_due}
                     onChange={(e) => setRForm({ ...rForm, next_reporting_due: e.target.value })}
+                    required
                   />
                 </div>
+                <div className="field">
+                  <label className="field-label" htmlFor="endDate">
+                    Project end date <span className="req">*</span>
+                  </label>
+                  <input
+                    id="endDate"
+                    className="field-input"
+                    type="date"
+                    value={rForm.end_date}
+                    onChange={(e) => setRForm({ ...rForm, end_date: e.target.value })}
+                    required
+                  />
+                  <span className="field-help">Required to generate the reporting schedule.</span>
+                </div>
               </div>
+              {(!project.end_date) && (
+                <div style={{ padding:"8px 12px", background:"#fef3c7", border:"1px solid #fcd34d",
+                  borderRadius:8, fontSize:12, color:"#7a3c00", marginBottom:8 }}>
+                  ⚠️ Project end date is not set — periods cannot be generated without it.
+                </div>
+              )}
               {reportingMutation.isError && (
                 <div className="field-error mb-3">
                   {JSON.stringify(reportingMutation.error.detail)}

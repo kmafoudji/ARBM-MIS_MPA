@@ -296,7 +296,7 @@ class ReportingConfigUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ["reporting_frequency", "next_reporting_due"]
+        fields = ["reporting_frequency", "next_reporting_due", "end_date"]
 
 
 class ProjectDatesUpdateSerializer(serializers.ModelSerializer):

@@ -171,7 +171,10 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
       `/api/projects/${projectId}/logframe/${rowId}/results/${existingData?.id}/workflow/`,
       { method: "POST", body: JSON.stringify({ action, notes: notes || "" }) }
     ),
-    onSuccess: () => onSaved?.(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["results-summary", projectId] });
+      onSaved?.();
+    },
   });
   const [value, setValue] = useState(() => {
     const v = existingData?.actual_value ?? "";
