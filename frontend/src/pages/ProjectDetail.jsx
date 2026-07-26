@@ -348,12 +348,12 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const TABS = [
     { key: "overview",   label: "Overview",        icon: "info-circle" },
     { key: "lifecycle",  label: "Lifecycle",        icon: "zap"         },
+    { key: "financial",  label: "Financial",        icon: "database"    },
     { key: "toc",        label: "Theory of Change", icon: "globe"       },
     { key: "logframe",   label: "Logframe",         icon: "bar-chart-2" },
     { key: "results",    label: "Results",          icon: "trending-up" },
-    { key: "financial",  label: "Financial",        icon: "database"    },
     { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
-    { key: "partners",   label: "Partners",          icon: "users"        },
+    { key: "partners",   label: "Partners",         icon: "users"       },
     { key: "reporting",  label: "Reporting",        icon: "calendar"    },
     { key: "documents",  label: "Documents",        icon: "folder"      },
   ];
