@@ -2082,6 +2082,7 @@ class ResultsWorkflowView(APIView):
 
     def post(self, request, pk, row_pk, rd_pk):
         from .models import ResultsData
+        from django.utils import timezone
         rd     = get_object_or_404(ResultsData, pk=rd_pk, logframe_row_id=row_pk, logframe_row__project_id=pk)
         action = request.data.get("action")
         notes  = request.data.get("notes", "")
