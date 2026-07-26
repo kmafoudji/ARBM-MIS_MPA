@@ -159,22 +159,6 @@ export default function ProjectMap({ projectId, countries = [] }) {
       map.addLayer({ id: "proj-admin1-line", type: "line", source: "proj-admin1",
         paint: { "line-color": "#7a9420", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } });
 
-      // Admin 1 avec Admin 2 sélectionnés — bordure pleine lime épaisse (ajoutée en dernier = au-dessus)
-      if (admin1WithChildren.length) {
-        map.addSource("proj-admin1-active", { type: "geojson", data: { type: "FeatureCollection", features: admin1WithChildren } });
-        map.addLayer({
-          id: "proj-admin1-active-line",
-          type: "line",
-          source: "proj-admin1-active",
-          paint: { "line-color": "#7a9420", "line-width": 3, "line-opacity": 1 },
-        });
-        map.addLayer({
-          id: "proj-admin1-active-fill",
-          type: "fill",
-          source: "proj-admin1-active",
-          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.22 },
-        });
-      }
     }
 
     // Admin 2 scope — navy
@@ -184,6 +168,20 @@ export default function ProjectMap({ projectId, countries = [] }) {
         paint: { "fill-color": "#1B5A8C", "fill-opacity": 0.40 } });
       map.addLayer({ id: "proj-admin2-line", type: "line", source: "proj-admin2",
         paint: { "line-color": "#1B5A8C", "line-width": 1.5, "line-opacity": 1 } });
+    }
+
+    // Admin 1 avec Admin 2 sélectionnés — bordure pleine lime APRÈS Admin2 pour être au-dessus
+    {
+      const admin2InScope2 = admin2.filter(f => f.properties.in_scope);
+      const parentIds2 = new Set(admin2InScope2.map(f => f.properties.parent_id).filter(Boolean));
+      const admin1WithChildren2 = admin1.filter(f => parentIds2.has(f.properties.id));
+      if (admin1WithChildren2.length && !map.getSource("proj-admin1-active")) {
+        map.addSource("proj-admin1-active", { type: "geojson", data: { type: "FeatureCollection", features: admin1WithChildren2 } });
+        map.addLayer({ id: "proj-admin1-active-fill", type: "fill", source: "proj-admin1-active",
+          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.15 } });
+        map.addLayer({ id: "proj-admin1-active-line", type: "line", source: "proj-admin1-active",
+          paint: { "line-color": "#7a9420", "line-width": 3, "line-opacity": 1 } });
+      }
     }
 
     // Tooltip
