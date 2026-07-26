@@ -1,5 +1,4 @@
-/**
- * ProjectMap — Carte géographique projet
+import "maplibre-gl/dist/maplibre-gl.css";
  * Source : /api/projects/<pk>/geojson/ → PostGIS + GADM
  * Admin 1 (toujours) · Admin 2 (si dans project_gadm_scope)
  * Fond : OpenStreetMap raster
