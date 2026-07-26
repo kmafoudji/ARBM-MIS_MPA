@@ -476,7 +476,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
 }
 
 
-function NodeCard({ node, projectId, onSaved, onDeleted }) {
+function NodeCard({ node, projectId, onSaved, onDeleted, readOnly = false }) {
   const [expanded, setExpanded] = useState(false);
   const [editing,  setEditing]  = useState(false);
   const [form,     setForm]     = useState(node);
@@ -546,14 +546,23 @@ function NodeCard({ node, projectId, onSaved, onDeleted }) {
             </div>
           </div>
           <div className="row mt-2">
-            <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={startEdit}>
-              <Icon name="pencil" size={14} /> Edit
-            </button>
-            <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button"
-              disabled={deleteMutation.isPending}
-              onClick={async () => { const ok = await dialog.confirm(`All child nodes will also be deleted. This action is irreversible.`, { title: `Delete node ${node.code}?`, confirmLabel: "Delete", danger: true }); if (ok) deleteMutation.mutate(); }}>
-              <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Deleting..." : "Delete"}
-            </button>
+            {!readOnly && (
+              <>
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={startEdit}>
+                  <Icon name="pencil" size={14} /> Edit
+                </button>
+                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button"
+                  disabled={deleteMutation.isPending}
+                  onClick={async () => { const ok = await dialog.confirm(`All child nodes will also be deleted. This action is irreversible.`, { title: `Delete node ${node.code}?`, confirmLabel: "Delete", danger: true }); if (ok) deleteMutation.mutate(); }}>
+                  <Icon name="trash" size={14} /> {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                </button>
+              </>
+            )}
+            {readOnly && (
+              <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+                <Icon name="lock" size={11} /> Locked at Effective
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -667,7 +676,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
           )}
           <div className="row" style={{ flexDirection: "column", gap: 10, alignItems: "stretch" }}>
             {nodes.map((n) => (
-              <NodeCard key={n.id} node={n} projectId={projectId} onSaved={onChanged} onDeleted={onChanged} />
+              <NodeCard key={n.id} node={n} projectId={projectId} onSaved={onChanged} onDeleted={onChanged} readOnly={readOnly} />
             ))}
           </div>
 
@@ -744,7 +753,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
 }
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
-export default function TheoryOfChange({ projectId, onBack, embedded = false }) {
+export default function TheoryOfChange({ projectId, onBack, embedded = false, canEdit = true }) {
   const queryClient = useQueryClient();
   const [editingFrame,      setEditingFrame]      = useState(false);
   const [frameForm,         setFrameForm]         = useState({ problem_statement: "", ultimate_outcome: "", status: "draft" });
@@ -899,6 +908,7 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false }) 
           parentOptions={level.parentKey ? nodesWithToc.filter((n) => n.chain_level === level.parentKey) : []}
           projectId={projectId}
           onChanged={onChanged}
+          readOnly={!canEdit}
           collapsed={!!collapsedSections[level.key]}
           onToggleCollapse={() => toggleSection(level.key)}
         />

@@ -1133,7 +1133,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             flag: c.flag,
             is_lead: c.is_lead,
           }))}
-          canEdit={canEdit}
+          canEdit={canEditGeographic}
         />
       </div>
 
@@ -1147,7 +1147,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         ? <LockedTabPanel tabKey="toc" />
         : (<>
       {/* SF-1 Etape 2 — Theorie du Changement */}
-      <TheoryOfChange projectId={projectId} onBack={() => setActiveTab("overview")} embedded={true} />
+      <TheoryOfChange projectId={projectId} onBack={() => setActiveTab("overview")} embedded={true} canEdit={canEditClassification} />
 
 
       </>)}
@@ -1524,10 +1524,15 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             <h2 className="card-title"><Icon name="trending-up" size={15} style={{marginRight:6}} />Reporting</h2>
             <div className="card-sub">SF-5 · Reporting cycle and schedule</div>
           </div>
-          {!showReportingForm && (
+          {!showReportingForm && canEditReporting && (
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openReportingForm}>
               <Icon name="pencil" size={13} /> Edit
             </button>
+          )}
+          {!showReportingForm && !canEditReporting && (
+            <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="lock" size={11} /> Locked at Effective
+            </span>
           )}
         </div>
         <div className="card-body">
