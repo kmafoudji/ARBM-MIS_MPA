@@ -1,8 +1,10 @@
-import "maplibre-gl/dist/maplibre-gl.css";
+/**
+ * ProjectMap — Carte géographique projet
  * Source : /api/projects/<pk>/geojson/ → PostGIS + GADM
  * Admin 1 (toujours) · Admin 2 (si dans project_gadm_scope)
  * Fond : OpenStreetMap raster
  */
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
