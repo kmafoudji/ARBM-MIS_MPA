@@ -372,22 +372,129 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     { key: "reporting",  label: "Reporting",        icon: "calendar"    },
     { key: "documents",  label: "Documents",        icon: "folder"      },
   ];
+
+  // Ordre des stades pour comparaison
+  const STAGE_ORDER = [
+    "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
+    "preparation_identification", "trc_endorsed", "ic_approved", "appraisal",
+    "bed_approved", "effective", "implementing", "mid_term_review",
+    "substantially_complete", "closed",
+  ];
+  const stageIdx = (s) => STAGE_ORDER.indexOf(s);
+  const currentIdx = stageIdx(project?.lifecycle_stage || "concept_note");
+  const atLeast = (s) => currentIdx >= stageIdx(s);
+  const hasWorkspace = !!project?.has_workspace;
+  const hasTocNodes  = (project?.toc_node_count || 0) > 0;
+
+  // Règles de verrouillage par tab
+  const TAB_LOCKS = {
+    overview:   { locked: false },
+    lifecycle:  { locked: false },
+    documents:  { locked: false },
+    financial:  {
+      locked: !atLeast("pipeline_taskforce_review"),
+      reason: "Available from Pipeline Taskforce Review stage",
+      depends: "Lifecycle stage: Pipeline Taskforce Review",
+    },
+    toc: {
+      locked: !atLeast("pipeline_taskforce_approved"),
+      reason: "Available from Pipeline Taskforce Approved stage",
+      depends: "Lifecycle stage: Pipeline Taskforce Approved",
+    },
+    logframe: {
+      locked: !hasTocNodes,
+      reason: "Requires Theory of Change to be started first",
+      depends: "Theory of Change: at least one node defined",
+    },
+    results: {
+      locked: !hasWorkspace,
+      reason: "Available when project reaches Effective stage",
+      depends: "Lifecycle stage: Effective (workspace activated)",
+    },
+    geographic: {
+      locked: !atLeast("preparation_identification"),
+      reason: "Available from Preparation/Identification stage",
+      depends: "Lifecycle stage: Preparation/Identification",
+    },
+    partners: {
+      locked: !atLeast("appraisal"),
+      reason: "Available from Appraisal stage",
+      depends: "Lifecycle stage: Appraisal",
+    },
+    reporting: {
+      locked: !atLeast("bed_approved"),
+      reason: "Available from BED Approved gate",
+      depends: "Lifecycle stage: BED Approved",
+    },
+  };
+
   const TAB_BAR = (
     <div style={{ display:"flex", borderBottom:"2px solid #e5e7eb", marginBottom:24, marginTop:8, overflowX:"auto", gap:0 }}>
-      {TABS.map(tab => (
-        <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
-          display:"flex", alignItems:"center", gap:6, padding:"10px 16px", fontSize:13,
-          fontWeight: activeTab === tab.key ? 700 : 500,
-          color: activeTab === tab.key ? "#A4C53F" : "#6b7280",
-          background:"none", border:"none",
-          borderBottom: activeTab === tab.key ? "2px solid #A4C53F" : "2px solid transparent",
-          marginBottom:-2, cursor:"pointer", whiteSpace:"nowrap", fontFamily:"inherit", transition:"color .15s",
-        }}>
-          <Icon name={tab.icon} size={14} /> {tab.label}
-        </button>
-      ))}
+      {TABS.map(tab => {
+        const lock = TAB_LOCKS[tab.key] || { locked: false };
+        const isActive = activeTab === tab.key;
+        return (
+          <button key={tab.key}
+            onClick={() => {
+              if (lock.locked) return;
+              setActiveTab(tab.key);
+            }}
+            title={lock.locked ? lock.reason : ""}
+            style={{
+              display:"flex", alignItems:"center", gap:6, padding:"10px 16px", fontSize:13,
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? "#A4C53F" : lock.locked ? "#d1d5db" : "#6b7280",
+              background:"none", border:"none",
+              borderBottom: isActive ? "2px solid #A4C53F" : "2px solid transparent",
+              marginBottom:-2,
+              cursor: lock.locked ? "not-allowed" : "pointer",
+              whiteSpace:"nowrap", fontFamily:"inherit", transition:"color .15s",
+              opacity: lock.locked ? 0.55 : 1,
+            }}>
+            <Icon name={tab.icon} size={14} />
+            {tab.label}
+            {lock.locked && <Icon name="lock" size={11} style={{ marginLeft:2, color:"#d1d5db" }} />}
+          </button>
+        );
+      })}
     </div>
   );
+
+
+  // Panneau affiché quand un tab verrouillé est cliqué
+  function LockedTabPanel({ tabKey }) {
+    const lock = TAB_LOCKS[tabKey] || {};
+    return (
+      <div style={{
+        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+        padding:"48px 24px", textAlign:"center",
+        background:"#fafaf8", border:"1px solid #e5e7eb", borderRadius:12,
+      }}>
+        <div style={{
+          width:56, height:56, borderRadius:"50%",
+          background:"#f3f4f6", display:"flex", alignItems:"center", justifyContent:"center",
+          marginBottom:16,
+        }}>
+          <Icon name="lock" size={24} style={{ color:"#9ca3af" }} />
+        </div>
+        <div style={{ fontSize:15, fontWeight:700, color:"#374151", marginBottom:8 }}>
+          This section is not yet available
+        </div>
+        <div style={{ fontSize:13, color:"#6b7280", marginBottom:16, maxWidth:400 }}>
+          {lock.reason}
+        </div>
+        <div style={{
+          display:"inline-flex", alignItems:"center", gap:8,
+          padding:"8px 16px", borderRadius:8,
+          background:"#f0f6dc", border:"1px solid #A4C53F40",
+          fontSize:12, color:"#7a9420",
+        }}>
+          <Icon name="info-circle" size={13} />
+          <span><strong>Requires:</strong> {lock.depends}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="view">
@@ -901,6 +1008,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
       {activeTab === "financial" && (<>
+      {TAB_LOCKS["financial"]?.locked
+        ? <LockedTabPanel tabKey="financial" />
+        : (<>
       {/* SF-6 — Enveloppe financiere */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -913,8 +1023,12 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       </div>
       
       </>)}
+      </>)}
 
       {activeTab === "partners" && (<>
+      {TAB_LOCKS["partners"]?.locked
+        ? <LockedTabPanel tabKey="partners" />
+        : (<>
       {/* SF-3 — Partenaires d'exécution */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -933,9 +1047,13 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
       </>)}
+      </>)}
 
 
       {activeTab === "geographic" && (<>
+      {TAB_LOCKS["geographic"]?.locked
+        ? <LockedTabPanel tabKey="geographic" />
+        : (<>
       {/* SF-7 — Périmètre géographique GADM */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -967,20 +1085,29 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
       </>)}
+      </>)}
 
 
       {activeTab === "toc" && (<>
+      {TAB_LOCKS["toc"]?.locked
+        ? <LockedTabPanel tabKey="toc" />
+        : (<>
       {/* SF-1 Etape 2 — Theorie du Changement */}
       <TheoryOfChange projectId={projectId} onBack={() => setActiveTab("overview")} embedded={true} />
 
 
       </>)}
+      </>)}
 
 
       {activeTab === "logframe" && (<>
+      {TAB_LOCKS["logframe"]?.locked
+        ? <LockedTabPanel tabKey="logframe" />
+        : (<>
       <Logframe projectId={projectId} onBack={() => setActiveTab("overview")} onOpenPIRS={onOpenPIRS} embedded={true} />
 
 
+      </>)}
       </>)}
 
 
@@ -1333,6 +1460,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
       {activeTab === "reporting" && (<>
+      {TAB_LOCKS["reporting"]?.locked
+        ? <LockedTabPanel tabKey="reporting" />
+        : (<>
       {/* SF-1 Etape 5 — Reporting */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -1421,9 +1551,13 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
       </>)}
+      </>)}
 
 
       {activeTab === "results" && (<>
+      {TAB_LOCKS["results"]?.locked
+        ? <LockedTabPanel tabKey="results" />
+        : (<>
       {/* ── Module 2 — Results Data Entry ─────────────────────────────── */}
       <div className="card mt-4">
         <div className="card-header">
@@ -1438,6 +1572,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <ResultsEntry projectId={projectId} canEdit={canEdit} />
       </div>
 
+      </>)}
       </>)}
 
 

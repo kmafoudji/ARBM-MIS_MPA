@@ -144,6 +144,17 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     reporting_frequency_display = serializers.CharField(
         source="get_reporting_frequency_display", read_only=True
     )
+    has_workspace   = serializers.SerializerMethodField()
+    toc_node_count  = serializers.SerializerMethodField()
+
+    def get_has_workspace(self, obj):
+        return hasattr(obj, "workspace") and obj.workspace is not None
+
+    def get_toc_node_count(self, obj):
+        try:
+            return obj.theory_of_change.nodes.count()
+        except Exception:
+            return 0
 
     class Meta:
         model = Project
@@ -164,6 +175,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "cross_cutting_theme_ids", "cross_cutting_theme_names",
             "rio_marker_mitigation", "rio_marker_adaptation",
             "rio_marker_biodiversity", "rio_marker_desertification", "rio_marker_water",
+            "has_workspace", "toc_node_count",
             "pad_reference_url", "pad_reference_name",
             "reporting_frequency", "reporting_frequency_display", "next_reporting_due",
             "budget_amount", "currency",
