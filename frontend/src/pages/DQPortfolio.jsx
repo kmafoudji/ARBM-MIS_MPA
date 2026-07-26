@@ -2,7 +2,7 @@
  * DQPortfolio — SF-9 Module 2
  * Vue agrégée du Data Quality Score · Filtres + méthodes de calcul
  */
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { fmtNum } from "../utils.js";
@@ -285,7 +285,7 @@ export default function DQPortfolio() {
                   const rowKey = `${r.project_code}-${r.indicator_code}`;
                   const isExpanded = expandedRow === rowKey;
                   return (
-                      <>
+                      <React.Fragment key={rowKey}>
                         <tr key={rowKey}
                           onClick={() => setExpandedRow(k => k === rowKey ? null : rowKey)}
                           style={{
@@ -348,7 +348,7 @@ export default function DQPortfolio() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                 })}
               </tbody>

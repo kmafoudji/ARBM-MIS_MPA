@@ -1,10 +1,9 @@
 /**
  * ProjectMap — Carte géographique projet
  * Source : /api/projects/<pk>/geojson/ → PostGIS + GADM
- * Admin 1 (toujours) · Admin 2 (si dans project_gadm_scope)
- * Fond : OpenStreetMap raster
  */
 import "maplibre-gl/dist/maplibre-gl.css";
+import maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
@@ -46,7 +45,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
   useEffect(() => {
     if (!mapRef.current) return;
     let map;
-    import("maplibre-gl").then(({ default: maplibregl }) => {
+    {
       map = new maplibregl.Map({
         container: mapRef.current,
         style: {
@@ -66,7 +65,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       });
       mapInst.current = map;
       map.on("load", () => setMapReady(true));
-    });
+    }
     return () => { map?.remove(); mapInst.current = null; setMapReady(false); };
   }, []);
 
@@ -120,8 +119,8 @@ export default function ProjectMap({ projectId, countries = [] }) {
     }
 
     // Tooltip
-    import("maplibre-gl").then(({ default: mgl }) => {
-      const popup = new mgl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+    {
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
       ["admin1-fill","admin2-fill","country-fill"].forEach(layer => {
         if (!map.getLayer(layer)) return;
         map.on("mousemove", layer, e => {
@@ -140,7 +139,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
           popup.remove();
         });
       });
-    });
+    }
 
     // Fitter sur les features
     if (features.length) {

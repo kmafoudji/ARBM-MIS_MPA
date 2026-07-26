@@ -236,10 +236,6 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
 
   return (
     <div className="card-body">
-      {/* Carte PostGIS GADM */}
-      {(countries || []).length > 0 && (
-        <ProjectMap projectId={projectId} countries={countries} />
-      )}
       <DialogModal {...dialog.dialogProps} />
       {scope.length === 0 && openFor === null && (
         <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>
@@ -387,6 +383,10 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
             <IconPlus size={14} /> Add zone
           </button>
         </div>
+      )}
+      {/* Carte PostGIS GADM — après le contenu Admin */}
+      {(countries || []).length > 0 && (
+        <ProjectMap projectId={projectId} countries={countries} />
       )}
     </div>
   );
