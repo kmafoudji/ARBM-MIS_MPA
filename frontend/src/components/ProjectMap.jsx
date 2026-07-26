@@ -9,11 +9,21 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 
+const MARTIN_URL = "http://localhost:3000";
+
 const STYLE = {
   version: 8,
   glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
   sources: {
-    "natural-earth": {
+    // Tuiles vectorielles Martin PostGIS — GADM Admin 1/2
+    "martin-gadm": {
+      type: "vector",
+      tiles: [`${MARTIN_URL}/gadm_area/{z}/{x}/{y}`],
+      minzoom: 0,
+      maxzoom: 14,
+    },
+    // Fond monde — Natural Earth (pays, océans)
+    "ne-countries": {
       type: "geojson",
       data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
     },
@@ -21,25 +31,22 @@ const STYLE = {
       type: "geojson",
       data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_ocean.geojson",
     },
-    "ne-lakes": {
-      type: "geojson",
-      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_lakes.geojson",
-    },
   },
   layers: [
-    // Fond général
-    { id: "bg", type: "background", paint: { "background-color": "#EDEDEA" } },
-    // Océans + grands lacs
-    { id: "ocean", type: "fill", source: "ne-ocean",
-      paint: { "fill-color": "#E0EBF0", "fill-opacity": 1 } },
-    { id: "lakes", type: "fill", source: "ne-lakes",
-      paint: { "fill-color": "#E0EBF0", "fill-opacity": 0.8 } },
-    // Terres du monde (gris très doux)
-    { id: "land-fill", type: "fill", source: "natural-earth",
-      paint: { "fill-color": "#EDEDEA", "fill-opacity": 1 } },
-    // Frontières nationales (blanc, très fin)
-    { id: "land-border", type: "line", source: "natural-earth",
+    { id: "bg",           type: "background", paint: { "background-color": "#EDEDEA" } },
+    { id: "ocean",        type: "fill",   source: "ne-ocean",
+      paint: { "fill-color": "#E0EBF0" } },
+    { id: "land-fill",    type: "fill",   source: "ne-countries",
+      paint: { "fill-color": "#EDEDEA" } },
+    { id: "land-border",  type: "line",   source: "ne-countries",
       paint: { "line-color": "#FFFFFF", "line-width": 1.2 } },
+    // Admin 1 GADM (fond — toutes les régions du monde)
+    { id: "gadm-admin1-fill", type: "fill",   source: "martin-gadm", "source-layer": "gadm_area",
+      filter: ["==", ["get", "level"], 1],
+      paint: { "fill-color": "#EDEDEA", "fill-opacity": 0 } },
+    { id: "gadm-admin1-line", type: "line",   source: "martin-gadm", "source-layer": "gadm_area",
+      filter: ["==", ["get", "level"], 1],
+      paint: { "line-color": "#d4d4d0", "line-width": 0.4 } },
   ],
 };
 
@@ -110,7 +117,8 @@ export default function ProjectMap({ projectId, countries = [] }) {
     // Nettoyer
     ["proj-country-fill","proj-country-border",
      "proj-admin1-fill","proj-admin1-line",
-     "proj-admin2-fill","proj-admin2-line"].forEach(id => {
+     "proj-admin2-fill","proj-admin2-line",
+     "proj-martin-admin1-fill","proj-martin-admin1-line"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     ["proj-country","proj-admin1","proj-admin2"].forEach(id => {
@@ -126,8 +134,14 @@ export default function ProjectMap({ projectId, countries = [] }) {
         paint: { "line-color": "#7a9420", "line-width": 2, "line-opacity": 0.9 } });
     }
 
-    // Admin 1 — lime tirets
+    // Admin 1 depuis Martin — filtré sur les pays du projet
+    const projectCountryIds = features
+      .filter(f => f.properties.level === 0)
+      .map(f => f.properties.iso2)
+      .filter(Boolean);
+
     if (admin1.length) {
+      // GeoJSON endpoint pour les Admin 1 du projet (précis)
       map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
       map.addLayer({ id: "proj-admin1-fill", type: "fill", source: "proj-admin1",
         paint: { "fill-color": "#A4C53F", "fill-opacity": 0.22 } });
@@ -147,7 +161,8 @@ export default function ProjectMap({ projectId, countries = [] }) {
     // Tooltip
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12,
       className: "arbm-popup" });
-    const QUERY_LAYERS = ["proj-admin2-fill","proj-admin1-fill","proj-country-fill"]
+    const QUERY_LAYERS = ["proj-admin2-fill","proj-admin1-fill","proj-country-fill",
+                          "gadm-admin1-fill"]
       .filter(l => map.getLayer(l));
 
     map.on("mousemove", e => {
