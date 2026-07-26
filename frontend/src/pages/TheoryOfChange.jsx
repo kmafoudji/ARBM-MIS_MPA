@@ -846,7 +846,7 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false, ca
             </div>
           </div>
           <div className="row" style={{ gap: 8 }}>
-            {!editingFrame && (
+            {!editingFrame && canEdit && (
               <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openFrameEdit}>
                 <Icon name="pencil" size={14} /> Edit
               </button>
