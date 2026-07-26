@@ -106,8 +106,24 @@ def compute_dq_score(logframe_row, period=None):
         consistency = Decimal("100")  # pas assez de données pour juger
 
     # ── Exactitude ─────────────────────────────────────────────────────────
-    # SF-10 non implémenté → 100% par défaut (sera mis à jour quand SF-10 arrive)
-    accuracy = Decimal("100")
+    # SF-10 : ratio preuves vérifiées / total preuves attachées
+    try:
+        from .models import Evidence
+        total_ev    = Evidence.objects.filter(
+            results_data__logframe_row=logframe_row,
+            is_active=True,
+        ).count()
+        verified_ev = Evidence.objects.filter(
+            results_data__logframe_row=logframe_row,
+            is_active=True,
+            status="verified",
+        ).count()
+        if total_ev > 0:
+            accuracy = Decimal(str(round((verified_ev / total_ev) * 100, 2)))
+        else:
+            accuracy = Decimal("100")  # Pas de preuves requises → neutre
+    except Exception:
+        accuracy = Decimal("100")
 
     # ── Composite ──────────────────────────────────────────────────────────
     composite = (

@@ -2,6 +2,8 @@ from django.urls import path
 from .views import (
     DQScoreView,
     DQPortfolioView,
+    EvidenceView,
+    EvidenceDetailView,
     IndicatorChoicesView,
     IndicatorDetailView,
     IndicatorDisaggregationView,
@@ -12,6 +14,7 @@ from .views import (
     LogframeTargetDetailView,
     LogframeTargetListView,
     LogframeView,
+    ResultsWorkflowView,
     PIRSDataView,
     PortfolioAggregationView,
     ResultsDataView,
@@ -67,6 +70,11 @@ project_urlpatterns = [
     path("logframe/<int:row_pk>/pirs/",     PIRSDataView.as_view(),  name="project-pirs"),
     # SF-9 : DQ Score par indicateur
     path("logframe/<int:row_pk>/dq-score/", DQScoreView.as_view(),   name="project-dq-score"),
+    # SF-10 : Evidence par ResultsData
+    path("logframe/<int:row_pk>/results/<int:rd_pk>/evidence/",              EvidenceView.as_view(),        name="evidence-list"),
+    path("logframe/<int:row_pk>/results/<int:rd_pk>/evidence/<int:ev_pk>/",  EvidenceDetailView.as_view(),  name="evidence-detail"),
+    # Workflow complet Draft→Submitted→Reviewed→Approved
+    path("logframe/<int:row_pk>/results/<int:rd_pk>/workflow/",              ResultsWorkflowView.as_view(), name="results-workflow"),
     # SF-6 : désagrégation par ResultsData
     path("results/<int:rd_pk>/disaggregation/", DisaggregationValueView.as_view(), name="project-results-disaggregation"),
 ]

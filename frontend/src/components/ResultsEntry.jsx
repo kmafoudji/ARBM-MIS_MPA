@@ -161,7 +161,16 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 
 function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggregate, disaggActive }) {
   const isLocked = period.period_status === "upcoming" || period.period_status === "approved";
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]           = useState(false);
+  const [showEvidence, setShowEvidence] = useState(false);
+
+  const workflowMutation = useMutation({
+    mutationFn: ({ action, notes }) => apiFetch(
+      `/api/projects/${projectId}/logframe/${rowId}/results/${existingData?.id}/workflow/`,
+      { method: "POST", body: JSON.stringify({ action, notes: notes || "" }) }
+    ),
+    onSuccess: () => onSaved?.(),
+  });
   const [value, setValue] = useState(() => {
     const v = existingData?.actual_value ?? "";
     if (v === "") return "";
@@ -218,16 +227,57 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
               {fmtNum(data.actual_value)}
             </span>
             <RagBadge rag={data.rag_status} rate={data.achievement_rate} />
+            {/* Badge statut workflow */}
+            {data.status && data.status !== "approved" && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99,
+                background: data.status === "submitted" ? "#ede9fe" : data.status === "reviewed" ? "#fef9c3" : data.status === "rejected" ? "#fee2e2" : "#f3f4f6",
+                color: data.status === "submitted" ? "#6366f1" : data.status === "reviewed" ? "#d97706" : data.status === "rejected" ? "#dc2626" : "#9ca3af",
+              }}>{data.status}</span>
+            )}
             {data.status === "approved" && (
               <Icon name="lock" size={11} style={{ color: "#9ca3af" }} title="Approved" />
             )}
-            {!isLocked && (
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ fontSize: 10, padding: "1px 6px", marginTop: 2 }}
-                onClick={() => { setValue(data.actual_value); setNarrative(data.narrative || ""); setOpen(true); }}
-              >
+            {/* Boutons workflow selon statut */}
+            {data.status === "draft" && !isLocked && (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", marginTop: 2 }}
+                onClick={() => { setValue(data.actual_value); setNarrative(data.narrative || ""); setOpen(true); }}>
                 <Icon name="pencil" size={10} /> Edit
+              </button>
+            )}
+            {data.status === "draft" && (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#6366f1" }}
+                onClick={() => workflowMutation.mutate({ action: "submit" })}
+                disabled={workflowMutation.isPending}>
+                <Icon name="arrow-right" size={10} /> Submit
+              </button>
+            )}
+            {data.status === "submitted" && (
+              <>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#16a34a" }}
+                  onClick={() => workflowMutation.mutate({ action: "approve" })}
+                  disabled={workflowMutation.isPending}>
+                  <Icon name="check" size={10} /> Approve
+                </button>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#dc2626" }}
+                  onClick={() => workflowMutation.mutate({ action: "reject" })}
+                  disabled={workflowMutation.isPending}>
+                  <Icon name="x" size={10} /> Reject
+                </button>
+              </>
+            )}
+            {data.status === "approved" && (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#d97706" }}
+                onClick={() => workflowMutation.mutate({ action: "reopen" })}
+                disabled={workflowMutation.isPending}>
+                <Icon name="edit" size={10} /> Reopen
+              </button>
+            )}
+            {/* Evidence */}
+            {data && (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: showEvidence ? "#A4C53F" : "#6b7280" }}
+                onClick={() => setShowEvidence(s => !s)}>
+                <Icon name="folder" size={10} /> Docs
               </button>
             )}
             {data && (
@@ -240,6 +290,15 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
               </button>
             )}
 
+            {/* EvidencePanel inline */}
+            {showEvidence && data && (
+              <EvidencePanel
+                projectId={projectId}
+                rowId={rowId}
+                rdId={data.id}
+                onClose={() => setShowEvidence(false)}
+              />
+            )}
           </div>
         ) : isLocked ? (
           <span style={{ fontSize: 10, color: "#d1d5db" }}>
@@ -323,10 +382,10 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
           <button
             className="btn btn-primary btn-sm"
             style={{ fontSize: 10, padding: "2px 8px" }}
-            onClick={() => handleSave(true)}
+            onClick={() => handleSave(false)}
             disabled={mutation.isPending || value === ""}
           >
-            {mutation.isPending ? "…" : "✓ Approve"}
+            {mutation.isPending ? "…" : "✓ Save"}
           </button>
         </div>
       </div>

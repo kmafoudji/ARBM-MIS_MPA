@@ -419,8 +419,11 @@ class TargetRevision(models.Model):
 # ---------------------------------------------------------------------------
 
 RESULTS_DATA_STATUS_CHOICES = [
-    ("draft",    "Draft"),
-    ("approved", "Approved"),
+    ("draft",     "Draft"),
+    ("submitted", "Submitted"),
+    ("reviewed",  "Reviewed"),
+    ("approved",  "Approved"),
+    ("rejected",  "Rejected"),
 ]
 
 RAG_CHOICES = [
@@ -482,6 +485,13 @@ class ResultsData(models.Model):
         AppUser, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="results_submitted",
     )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by  = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="results_reviewed",
+    )
+    reviewed_at  = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True, help_text="Notes du relecteur (approbation ou rejet).")
     approved_by = models.ForeignKey(
         AppUser, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="results_approved",
@@ -655,3 +665,92 @@ class DQScoreSnapshot(models.Model):
     def __str__(self):
         period = self.reporting_period.label if self.reporting_period else "Global"
         return f"{self.logframe_row.indicator.code} | {period} | {self.composite_score}%"
+
+
+# ---------------------------------------------------------------------------
+# SF-10 — Evidence (Preuves et pièces justificatives)
+# BRQ-2.24
+# ---------------------------------------------------------------------------
+
+EVIDENCE_TYPE_CHOICES = [
+    ("photo",       "Photo / Image"),
+    ("pdf",         "PDF Document"),
+    ("survey",      "Survey / Questionnaire"),
+    ("report",      "Report / Assessment"),
+    ("video",       "Video"),
+    ("other",       "Other"),
+]
+
+EVIDENCE_STATUS_CHOICES = [
+    ("pending",    "Pending review"),
+    ("verified",   "Verified"),
+    ("rejected",   "Rejected"),
+]
+
+
+def evidence_upload_path(instance, filename):
+    """Chemin de stockage : evidence/<project_code>/<indicator_code>/<filename>"""
+    rd  = instance.results_data
+    prj = rd.logframe_row.project.code
+    ind = rd.logframe_row.indicator.code
+    return f"evidence/{prj}/{ind}/{filename}"
+
+
+class Evidence(models.Model):
+    """
+    Pièce justificative liée à une saisie de résultats (ResultsData).
+    Un ResultsData peut avoir N preuves.
+    L'Accuracy du DQ Score est calculée à partir des preuves vérifiées.
+
+    POL-1.07 : soft-delete via is_active.
+    """
+    results_data = models.ForeignKey(
+        ResultsData, on_delete=models.CASCADE,
+        related_name="evidences",
+    )
+    evidence_type = models.CharField(
+        max_length=20, choices=EVIDENCE_TYPE_CHOICES, default="pdf",
+    )
+    title       = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    file        = models.FileField(
+        upload_to=evidence_upload_path,
+        null=True, blank=True,
+        help_text="PDF max 25 MB, images max 10 MB.",
+    )
+    external_url = models.URLField(
+        blank=True,
+        help_text="Lien externe (KoBoToolbox, Google Drive, etc.)",
+    )
+    status = models.CharField(
+        max_length=10, choices=EVIDENCE_STATUS_CHOICES, default="pending",
+    )
+    verified_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="evidences_verified",
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    notes       = models.TextField(blank=True, help_text="Notes de vérification.")
+    uploaded_by = models.ForeignKey(
+        AppUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="evidences_uploaded",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_active   = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "evidence"
+        ordering = ["-uploaded_at"]
+        verbose_name = "Evidence"
+
+    def __str__(self):
+        return f"{self.title} [{self.get_status_display()}]"
+
+    @property
+    def file_url(self):
+        if self.file:
+            try:
+                return self.file.url
+            except Exception:
+                return None
+        return None

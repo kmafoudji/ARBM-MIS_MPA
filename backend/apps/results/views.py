@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -1924,4 +1925,214 @@ class DQPortfolioView(APIView):
             "portfolio_average": str(avg),
             "indicators_count":  len(results),
             "results":           results,
+        })
+
+
+# ---------------------------------------------------------------------------
+# SF-10 — Evidence (preuves) + Workflow complet
+# BRQ-2.24 / RG-10.x
+# ---------------------------------------------------------------------------
+
+class EvidenceView(APIView):
+    """
+    GET    /api/projects/<pk>/logframe/<row_pk>/results/<rd_pk>/evidence/
+    POST   — upload fichier ou URL externe
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+    parser_classes     = [MultiPartParser, FormParser, JSONParser]
+
+    def _get_rd(self, pk, row_pk, rd_pk):
+        return get_object_or_404(
+            ResultsData,
+            pk=rd_pk,
+            logframe_row_id=row_pk,
+            logframe_row__project_id=pk,
+        )
+
+    def get(self, request, pk, row_pk, rd_pk):
+        from .models import Evidence
+        rd   = self._get_rd(pk, row_pk, rd_pk)
+        evs  = Evidence.objects.filter(results_data=rd, is_active=True).select_related("uploaded_by", "verified_by")
+        data = [{
+            "id":            e.id,
+            "title":         e.title,
+            "description":   e.description,
+            "evidence_type": e.evidence_type,
+            "evidence_type_display": e.get_evidence_type_display(),
+            "file_url":      e.file_url,
+            "external_url":  e.external_url,
+            "status":        e.status,
+            "status_display":e.get_status_display(),
+            "notes":         e.notes,
+            "uploaded_by":   e.uploaded_by.get_full_name() if e.uploaded_by else None,
+            "uploaded_at":   e.uploaded_at.isoformat(),
+            "verified_by":   e.verified_by.get_full_name() if e.verified_by else None,
+            "verified_at":   e.verified_at.isoformat() if e.verified_at else None,
+        } for e in evs]
+        return Response({"count": len(data), "results": data})
+
+    def post(self, request, pk, row_pk, rd_pk):
+        from .models import Evidence
+        rd    = self._get_rd(pk, row_pk, rd_pk)
+        title = request.data.get("title", "").strip()
+        if not title:
+            return Response({"detail": "title is required."}, status=400)
+
+        ev = Evidence(
+            results_data  = rd,
+            title         = title,
+            description   = request.data.get("description", ""),
+            evidence_type = request.data.get("evidence_type", "pdf"),
+            external_url  = request.data.get("external_url", ""),
+            uploaded_by   = request.user.appuser_profile if hasattr(request.user, "appuser_profile") else None,
+        )
+
+        file = request.FILES.get("file")
+        if file:
+            # Validation type MIME
+            import magic
+            mime = magic.from_buffer(file.read(2048), mime=True)
+            file.seek(0)
+            allowed = {"application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif"}
+            if mime not in allowed:
+                return Response({"detail": f"File type not allowed: {mime}"}, status=400)
+            # Taille max : PDF 25MB, images 10MB
+            max_size = 25 * 1024 * 1024 if "pdf" in mime else 10 * 1024 * 1024
+            if file.size > max_size:
+                return Response({"detail": f"File too large (max {max_size // 1024 // 1024} MB)."}, status=400)
+            ev.file = file
+
+        ev.save()
+        return Response({"id": ev.id, "title": ev.title, "status": ev.status}, status=201)
+
+
+class EvidenceDetailView(APIView):
+    """
+    PATCH  /api/.../evidence/<ev_pk>/  — vérifier ou rejeter
+    DELETE — soft-delete
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def _get_ev(self, pk, row_pk, rd_pk, ev_pk):
+        from .models import Evidence
+        return get_object_or_404(
+            Evidence,
+            pk=ev_pk, is_active=True,
+            results_data_id=rd_pk,
+            results_data__logframe_row_id=row_pk,
+            results_data__logframe_row__project_id=pk,
+        )
+
+    def patch(self, request, pk, row_pk, rd_pk, ev_pk):
+        ev     = self._get_ev(pk, row_pk, rd_pk, ev_pk)
+        action = request.data.get("action")
+        if action == "verify":
+            ev.status      = "verified"
+            ev.verified_by = request.user.appuser_profile if hasattr(request.user, "appuser_profile") else None
+            ev.verified_at = timezone.now()
+            ev.notes       = request.data.get("notes", ev.notes)
+        elif action == "reject":
+            ev.status = "rejected"
+            ev.notes  = request.data.get("notes", "")
+        else:
+            ev.title       = request.data.get("title", ev.title)
+            ev.description = request.data.get("description", ev.description)
+            ev.notes       = request.data.get("notes", ev.notes)
+        ev.save()
+        # Mettre à jour le DQ Score
+        from .dq_service import save_dq_snapshot
+        save_dq_snapshot(ev.results_data.logframe_row)
+        return Response({"id": ev.id, "status": ev.status})
+
+    def delete(self, request, pk, row_pk, rd_pk, ev_pk):
+        ev = self._get_ev(pk, row_pk, rd_pk, ev_pk)
+        ev.is_active = False
+        ev.save(update_fields=["is_active"])
+        return Response(status=204)
+
+
+class ResultsWorkflowView(APIView):
+    """
+    POST /api/projects/<pk>/logframe/<row_pk>/results/<rd_pk>/workflow/
+    body: { "action": "submit" | "review" | "approve" | "reject", "notes": "..." }
+
+    Transitions :
+      draft     → submit  → submitted
+      submitted → review  → reviewed   (relecteur)
+      reviewed  → approve → approved   (approbateur)
+      reviewed  → reject  → draft      (renvoyer au saisisseur)
+      submitted → reject  → draft      (rejet direct)
+      approved  → reopen  → draft      (réouverture)
+
+    Séparation des tâches : le saisisseur ne peut pas approuver sa propre saisie
+    (neutralisé si RBAC_ENFORCED=False).
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    TRANSITIONS = {
+        "submit":  ("draft",             "submitted"),
+        "review":  ("submitted",         "reviewed"),
+        "approve": (("submitted","reviewed"), "approved"),
+        "reject":  (("submitted","reviewed"), "draft"),
+        "reopen":  ("approved",          "draft"),
+    }
+
+    def post(self, request, pk, row_pk, rd_pk):
+        rd     = get_object_or_404(ResultsData, pk=rd_pk, logframe_row_id=row_pk, logframe_row__project_id=pk)
+        action = request.data.get("action")
+        notes  = request.data.get("notes", "")
+        user   = getattr(request.user, "appuser_profile", None)
+
+        if action not in self.TRANSITIONS:
+            return Response({"detail": f"Unknown action: {action}"}, status=400)
+
+        from django.conf import settings
+        RBAC = getattr(settings, "RBAC_ENFORCED", False)
+
+        allowed_from, to_status = self.TRANSITIONS[action]
+        if isinstance(allowed_from, str):
+            allowed_from = (allowed_from,)
+
+        if rd.status not in allowed_from:
+            return Response({
+                "detail": f"Cannot {action} from status '{rd.status}'. Expected: {allowed_from}."
+            }, status=400)
+
+        # Séparation des tâches
+        if RBAC and action == "approve" and rd.submitted_by == user:
+            return Response({"detail": "Saisisseur ne peut pas approuver sa propre entrée."}, status=403)
+
+        now = timezone.now()
+        rd.status = to_status
+
+        if action == "submit":
+            rd.submitted_by = user
+            rd.submitted_at = now
+        elif action == "review":
+            rd.reviewed_by  = user
+            rd.reviewed_at  = now
+            rd.review_notes = notes
+        elif action == "approve":
+            rd.approved_by  = user
+            rd.approved_at  = now
+            rd.review_notes = notes
+            rd.recalculate_rag()
+        elif action == "reject":
+            rd.reviewed_by  = user
+            rd.reviewed_at  = now
+            rd.review_notes = notes
+        elif action == "reopen":
+            rd.review_notes = notes
+
+        rd.save()
+
+        return Response({
+            "id":          rd.id,
+            "status":      rd.status,
+            "action":      action,
+            "notes":       rd.review_notes,
+            "updated_at":  rd.updated_at.isoformat(),
         })
