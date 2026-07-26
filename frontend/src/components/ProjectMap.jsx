@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 
-const MARTIN_URL = "http://localhost:3000";
+const MARTIN_URL = "/martin";
 
 const STYLE = {
   version: 8,

@@ -10,6 +10,11 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     proxy: {
+      "/martin": {
+        target: "http://martin:3000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/martin/, ""),
+      },
       "/api": {
         target: "http://backend:8000",
         changeOrigin: true,
