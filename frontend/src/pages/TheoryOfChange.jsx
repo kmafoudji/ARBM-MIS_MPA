@@ -648,7 +648,7 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
 }
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
-export default function TheoryOfChange({ projectId, onBack }) {
+export default function TheoryOfChange({ projectId, onBack, embedded = false }) {
   const queryClient = useQueryClient();
   const [editingFrame,      setEditingFrame]      = useState(false);
   const [frameForm,         setFrameForm]         = useState({ problem_statement: "", ultimate_outcome: "", status: "draft" });
@@ -683,8 +683,8 @@ export default function TheoryOfChange({ projectId, onBack }) {
   const isLocked = toc.status === "locked";
 
   return (
-    <div className="view">
-      <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>← Project</button>
+    <div className={embedded ? "" : "view"}>
+      {!embedded && <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>← Project</button>}
       {isLocked && (
         <div className="notice notice-warn" style={{ marginBottom: "var(--s-3)", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="lock" size={14} style={{ flexShrink: 0 }} />
@@ -695,6 +695,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
         </div>
       )}
 
+      {!embedded && (
       <div className="view-header">
         <div className="view-eyebrow text-mono">{toc.project_code}</div>
         <h1 className="view-title">Theory of Change</h1>
@@ -707,6 +708,7 @@ export default function TheoryOfChange({ projectId, onBack }) {
           <span className="text-muted text-sm">{toc.project_name}</span>
         </div>
       </div>
+      )}
 
       {/* Frame */}
       <div className="card card-flush mb-3">

@@ -590,7 +590,7 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
 // ---------------------------------------------------------------------------
 // Page principale Logframe
 // ---------------------------------------------------------------------------
-export default function Logframe({ projectId, onBack, onOpenPIRS }) {
+export default function Logframe({ projectId, onBack, onOpenPIRS, embedded = false }) {
   const queryClient = useQueryClient();
   const dialog = useDialog();
   // addingRow retiré — les indicateurs s'attachent depuis la ToC
@@ -626,12 +626,15 @@ export default function Logframe({ projectId, onBack, onOpenPIRS }) {
   });
 
   return (
-    <div className="view">
+    <div className={embedded ? "" : "view"}>
       <DialogModal {...dialog.dialogProps} />
-      <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
-        ← Project
-      </button>
+      {!embedded && (
+        <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
+          ← Project
+        </button>
+      )}
 
+      {!embedded && (
       <div className="view-header">
         <div className="view-eyebrow text-mono">{project?.code}</div>
         <h1 className="view-title">Indicator Summary</h1>
@@ -640,6 +643,7 @@ export default function Logframe({ projectId, onBack, onOpenPIRS }) {
           <span className="text-muted text-sm">{project?.name}</span>
         </div>
       </div>
+      )}
 
       <div className="notice notice-info" style={{ marginBottom: 16, fontSize: 13 }}>
         <span style={{ marginRight: 8 }}>ℹ️</span>

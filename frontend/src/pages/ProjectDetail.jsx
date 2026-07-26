@@ -353,6 +353,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     { key: "results",    label: "Results",          icon: "trending-up" },
     { key: "financial",  label: "Financial",        icon: "database"    },
     { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
+    { key: "partners",   label: "Partners",          icon: "users"        },
     { key: "reporting",  label: "Reporting",        icon: "calendar"    },
     { key: "documents",  label: "Documents",        icon: "folder"      },
   ];
@@ -841,6 +842,10 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEdit} />
       </div>
+      
+      </>)}
+
+      {activeTab === "partners" && (<>
       {/* SF-3 — Partenaires d'exécution */}
       <div className="card card-flush mt-3">
         <div className="card-header">
