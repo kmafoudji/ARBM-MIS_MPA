@@ -1,6 +1,7 @@
 /**
  * ProjectMap — Carte géographique projet
- * Source : /api/projects/<pk>/geojson/ → PostGIS + GADM
+ * Style flat minimaliste + eau bleu pâle (D+B)
+ * Source : /api/projects/<pk>/geojson/ → PostGIS GADM
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
@@ -8,11 +9,38 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 
-const COLORS = {
-  country: { fill: "#A4C53F", fillOpacity: 0.15, line: "#7a9420", lineWidth: 2 },
-  admin1:  { fill: "#A4C53F", fillOpacity: 0.25, line: "#7a9420", lineWidth: 1 },
-  admin2:  { fill: "#1B5A8C", fillOpacity: 0.35, line: "#1B5A8C", lineWidth: 1 },
-  scope:   { fill: "#1B5A8C", fillOpacity: 0.50, line: "#1B5A8C", lineWidth: 2 },
+const STYLE = {
+  version: 8,
+  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+  sources: {
+    "natural-earth": {
+      type: "geojson",
+      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+    },
+    "ne-ocean": {
+      type: "geojson",
+      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_ocean.geojson",
+    },
+    "ne-lakes": {
+      type: "geojson",
+      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_lakes.geojson",
+    },
+  },
+  layers: [
+    // Fond général
+    { id: "bg", type: "background", paint: { "background-color": "#EDEDEA" } },
+    // Océans + grands lacs
+    { id: "ocean", type: "fill", source: "ne-ocean",
+      paint: { "fill-color": "#E0EBF0", "fill-opacity": 1 } },
+    { id: "lakes", type: "fill", source: "ne-lakes",
+      paint: { "fill-color": "#E0EBF0", "fill-opacity": 0.8 } },
+    // Terres du monde (gris très doux)
+    { id: "land-fill", type: "fill", source: "natural-earth",
+      paint: { "fill-color": "#EDEDEA", "fill-opacity": 1 } },
+    // Frontières nationales (blanc, très fin)
+    { id: "land-border", type: "line", source: "natural-earth",
+      paint: { "line-color": "#FFFFFF", "line-width": 1.2 } },
+  ],
 };
 
 function getBbox(features) {
@@ -26,7 +54,7 @@ function getBbox(features) {
     }
     if (f.geometry?.coordinates) walk(f.geometry.coordinates);
   });
-  return [[minLng - 1, minLat - 1], [maxLng + 1, maxLat + 1]];
+  return [[minLng - 2, minLat - 2], [maxLng + 2, maxLat + 2]];
 }
 
 export default function ProjectMap({ projectId, countries = [] }) {
@@ -41,116 +69,94 @@ export default function ProjectMap({ projectId, countries = [] }) {
     staleTime: 5 * 60_000,
   });
 
-  // Init carte
+  // Init carte avec style custom
   useEffect(() => {
     if (!mapRef.current) return;
-    let map;
-    {
-      map = new maplibregl.Map({
-        container: mapRef.current,
-        style: {
-          version: 8,
-          sources: {
-            osm: {
-              type: "raster",
-              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-              tileSize: 256,
-              attribution: "© OpenStreetMap",
-            },
-          },
-          layers: [{ id: "osm", type: "raster", source: "osm", minzoom: 0, maxzoom: 19 }],
-        },
-        center: [20, 10], zoom: 3,
-        attributionControl: false,
-      });
-      mapInst.current = map;
-      map.on("load", () => setMapReady(true));
-    }
-    return () => { map?.remove(); mapInst.current = null; setMapReady(false); };
+    const map = new maplibregl.Map({
+      container: mapRef.current,
+      style: STYLE,
+      center: [20, 10],
+      zoom: 2.5,
+      attributionControl: false,
+    });
+    mapInst.current = map;
+    map.on("load", () => setMapReady(true));
+    return () => { map.remove(); mapInst.current = null; setMapReady(false); };
   }, []);
 
-  // Ajouter les couches quand la carte et les données sont prêtes
+  // Couches projet
   useEffect(() => {
     const map = mapInst.current;
     if (!map || !mapReady || !geojson?.features?.length) return;
 
-    const features = geojson.features;
+    const features   = geojson.features;
+    const countries0 = features.filter(f => f.properties.level === 0);
+    const admin1     = features.filter(f => f.properties.level === 1);
+    const admin2     = features.filter(f => f.properties.level === 2);
 
-    // Séparer par niveau
-    const countries0  = features.filter(f => f.properties.level === 0);
-    const admin1      = features.filter(f => f.properties.level === 1);
-    const admin2      = features.filter(f => f.properties.level === 2);
-    const scopeAreas  = features.filter(f => f.properties.in_scope && f.properties.level > 0);
-
-    // Nettoyer les couches existantes
-    ["scope-fill","scope-line","admin1-fill","admin1-line",
-     "admin2-fill","admin2-line","country-fill","country-line"].forEach(id => {
+    // Nettoyer
+    ["proj-country-fill","proj-country-border",
+     "proj-admin1-fill","proj-admin1-line",
+     "proj-admin2-fill","proj-admin2-line"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
-    ["country-src","admin1-src","admin2-src","scope-src"].forEach(id => {
+    ["proj-country","proj-admin1","proj-admin2"].forEach(id => {
       if (map.getSource(id)) map.removeSource(id);
     });
 
-    // Pays (fond)
+    // Pays du projet — lime 70%
     if (countries0.length) {
-      map.addSource("country-src", { type: "geojson", data: { type: "FeatureCollection", features: countries0 } });
-      map.addLayer({ id: "country-fill", type: "fill", source: "country-src",
-        paint: { "fill-color": COLORS.country.fill, "fill-opacity": COLORS.country.fillOpacity } });
-      map.addLayer({ id: "country-line", type: "line", source: "country-src",
-        paint: { "line-color": COLORS.country.line, "line-width": COLORS.country.lineWidth } });
+      map.addSource("proj-country", { type: "geojson", data: { type: "FeatureCollection", features: countries0 } });
+      map.addLayer({ id: "proj-country-fill", type: "fill", source: "proj-country",
+        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.18 } });
+      map.addLayer({ id: "proj-country-border", type: "line", source: "proj-country",
+        paint: { "line-color": "#7a9420", "line-width": 2, "line-opacity": 0.9 } });
     }
 
-    // Admin 1
+    // Admin 1 — lime tirets
     if (admin1.length) {
-      map.addSource("admin1-src", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
-      map.addLayer({ id: "admin1-fill", type: "fill", source: "admin1-src",
-        paint: { "fill-color": COLORS.admin1.fill, "fill-opacity": COLORS.admin1.fillOpacity } });
-      map.addLayer({ id: "admin1-line", type: "line", source: "admin1-src",
-        paint: { "line-color": COLORS.admin1.line, "line-width": COLORS.admin1.lineWidth } });
+      map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
+      map.addLayer({ id: "proj-admin1-fill", type: "fill", source: "proj-admin1",
+        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.22 } });
+      map.addLayer({ id: "proj-admin1-line", type: "line", source: "proj-admin1",
+        paint: { "line-color": "#7a9420", "line-width": 1, "line-dasharray": [3, 2], "line-opacity": 0.8 } });
     }
 
-    // Admin 2 (scope)
+    // Admin 2 scope — navy
     if (admin2.length) {
-      map.addSource("admin2-src", { type: "geojson", data: { type: "FeatureCollection", features: admin2 } });
-      map.addLayer({ id: "admin2-fill", type: "fill", source: "admin2-src",
-        paint: { "fill-color": COLORS.admin2.fill, "fill-opacity": COLORS.admin2.fillOpacity } });
-      map.addLayer({ id: "admin2-line", type: "line", source: "admin2-src",
-        paint: { "line-color": COLORS.admin2.line, "line-width": COLORS.admin2.lineWidth } });
+      map.addSource("proj-admin2", { type: "geojson", data: { type: "FeatureCollection", features: admin2 } });
+      map.addLayer({ id: "proj-admin2-fill", type: "fill", source: "proj-admin2",
+        paint: { "fill-color": "#1B5A8C", "fill-opacity": 0.40 } });
+      map.addLayer({ id: "proj-admin2-line", type: "line", source: "proj-admin2",
+        paint: { "line-color": "#1B5A8C", "line-width": 1.5, "line-opacity": 1 } });
     }
 
-    // Tooltip — un seul listener sur le canvas, queryRenderedFeatures pour trouver le bon layer
-    {
-      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
-      const QUERY_LAYERS = ["admin2-fill", "admin1-fill", "country-fill"].filter(l => map.getLayer(l));
+    // Tooltip
+    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12,
+      className: "arbm-popup" });
+    const QUERY_LAYERS = ["proj-admin2-fill","proj-admin1-fill","proj-country-fill"]
+      .filter(l => map.getLayer(l));
 
-      map.on("mousemove", e => {
-        const features = map.queryRenderedFeatures(e.point, { layers: QUERY_LAYERS });
-        if (!features.length) {
-          map.getCanvas().style.cursor = "";
-          popup.remove();
-          return;
-        }
-        map.getCanvas().style.cursor = "pointer";
-        const p = features[0].properties || {};
-        const levelLabel = p.level === 0 ? "Country" : p.level === 1 ? "Admin 1" : "Admin 2";
-        popup.setLngLat(e.lngLat).setHTML(
-          `<div style="font-size:12px;padding:6px 10px;font-family:sans-serif">
-            <strong style="color:#111">${p.name || p.country_name || "—"}</strong>
-            <span style="color:#9ca3af;margin-left:8px;font-size:10px">${levelLabel}</span>
-          </div>`
-        ).addTo(map);
-      });
+    map.on("mousemove", e => {
+      const feats = map.queryRenderedFeatures(e.point, { layers: QUERY_LAYERS });
+      if (!feats.length) { map.getCanvas().style.cursor = ""; popup.remove(); return; }
+      map.getCanvas().style.cursor = "pointer";
+      const p = feats[0].properties || {};
+      const levelLabel = p.level === 0 ? "Country" : p.level === 1 ? "Admin 1" : "Admin 2";
+      const color      = p.level === 2 ? "#1B5A8C" : "#7a9420";
+      popup.setLngLat(e.lngLat).setHTML(
+        `<div style="font-family:-apple-system,sans-serif;padding:8px 12px;min-width:120px">
+          <div style="font-size:13px;font-weight:600;color:#111">${p.name || p.country_name || "—"}</div>
+          <div style="font-size:10px;font-weight:600;color:${color};margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${levelLabel}</div>
+        </div>`
+      ).addTo(map);
+    });
+    map.on("mouseleave", () => { map.getCanvas().style.cursor = ""; popup.remove(); });
 
-      map.on("mouseleave", () => {
-        map.getCanvas().style.cursor = "";
-        popup.remove();
-      });
-    }
-
-    // Fitter sur les features
+    // Bbox
     if (features.length) {
       const bbox = getBbox(features);
-      map.fitBounds(bbox, { padding: 40, maxZoom: 9, duration: 800 });
+      map.fitBounds(bbox, { padding: 48, maxZoom: 8, duration: 900 });
     }
   }, [mapReady, geojson]);
 
@@ -159,51 +165,64 @@ export default function ProjectMap({ projectId, countries = [] }) {
   const scopeCount = geojson?.features?.filter(f => f.properties.in_scope && f.properties.level > 0).length || 0;
 
   return (
-    <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid #e5e7eb", marginBottom: 16 }}>
+    <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
+      border: "1px solid #e5e7eb", marginBottom: 4,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+
       {/* Légende */}
       <div style={{
-        position: "absolute", top: 10, right: 10, zIndex: 10,
-        background: "rgba(255,255,255,0.93)", borderRadius: 8,
-        padding: "10px 14px", fontSize: 11, boxShadow: "0 2px 8px #0001",
-        minWidth: 160,
+        position: "absolute", top: 12, right: 12, zIndex: 10,
+        background: "rgba(255,255,255,0.95)", borderRadius: 10,
+        padding: "10px 14px", fontSize: 11,
+        boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+        backdropFilter: "blur(4px)",
+        border: "1px solid rgba(0,0,0,0.06)",
+        minWidth: 150,
       }}>
-        <div style={{ fontWeight: 700, color: "#374151", marginBottom: 6, fontSize: 12 }}>
-          Geographic Scope
+        <div style={{ fontWeight: 700, fontSize: 11, color: "#374151",
+          textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+          Geographic scope
         </div>
         {countries.map(c => (
-          <div key={c.iso2} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-            <span style={{ width: 12, height: 12, borderRadius: 2, background: "#A4C53F", flexShrink: 0 }} />
-            <span style={{ color: "#374151" }}>{c.flag} {c.name}</span>
-            {c.is_lead && <span style={{ fontSize: 9, color: "#A4C53F", fontWeight: 700 }}>LEAD</span>}
+          <div key={c.iso2} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+            <span style={{ width: 12, height: 12, borderRadius: 3,
+              background: "#A4C53F", border: "1.5px solid #7a9420", flexShrink: 0 }} />
+            <span style={{ color: "#374151", fontSize: 12 }}>{c.flag} {c.name}</span>
+            {c.is_lead && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#7a9420",
+                background: "#f0f6dc", padding: "1px 5px", borderRadius: 99 }}>LEAD</span>
+            )}
           </div>
         ))}
         {scopeCount > 0 && (
-          <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #f0f0ee" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 12, height: 12, borderRadius: 2, background: "#1B5A8C", flexShrink: 0 }} />
-              <span style={{ color: "#374151" }}>{scopeCount} intervention zone{scopeCount > 1 ? "s" : ""}</span>
-            </div>
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #f0f0ee",
+            display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ width: 12, height: 12, borderRadius: 3,
+              background: "#1B5A8C", border: "1.5px solid #1B5A8C", flexShrink: 0 }} />
+            <span style={{ color: "#374151", fontSize: 11 }}>
+              {scopeCount} intervention zone{scopeCount > 1 ? "s" : ""}
+            </span>
           </div>
         )}
-        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #f0f0ee", display: "flex", flexDirection: "column", gap: 3 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 20, height: 2, background: "#7a9420", display: "inline-block" }} />
-            <span style={{ color: "#9ca3af" }}>Admin 1 (region)</span>
+        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #f0f0ee" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3"
+              stroke="#7a9420" strokeWidth="1.5" strokeDasharray="4,2"/></svg>
+            <span style={{ fontSize: 10, color: "#9ca3af" }}>Admin 1 (region)</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 20, height: 2, background: "#1B5A8C", display: "inline-block" }} />
-            <span style={{ color: "#9ca3af" }}>Admin 2 (district)</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3"
+              stroke="#1B5A8C" strokeWidth="1.5"/></svg>
+            <span style={{ fontSize: 10, color: "#9ca3af" }}>Admin 2 (district)</span>
           </div>
         </div>
       </div>
 
-      {/* Loading overlay */}
-      {(isLoading) && (
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 5,
-          background: "#f8fafc88", display: "flex",
-          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af",
-        }}>
+      {/* Loading */}
+      {isLoading && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 5,
+          background: "#EDEDEA", display: "flex",
+          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>
           <span className="spinner" style={{ marginRight: 8 }} /> Loading map…
         </div>
       )}
@@ -211,8 +230,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
       <div ref={mapRef} style={{ height: 380, width: "100%" }} />
 
       {/* Attribution */}
-      <div style={{ position: "absolute", bottom: 4, left: 8, fontSize: 9, color: "#9ca3af", zIndex: 5 }}>
-        © OpenStreetMap · GADM
+      <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
+        color: "#9ca3af", zIndex: 5, background: "rgba(255,255,255,0.7)",
+        padding: "2px 6px", borderRadius: 4 }}>
+        © Natural Earth · GADM · ARBM-MIS
       </div>
     </div>
   );
