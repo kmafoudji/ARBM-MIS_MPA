@@ -8,6 +8,7 @@ import { apiFetch } from "../api";
 import { fmtNum } from "../utils.js";
 import Icon from "../components/Icon";
 import { DQScoreBadge } from "../components/DQScoreWidget";
+import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.jsx";
 
 const GRADE_CONFIG = {
   A: { color: "#16a34a", bg: "#dcfce7", label: "Excellent", range: "≥ 80%" },
@@ -60,10 +61,13 @@ export default function DQPortfolio() {
   const [levelFilter, setLevelFilter] = useState("");
   const [search,      setSearch]      = useState("");
 
-  const { data, isLoading } = useQuery({
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const { data, isLoading, refetch, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ["dq-portfolio"],
     queryFn:  () => apiFetch("/api/results/dq-portfolio/"),
     staleTime: 60_000,
+    refetchInterval: 3 * 60_000, // Refresh auto toutes les 3 minutes
   });
 
   const allResults = data?.results || [];
@@ -111,6 +115,9 @@ export default function DQPortfolio() {
         <p className="view-lead">
           Quality assessment across all indicators · Completeness · Timeliness · Consistency · Accuracy
         </p>
+        <div style={{ marginTop: 8 }}>
+          <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
+        </div>
       </div>
 
       {/* ── KPI compact ─────────────────────────────────────────────── */}
@@ -233,7 +240,11 @@ export default function DQPortfolio() {
       {/* ── Tableau ─────────────────────────────────────────────────── */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden", marginBottom: 20 }}>
         {isLoading ? (
-          <div style={{ padding: 40, textAlign: "center" }}><span className="spinner" /> Loading DQ scores…</div>
+          <div>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>{Array.from({length:5}).map((_,i) => <SkeletonRow key={i} cols={8} />)}</tbody>
+            </table>
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
             No indicators match the selected filters.
@@ -270,29 +281,76 @@ export default function DQPortfolio() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={`${r.project_code}-${r.indicator_code}`}
-                    style={{ borderBottom: "1px solid #f0f0ee", background: i % 2 === 0 ? "#fff" : "#fafaf8" }}>
-                    <td style={{ padding: "10px 12px" }}>
-                      <span style={{ fontFamily: "monospace", fontSize: 10, color: "#9ca3af", marginRight: 6 }}>{r.indicator_code}</span>
-                      <span style={{ color: "#111" }}>{r.indicator_name.length > 50 ? r.indicator_name.slice(0,50)+"…" : r.indicator_name}</span>
-                    </td>
-                    <td style={{ padding: "10px 12px", color: "#6b7280", fontSize: 11, whiteSpace: "nowrap" }}>{r.project_code}</td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <span style={{ fontSize: 10, background: "#f3f4f6", color: "#6b7280", padding: "2px 8px", borderRadius: 99 }}>
-                        {CHAIN_LEVEL_LABELS[r.chain_level] || r.chain_level || "—"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                      <DQScoreBadge score={r.composite_score} />
-                    </td>
-                    {DIMENSIONS.map(dim => (
-                      <td key={dim.key} style={{ padding: "10px 12px" }}>
-                        <MiniBar value={r[dim.key]} color={dim.color} />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {filtered.map((r, i) => {
+                  const rowKey = `${r.project_code}-${r.indicator_code}`;
+                  const isExpanded = expandedRow === rowKey;
+                  return (
+                      <>
+                        <tr key={rowKey}
+                          onClick={() => setExpandedRow(k => k === rowKey ? null : rowKey)}
+                          style={{
+                            borderBottom: isExpanded ? "none" : "1px solid #f0f0ee",
+                            background: i % 2 === 0 ? "#fff" : "#fafaf8",
+                            cursor: "pointer", transition: "background .1s",
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f0f6dc"}
+                          onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "#fff" : "#fafaf8"}
+                        >
+                          <td style={{ padding: "10px 12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <Icon name={isExpanded ? "chevron-up" : "chevron-down"} size={12} style={{ color: "#9ca3af", flexShrink: 0 }} />
+                              <span style={{ fontFamily: "monospace", fontSize: 10, color: "#9ca3af", marginRight: 4 }}>{r.indicator_code}</span>
+                              <span style={{ color: "#111" }}>{r.indicator_name.length > 48 ? r.indicator_name.slice(0,48)+"…" : r.indicator_name}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "#6b7280", fontSize: 11, whiteSpace: "nowrap" }}>{r.project_code}</td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <span style={{ fontSize: 10, background: "#f3f4f6", color: "#6b7280", padding: "2px 8px", borderRadius: 99 }}>
+                              {CHAIN_LEVEL_LABELS[r.chain_level] || r.chain_level || "—"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                            <DQScoreBadge score={r.composite_score} />
+                          </td>
+                          {DIMENSIONS.map(dim => (
+                            <td key={dim.key} style={{ padding: "10px 12px" }}>
+                              <MiniBar value={r[dim.key]} color={dim.color} />
+                            </td>
+                          ))}
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${rowKey}-detail`}>
+                            <td colSpan={8} style={{ padding: "0 16px 16px", background: "#f8fafc", borderBottom: "1px solid #f0f0ee" }}>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, padding: "12px 0 4px" }}>
+                                {DIMENSIONS.map(dim => {
+                                  const val = parseFloat(r[dim.key]);
+                                  const g = grade(val);
+                                  const cfg = GRADE_CONFIG[g];
+                                  return (
+                                    <div key={dim.key} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "12px 14px" }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: dim.color }}>{dim.label}</span>
+                                        <span style={{ fontSize: 10, color: "#9ca3af" }}>{dim.weight}</span>
+                                      </div>
+                                      <div style={{ fontSize: 20, fontWeight: 800, color: cfg.color, lineHeight: 1, marginBottom: 6 }}>
+                                        {fmtNum(val)}%
+                                      </div>
+                                      <div style={{ height: 6, background: "#f0f0ee", borderRadius: 99, overflow: "hidden" }}>
+                                        <div style={{ height: "100%", width: `${Math.min(100,val)}%`, background: dim.color, borderRadius: 99 }} />
+                                      </div>
+                                      <div style={{ marginTop: 6, fontSize: 10, fontWeight: 600, color: cfg.color }}>
+                                        Grade {g} — {cfg.label}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                })}
               </tbody>
             </table>
           </div>

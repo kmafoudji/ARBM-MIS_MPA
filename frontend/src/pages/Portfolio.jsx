@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import { fmtNum, fmtPct } from "../utils.js";
+import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 const RAG = {
@@ -337,10 +338,11 @@ export default function Portfolio() {
   if (filters.fragility)   params.set("fragility",   filters.fragility);
   if (filters.rag)         params.set("rag",         filters.rag);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ["portfolio-aggregation", filters],
     queryFn:  () => apiFetch(`/api/results/portfolio/?${params}`),
     staleTime: 60_000,
+    refetchInterval: 5 * 60_000, // Refresh auto toutes les 5 minutes
   });
 
   const meta       = data?.meta || {};
@@ -376,6 +378,9 @@ export default function Portfolio() {
         <p className="view-lead">
           Aggregated performance across all active LLF2 projects · Approved data only
         </p>
+        <div style={{ marginTop: 8 }}>
+          <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
+        </div>
       </div>
 
       {/* ── KPI cards ───────────────────────────────────────────────────── */}
