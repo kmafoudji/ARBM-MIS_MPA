@@ -8,6 +8,7 @@ import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
+import ProjectMap from "./ProjectMap.jsx";
 
 export default function GeographicScope({ projectId, countries, canEdit }) {
   const qc = useQueryClient();
@@ -236,6 +237,10 @@ export default function GeographicScope({ projectId, countries, canEdit }) {
 
   return (
     <div className="card-body">
+      {/* Carte des pays du projet */}
+      {(countries || []).length > 0 && (
+        <ProjectMap countries={countries} />
+      )}
       <DialogModal {...dialog.dialogProps} />
       {scope.length === 0 && openFor === null && (
         <p className="text-muted text-sm" style={{ margin: "0 0 var(--s-3)" }}>

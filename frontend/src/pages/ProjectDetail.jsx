@@ -885,7 +885,13 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <GeographicScope
           projectId={project.id}
-          countries={project.countries_detail?.map((c) => ({ iso3: c.iso3 || c.name, name: c.name, flag: c.flag }))}
+          countries={project.countries_detail?.map((c) => ({
+            iso2: c.iso2,
+            iso3: c.iso3,
+            name: c.name,
+            flag: c.flag,
+            is_lead: c.is_lead,
+          }))}
           canEdit={canEdit}
         />
       </div>
