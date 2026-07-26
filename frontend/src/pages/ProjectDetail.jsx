@@ -175,6 +175,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   });
   const { data: sectors } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
+  const { data: refCountries } = useQuery({ queryKey: ["ref-countries"], queryFn: () => apiFetch("/api/reference/countries/") });
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
   const { data: workspace } = useQuery({ queryKey: ["workspace", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/workspace/`), staleTime: 30_000 });
@@ -786,7 +787,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   <select className="field-select field-multi" multiple
                     value={bForm.countryIds}
                     onChange={e => setBForm({...bForm, countryIds: Array.from(e.target.selectedOptions).map(o => o.value)})}>
-                    {countries?.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                    {refCountries?.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
                   </select>
                   <span className="field-help">Ctrl/Cmd + click for multi-country.</span>
                 </div>
@@ -795,7 +796,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                     <label className="field-label">Lead country <span className="req">*</span></label>
                     <select className="field-select" value={bForm.leadCountryId}
                       onChange={e => setBForm({...bForm, leadCountryId: e.target.value})}>
-                      {countries?.filter(c => bForm.countryIds.includes(String(c.id))).map(c =>
+                      {refCountries?.filter(c => bForm.countryIds.includes(String(c.id))).map(c =>
                         <option key={c.id} value={String(c.id)}>{c.name}</option>
                       )}
                     </select>
