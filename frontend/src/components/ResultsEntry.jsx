@@ -9,6 +9,8 @@ import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
+import EvidencePanel from "./EvidencePanel.jsx";
+import DQScoreWidget from "./DQScoreWidget.jsx";
 
 const RAG_CONFIG = {
   green: { color: "#16a34a", bg: "#dcfce7", border: "#86efac", label: "On track",  icon: "circle-check" },
