@@ -148,6 +148,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     fragility_status: "",
     risk_rating: "",
     cross_cutting_theme_ids: [],
+    rio_marker_mitigation: "not_targeted",
+    rio_marker_adaptation: "not_targeted",
+    rio_marker_biodiversity: "not_targeted",
+    rio_marker_desertification: "not_targeted",
+    rio_marker_water: "not_targeted",
   });
 
   const { data: project, isLoading } = useQuery({
@@ -232,6 +237,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       fragility_status: cForm.fragility_status || null,
       risk_rating: cForm.risk_rating || null,
       cross_cutting_theme_ids: cForm.cross_cutting_theme_ids,
+      rio_marker_mitigation: cForm.rio_marker_mitigation,
+      rio_marker_adaptation: cForm.rio_marker_adaptation,
+      rio_marker_biodiversity: cForm.rio_marker_biodiversity,
+      rio_marker_desertification: cForm.rio_marker_desertification,
+      rio_marker_water: cForm.rio_marker_water,
     });
   }
 
@@ -746,6 +756,31 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                       ))}
                     </select>
                   </div>
+
+                  {/* Rio Markers */}
+                </div>
+
+                <div style={{ marginTop: "var(--s-3)" }}>
+                  <div className="card-sub" style={{ marginBottom: 8 }}>Rio Markers (OECD-DAC)</div>
+                  <div className="grid grid-2">
+                    {[
+                      ["rio_marker_mitigation",     "CC Mitigation"],
+                      ["rio_marker_adaptation",      "CC Adaptation"],
+                      ["rio_marker_biodiversity",    "Biodiversity"],
+                      ["rio_marker_desertification", "Desertification"],
+                      ["rio_marker_water",           "Water"],
+                    ].map(([key, label]) => (
+                      <div key={key} className="field">
+                        <label className="field-label">{label}</label>
+                        <select className="field-select" value={cForm[key]}
+                          onChange={(e) => setCForm({ ...cForm, [key]: e.target.value })}>
+                          <option value="not_targeted">Not targeted</option>
+                          <option value="significant">Significant</option>
+                          <option value="principal">Principal</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {classificationMutation.isError && (
@@ -764,6 +799,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                 </div>
               </form>
             ) : (
+              <>
               <div className="dl">
                 <Dt term="Primary Sector">
                   {project.primary_sector_name ? (
@@ -822,6 +858,34 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                 <Dt term="Fragility">{project.fragility_status_display || "—"}</Dt>
                 <Dt term="Risk Rating">{project.risk_rating_display || "—"}</Dt>
               </div>
+
+              {/* Rio Markers */}
+              <div style={{ marginTop: 16 }}>
+                <div className="card-sub" style={{ marginBottom: 8 }}>Rio Markers (OECD-DAC)</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {[
+                    ["CC Mitigation",  project.rio_marker_mitigation],
+                    ["CC Adaptation",  project.rio_marker_adaptation],
+                    ["Biodiversity",   project.rio_marker_biodiversity],
+                    ["Desertification", project.rio_marker_desertification],
+                    ["Water",          project.rio_marker_water],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                      padding: "6px 12px", borderRadius: 8, minWidth: 100,
+                      background: val === "principal" ? "#dcfce7" : val === "significant" ? "#f0f6dc" : "#f3f4f6",
+                      border: `1px solid ${val === "principal" ? "#86efac" : val === "significant" ? "#A4C53F40" : "#e5e7eb"}`,
+                    }}>
+                      <span style={{ fontSize: 10, color: "#6b7280", marginBottom: 2 }}>{label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700,
+                        color: val === "principal" ? "#16a34a" : val === "significant" ? "#7a9420" : "#9ca3af" }}>
+                        {val === "principal" ? "Principal" : val === "significant" ? "Significant" : "Not targeted"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              </>
             )}
           </div>
         </div>
