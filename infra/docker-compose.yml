@@ -94,13 +94,10 @@ services:
     volumes:
       - ./martin/config.yaml:/config.yaml
     command: --config /config.yaml
-    networks:
-      - arbm_mes_net
+    depends_on:
+      db:
+        condition: service_healthy
 
-networks:
-  arbm_mes_net:
-    external: true
-    name: arbm-mes_default
 
 volumes:
   arbm_mes_pgdata:
