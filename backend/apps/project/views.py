@@ -793,7 +793,7 @@ class ProjectGeoJSONView(APIView):
             cur.execute("""
                 SELECT
                     ga.id, ga.gadm_uid, ga.name, ga.level,
-                    ga.is_primary,
+                    pgs.is_primary,
                     c.iso2, c.name as country_name,
                     ST_AsGeoJSON(ga.geometry)::json as geom
                 FROM gadm_area ga
