@@ -137,7 +137,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     dual_authorized_by: "",
   });
   const [showBasicForm, setShowBasicForm] = useState(false);
-  const [bForm, setBForm] = useState({ name: "", acronym: "", official_reference_number: "", start_date: "", end_date: "" });
+  const [bForm, setBForm] = useState({ name: "", acronym: "", countryIds: [], leadCountryId: "" });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
     primary_sector: "",
@@ -214,9 +214,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     setBForm({
       name: project.name || "",
       acronym: project.acronym || "",
-      official_reference_number: project.official_reference_number || "",
-      start_date: project.start_date || "",
-      end_date: project.end_date || "",
+      countryIds: project.countries_detail?.map(c => String(c.id)) || [],
+      leadCountryId: String(project.countries_detail?.find(c => c.is_lead)?.id || ""),
     });
     setShowBasicForm(true);
   }
@@ -769,37 +768,39 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <form onSubmit={e => { e.preventDefault(); basicMutation.mutate({
                 name: bForm.name,
                 acronym: bForm.acronym || "",
-                official_reference_number: bForm.official_reference_number || "",
-                start_date: bForm.start_date || null,
-                end_date: bForm.end_date || null,
+                country_ids: bForm.countryIds.map(Number),
+                lead_country_id: Number(bForm.leadCountryId || bForm.countryIds[0]),
               }); }}>
-                <div className="grid grid-2" style={{ gap:8 }}>
-                  <div className="field" style={{ gridColumn:"span 2" }}>
-                    <label className="field-label">Project name <span className="req">*</span></label>
-                    <input className="field-input" value={bForm.name}
-                      onChange={e => setBForm({...bForm, name: e.target.value})} required />
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Acronym</label>
-                    <input className="field-input" value={bForm.acronym} maxLength={20}
-                      onChange={e => setBForm({...bForm, acronym: e.target.value})} />
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Official reference number</label>
-                    <input className="field-input" value={bForm.official_reference_number}
-                      onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Start date</label>
-                    <input className="field-input" type="date" value={bForm.start_date}
-                      onChange={e => setBForm({...bForm, start_date: e.target.value})} />
-                  </div>
-                  <div className="field">
-                    <label className="field-label">End date</label>
-                    <input className="field-input" type="date" value={bForm.end_date}
-                      onChange={e => setBForm({...bForm, end_date: e.target.value})} />
-                  </div>
+                <div className="field">
+                  <label className="field-label">Project name <span className="req">*</span></label>
+                  <input className="field-input" value={bForm.name}
+                    onChange={e => setBForm({...bForm, name: e.target.value})} required />
                 </div>
+                <div className="field">
+                  <label className="field-label">Acronym</label>
+                  <input className="field-input" value={bForm.acronym} maxLength={20}
+                    onChange={e => setBForm({...bForm, acronym: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Countries <span className="req">*</span></label>
+                  <select className="field-select field-multi" multiple
+                    value={bForm.countryIds}
+                    onChange={e => setBForm({...bForm, countryIds: Array.from(e.target.selectedOptions).map(o => o.value)})}>
+                    {countries?.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                  </select>
+                  <span className="field-help">Ctrl/Cmd + click for multi-country.</span>
+                </div>
+                {bForm.countryIds.length > 1 && (
+                  <div className="field">
+                    <label className="field-label">Lead country <span className="req">*</span></label>
+                    <select className="field-select" value={bForm.leadCountryId}
+                      onChange={e => setBForm({...bForm, leadCountryId: e.target.value})}>
+                      {countries?.filter(c => bForm.countryIds.includes(String(c.id))).map(c =>
+                        <option key={c.id} value={String(c.id)}>{c.name}</option>
+                      )}
+                    </select>
+                  </div>
+                )}
                 {basicMutation.isError && (
                   <div className="field-error mb-2">{JSON.stringify(basicMutation.error?.detail)}</div>
                 )}
