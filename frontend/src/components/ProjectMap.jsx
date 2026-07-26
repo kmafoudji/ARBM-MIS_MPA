@@ -80,7 +80,15 @@ export default function ProjectMap({ projectId, countries = [] }) {
       attributionControl: false,
     });
     mapInst.current = map;
-    map.on("load", () => setMapReady(true));
+    // Attendre que le style ET les sources soient chargés
+    map.on("load", () => {
+      // Vérifier que le style est complètement prêt
+      if (map.isStyleLoaded()) {
+        setMapReady(true);
+      } else {
+        map.once("idle", () => setMapReady(true));
+      }
+    });
     return () => { map.remove(); mapInst.current = null; setMapReady(false); };
   }, []);
 
@@ -88,6 +96,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
   useEffect(() => {
     const map = mapInst.current;
     if (!map || !mapReady || !geojson?.features?.length) return;
+    if (!map.isStyleLoaded()) return;
 
     const features   = geojson.features;
     const countries0 = features.filter(f => f.properties.level === 0);
