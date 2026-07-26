@@ -152,6 +152,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
         "admin1 ids:", admin1.map(f => f.properties.id));
 
       const admin1WithChildren = admin1.filter(f => parentIds.has(f.properties.id));
+      console.log("[Map] admin1WithChildren:", admin1WithChildren.map(f => f.properties.name));
 
       // Tous les Admin 1 — fond tirets gris léger
       map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
