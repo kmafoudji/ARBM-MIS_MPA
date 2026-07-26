@@ -93,6 +93,8 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-arbm_mes}:${POSTGRES_PASSWORD:-arbm_mes}@db:5432/${POSTGRES_DB:-arbm_mes}
     volumes:
       - ./martin/config.yaml:/config.yaml
     command: --config /config.yaml
