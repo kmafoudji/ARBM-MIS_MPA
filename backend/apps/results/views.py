@@ -2121,7 +2121,7 @@ class ResultsWorkflowView(APIView):
             rd.approved_by  = user
             rd.approved_at  = now
             rd.review_notes = notes
-            rd.recalculate_rag()
+            rd.compute_and_save_rag()
         elif action == "reject":
             rd.reviewed_by  = user
             rd.reviewed_at  = now
