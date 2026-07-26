@@ -80,6 +80,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
       attributionControl: false,
     });
     mapInst.current = map;
+    // Contrôles
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
+    map.addControl(new maplibregl.FullscreenControl(), "top-left");
     // Attendre que le style ET les sources soient chargés
     map.on("load", () => {
       // Vérifier que le style est complètement prêt
@@ -173,10 +177,73 @@ export default function ProjectMap({ projectId, countries = [] }) {
 
   const scopeCount = geojson?.features?.filter(f => f.properties.in_scope && f.properties.level > 0).length || 0;
 
+  function recenter() {
+    const map = mapInst.current;
+    if (!map || !geojson?.features?.length) return;
+    const bbox = getBbox(geojson.features);
+    map.fitBounds(bbox, { padding: 48, maxZoom: 8, duration: 700 });
+  }
+
   return (
     <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
       border: "1px solid #e5e7eb", marginBottom: 4,
       boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+
+      {/* Style overrides contrôles natifs MapLibre */}
+      <style>{`
+        .maplibregl-ctrl-group {
+          border-radius: 8px !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+          border: 1px solid #e5e7eb !important;
+          overflow: hidden;
+        }
+        .maplibregl-ctrl-group button {
+          width: 32px !important; height: 32px !important;
+          background: rgba(255,255,255,0.95) !important;
+          border: none !important;
+          border-bottom: 1px solid #f0f0ee !important;
+        }
+        .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
+        .maplibregl-ctrl-group button:hover { background: #f0f6dc !important; }
+        .maplibregl-ctrl-group button span { filter: none !important; }
+        .maplibregl-ctrl-scale {
+          background: rgba(255,255,255,0.85) !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+          font-size: 10px !important;
+          color: #6b7280 !important;
+          padding: 1px 5px !important;
+        }
+        .arbm-popup .maplibregl-popup-content {
+          border-radius: 10px !important;
+          padding: 0 !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+          border: 1px solid #e5e7eb !important;
+        }
+        .arbm-popup .maplibregl-popup-tip { display: none !important; }
+      `}</style>
+
+      {/* Bouton Recenter */}
+      <button onClick={recenter}
+        title="Recentrer sur le projet"
+        style={{
+          position: "absolute", top: 90, left: 12, zIndex: 10,
+          width: 32, height: 32, borderRadius: 8,
+          background: "rgba(255,255,255,0.95)",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 0, transition: "background .15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = "#f0f6dc"}
+        onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.95)"}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+        </svg>
+      </button>
 
       {/* Légende */}
       <div style={{
