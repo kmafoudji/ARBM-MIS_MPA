@@ -24,6 +24,17 @@ class ProjectListSerializer(serializers.ModelSerializer):
         source="get_lifecycle_stage_display", read_only=True
     )
     hub_name = serializers.SerializerMethodField()
+    envelope_total = serializers.SerializerMethodField()
+
+    def get_envelope_total(self, obj):
+        """Total de l'enveloppe financière (sum des sources) — priorité sur budget_amount."""
+        try:
+            env = obj.financial_envelope
+            if env and env.total_amount_usd:
+                return str(env.total_amount_usd)
+        except Exception:
+            pass
+        return str(obj.budget_amount) if obj.budget_amount else None
 
     class Meta:
         model = Project
@@ -33,7 +44,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "primary_sector", "primary_sector_name", "primary_sector_icon",
             "primary_sector_color", "contributing_sector_count",
             "lifecycle_stage", "lifecycle_stage_display",
-            "budget_amount", "created_at",
+            "budget_amount", "envelope_total", "created_at",
             "hub_name",
         ]
 

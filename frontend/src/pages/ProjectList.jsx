@@ -48,7 +48,7 @@ function stageGroup(stage) {
 
 function KpiBar({ projects }) {
   const total     = projects.length;
-  const budget    = projects.reduce((s, p) => s + Number(p.budget_amount || 0), 0);
+  const budget    = projects.reduce((s, p) => s + Number(p.envelope_total || p.budget_amount || 0), 0);
   const countries = new Set(projects.map(p => p.lead_country_iso2).filter(Boolean)).size;
   const active    = projects.filter(p => ["effective","implementing","mid_term_review"].includes(p.lifecycle_stage)).length;
 
@@ -135,7 +135,7 @@ function ProjectCard({ project, onClick }) {
           <span>{project.primary_sector_name}</span>
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#1B5A8C" }}>
-          {formatBudget(project.budget_amount)}
+          {formatBudget(project.envelope_total || project.budget_amount)}
           <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 3 }}>USD</span>
         </div>
       </div>
@@ -373,7 +373,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
                     </span>
                   </td>
                   <td className="text-mono text-xs" style={{ textAlign: "right" }}>
-                    {formatBudget(p.budget_amount)}
+                    {formatBudget(p.envelope_total || p.budget_amount)}
                   </td>
                 </tr>
               ))}
