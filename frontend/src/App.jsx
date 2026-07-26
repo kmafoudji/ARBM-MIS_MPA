@@ -135,6 +135,7 @@ export default function App() {
           onBack={() => setNav("projects")}
           onOpenToC={() => setNav("project-toc")}
           onOpenLogframe={() => setNav("project-logframe")}
+          onOpenPIRS={(rowId) => { setSelectedRowId(rowId); setNav("pirs"); }}
           canEdit={canEditReference}
         />
       )}

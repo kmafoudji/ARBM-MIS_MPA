@@ -122,10 +122,11 @@ function Dt({ term, children }) {
   );
 }
 
-export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogframe, canEdit = false }) {
+export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogframe, onOpenPIRS, canEdit = false }) {
   const queryClient = useQueryClient();
   const dialog = useDialog();
   const [toast, setToast] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
     to_stage: "",
@@ -341,6 +342,41 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const leadCountry = countries.find((c) => c.is_lead);
   const otherCountries = countries.filter((c) => !c.is_lead);
 
+
+  const TABS = [
+    { key: "overview",  label: "Overview",        icon: "info-circle" },
+    { key: "lifecycle", label: "Lifecycle",        icon: "zap"         },
+    { key: "toc",       label: "Theory of Change", icon: "globe"       },
+    { key: "logframe",  label: "Logframe",         icon: "bar-chart-2" },
+    { key: "results",   label: "Results",          icon: "trending-up" },
+    { key: "financial", label: "Financial",        icon: "database"    },
+    { key: "documents", label: "Documents",        icon: "folder"      },
+    { key: "settings",  label: "Settings",         icon: "edit"        },
+  ];
+  const TAB_BAR = (
+    <div style={{
+      display: "flex", borderBottom: "2px solid #e5e7eb",
+      marginBottom: 24, marginTop: 8, overflowX: "auto",
+    }}>
+      {TABS.map(tab => (
+        <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "10px 16px", fontSize: 13,
+            fontWeight: activeTab === tab.key ? 700 : 500,
+            color: activeTab === tab.key ? "#A4C53F" : "#6b7280",
+            background: "none", border: "none",
+            borderBottom: activeTab === tab.key ? "2px solid #A4C53F" : "2px solid transparent",
+            marginBottom: -2, cursor: "pointer", whiteSpace: "nowrap",
+            fontFamily: "inherit", transition: "color .15s",
+          }}>
+          <Icon name={tab.icon} size={14} />
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="view">
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -369,6 +405,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      {TAB_BAR}
+
+      {activeTab === "overview" && (<>
       {/* ── Bandeau de complétion ── */}
       {(() => {
         const tocNodes    = toc?.nodes?.length || 0;
@@ -791,6 +830,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      </>)}
+
+      {activeTab === "financial" && (<>
       {/* SF-6 — Enveloppe financiere */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -817,6 +859,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <ImplementingPartners projectId={project.id} canEdit={canEdit} envelopeTotal={envelope?.total_amount_usd} />
       </div>
 
+      </>)}
+
+      {activeTab === "settings" && (<>
       {/* SF-7 — Périmètre géographique GADM */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -840,6 +885,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         />
       </div>
 
+      </>)}
+
+      {activeTab === "toc" && (<>
       {/* SF-1 Etape 2 — Theorie du Changement */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -855,7 +903,13 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      </>)}
+
+      {activeTab === "logframe" && (<>
       {/* Module 2 — Cadre logique */}
+      </>)}
+
+      {activeTab === "results" && (<>
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
@@ -1144,6 +1198,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      </>)}
+
+      {activeTab === "documents" && (<>
       {/* SF-1 Etape 1 — Reference PAD */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -1208,6 +1265,13 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      </>)}
+
+      {activeTab === "lifecycle" && (<>
+        <div style={{ padding: 20, color: "#9ca3af", fontSize: 13 }}>Lifecycle transitions are shown in the Overview tab header.</div>
+      </>)}
+
+      {activeTab === "settings" && (<>
       {/* SF-1 Etape 5 — Reporting */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -1307,6 +1371,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <ResultsEntry projectId={projectId} canEdit={canEdit} />
       </div>
+      </>)}
 
     </div>
   );
