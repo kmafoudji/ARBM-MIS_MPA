@@ -7,6 +7,8 @@ import ImplementingPartners from "../components/ImplementingPartners";
 import GeographicScope from "../components/GeographicScope";
 import ReportingSchedule from "../components/ReportingSchedule";
 import ResultsEntry from "../components/ResultsEntry";
+import TheoryOfChange from "../pages/TheoryOfChange.jsx";
+import Logframe from "../pages/Logframe.jsx";
 import Toast from "../components/Toast";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
@@ -344,34 +346,28 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
   const TABS = [
-    { key: "overview",  label: "Overview",        icon: "info-circle" },
-    { key: "lifecycle", label: "Lifecycle",        icon: "zap"         },
-    { key: "toc",       label: "Theory of Change", icon: "globe"       },
-    { key: "logframe",  label: "Logframe",         icon: "bar-chart-2" },
-    { key: "results",   label: "Results",          icon: "trending-up" },
-    { key: "financial", label: "Financial",        icon: "database"    },
-    { key: "documents", label: "Documents",        icon: "folder"      },
-    { key: "settings",  label: "Settings",         icon: "edit"        },
+    { key: "overview",   label: "Overview",        icon: "info-circle" },
+    { key: "lifecycle",  label: "Lifecycle",        icon: "zap"         },
+    { key: "toc",        label: "Theory of Change", icon: "globe"       },
+    { key: "logframe",   label: "Logframe",         icon: "bar-chart-2" },
+    { key: "results",    label: "Results",          icon: "trending-up" },
+    { key: "financial",  label: "Financial",        icon: "database"    },
+    { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
+    { key: "reporting",  label: "Reporting",        icon: "calendar"    },
+    { key: "documents",  label: "Documents",        icon: "folder"      },
   ];
   const TAB_BAR = (
-    <div style={{
-      display: "flex", borderBottom: "2px solid #e5e7eb",
-      marginBottom: 24, marginTop: 8, overflowX: "auto",
-    }}>
+    <div style={{ display:"flex", borderBottom:"2px solid #e5e7eb", marginBottom:24, marginTop:8, overflowX:"auto", gap:0 }}>
       {TABS.map(tab => (
-        <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "10px 16px", fontSize: 13,
-            fontWeight: activeTab === tab.key ? 700 : 500,
-            color: activeTab === tab.key ? "#A4C53F" : "#6b7280",
-            background: "none", border: "none",
-            borderBottom: activeTab === tab.key ? "2px solid #A4C53F" : "2px solid transparent",
-            marginBottom: -2, cursor: "pointer", whiteSpace: "nowrap",
-            fontFamily: "inherit", transition: "color .15s",
-          }}>
-          <Icon name={tab.icon} size={14} />
-          {tab.label}
+        <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+          display:"flex", alignItems:"center", gap:6, padding:"10px 16px", fontSize:13,
+          fontWeight: activeTab === tab.key ? 700 : 500,
+          color: activeTab === tab.key ? "#A4C53F" : "#6b7280",
+          background:"none", border:"none",
+          borderBottom: activeTab === tab.key ? "2px solid #A4C53F" : "2px solid transparent",
+          marginBottom:-2, cursor:"pointer", whiteSpace:"nowrap", fontFamily:"inherit", transition:"color .15s",
+        }}>
+          <Icon name={tab.icon} size={14} /> {tab.label}
         </button>
       ))}
     </div>
@@ -830,7 +826,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+
       </>)}
+
 
       {activeTab === "financial" && (<>
       {/* SF-6 — Enveloppe financiere */}
@@ -859,9 +857,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         <ImplementingPartners projectId={project.id} canEdit={canEdit} envelopeTotal={envelope?.total_amount_usd} />
       </div>
 
+
       </>)}
 
-      {activeTab === "settings" && (<>
+
+      {activeTab === "geographic" && (<>
       {/* SF-7 — Périmètre géographique GADM */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -885,45 +885,26 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         />
       </div>
 
+
       </>)}
+
 
       {activeTab === "toc" && (<>
       {/* SF-1 Etape 2 — Theorie du Changement */}
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="globe" size={15} style={{marginRight:6}} />Theory of Change</h2>
-            <div className="card-sub">
-              SF-1 · Step 2 · BRQ-1.35 — required from Pipeline Taskforce Approved
-            </div>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={onOpenToC}>
-            Open
-          </button>
-        </div>
-      </div>
+      <TheoryOfChange projectId={projectId} onBack={() => setActiveTab("overview")} embedded={true} />
+
 
       </>)}
+
 
       {activeTab === "logframe" && (<>
-      {/* Module 2 — Cadre logique */}
+      <Logframe projectId={projectId} onBack={() => setActiveTab("overview")} onOpenPIRS={onOpenPIRS} />
+
+
       </>)}
 
-      {activeTab === "results" && (<>
-      <div className="card card-flush mt-3">
-        <div className="card-header">
-          <div>
-            <h2 className="card-title"><Icon name="bar-chart" size={15} style={{marginRight:6}} />Logical Framework (Logframe)</h2>
-            <div className="card-sub">
-              Module 2 · LLF2 catalogue indicators · Baseline and targets
-            </div>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={onOpenLogframe}>
-            Open
-          </button>
-        </div>
-      </div>
 
+      {activeTab === "lifecycle" && (<>
       <div className="card card-flush mt-3">
         <div className="card-header">
           <div>
@@ -1198,7 +1179,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+
       </>)}
+
 
       {activeTab === "documents" && (<>
       {/* SF-1 Etape 1 — Reference PAD */}
@@ -1265,13 +1248,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+
       </>)}
 
-      {activeTab === "lifecycle" && (<>
-        <div style={{ padding: 20, color: "#9ca3af", fontSize: 13 }}>Lifecycle transitions are shown in the Overview tab header.</div>
-      </>)}
 
-      {activeTab === "settings" && (<>
+      {activeTab === "reporting" && (<>
       {/* SF-1 Etape 5 — Reporting */}
       <div className="card card-flush mt-3">
         <div className="card-header">
@@ -1358,6 +1339,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         />
       </div>
 
+
+      </>)}
+
+
+      {activeTab === "results" && (<>
       {/* ── Module 2 — Results Data Entry ─────────────────────────────── */}
       <div className="card mt-4">
         <div className="card-header">
@@ -1371,7 +1357,9 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
         <ResultsEntry projectId={projectId} canEdit={canEdit} />
       </div>
+
       </>)}
+
 
     </div>
   );
