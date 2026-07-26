@@ -103,3 +103,5 @@ services:
 
 volumes:
   arbm_mes_pgdata:
+    external: true
+    name: arbm-mes_arbm_mes_pgdata
