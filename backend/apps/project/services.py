@@ -465,12 +465,16 @@ def refresh_period_statuses(project=None):
         new_status = None
 
         if today > period.due_date:
-            # Deadline dépassée → overdue
+            # Deadline soumission dépassée → overdue
+            new_status = "overdue"
+        elif today > period.end_date:
+            # Période terminée mais dans le délai de grâce → overdue aussi
+            # (la fenêtre de collecte est fermée, les données sont en retard)
             new_status = "overdue"
         elif period.start_date <= today:
-            # Période commencée (y compris délai de grâce) → open
+            # Période en cours → open
             new_status = "open"
-        # Sinon : encore dans le futur → reste upcoming
+        # Sinon : future → reste upcoming
 
         if new_status and new_status != period.status:
             period.status = new_status
