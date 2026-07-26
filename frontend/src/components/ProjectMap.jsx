@@ -218,7 +218,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
     // Bbox
     if (features.length) {
       const bbox = getBbox(features);
-      map.fitBounds(bbox, { padding: 48, maxZoom: 8, duration: 900 });
+      map.fitBounds(bbox, { padding: 24, maxZoom: 9, duration: 900 });
     }
   }, [mapReady, geojson]);
 
@@ -230,7 +230,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
     const map = mapInst.current;
     if (!map || !geojson?.features?.length) return;
     const bbox = getBbox(geojson.features);
-    map.fitBounds(bbox, { padding: 48, maxZoom: 8, duration: 700 });
+    map.fitBounds(bbox, { padding: 24, maxZoom: 9, duration: 700 });
   }
 
   return (
@@ -276,7 +276,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       <button onClick={recenter}
         title="Recentrer sur le projet"
         style={{
-          position: "absolute", top: 142, left: 12, zIndex: 10,
+          position: "absolute", top: 160, left: 12, zIndex: 10,
           width: 32, height: 32, borderRadius: 8,
           background: "rgba(255,255,255,0.95)",
           border: "1px solid #e5e7eb",
