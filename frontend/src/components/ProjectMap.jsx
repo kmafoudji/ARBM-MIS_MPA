@@ -3,7 +3,7 @@
  * Source : /api/projects/<pk>/geojson/ → PostGIS + GADM
  */
 import "maplibre-gl/dist/maplibre-gl.css";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
