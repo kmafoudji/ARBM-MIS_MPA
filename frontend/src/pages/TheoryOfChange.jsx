@@ -43,7 +43,7 @@ function SectionHeader({ icon, title, action }) {
   );
 }
 
-function IndicatorPanel({ projectId, node, onSaved }) {
+function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
   const qc = useQueryClient();
   const dialog = useDialog();
 
@@ -174,7 +174,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
           Indicator &amp; Measurement
         </span>
         <div style={{ display:"flex", gap:5 }}>
-          {hasIndicator && (
+          {hasIndicator && !readOnly && (
             <button className="btn btn-ghost btn-sm" style={{ fontSize:10, color:"#dc2626" }}
               onClick={async () => {
                 const ok = await dialog.confirm("The logframe row and targets will be preserved.", {
@@ -185,7 +185,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
               <Icon name="x" size={10} /> Detach
             </button>
           )}
-          {!hasIndicator && !showAttach && (
+          {!hasIndicator && !showAttach && !readOnly && (
             <button className="btn btn-primary btn-sm" style={{ fontSize:11, gap:5 }}
               onClick={() => setShowAttach(true)}>
               <Icon name="plus" size={12} /> Attach indicator
@@ -254,8 +254,8 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                 )}
               </label>
               <select className="field-select" value={currentFreq}
-                onChange={e => freqMutation.mutate(e.target.value)}
-                disabled={freqMutation.isPending}>
+                onChange={e => !readOnly && freqMutation.mutate(e.target.value)}
+                disabled={readOnly || freqMutation.isPending}>
                 <option value="">Select…</option>
                 {FREQ_CHOICES.map(f => (
                   <option key={f.value} value={f.value}>{f.label}</option>
@@ -293,7 +293,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
 
           {/* ── Section Baseline ── */}
           <SectionHeader icon="anchor" title="Baseline"
-            action={!editBaseline && (
+            action={!editBaseline && !readOnly && (
               <button className="btn btn-ghost btn-sm" style={{ fontSize:10, gap:4 }}
                 onClick={() => {
                   setBaselineForm({
@@ -374,7 +374,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
 
           {/* ── Section Cibles ── */}
           <SectionHeader icon="trending-up" title="Targets"
-            action={!addingTarget && (
+            action={!addingTarget && !readOnly && (
               <button className="btn btn-ghost btn-sm" style={{ fontSize:10, gap:4 }}
                 onClick={() => setAddingTarget(true)}>
                 <Icon name="plus" size={11} /> Add target
@@ -412,7 +412,7 @@ function IndicatorPanel({ projectId, node, onSaved }) {
                     color: t.status === "approved" ? "#16a34a" : t.status === "revised" ? "#9ca3af" : "#d97706" }}>
                     {t.status}
                   </span>
-                  {!t.is_original_pad && t.status !== "revised" && (
+                  {!t.is_original_pad && t.status !== "revised" && !readOnly && (
                     <button style={{ border:"none", background:"none", cursor:"pointer",
                       color:"#dc2626", fontSize:14, padding:"0 2px" }}
                       onClick={async () => {
@@ -525,7 +525,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted, readOnly = false }) {
       {expanded && !editing && (
         <div>
           {/* Panneau indicateur */}
-          <IndicatorPanel projectId={projectId} node={node} onSaved={onSaved} />
+          <IndicatorPanel projectId={projectId} node={node} onSaved={onSaved} readOnly={readOnly} />
 
           <div className="dl mt-3">
             <div><div className="dl-term">Means of Verification</div><div className="dl-desc"><RichText value={node.means_of_verification} /></div></div>
