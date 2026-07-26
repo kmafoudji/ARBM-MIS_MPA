@@ -47,19 +47,19 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
   const addMutation = useMutation({
     mutationFn: (payload) =>
       apiFetch(`/api/projects/${projectId}/gadm-scope/`, { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }); closeForm(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }); qc.invalidateQueries({ queryKey: ["project-geojson", projectId] }); closeForm(); },
   });
 
   const removeMutation = useMutation({
     mutationFn: (areaId) =>
       apiFetch(`/api/projects/${projectId}/gadm-scope/${areaId}/`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }); qc.invalidateQueries({ queryKey: ["project-geojson", projectId] }); },
   });
 
   const patchMutation = useMutation({
     mutationFn: ({ areaId, payload }) =>
       apiFetch(`/api/projects/${projectId}/gadm-scope/${areaId}/`, { method: "PATCH", body: JSON.stringify(payload) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }); closeForm(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["gadm-scope", projectId] }); qc.invalidateQueries({ queryKey: ["project-geojson", projectId] }); closeForm(); },
   });
 
   function openAdd() {
