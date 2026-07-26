@@ -220,6 +220,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       fragility_status: project.fragility_status || "",
       risk_rating: project.risk_rating || "",
       cross_cutting_theme_ids: project.cross_cutting_theme_ids || [],
+      rio_marker_mitigation:     project.rio_marker_mitigation     || "not_targeted",
+      rio_marker_adaptation:     project.rio_marker_adaptation     || "not_targeted",
+      rio_marker_biodiversity:   project.rio_marker_biodiversity   || "not_targeted",
+      rio_marker_desertification:project.rio_marker_desertification|| "not_targeted",
+      rio_marker_water:          project.rio_marker_water          || "not_targeted",
     });
     setShowClassificationForm(true);
   }
