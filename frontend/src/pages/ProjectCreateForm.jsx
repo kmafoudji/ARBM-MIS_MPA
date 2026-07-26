@@ -165,118 +165,72 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   /* ── Validation par étape ── */
   function validate(s) {
     if (s === 1) {
-      if (!f.name.trim())          return "Project name is required.";
-      if (!f.countryIds.length)    return "At least one country is required.";
-      if (!f.primarySector)        return "Primary sector is required.";
+      if (!f.name.trim())       return "Project name is required.";
+      if (!f.countryIds.length) return "At least one country is required.";
     }
     return null;
   }
 
-  /* ── Sauvegarder l'étape courante ── */
-  async function saveCurrentStep() {
-    if (savingRef.current) return null; // anti double-clic
-    savingRef.current = true;
-    setError(null);
-    setSaving(true);
-    try {
-      if (step === 1 && !projectIdRef.current) {
-        // Création initiale
-        const payload = {
-          name: f.name,
-          acronym: f.acronym || "",
-          country_ids: f.countryIds,
-          lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
-          primary_sector: Number(f.primarySector),
-          contributing_sector_ids: f.contributingSectorIds,
-          budget_amount: f.budget_amount || null,
-          primary_sdg: f.primary_sdg ? Number(f.primary_sdg) : null,
-          contributing_sdg_ids: f.contributingSdgIds,
-        };
-        const proj = await apiFetch("/api/projects/", { method: "POST", body: JSON.stringify(payload) });
-        projectIdRef.current = proj.id;
-        qc.invalidateQueries({ queryKey: ["projects"] });
-        return proj.id;
-      }
-
-      const pid = projectIdRef.current;
-
-      if (step === 1 && pid) {
-        // Mise à jour step 1 via endpoint dédié
-        await apiFetch(`/api/projects/${pid}/basic/`, { method: "PATCH", body: JSON.stringify({
-          name: f.name,
-          acronym: f.acronym || "",
-          country_ids: f.countryIds,
-          lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
-          primary_sector: Number(f.primarySector),
-          contributing_sector_ids: f.contributingSectorIds,
-          budget_amount: f.budget_amount || null,
-        })});
-      }
-
-      if (step === 2) {
-        await apiFetch(`/api/projects/${pid}/`, { method: "PATCH", body: JSON.stringify({
-          primary_sdg: f.primary_sdg ? Number(f.primary_sdg) : null,
-          contributing_sdg_ids: f.contributingSdgIds,
-          gender_marker: f.gender_marker || null,
-          implementation_modality: f.implementation_modality || null,
-          geographic_typology: f.geographic_typology || null,
-          fragility_status: f.fragility_status || null,
-          risk_rating: f.risk_rating || null,
-          cross_cutting_theme_ids: f.cross_cutting_theme_ids,
-          rio_marker_mitigation: f.rio_marker_mitigation,
-          rio_marker_adaptation: f.rio_marker_adaptation,
-          rio_marker_biodiversity: f.rio_marker_biodiversity,
-          rio_marker_desertification: f.rio_marker_desertification,
-          rio_marker_water: f.rio_marker_water,
-        })});
-      }
-
-      if (step === 3) {
-        await apiFetch(`/api/projects/${pid}/`, { method: "PATCH", body: JSON.stringify({
-          budget_amount: f.budget_amount || null,
-        })});
-      }
-
-      if (step === 4) {
-        await apiFetch(`/api/projects/${pid}/reporting-config/`, { method: "PATCH", body: JSON.stringify({
-          reporting_frequency: f.reporting_frequency || null,
-          next_reporting_due: f.next_reporting_due || null,
-        })});
-      }
-
-      qc.invalidateQueries({ queryKey: ["projects"] });
-      return pid;
-    } catch (e) {
-      const detail = e?.detail || e?.message || "Save failed.";
-      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
-      return null;
-    } finally {
-      savingRef.current = false;
-      setSaving(false);
-    }
-  }
-
-  /* ── Navigation ── */
-  async function goNext() {
+  /* ── Navigation sans sauvegarde intermédiaire ── */
+  function goNext() {
     const err = validate(step);
     if (err) { setError(err); return; }
-    const pid = await saveCurrentStep();
-    if (!pid) return;
+    setError(null);
     const next = step + 1;
     setStep(next);
     setMaxReached((m) => Math.max(m, next));
   }
 
-  async function goPrev() {
-    await saveCurrentStep(); // sauvegarde silencieuse (ignorer erreur optionnelle)
+  function goPrev() {
+    setError(null);
     setStep((s) => s - 1);
   }
 
+  /* ── Création unique au finish ── */
   async function finish() {
-    const pid = await saveCurrentStep();
-    if (!pid) return;
-    qc.invalidateQueries({ queryKey: ["projects"] });
-    onCreated(pid);
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setError(null);
+    setSaving(true);
+    try {
+      // 1. Créer le projet
+      const payload = {
+        name: f.name,
+        acronym: f.acronym || "",
+        country_ids: f.countryIds,
+        lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
+        primary_sector: f.primarySector ? Number(f.primarySector) : null,
+        contributing_sector_ids: f.contributingSectorIds,
+        primary_sdg: f.primary_sdg ? Number(f.primary_sdg) : null,
+        contributing_sdg_ids: f.contributingSdgIds,
+      };
+      const proj = await apiFetch("/api/projects/", { method: "POST", body: JSON.stringify(payload) });
+      const pid = proj.id;
+
+      // 2. Enregistrer la classification (étape 2) en PATCH
+      await apiFetch(`/api/projects/${pid}/`, { method: "PATCH", body: JSON.stringify({
+        gender_marker: f.gender_marker || null,
+        implementation_modality: f.implementation_modality || null,
+        geographic_typology: f.geographic_typology || null,
+        fragility_status: f.fragility_status || null,
+        risk_rating: f.risk_rating || null,
+        cross_cutting_theme_ids: f.cross_cutting_theme_ids,
+        rio_marker_mitigation: f.rio_marker_mitigation,
+        rio_marker_adaptation: f.rio_marker_adaptation,
+        rio_marker_biodiversity: f.rio_marker_biodiversity,
+        rio_marker_desertification: f.rio_marker_desertification,
+        rio_marker_water: f.rio_marker_water,
+      })});
+
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      onCreated(pid);
+    } catch (e) {
+      const detail = e?.detail || e?.message || "Save failed.";
+      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   }
 
   /* ══════════════════════════════════════════════════════════════════════ */
@@ -435,24 +389,94 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="check" size={15} style={{ marginRight: 6 }} />Confirm & Create</h2>
-              <div className="card-sub">Review and create the project — you can complete remaining fields in the project tabs</div>
+              <div className="card-sub">Review all information before creating the project</div>
             </div>
             <span className="badge badge-lime">Final step</span>
           </div>
           <div className="card-body">
-            <div className="dl">
-              <div><div className="dl-term">Name</div><div className="dl-desc">{f.name}</div></div>
-              {f.acronym && <div><div className="dl-term">Acronym</div><div className="dl-desc">{f.acronym}</div></div>}
-              <div><div className="dl-term">Countries</div>
-                <div className="dl-desc">{selectedCountries.map(c => c.name).join(", ") || "—"}</div></div>
-              <div><div className="dl-term">Primary sector</div>
-                <div className="dl-desc">{sectors?.find(s => String(s.id) === String(f.primarySector))?.name || "—"}</div></div>
-              {f.primary_sdg && <div><div className="dl-term">Primary SDG</div>
-                <div className="dl-desc">SDG {f.primary_sdg} — {sdgs?.find(s => String(s.number) === String(f.primary_sdg))?.name}</div></div>}
+
+            {/* Section Basic Identity */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase",
+                letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                <Icon name="tag" size={12} style={{ color: "#A4C53F" }} /> Basic Identity
+              </div>
+              <div className="dl">
+                <div><div className="dl-term">Project name</div><div className="dl-desc" style={{ fontWeight: 600 }}>{f.name}</div></div>
+                {f.acronym && <div><div className="dl-term">Acronym</div><div className="dl-desc">{f.acronym}</div></div>}
+                <div><div className="dl-term">Countries</div>
+                  <div className="dl-desc">{selectedCountries.map(c => c.name).join(", ") || "—"}</div></div>
+                {selectedCountries.length > 1 && (
+                  <div><div className="dl-term">Lead country</div>
+                    <div className="dl-desc">{countries?.find(c => String(c.id) === String(f.leadCountryId))?.name || "—"}</div></div>
+                )}
+                <div><div className="dl-term">Primary sector</div>
+                  <div className="dl-desc">{sectors?.find(s => String(s.id) === String(f.primarySector))?.name || "—"}</div></div>
+                {f.contributingSectorIds.length > 0 && (
+                  <div><div className="dl-term">Contributing sectors</div>
+                    <div className="dl-desc">{sectors?.filter(s => f.contributingSectorIds.map(String).includes(String(s.id))).map(s => s.name).join(", ")}</div></div>
+                )}
+                <div><div className="dl-term">Primary SDG</div>
+                  <div className="dl-desc">{f.primary_sdg ? `SDG ${f.primary_sdg} — ${sdgs?.find(s => String(s.number) === String(f.primary_sdg))?.name}` : "—"}</div></div>
+                {f.contributingSdgIds.length > 0 && (
+                  <div><div className="dl-term">Contributing SDGs</div>
+                    <div className="dl-desc">{f.contributingSdgIds.map(n => `SDG ${n}`).join(", ")}</div></div>
+                )}
+              </div>
             </div>
-            <div className="notice notice-info" style={{ marginTop: 16, fontSize: 13 }}>
+
+            {/* Section Classification */}
+            <div style={{ marginBottom: 20, paddingTop: 16, borderTop: "1px solid #f0f0ee" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase",
+                letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                <Icon name="layers" size={12} style={{ color: "#A4C53F" }} /> Classification & Alignment
+              </div>
+              <div className="dl">
+                <div><div className="dl-term">Gender marker</div>
+                  <div className="dl-desc">{GENDER_MARKER_CHOICES.find(c => c[0] === f.gender_marker)?.[1] || "—"}</div></div>
+                <div><div className="dl-term">Implementation modality</div>
+                  <div className="dl-desc">{MODALITY_CHOICES.find(c => c[0] === f.implementation_modality)?.[1] || "—"}</div></div>
+                <div><div className="dl-term">Geographic typology</div>
+                  <div className="dl-desc">{GEO_CHOICES.find(c => c[0] === f.geographic_typology)?.[1] || "—"}</div></div>
+                <div><div className="dl-term">Fragility status</div>
+                  <div className="dl-desc">{FRAGILITY_CHOICES.find(c => c[0] === f.fragility_status)?.[1] || "—"}</div></div>
+                <div><div className="dl-term">Risk rating</div>
+                  <div className="dl-desc">{RISK_CHOICES.find(c => c[0] === f.risk_rating)?.[1] || "—"}</div></div>
+              </div>
+            </div>
+
+            {/* Rio Markers */}
+            <div style={{ marginBottom: 20, paddingTop: 16, borderTop: "1px solid #f0f0ee" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase",
+                letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                <Icon name="globe" size={12} style={{ color: "#A4C53F" }} /> Rio Markers (OECD-DAC)
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  ["CC Mitigation",  f.rio_marker_mitigation],
+                  ["CC Adaptation",  f.rio_marker_adaptation],
+                  ["Biodiversity",   f.rio_marker_biodiversity],
+                  ["Desertification",f.rio_marker_desertification],
+                  ["Water",          f.rio_marker_water],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center",
+                    padding: "6px 12px", borderRadius: 8,
+                    background: val === "principal" ? "#dcfce7" : val === "significant" ? "#f0f6dc" : "#f3f4f6",
+                    border: `1px solid ${val === "principal" ? "#86efac" : val === "significant" ? "#A4C53F40" : "#e5e7eb"}`,
+                    minWidth: 100 }}>
+                    <span style={{ fontSize: 10, color: "#6b7280", marginBottom: 2 }}>{label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700,
+                      color: val === "principal" ? "#16a34a" : val === "significant" ? "#7a9420" : "#9ca3af" }}>
+                      {val === "principal" ? "Principal" : val === "significant" ? "Significant" : "Not targeted"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="notice notice-info" style={{ fontSize: 13 }}>
               <span style={{ marginRight: 8 }}>ℹ️</span>
-              Financial envelope, reporting schedule, dates and PAD can be added from the project tabs after creation.
+              Financial envelope, reporting schedule, project dates and PAD can be added from the project tabs after creation.
             </div>
           </div>
         </div>
