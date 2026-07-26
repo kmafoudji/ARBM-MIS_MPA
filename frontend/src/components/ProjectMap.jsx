@@ -100,6 +100,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
         map.once("idle", () => setMapReady(true));
       }
     });
+    // Gérer la perte/restauration du contexte WebGL
+    map.on("webglcontextlost", () => setMapReady(false));
+    map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
     return () => { map.remove(); mapInst.current = null; setMapReady(false); };
   }, []);
 
@@ -147,12 +150,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       // Utiliser parent_id (fiable) pour trouver les Admin 1 parents
       const parentIds = new Set(admin2InScope.map(f => f.properties.parent_id).filter(Boolean));
 
-      console.log("[Map] admin2 in scope:", admin2InScope.length,
-        "parentIds:", [...parentIds],
-        "admin1 ids:", admin1.map(f => f.properties.id));
-
       const admin1WithChildren = admin1.filter(f => parentIds.has(f.properties.id));
-      console.log("[Map] admin1WithChildren:", admin1WithChildren.map(f => f.properties.name));
 
       // Tous les Admin 1 — fond tirets gris léger
       map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
@@ -161,13 +159,21 @@ export default function ProjectMap({ projectId, countries = [] }) {
       map.addLayer({ id: "proj-admin1-line", type: "line", source: "proj-admin1",
         paint: { "line-color": "#7a9420", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } });
 
-      // Admin 1 avec Admin 2 sélectionnés — bordure pleine lime épaisse
+      // Admin 1 avec Admin 2 sélectionnés — bordure pleine lime épaisse (ajoutée en dernier = au-dessus)
       if (admin1WithChildren.length) {
         map.addSource("proj-admin1-active", { type: "geojson", data: { type: "FeatureCollection", features: admin1WithChildren } });
-        map.addLayer({ id: "proj-admin1-active-fill", type: "fill", source: "proj-admin1-active",
-          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.18 } });
-        map.addLayer({ id: "proj-admin1-active-line", type: "line", source: "proj-admin1-active",
-          paint: { "line-color": "#7a9420", "line-width": 2.5, "line-opacity": 1 } });
+        map.addLayer({
+          id: "proj-admin1-active-line",
+          type: "line",
+          source: "proj-admin1-active",
+          paint: { "line-color": "#7a9420", "line-width": 3, "line-opacity": 1 },
+        });
+        map.addLayer({
+          id: "proj-admin1-active-fill",
+          type: "fill",
+          source: "proj-admin1-active",
+          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.22 },
+        });
       }
     }
 
