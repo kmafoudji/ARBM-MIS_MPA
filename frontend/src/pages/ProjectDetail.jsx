@@ -1096,7 +1096,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             </div>
           </div>
         </div>
-        <ImplementingPartners projectId={project.id} canEdit={!atLeast("substantially_complete")} envelopeTotal={envelope?.total_amount_usd} />
+        <ImplementingPartners projectId={project.id} canEdit={!atLeast("effective")} envelopeTotal={envelope?.total_amount_usd} />
       </div>
 
 
