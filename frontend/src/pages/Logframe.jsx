@@ -153,47 +153,24 @@ function AddTargetForm({ rowId, projectId, unit, onAdded, onCancel }) {
 }
 
 // ---------------------------------------------------------------------------
-// Composant : ligne logframe
+// Composant : ligne logframe (lecture seule — édition dans la ToC)
 // ---------------------------------------------------------------------------
 function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
-  const dialog = useDialog();
   const [expanded, setExpanded] = useState(false);
-  const [addingTarget, setAddingTarget] = useState(false);
-  const [editingBaseline, setEditingBaseline] = useState(false);
-  const [baselineForm, setBaselineForm] = useState({
-    baseline_value: row.baseline_value ?? "",
-    baseline_year: row.baseline_year ?? "",
-    baseline_source: row.baseline_source ?? "",
-    measurement_frequency: row.measurement_frequency ?? "",
-    notes: row.notes ?? "",
-  });
-
-  const baselineMutation = useMutation({
-    mutationFn: (payload) =>
-      apiFetch(`/api/projects/${projectId}/logframe/${row.id}/`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: () => { setEditingBaseline(false); onChanged(); },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () =>
-      apiFetch(`/api/projects/${projectId}/logframe/${row.id}/`, { method: "DELETE" }),
-    onSuccess: onChanged,
-  });
-
-  const directionIcon = row.indicator_direction === "increase" ? "↑" : row.indicator_direction === "decrease" ? "↓" : "→";
+  const directionIcon = row.indicator_direction === "increase" ? "↑"
+    : row.indicator_direction === "decrease" ? "↓" : "→";
 
   return (
-    <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--r-3)", padding: "var(--s-3)" }}>
-      <div className="row" style={{ justifyContent: "space-between", cursor: "pointer" }}
+    <div style={{ background:"var(--paper)", border:"1px solid var(--rule)",
+      borderRadius:"var(--r-3)", padding:"var(--s-3)" }}>
+      {/* En-tête cliquable */}
+      <div className="row" style={{ justifyContent:"space-between", cursor:"pointer" }}
         onClick={() => setExpanded(!expanded)}>
-        <div className="row" style={{ gap: 10, alignItems: "flex-start", flex: 1 }}>
-          <span className="text-mono badge" style={{ fontSize: 11 }}>{row.indicator_code}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 500 }}>{row.indicator_name}</div>
-            <div className="text-muted text-sm row" style={{ gap: 8, marginTop: 2 }}>
+        <div className="row" style={{ gap:10, alignItems:"flex-start", flex:1 }}>
+          <span className="text-mono badge" style={{ fontSize:11 }}>{row.indicator_code}</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:500 }}>{row.indicator_name}</div>
+            <div className="text-muted text-sm row" style={{ gap:8, marginTop:2 }}>
               <span>{row.indicator_unit}</span>
               <span>{directionIcon}</span>
               {row.baseline_value != null && (
@@ -204,146 +181,105 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
               {row.targets?.length > 0 && (
                 <span>{row.targets.length} target{row.targets.length > 1 ? "s" : ""}</span>
               )}
+              {row.measurement_frequency_display && (
+                <span style={{ color:"#6b7280" }}>{row.measurement_frequency_display}</span>
+              )}
               {row.toc_node_code && (
-                <span className="text-mono" style={{ fontSize: 10 }}>ToC: {row.toc_node_code}</span>
+                <span className="text-mono" style={{ fontSize:10 }}>ToC: {row.toc_node_code}</span>
               )}
             </div>
           </div>
         </div>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "var(--muted)", flexShrink: 0 }} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16}
+          style={{ color:"var(--muted)", flexShrink:0 }} />
       </div>
 
       {expanded && (
-        <div style={{ marginTop: "var(--s-3)" }}>
-          {/* Baseline */}
-          <div style={{ marginBottom: "var(--s-3)" }}>
-            <div className="row" style={{ justifyContent: "space-between", marginBottom: 6 }}>
-              <span className="card-sub">Reference Value (Baseline)</span>
-              {!editingBaseline && (
-                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(true)}>
-                  <Icon name="pencil" size={13} /> Edit
-                </button>
-              )}
-            </div>
-            {editingBaseline ? (
-              <div>
-                <div className="grid grid-2" style={{ gap: 8 }}>
-                  <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Baseline value ({row.indicator_unit})</label>
-                    <input className="field-input" type="text" inputMode="decimal"
-                      value={baselineForm.baseline_value}
-                      onChange={(e) => { const v=e.target.value; if(v===""||/^-?\d*\.?\d*$/.test(v)) setBaselineForm({...baselineForm,baseline_value:v}); }} />
-                  </div>
-                  <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Reference Year</label>
-                    <input className="field-input" type="number" min="2000" max="2050"
-                      value={baselineForm.baseline_year}
-                      onChange={(e) => setBaselineForm({ ...baselineForm, baseline_year: e.target.value })} />
-                  </div>
-                  <div className="field" style={{ marginBottom: 0, gridColumn: "span 2" }}>
-                    <label className="field-label">Baseline Source</label>
-                    <input className="field-input"
-                      value={baselineForm.baseline_source}
-                      onChange={(e) => setBaselineForm({ ...baselineForm, baseline_source: e.target.value })} />
-                  </div>
-                  <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Measurement Frequency</label>
-                    <div className="field-input" style={{ background:"#f3f4f6", color:"#6b7280",
-                      cursor:"default", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
-                      <Icon name="lock" size={11} style={{ color:"#9ca3af" }} />
-                      {row.measurement_frequency_display || "—"}
-                      <span style={{ fontSize:10, color:"#9ca3af", marginLeft:"auto" }}>
-                        Set in Theory of Change
-                      </span>
-                    </div>
-                  </div>
-                  <div className="field" style={{ marginBottom: 0 }}>
-                    <label className="field-label">Notes</label>
-                    <input className="field-input"
-                      value={baselineForm.notes}
-                      onChange={(e) => setBaselineForm({ ...baselineForm, notes: e.target.value })} />
-                  </div>
-                </div>
-                {baselineMutation.isError && <div className="field-error mt-2">{JSON.stringify(baselineMutation.error.detail)}</div>}
-                <div className="row mt-2">
-                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
-                    onClick={() => baselineMutation.mutate({
-                      baseline_value: baselineForm.baseline_value || null,
-                      baseline_year: baselineForm.baseline_year || null,
-                      baseline_source: baselineForm.baseline_source,
-                      measurement_frequency: baselineForm.measurement_frequency || null,
-                      notes: baselineForm.notes,
-                    })} disabled={baselineMutation.isPending}>
-                    <Icon name="check" size={13} /> {baselineMutation.isPending ? "Saving..." : "Save"}
-                  </button>
-                  <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setEditingBaseline(false)}>
-                    <Icon name="x" size={13} /> Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="dl">
-                <div><div className="dl-term">Value</div>
-                  <div className="dl-desc">{row.baseline_value != null ? `${fmtNum(row.baseline_value)} ${row.indicator_unit}` : "—"}</div>
-                </div>
-                <div><div className="dl-term">Year</div><div className="dl-desc">{row.baseline_year || "—"}</div></div>
-                <div><div className="dl-term">Source</div><div className="dl-desc">{row.baseline_source || "—"}</div></div>
-                <div><div className="dl-term">Frequency</div><div className="dl-desc">{row.measurement_frequency_display || "—"}</div></div>
-              </div>
-            )}
+        <div style={{ marginTop:"var(--s-3)" }}>
+
+          {/* Notice lecture seule */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12,
+            padding:"6px 10px", background:"#f0f6dc", borderRadius:6, fontSize:11, color:"#7a9420" }}>
+            <Icon name="info-circle" size={12} />
+            Baseline, targets and frequency are defined in the
+            <strong style={{ marginLeft:3 }}>Theory of Change</strong> tab.
           </div>
 
-          {/* Cibles */}
-          <div>
-            <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-              <span className="card-sub">Targets</span>
-              {!addingTarget && (
-                <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} onClick={() => setAddingTarget(true)}>
-                  <Icon name="plus" size={13} /> Add target
-                </button>
-              )}
+          {/* Baseline — lecture seule */}
+          <div style={{ marginBottom:"var(--s-3)" }}>
+            <div className="card-sub" style={{ marginBottom:6 }}>Baseline</div>
+            <div className="dl">
+              <div>
+                <div className="dl-term">Value</div>
+                <div className="dl-desc">
+                  {row.baseline_value != null
+                    ? `${fmtNum(row.baseline_value)} ${row.indicator_unit}`
+                    : "—"}
+                </div>
+              </div>
+              <div><div className="dl-term">Year</div>
+                <div className="dl-desc">{row.baseline_year || "—"}</div></div>
+              <div><div className="dl-term">Source</div>
+                <div className="dl-desc">{row.baseline_source || "—"}</div></div>
+              <div><div className="dl-term">Frequency</div>
+                <div className="dl-desc">{row.measurement_frequency_display || "—"}</div></div>
             </div>
-            {row.targets?.length === 0 && !addingTarget && (
-              <p className="text-muted text-sm" style={{ margin: 0 }}>No targets defined.</p>
-            )}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {row.targets?.map((t) => (
-                <TargetCard key={t.id} target={t} rowId={row.id} projectId={projectId} onChanged={onChanged} />
-              ))}
-            </div>
-            {addingTarget && (
-              <AddTargetForm
-                rowId={row.id} projectId={projectId} unit={row.indicator_unit}
-                onAdded={() => { setAddingTarget(false); onChanged(); }}
-                onCancel={() => setAddingTarget(false)}
-              />
+          </div>
+
+          {/* Cibles — lecture seule */}
+          <div style={{ marginBottom:"var(--s-3)" }}>
+            <div className="card-sub" style={{ marginBottom:6 }}>Targets</div>
+            {(!row.targets || row.targets.length === 0) ? (
+              <p className="text-muted text-sm" style={{ margin:0 }}>No targets defined.</p>
+            ) : (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                {row.targets.map(t => (
+                  <span key={t.id} style={{
+                    display:"inline-flex", alignItems:"center", gap:6,
+                    fontSize:12, padding:"4px 10px", borderRadius:99,
+                    background: t.status === "approved" ? "#dcfce7"
+                      : t.status === "revised" ? "#f3f4f6" : "#fef9c3",
+                    color: t.status === "approved" ? "#166534"
+                      : t.status === "revised" ? "#6b7280" : "#854d0e",
+                    textDecoration: t.status === "revised" ? "line-through" : "none",
+                    border: `1px solid ${t.status === "approved" ? "#86efac"
+                      : t.status === "revised" ? "#e5e7eb" : "#fde047"}`,
+                  }}>
+                    {t.is_original_pad && (
+                      <span style={{ fontSize:9, fontWeight:700, color:"#1B5A8C",
+                        background:"#e0ebf6", padding:"1px 4px", borderRadius:99 }}>PAD</span>
+                    )}
+                    <span style={{ color:"inherit", opacity:0.7 }}>
+                      {t.label || (t.target_date ? new Date(t.target_date).getFullYear() : "—")}
+                    </span>
+                    <strong>{fmtNum(t.target_value)} {row.indicator_unit}</strong>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
 
           {/* DQ Score */}
-          <div style={{ marginTop: 10 }}>
+          <div style={{ marginTop:10 }}>
             <DQScoreWidget projectId={projectId} rowId={row.id} />
           </div>
 
-          {/* Actions */}
-          <div style={{ marginTop: "var(--s-3)", borderTop: "1px solid var(--rule)", paddingTop: "var(--s-2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            {onOpenPIRS && (
-              <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "#1B5A8C" }}
+          {/* Seul bouton autorisé : PIRS */}
+          {onOpenPIRS && (
+            <div style={{ marginTop:"var(--s-3)", paddingTop:"var(--s-2)",
+              borderTop:"1px solid var(--rule)" }}>
+              <button className="btn btn-ghost btn-sm row" style={{ gap:6, color:"#1B5A8C" }}
                 onClick={() => onOpenPIRS(row.id)}>
                 <Icon name="file-text" size={13} /> View PIRS
               </button>
-            )}
-            <button className="btn btn-ghost btn-sm row" style={{ gap: 6, color: "var(--rose, #E84A5F)" }}
-              onClick={async () => { const ok = await dialog.confirm(`All targets for "${row.indicator_code}" will be lost.`, { title: "Remove from logframe?", confirmLabel: "Remove", danger: true }); if (ok) deleteMutation.mutate(); }}
-              disabled={deleteMutation.isPending}>
-              <Icon name="trash" size={13} /> {deleteMutation.isPending ? "Suppression..." : "Remove from logframe"}
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // Composant : formulaire d'ajout d'une ligne logframe
