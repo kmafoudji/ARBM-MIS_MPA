@@ -386,7 +386,9 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
       )}
       {/* Carte PostGIS GADM — après le contenu Admin */}
       {(countries || []).length > 0 && (
-        <ProjectMap projectId={projectId} countries={countries} />
+        <div style={{ marginTop: 20 }}>
+          <ProjectMap projectId={projectId} countries={countries} />
+        </div>
       )}
     </div>
   );

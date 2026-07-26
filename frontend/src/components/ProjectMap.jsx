@@ -118,26 +118,32 @@ export default function ProjectMap({ projectId, countries = [] }) {
         paint: { "line-color": COLORS.admin2.line, "line-width": COLORS.admin2.lineWidth } });
     }
 
-    // Tooltip
+    // Tooltip — un seul listener sur le canvas, queryRenderedFeatures pour trouver le bon layer
     {
       const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
-      ["admin1-fill","admin2-fill","country-fill"].forEach(layer => {
-        if (!map.getLayer(layer)) return;
-        map.on("mousemove", layer, e => {
-          map.getCanvas().style.cursor = "pointer";
-          const p = e.features[0]?.properties || {};
-          const levelLabel = p.level === 0 ? "Country" : p.level === 1 ? "Admin 1" : "Admin 2";
-          popup.setLngLat(e.lngLat).setHTML(
-            `<div style="font-size:12px;padding:4px 8px;">
-              <strong>${p.name || p.country_name}</strong>
-              <span style="color:#9ca3af;margin-left:6px">${levelLabel}</span>
-            </div>`
-          ).addTo(map);
-        });
-        map.on("mouseleave", layer, () => {
+      const QUERY_LAYERS = ["admin2-fill", "admin1-fill", "country-fill"].filter(l => map.getLayer(l));
+
+      map.on("mousemove", e => {
+        const features = map.queryRenderedFeatures(e.point, { layers: QUERY_LAYERS });
+        if (!features.length) {
           map.getCanvas().style.cursor = "";
           popup.remove();
-        });
+          return;
+        }
+        map.getCanvas().style.cursor = "pointer";
+        const p = features[0].properties || {};
+        const levelLabel = p.level === 0 ? "Country" : p.level === 1 ? "Admin 1" : "Admin 2";
+        popup.setLngLat(e.lngLat).setHTML(
+          `<div style="font-size:12px;padding:6px 10px;font-family:sans-serif">
+            <strong style="color:#111">${p.name || p.country_name || "—"}</strong>
+            <span style="color:#9ca3af;margin-left:8px;font-size:10px">${levelLabel}</span>
+          </div>`
+        ).addTo(map);
+      });
+
+      map.on("mouseleave", () => {
+        map.getCanvas().style.cursor = "";
+        popup.remove();
       });
     }
 
