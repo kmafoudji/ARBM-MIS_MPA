@@ -292,7 +292,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               )}
 
               <div className="field">
-                <label className="field-label" htmlFor="primarySector">Primary sector <span className="req">*</span></label>
+                <label className="field-label" htmlFor="primarySector">Primary sector</label>
                 <select id="primarySector" className="field-select" name="primarySector" value={f.primarySector} onChange={handleChange}>
                   <option value="">Select…</option>
                   {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -433,15 +433,15 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               </div>
               <div className="dl">
                 <div><div className="dl-term">Gender marker</div>
-                  <div className="dl-desc">{GENDER_MARKER_CHOICES.find(c => c[0] === f.gender_marker)?.[1] || "—"}</div></div>
+                  <div className="dl-desc">{GENDER_MARKER_CHOICES.find(c => c.value === f.gender_marker)?.label || "—"}</div></div>
                 <div><div className="dl-term">Implementation modality</div>
-                  <div className="dl-desc">{MODALITY_CHOICES.find(c => c[0] === f.implementation_modality)?.[1] || "—"}</div></div>
+                  <div className="dl-desc">{MODALITY_CHOICES.find(c => c.value === f.implementation_modality)?.label || "—"}</div></div>
                 <div><div className="dl-term">Geographic typology</div>
-                  <div className="dl-desc">{GEO_CHOICES.find(c => c[0] === f.geographic_typology)?.[1] || "—"}</div></div>
+                  <div className="dl-desc">{GEO_CHOICES.find(c => c.value === f.geographic_typology)?.label || "—"}</div></div>
                 <div><div className="dl-term">Fragility status</div>
-                  <div className="dl-desc">{FRAGILITY_CHOICES.find(c => c[0] === f.fragility_status)?.[1] || "—"}</div></div>
+                  <div className="dl-desc">{FRAGILITY_CHOICES.find(c => c.value === f.fragility_status)?.label || "—"}</div></div>
                 <div><div className="dl-term">Risk rating</div>
-                  <div className="dl-desc">{RISK_CHOICES.find(c => c[0] === f.risk_rating)?.[1] || "—"}</div></div>
+                  <div className="dl-desc">{RISK_CHOICES.find(c => c.value === f.risk_rating)?.label || "—"}</div></div>
               </div>
             </div>
 
