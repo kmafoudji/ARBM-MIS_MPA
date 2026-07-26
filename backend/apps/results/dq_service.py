@@ -40,7 +40,7 @@ def compute_dq_score(logframe_row, period=None):
     from .models import ResultsData
 
     project  = logframe_row.project
-    periods  = project.reporting_periods.filter(status__in=["open", "approved", "closed"])
+    periods  = project.reporting_periods.filter(status__in=["open", "overdue", "approved", "closed"])
     if period:
         periods = periods.filter(id=period.id)
 
