@@ -136,6 +136,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     document_reference: "",
     dual_authorized_by: "",
   });
+  const [showBasicForm, setShowBasicForm] = useState(false);
+  const [bForm, setBForm] = useState({ name: "", acronym: "", official_reference_number: "", start_date: "", end_date: "" });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
     primary_sector: "",
@@ -205,6 +207,28 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setShowClassificationForm(false);
+    },
+  });
+
+  function openBasicForm() {
+    setBForm({
+      name: project.name || "",
+      acronym: project.acronym || "",
+      official_reference_number: project.official_reference_number || "",
+      start_date: project.start_date || "",
+      end_date: project.end_date || "",
+    });
+    setShowBasicForm(true);
+  }
+
+  const basicMutation = useMutation({
+    mutationFn: (payload) =>
+      apiFetch(`/api/projects/${project.id}/basic/`, { method: "PATCH", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setShowBasicForm(false);
+      setToast({ type: "success", message: "Basic identity updated." });
     },
   });
 
@@ -431,6 +455,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   // ── Règles de modification par section ──────────────────────────────────
   // Overview/Classification : modifiable avant Effective
   const canEditClassification = !atLeast("effective");
+  // Basic Identity : modifiable avant BED Approved
+  const canEditBasicIdentity = !atLeast("bed_approved");
   // Financial : modifiable avant BED Approved
   const canEditFinancial = !atLeast("bed_approved");
   // Reporting config : modifiable avant Effective
@@ -723,14 +749,75 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       <div className="grid grid-2 mb-3">
         <div className="card card-flush">
           <div className="card-header">
-            <h2 className="card-title"><Icon name="tag" size={15} style={{marginRight:6}} />Identity &amp; Scope</h2>
+            <div>
+              <h2 className="card-title"><Icon name="tag" size={15} style={{marginRight:6}} />Identity &amp; Scope</h2>
+              <div className="card-sub">SF-1 · Basic project identity</div>
+            </div>
+            {!showBasicForm && canEditBasicIdentity && (
+              <button className="btn btn-primary btn-sm" onClick={openBasicForm}>
+                <Icon name="pencil" size={13} /> Edit
+              </button>
+            )}
+            {!showBasicForm && !canEditBasicIdentity && (
+              <span style={{ fontSize:11, color:"#9ca3af", display:"flex", alignItems:"center", gap:4 }}>
+                <Icon name="lock" size={11} /> Locked at BED Approved
+              </span>
+            )}
           </div>
           <div className="card-body">
+            {showBasicForm ? (
+              <form onSubmit={e => { e.preventDefault(); basicMutation.mutate({
+                name: bForm.name,
+                acronym: bForm.acronym || "",
+                official_reference_number: bForm.official_reference_number || "",
+                start_date: bForm.start_date || null,
+                end_date: bForm.end_date || null,
+              }); }}>
+                <div className="grid grid-2" style={{ gap:8 }}>
+                  <div className="field" style={{ gridColumn:"span 2" }}>
+                    <label className="field-label">Project name <span className="req">*</span></label>
+                    <input className="field-input" value={bForm.name}
+                      onChange={e => setBForm({...bForm, name: e.target.value})} required />
+                  </div>
+                  <div className="field">
+                    <label className="field-label">Acronym</label>
+                    <input className="field-input" value={bForm.acronym} maxLength={20}
+                      onChange={e => setBForm({...bForm, acronym: e.target.value})} />
+                  </div>
+                  <div className="field">
+                    <label className="field-label">Official reference number</label>
+                    <input className="field-input" value={bForm.official_reference_number}
+                      onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
+                  </div>
+                  <div className="field">
+                    <label className="field-label">Start date</label>
+                    <input className="field-input" type="date" value={bForm.start_date}
+                      onChange={e => setBForm({...bForm, start_date: e.target.value})} />
+                  </div>
+                  <div className="field">
+                    <label className="field-label">End date</label>
+                    <input className="field-input" type="date" value={bForm.end_date}
+                      onChange={e => setBForm({...bForm, end_date: e.target.value})} />
+                  </div>
+                </div>
+                {basicMutation.isError && (
+                  <div className="field-error mb-2">{JSON.stringify(basicMutation.error?.detail)}</div>
+                )}
+                <div className="row mt-2">
+                  <button className="btn btn-primary row" style={{gap:6}} type="submit"
+                    disabled={basicMutation.isPending}>
+                    <Icon name="check" size={13} /> {basicMutation.isPending ? "Saving..." : "Save"}
+                  </button>
+                  <button className="btn btn-ghost" type="button"
+                    onClick={() => setShowBasicForm(false)}>Cancel</button>
+                </div>
+              </form>
+            ) : (
             <div className="dl">
               <Dt term="Internal Code">
                 <span className="text-mono">{project.code}</span>
               </Dt>
-              <Dt term="Official Reference">{project.official_reference_number}</Dt>
+              <Dt term="Official Reference">{project.official_reference_number || "—"}</Dt>
               <Dt term="Lead Country">
                 {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : "—"}
               </Dt>
@@ -740,6 +827,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   : "—"}
               </Dt>
               <Dt term="Regional Hub">{project.hub_name || "—"}</Dt>
+              <Dt term="Start date">{project.start_date || "—"}</Dt>
+              <Dt term="End date">{project.end_date || "—"}</Dt>
               <Dt term="Indicative Budget">
                 {project.budget_amount
                   ? `${fmtNum(project.budget_amount)} USD`
@@ -747,6 +836,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               </Dt>
               <Dt term="Registered by">{project.created_by_email}</Dt>
             </div>
+            )}
           </div>
         </div>
 
