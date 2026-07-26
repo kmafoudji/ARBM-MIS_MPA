@@ -375,7 +375,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   ["rio_marker_water",           "Water"],
                 ].map(([key, label]) => (
                   <FieldSelect key={key} id={key} label={label} value={f[key]}
-                    onChange={(e) => set(key, e.target.value)} choices={RIO_CHOICES} placeholder="Not targeted" />
+                    onChange={(e) => set(key, e.target.value)} choices={RIO_CHOICES} />
                 ))}
               </div>
             </div>
