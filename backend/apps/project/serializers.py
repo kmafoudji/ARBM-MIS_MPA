@@ -258,7 +258,7 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
             "gender_marker", "implementation_modality", "geographic_typology",
             "fragility_status", "risk_rating", "cross_cutting_theme_ids",
             "rio_marker_mitigation", "rio_marker_adaptation",
-            "rio_marker_biodiversity", "rio_marker_desertification",
+            "rio_marker_biodiversity", "rio_marker_desertification", "rio_marker_water",
         ]
 
     def update(self, instance, validated_data):

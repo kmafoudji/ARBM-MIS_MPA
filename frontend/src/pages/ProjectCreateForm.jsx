@@ -4,11 +4,11 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 
 /* ── Constantes ─────────────────────────────────────────────────────────── */
+const STEPS_OLD = [];
 const STEPS = [
-  { id: 1, label: "Basic Identity",        icon: "tag",          sub: "Name, countries, sector"         },
-  { id: 2, label: "Strategic Alignment",   icon: "layers",       sub: "SDGs, classification, markers"   },
-  { id: 3, label: "Financial Envelope",    icon: "wallet",       sub: "Indicative budget"                },
-  { id: 4, label: "Reporting",             icon: "trending-up",  sub: "Frequency, first deadline"        },
+  { id: 1, label: "Basic Identity" },
+  { id: 2, label: "Classification" },
+  { id: 3, label: "Confirm" },
 ];
 
 const GENDER_MARKER_CHOICES = [
@@ -123,6 +123,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   /* ── Form state (toutes étapes) ── */
   const [f, setF] = useState({
     // Step 1
+    primary_sdg: "",
     name: "", acronym: "", countryIds: [], leadCountryId: "", primarySector: "",
     contributingSectorIds: [], lifecycle_stage: "concept_note",
     // Step 2
@@ -131,6 +132,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
     fragility_status: "", risk_rating: "", cross_cutting_theme_ids: [],
     rio_marker_mitigation: "not_targeted", rio_marker_adaptation: "not_targeted",
     rio_marker_biodiversity: "not_targeted", rio_marker_desertification: "not_targeted",
+    rio_marker_water: "not_targeted",
     // Step 3
     budget_amount: "",
     // Step 4
@@ -225,6 +227,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           rio_marker_adaptation: f.rio_marker_adaptation,
           rio_marker_biodiversity: f.rio_marker_biodiversity,
           rio_marker_desertification: f.rio_marker_desertification,
+          rio_marker_water: f.rio_marker_water,
         })});
       }
 
@@ -296,7 +299,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="tag" size={15} style={{ marginRight: 6 }} />Basic Identity</h2>
-              <div className="card-sub">Name, geographic scope, primary sector</div>
+              <div className="card-sub">Name, countries, primary sector and SDG</div>
             </div>
             <span className="badge badge-lime">Required</span>
           </div>
@@ -343,10 +346,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               </div>
 
               <div className="field">
-                <label className="field-label" htmlFor="contribSectors">Contributing sectors</label>
-                <select id="contribSectors" className="field-select field-multi" multiple
-                  value={f.contributingSectorIds.map(String)} onChange={(e) => handleMulti("contributingSectorIds", e)}>
-                  {contributingSectorChoices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <label className="field-label" htmlFor="primarySdg">Primary SDG</label>
+                <select id="primarySdg" className="field-select" name="primary_sdg" value={f.primary_sdg} onChange={handleChange}>
+                  <option value="">Select…</option>
+                  {sdgs?.map((s) => <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>)}
                 </select>
               </div>
             </div>
@@ -367,10 +370,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-body">
             <div className="grid grid-2">
               <div className="field">
-                <label className="field-label" htmlFor="primarySdg">Primary SDG</label>
-                <select id="primarySdg" className="field-select" name="primary_sdg" value={f.primary_sdg} onChange={handleChange}>
-                  <option value="">Select…</option>
-                  {sdgs?.map((s) => <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>)}
+                <label className="field-label" htmlFor="contribSectors">Contributing sectors</label>
+                <select id="contribSectors" className="field-select field-multi" multiple
+                  value={f.contributingSectorIds.map(String)} onChange={(e) => handleMulti("contributingSectorIds", e)}>
+                  {contributingSectorChoices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
 
@@ -411,10 +414,11 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <div className="card-sub" style={{ marginBottom: 8 }}>Rio Markers (OECD-DAC)</div>
               <div className="grid grid-2">
                 {[
-                  ["rio_marker_mitigation",     "Climate Mitigation"],
-                  ["rio_marker_adaptation",      "Climate Adaptation"],
+                  ["rio_marker_mitigation",     "CC Mitigation"],
+                  ["rio_marker_adaptation",      "CC Adaptation"],
                   ["rio_marker_biodiversity",    "Biodiversity"],
                   ["rio_marker_desertification", "Desertification"],
+                  ["rio_marker_water",           "Water"],
                 ].map(([key, label]) => (
                   <FieldSelect key={key} id={key} label={label} value={f[key]}
                     onChange={(e) => set(key, e.target.value)} choices={RIO_CHOICES} placeholder="Not targeted" />
@@ -425,57 +429,33 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         </div>
       )}
 
-      {/* ── STEP 3 : Financial Envelope ── */}
+      {/* ── STEP 3 : Confirmation ── */}
       {step === 3 && (
         <div className="card card-flush">
           <div className="card-header">
             <div>
-              <h2 className="card-title"><Icon name="wallet" size={15} style={{ marginRight: 6 }} />Financial Envelope</h2>
-              <div className="card-sub">Indicative budget at Concept Note — detailed sources added from the project sheet</div>
+              <h2 className="card-title"><Icon name="check" size={15} style={{ marginRight: 6 }} />Confirm & Create</h2>
+              <div className="card-sub">Review and create the project — you can complete remaining fields in the project tabs</div>
             </div>
-            <span className="badge">Optional now</span>
+            <span className="badge badge-lime">Final step</span>
           </div>
           <div className="card-body">
-            <div className="field" style={{ maxWidth: 300 }}>
-              <label className="field-label" htmlFor="budget">Indicative Budget (USD)</label>
-              <input id="budget" className="field-input" type="number" name="budget_amount"
-                value={f.budget_amount} onChange={handleChange} placeholder="e.g. 12500000" />
-              <span className="field-help">Financing sources and component breakdown are configured from the project sheet after registration.</span>
+            <div className="dl">
+              <div><div className="dl-term">Name</div><div className="dl-desc">{f.name}</div></div>
+              {f.acronym && <div><div className="dl-term">Acronym</div><div className="dl-desc">{f.acronym}</div></div>}
+              <div><div className="dl-term">Countries</div>
+                <div className="dl-desc">{selectedCountries.map(c => c.name).join(", ") || "—"}</div></div>
+              <div><div className="dl-term">Primary sector</div>
+                <div className="dl-desc">{sectors?.find(s => String(s.id) === String(f.primarySector))?.name || "—"}</div></div>
+              {f.primary_sdg && <div><div className="dl-term">Primary SDG</div>
+                <div className="dl-desc">SDG {f.primary_sdg} — {sdgs?.find(s => String(s.number) === String(f.primary_sdg))?.name}</div></div>}
+            </div>
+            <div className="notice notice-info" style={{ marginTop: 16, fontSize: 13 }}>
+              <span style={{ marginRight: 8 }}>ℹ️</span>
+              Financial envelope, reporting schedule, dates and PAD can be added from the project tabs after creation.
             </div>
           </div>
         </div>
-      )}
-
-      {/* ── STEP 4 : Reporting ── */}
-      {step === 4 && (
-        <div className="card card-flush">
-          <div className="card-header">
-            <div>
-              <h2 className="card-title"><Icon name="trending-up" size={15} style={{ marginRight: 6 }} />Reporting Configuration</h2>
-              <div className="card-sub">SF-5 · Reporting cycle and first deadline</div>
-            </div>
-            <span className="badge">Optional now</span>
-          </div>
-          <div className="card-body">
-            <div className="grid grid-2">
-              <FieldSelect id="freq" label="Reporting Frequency" value={f.reporting_frequency}
-                onChange={(e) => set("reporting_frequency", e.target.value)} choices={FREQ_CHOICES} />
-              <div className="field">
-                <label className="field-label" htmlFor="nextDue">First Deadline</label>
-                <input id="nextDue" className="field-input" type="date" name="next_reporting_due"
-                  value={f.next_reporting_due} onChange={handleChange} />
-              </div>
-            </div>
-            <div className="notice notice-info" style={{ marginTop: 8, fontSize: 12 }}>
-              The full reporting schedule (all periods and deadlines) will be auto-generated from these settings once the project reaches the Effective stage.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Erreur ── */}
-      {error && (
-        <div className="field-error mt-3">{error}</div>
       )}
 
       {/* ── Navigation ── */}
@@ -487,7 +467,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         <div className="row" style={{ gap: 8 }}>
           {step < STEPS.length ? (
             <button className="btn btn-primary row" style={{ gap: 6 }} type="button" onClick={goNext} disabled={saving}>
-              {saving ? "Saving…" : <><span>Next</span> <Icon name="chevron-right" size={14} /></>}
+              {saving ? "Saving…" : <><span>Next</span> <Icon name="arrow-right" size={14} /></>}
             </button>
           ) : (
             <button className="btn btn-primary row" style={{ gap: 6 }} type="button" onClick={finish} disabled={saving}>

@@ -174,6 +174,10 @@ class Project(models.Model):
     rio_marker_desertification = models.CharField(
         max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted"
     )
+    rio_marker_water = models.CharField(
+        max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted",
+        help_text="OECD-DAC Rio Marker — Water (Objectif de Eau)."
+    )
     cross_cutting_themes = models.ManyToManyField(
         CrossCuttingTheme, related_name="projects", blank=True
     )
