@@ -9,6 +9,7 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    allowedHosts: ["arbm.mpasdg.org", "localhost", "127.0.0.1"],
     proxy: {
       "/martin": {
         target: "http://martin:3000",
