@@ -147,6 +147,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
       // Utiliser parent_id (fiable) pour trouver les Admin 1 parents
       const parentIds = new Set(admin2InScope.map(f => f.properties.parent_id).filter(Boolean));
 
+      console.log("[Map] admin2 in scope:", admin2InScope.length,
+        "parentIds:", [...parentIds],
+        "admin1 ids:", admin1.map(f => f.properties.id));
+
       const admin1WithChildren = admin1.filter(f => parentIds.has(f.properties.id));
 
       // Tous les Admin 1 — fond tirets gris léger
