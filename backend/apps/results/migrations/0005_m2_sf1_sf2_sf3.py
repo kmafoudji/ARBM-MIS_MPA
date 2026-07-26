@@ -28,11 +28,11 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
-
 class Migration(migrations.Migration):
 
     dependencies = [
         ("results", "0004_alter_theoryofchange_status"),
+        ("results", "0005_indicator_aggregation_rule_indicator_chain_level_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -40,41 +40,6 @@ class Migration(migrations.Migration):
 
         # ── SF-1 : Indicator ────────────────────────────────────────────
 
-        migrations.AddField(
-            model_name="indicator",
-            name="aggregation_rule",
-            field=models.CharField(
-                choices=[
-                    ("sum", "Sum"), ("average", "Average"),
-                    ("weighted_average", "Weighted average"), ("ratio", "Ratio"),
-                    ("last_value", "Last value"), ("maximum", "Maximum"),
-                ],
-                default="sum", max_length=20,
-                help_text="Règle de roll-up Site→Projet→Portefeuille (BRQ-2.02).",
-            ),
-        ),
-        migrations.AddField(
-            model_name="indicator",
-            name="chain_level",
-            field=models.CharField(
-                blank=True, max_length=25,
-                choices=[
-                    ("activity", "Activity"), ("output", "Output"),
-                    ("immediate_outcome", "Immediate outcome"),
-                    ("intermediate_outcome", "Intermediate outcome"),
-                    ("ultimate_outcome", "Ultimate outcome"),
-                ],
-                help_text="Niveau de chaîne auquel cet indicateur est attaché (BRQ-2.02).",
-            ),
-        ),
-        migrations.AddField(
-            model_name="indicator",
-            name="cross_cutting_tags",
-            field=models.JSONField(
-                blank=True, default=list,
-                help_text="Tags transversaux : Genre, Climat, Jeunes, Handicap, IDP/Réfugié, Équité.",
-            ),
-        ),
         migrations.AddField(
             model_name="indicator",
             name="version",
