@@ -23,6 +23,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     lifecycle_stage_display = serializers.CharField(
         source="get_lifecycle_stage_display", read_only=True
     )
+    hub_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -33,7 +34,16 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "primary_sector_color", "contributing_sector_count",
             "lifecycle_stage", "lifecycle_stage_display",
             "budget_amount", "created_at",
+            "hub_name",
         ]
+
+    def get_hub_name(self, obj):
+        if obj.hub_id:
+            return obj.hub.name
+        lead = obj.project_countries.filter(
+            is_lead=True
+        ).select_related("country__hub").first()
+        return lead.country.hub.name if lead and lead.country.hub_id else None
 
     def get_lead_country_name(self, obj):
         lead = obj.lead_country
