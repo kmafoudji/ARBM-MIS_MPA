@@ -162,6 +162,8 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "fragility_status", "fragility_status_display",
             "risk_rating", "risk_rating_display",
             "cross_cutting_theme_ids", "cross_cutting_theme_names",
+            "rio_marker_mitigation", "rio_marker_adaptation",
+            "rio_marker_biodiversity", "rio_marker_desertification", "rio_marker_water",
             "pad_reference_url", "pad_reference_name",
             "reporting_frequency", "reporting_frequency_display", "next_reporting_due",
             "budget_amount", "currency",
