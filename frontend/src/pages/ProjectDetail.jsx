@@ -903,7 +903,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
 
       {activeTab === "logframe" && (<>
-      <Logframe projectId={projectId} onBack={() => setActiveTab("overview")} onOpenPIRS={onOpenPIRS} />
+      <Logframe projectId={projectId} onBack={() => setActiveTab("overview")} onOpenPIRS={onOpenPIRS} embedded={true} />
 
 
       </>)}
