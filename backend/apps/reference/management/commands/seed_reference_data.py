@@ -194,6 +194,7 @@ CROSS_CUTTING_THEMES = [
     ("digital_inclusion", "Digital inclusion"),
     ("nutrition",         "Nutrition"),
     ("governance",        "Governance"),
+    ("food_security",     "Food security"),
 ]
 
 

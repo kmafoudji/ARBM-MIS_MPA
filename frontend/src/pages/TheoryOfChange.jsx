@@ -213,7 +213,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
             <option value="">{indLoading ? "Loading…" : "Select an indicator…"}</option>
             {(indicators || []).map(ind => (
               <option key={ind.id} value={ind.id}>
-                {ind.code} — {ind.name.slice(0, 65)}
+                {ind.code} — {ind.name}
                 {ind.reporting_frequency ? ` [${ind.reporting_frequency}]` : ""}
               </option>
             ))}
@@ -881,12 +881,12 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false, ca
                 {frameMutation.isError && (
                   <div className="field-error mb-3">{JSON.stringify(frameMutation.error?.detail)}</div>
                 )}
-                <div className="row">
-                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={frameMutation.isPending}>
-                    <Icon name="check" size={14} /> {frameMutation.isPending ? "Saving..." : "Save"}
-                  </button>
+                <div className="row" style={{ justifyContent: "flex-end", gap: 6 }}>
                   <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }} type="button" onClick={() => setEditingFrame(false)}>
                     <Icon name="x" size={14} /> Cancel
+                  </button>
+                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} type="submit" disabled={frameMutation.isPending}>
+                    <Icon name="check" size={14} /> {frameMutation.isPending ? "Saving..." : "Save frame"}
                   </button>
                 </div>
               </form>

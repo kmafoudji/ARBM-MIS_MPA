@@ -137,7 +137,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     dual_authorized_by: "",
   });
   const [showBasicForm, setShowBasicForm] = useState(false);
-  const [bForm, setBForm] = useState({ name: "", acronym: "", countryIds: [], leadCountryId: "" });
+  const [bForm, setBForm] = useState({ name: "", acronym: "", official_reference_number: "", countryIds: [], leadCountryId: "" });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
     primary_sector: "",
@@ -215,6 +215,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     setBForm({
       name: project.name || "",
       acronym: project.acronym || "",
+      official_reference_number: project.official_reference_number || "",
       countryIds: project.countries_detail?.map(c => String(c.id)) || [],
       leadCountryId: String(project.countries_detail?.find(c => c.is_lead)?.id || ""),
     });
@@ -769,6 +770,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
               <form onSubmit={e => { e.preventDefault(); basicMutation.mutate({
                 name: bForm.name,
                 acronym: bForm.acronym || "",
+                official_reference_number: bForm.official_reference_number || "",
                 country_ids: bForm.countryIds.map(Number),
                 lead_country_id: Number(bForm.leadCountryId || bForm.countryIds[0]),
               }); }}>
@@ -781,6 +783,12 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
                   <label className="field-label">Acronym</label>
                   <input className="field-input" value={bForm.acronym} maxLength={20}
                     onChange={e => setBForm({...bForm, acronym: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Official reference number</label>
+                  <input className="field-input" value={bForm.official_reference_number}
+                    placeholder="ex. P-SN-AAG-001"
+                    onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
                 </div>
                 <div className="field">
                   <label className="field-label">Countries <span className="req">*</span></label>

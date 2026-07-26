@@ -169,7 +169,7 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
         <div className="row" style={{ gap:10, alignItems:"flex-start", flex:1 }}>
           <span className="text-mono badge" style={{ fontSize:11 }}>{row.indicator_code}</span>
           <div style={{ flex:1 }}>
-            <div style={{ fontWeight:500 }}>{row.indicator_name}</div>
+            <div style={{ fontWeight:500, wordBreak:"break-word" }}>{row.indicator_name}</div>
             <div className="text-muted text-sm row" style={{ gap:8, marginTop:2 }}>
               <span>{row.indicator_unit}</span>
               <span>{directionIcon}</span>
