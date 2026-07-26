@@ -239,7 +239,22 @@ class ToCNodeSerializer(serializers.ModelSerializer):
         source="logframe_row.baseline_value", max_digits=18, decimal_places=4, read_only=True
     )
     logframe_baseline_year     = serializers.IntegerField(source="logframe_row.baseline_year",    read_only=True)
+    # Fréquence depuis le catalogue (recommandation) et depuis LogframeRow (choix projet)
+    catalogue_frequency        = serializers.CharField(
+        source="logframe_row.indicator.reporting_frequency", read_only=True
+    )
+    logframe_frequency         = serializers.CharField(
+        source="logframe_row.measurement_frequency", read_only=True
+    )
+    # Dimensions de désagrégation du catalogue
+    catalogue_disagg_dims      = serializers.SerializerMethodField()
     cross_pathway_ids          = serializers.SerializerMethodField()
+
+    def get_catalogue_disagg_dims(self, obj):
+        if not obj.logframe_row_id:
+            return []
+        dims = obj.logframe_row.indicator.disaggregation_dimensions.all()
+        return [{"id": d.id, "name": d.name, "categories": d.categories} for d in dims]
 
     class Meta:
         model  = ToCNode
@@ -249,6 +264,8 @@ class ToCNodeSerializer(serializers.ModelSerializer):
             "logframe_row_id", "logframe_indicator_code",
             "logframe_indicator_name", "logframe_indicator_unit",
             "logframe_baseline_value", "logframe_baseline_year",
+            "catalogue_frequency", "logframe_frequency",
+            "catalogue_disagg_dims",
             "means_of_verification", "assumptions", "risks_mitigation",
             "adaptation_strategy", "gender_climate_tag",
             "cross_pathway_ids",
@@ -259,6 +276,8 @@ class ToCNodeSerializer(serializers.ModelSerializer):
             "logframe_row_id", "logframe_indicator_code",
             "logframe_indicator_name", "logframe_indicator_unit",
             "logframe_baseline_value", "logframe_baseline_year",
+            "catalogue_frequency", "logframe_frequency",
+            "catalogue_disagg_dims",
             "cross_pathway_ids",
             "created_at", "updated_at",
         ]

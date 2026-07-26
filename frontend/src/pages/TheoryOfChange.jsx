@@ -22,364 +22,460 @@ const EMPTY_NODE_FORM = {
 };
 
 /* ── Formulaire inline indicateur + baseline + cibles ───────────────────── */
+const FREQ_CHOICES = [
+  { value: "quarterly",      label: "Quarterly" },
+  { value: "semi_annual",    label: "Semi-annual" },
+  { value: "annual",         label: "Annual" },
+  { value: "end_of_project", label: "End of project" },
+];
+
+function SectionHeader({ icon, title, action }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+      padding:"8px 0 6px", borderBottom:"1px solid #f0f0ee", marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <Icon name={icon} size={13} style={{ color:"#A4C53F" }} />
+        <span style={{ fontSize:11, fontWeight:700, color:"#374151",
+          textTransform:"uppercase", letterSpacing:"0.07em" }}>{title}</span>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 function IndicatorPanel({ projectId, node, onSaved }) {
   const qc = useQueryClient();
   const dialog = useDialog();
-  const [mode, setMode]       = useState("view"); // view | attach | baseline | targets
-  const [search, setSearch]   = useState("");
-  const [selectedId, setSelectedId] = useState("");
-  const [chainLevel] = useState(node.chain_level || "output"); // verrouillé sur le niveau du nœud
-  const [baselineForm, setBaselineForm] = useState({
-    baseline_value: node.logframe_baseline_value ?? "",
-    baseline_year:  node.logframe_baseline_year  ?? "",
-    baseline_source: "",
-    measurement_frequency: "",
-    notes: "",
-  });
-  const [targetForm, setTargetForm] = useState({ target_value: "", target_date: "", label: "" });
-  const [targets, setTargets]       = useState([]);
 
-  /* Catalogue */
+  // Modes d'attach
+  const [showAttach, setShowAttach]   = useState(false);
+  const [search, setSearch]           = useState("");
+
+  // Édition inline baseline
+  const [editBaseline, setEditBaseline] = useState(false);
+  const [baselineForm, setBaselineForm] = useState({
+    baseline_value: "", baseline_year: "", baseline_source: "",
+    measurement_frequency: "", notes: "",
+  });
+
+  // Édition inline target
+  const [addingTarget, setAddingTarget] = useState(false);
+  const [targetForm, setTargetForm]     = useState({ target_value: "", target_date: "", label: "" });
+
+  // Désagrégation
+  const [showDisagg, setShowDisagg] = useState(false);
+
+  const hasIndicator = !!node.logframe_indicator_code;
+  const rowId        = node.logframe_row_id;
+
+  /* ── Queries ── */
   const { data: indicators, isLoading: indLoading } = useQuery({
     queryKey: ["indicators", search],
-    queryFn: () => apiFetch(`/api/results/indicators/?${search ? `q=${encodeURIComponent(search)}` : ""}`),
-    enabled: mode === "attach",
+    queryFn:  () => apiFetch(`/api/results/indicators/?${search ? `q=${encodeURIComponent(search)}` : ""}`),
+    enabled: showAttach,
   });
 
-  /* Cibles existantes (si ligne logframe déjà attachée) */
   const { data: existingRow } = useQuery({
-    queryKey: ["logframe-row", projectId, node.logframe_row_id],
-    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/`),
-    enabled: !!node.logframe_row_id,
+    queryKey: ["logframe-row", projectId, rowId],
+    queryFn:  () => apiFetch(`/api/projects/${projectId}/logframe/${rowId}/`),
+    enabled: !!rowId,
   });
 
-  /* Choices niveau chaîne */
-  const { data: choices } = useQuery({
-    queryKey: ["logframe-choices", projectId],
-    queryFn: () => apiFetch(`/api/projects/${projectId}/logframe/choices/`),
-    enabled: mode === "attach",
-  });
+  const rowTargets = existingRow?.targets || [];
+  const currentFreq = existingRow?.measurement_frequency || node.catalogue_frequency || "";
+  const disaggDims  = node.catalogue_disagg_dims || [];
 
-  /* Créer logframe_row + attacher au nœud */
+  /* ── Mutations ── */
   const attachMutation = useMutation({
-    mutationFn: async () => {
-      // 1. Créer la ligne logframe
+    mutationFn: async (selectedId) => {
       const row = await apiFetch(`/api/projects/${projectId}/logframe/`, {
         method: "POST",
-        body: JSON.stringify({ indicator: Number(selectedId), chain_level: chainLevel }),
+        body: JSON.stringify({ indicator: Number(selectedId), chain_level: node.chain_level }),
       });
-      // 2. Attacher la ligne au nœud ToC
       await apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, {
-        method: "PATCH",
-        body: JSON.stringify({ logframe_row: row.id }),
+        method: "PATCH", body: JSON.stringify({ logframe_row: row.id }),
       });
+      // Pré-remplir fréquence depuis catalogue
+      if (row.id) {
+        const ind = indicators?.find(i => String(i.id) === String(selectedId));
+        if (ind?.reporting_frequency) {
+          await apiFetch(`/api/projects/${projectId}/logframe/${row.id}/`, {
+            method: "PATCH", body: JSON.stringify({ measurement_frequency: ind.reporting_frequency }),
+          });
+        }
+      }
       return row;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["toc", projectId] });
       qc.invalidateQueries({ queryKey: ["logframe", projectId] });
-      qc.invalidateQueries({ queryKey: ["results-summary", projectId] });
+      setShowAttach(false); setSearch("");
       onSaved();
-      setMode("view");
     },
   });
 
-  /* Sauvegarder baseline */
   const baselineMutation = useMutation({
-    mutationFn: (payload) =>
-      apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/`, {
-        method: "PATCH", body: JSON.stringify(payload),
-      }),
+    mutationFn: (payload) => apiFetch(`/api/projects/${projectId}/logframe/${rowId}/`, {
+      method: "PATCH", body: JSON.stringify(payload),
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["toc", projectId] });
-      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, node.logframe_row_id] });
-      onSaved();
-      setMode("view");
+      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, rowId] });
+      setEditBaseline(false); onSaved();
     },
   });
 
-  /* Ajouter une cible */
-  const targetMutation = useMutation({
-    mutationFn: (payload) =>
-      apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/targets/`, {
-        method: "POST", body: JSON.stringify(payload),
-      }),
+  const freqMutation = useMutation({
+    mutationFn: (freq) => apiFetch(`/api/projects/${projectId}/logframe/${rowId}/`, {
+      method: "PATCH", body: JSON.stringify({ measurement_frequency: freq }),
+    }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, node.logframe_row_id] });
+      qc.invalidateQueries({ queryKey: ["toc", projectId] });
+      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, rowId] });
+      onSaved();
+    },
+  });
+
+  const targetMutation = useMutation({
+    mutationFn: (payload) => apiFetch(`/api/projects/${projectId}/logframe/${rowId}/targets/`, {
+      method: "POST", body: JSON.stringify(payload),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["logframe-row", projectId, rowId] });
       qc.invalidateQueries({ queryKey: ["logframe", projectId] });
       setTargetForm({ target_value: "", target_date: "", label: "" });
+      setAddingTarget(false);
     },
   });
 
-  /* Supprimer une cible */
   const deleteTargetMutation = useMutation({
-    mutationFn: (tid) =>
-      apiFetch(`/api/projects/${projectId}/logframe/${node.logframe_row_id}/targets/${tid}/`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["logframe-row", projectId, node.logframe_row_id] }),
+    mutationFn: (tid) => apiFetch(`/api/projects/${projectId}/logframe/${rowId}/targets/${tid}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["logframe-row", projectId, rowId] }),
   });
 
-  /* Détacher l'indicateur du nœud */
   const detachMutation = useMutation({
-    mutationFn: () =>
-      apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, {
-        method: "PATCH", body: JSON.stringify({ logframe_row: null }),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["toc", projectId] });
-      onSaved();
-      setMode("view");
-    },
+    mutationFn: () => apiFetch(`/api/projects/${projectId}/toc/nodes/${node.id}/`, {
+      method: "PATCH", body: JSON.stringify({ logframe_row: null }),
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["toc", projectId] }); onSaved(); },
   });
 
-  const hasIndicator = !!node.logframe_indicator_code;
-  const rowTargets   = existingRow?.targets || [];
-
-  /* ── Vue indicator ── */
+  /* ── Render ── */
   return (
-    <div style={{
-      background: "var(--surface-2)", border: "1px solid var(--border)",
-      borderRadius: "var(--r-2)", padding: "12px 14px", marginTop: 10,
-    }}>
+    <div style={{ background:"#fafaf8", border:"1px solid #e5e5e2", borderRadius:10,
+      padding:"12px 14px", marginTop:10 }}>
       <DialogModal {...dialog.dialogProps} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: hasIndicator ? 10 : 0 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+
+      {/* ── En-tête panneau ── */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <span style={{ fontSize:11, fontWeight:700, color:"#9ca3af",
+          textTransform:"uppercase", letterSpacing:"0.07em" }}>
+          <Icon name="bar-chart-2" size={12} style={{ marginRight:5, color:"#A4C53F" }} />
           Indicator &amp; Measurement
         </span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {hasIndicator && mode === "view" && (
-            <>
-              <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11 }} onClick={() => {
-                setBaselineForm({
-                  baseline_value: node.logframe_baseline_value ?? "",
-                  baseline_year:  node.logframe_baseline_year  ?? "",
-                  baseline_source: existingRow?.baseline_source ?? "",
-                  measurement_frequency: existingRow?.measurement_frequency ?? "",
-                  notes: existingRow?.notes ?? "",
+        <div style={{ display:"flex", gap:5 }}>
+          {hasIndicator && (
+            <button className="btn btn-ghost btn-sm" style={{ fontSize:10, color:"#dc2626" }}
+              onClick={async () => {
+                const ok = await dialog.confirm("The logframe row and targets will be preserved.", {
+                  title:"Detach indicator?", confirmLabel:"Detach", danger:true,
                 });
-                setMode("baseline");
+                if (ok) detachMutation.mutate();
               }}>
-                <Icon name="pencil" size={11} /> Baseline
-              </button>
-              <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11 }} onClick={() => setMode("targets")}>
-                <Icon name="plus" size={11} /> Target
-              </button>
-              <button className="btn btn-ghost btn-sm" style={{ gap: 5, fontSize: 11, color: "var(--red, #dc2626)" }}
-                onClick={async () => { const ok = await dialog.confirm("The logframe row and targets will be preserved.", { title: "Detach indicator?", confirmLabel: "Detach", danger: true }); if (ok) detachMutation.mutate(); }}>
-                <Icon name="x" size={11} /> Detach
-              </button>
-            </>
-          )}
-          {!hasIndicator && mode === "view" && (
-            <button className="btn btn-primary btn-sm" style={{ gap: 5, fontSize: 11 }} onClick={() => setMode("attach")}>
-              <Icon name="plus" size={11} /> Attach indicator
+              <Icon name="x" size={10} /> Detach
             </button>
           )}
-          {mode !== "view" && (
-            <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => setMode("view")}>
-              <Icon name="x" size={11} /> Cancel
+          {!hasIndicator && !showAttach && (
+            <button className="btn btn-primary btn-sm" style={{ fontSize:11, gap:5 }}
+              onClick={() => setShowAttach(true)}>
+              <Icon name="plus" size={12} /> Attach indicator
             </button>
           )}
         </div>
       </div>
 
-      {/* Vue résumé */}
-      {mode === "view" && hasIndicator && (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span className="badge" style={{ fontSize: 11, fontFamily: "var(--font-mono)" }}>{node.logframe_indicator_code}</span>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{node.logframe_indicator_name}</span>
-            <span className="text-muted" style={{ fontSize: 11 }}>{node.logframe_indicator_unit}</span>
+      {/* ── Mode : attacher ── */}
+      {showAttach && (
+        <div style={{ background:"#f0f6dc", border:"1px solid #A4C53F", borderRadius:8,
+          padding:12, marginBottom:12 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontSize:12, fontWeight:600 }}>Select from LLF2 catalogue</span>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowAttach(false); setSearch(""); }}>
+              <Icon name="x" size={11} />
+            </button>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 12 }}>
-            <span>
-              <span className="text-muted">Baseline: </span>
-              <strong>{node.logframe_baseline_value != null ? `${fmtNum(node.logframe_baseline_value)} ${node.logframe_indicator_unit}` : "—"}</strong>
-              {node.logframe_baseline_year ? <span className="text-muted"> ({node.logframe_baseline_year})</span> : ""}
+          <input className="field-input" placeholder="Search by code or keyword…"
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ marginBottom:8 }} />
+          <select className="field-select" style={{ marginBottom:10 }}
+            onChange={e => e.target.value && attachMutation.mutate(e.target.value)}
+            defaultValue="">
+            <option value="">{indLoading ? "Loading…" : "Select an indicator…"}</option>
+            {(indicators || []).map(ind => (
+              <option key={ind.id} value={ind.id}>
+                {ind.code} — {ind.name.slice(0, 65)}
+                {ind.reporting_frequency ? ` [${ind.reporting_frequency}]` : ""}
+              </option>
+            ))}
+          </select>
+          {attachMutation.isPending && <span className="spinner" style={{ width:14, height:14 }} />}
+          {attachMutation.isError && (
+            <div className="field-error">{JSON.stringify(attachMutation.error?.detail)}</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Indicateur attaché ── */}
+      {hasIndicator && (
+        <>
+          {/* Identité */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14,
+            padding:"8px 10px", background:"#fff", borderRadius:8, border:"1px solid #e5e7eb" }}>
+            <span style={{ fontFamily:"monospace", fontSize:11, color:"#9ca3af",
+              background:"#f3f4f6", padding:"1px 6px", borderRadius:4 }}>
+              {node.logframe_indicator_code}
             </span>
-            {rowTargets.length > 0 && (
-              <span>
-                <span className="text-muted">Targets: </span>
-                <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
-                  {rowTargets.map((t) => (
-                    <span key={t.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 8px", borderRadius: 99,
-                      background: t.status === "approved" ? "#dcfce7" : t.status === "revised" ? "#f3f4f6" : "#fef9c3",
-                      color: t.status === "approved" ? "#166534" : t.status === "revised" ? "#6b7280" : "#854d0e",
-                      textDecoration: t.status === "revised" ? "line-through" : "none",
-                    }}>
-                      {t.is_original_pad && <span title="Original PAD target" style={{ fontWeight: 700 }}>PAD·</span>}
-                      {t.label || new Date(t.target_date).getFullYear()} : {fmtNum(t.target_value)}
-                      {t.status === "approved" && !t.is_original_pad && (
-                        <button type="button" title="Revise this target"
-                          style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 2px", color: "#166534", fontSize: 9, fontWeight: 700 }}
-                          onClick={(e) => { e.stopPropagation(); alert("Revision workflow: POST /logframe/" + node.logframe_row_id + "/targets/" + t.id + "/revise/ — à brancher"); }}>
-                          ✎
-                        </button>
-                      )}
-                      {!t.is_original_pad && t.status !== "revised" && (
-                      <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
-                        onClick={async () => { const ok = await dialog.confirm("This target will be permanently deleted.", { title: "Delete target?", confirmLabel: "Delete", danger: true }); if (ok) deleteTargetMutation.mutate(t.id); }}>
-                        ×
-                      </button>
+            <span style={{ fontSize:13, fontWeight:600, flex:1, color:"#111" }}>
+              {node.logframe_indicator_name}
+            </span>
+            <span style={{ fontSize:11, color:"#9ca3af" }}>({node.logframe_indicator_unit})</span>
+          </div>
+
+          {/* ── Section Fréquence & Désagrégation ── */}
+          <SectionHeader icon="calendar" title="Frequency & Disaggregation" />
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+            <div>
+              <label className="field-label" style={{ fontSize:11 }}>
+                Reporting frequency
+                {node.catalogue_frequency && currentFreq !== node.catalogue_frequency && (
+                  <span style={{ marginLeft:6, fontSize:10, color:"#9ca3af" }}>
+                    (catalogue: {node.catalogue_frequency})
+                  </span>
+                )}
+              </label>
+              <select className="field-select" value={currentFreq}
+                onChange={e => freqMutation.mutate(e.target.value)}
+                disabled={freqMutation.isPending}>
+                <option value="">Select…</option>
+                {FREQ_CHOICES.map(f => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
+                ))}
+              </select>
+              {node.catalogue_frequency && (
+                <div style={{ fontSize:10, color:"#9ca3af", marginTop:3 }}>
+                  Catalogue default: <strong>{node.catalogue_frequency}</strong>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize:11 }}>Disaggregation dimensions</label>
+              {disaggDims.length === 0 ? (
+                <div style={{ fontSize:12, color:"#9ca3af", fontStyle:"italic" }}>
+                  No dimensions in catalogue
+                </div>
+              ) : (
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {disaggDims.map(d => (
+                    <span key={d.id} style={{ fontSize:11, padding:"2px 8px", borderRadius:99,
+                      background:"#f0f6dc", color:"#7a9420", border:"1px solid #A4C53F30" }}>
+                      {d.name}
+                      {d.categories?.length > 0 && (
+                        <span style={{ color:"#9ca3af", marginLeft:4 }}>
+                          ({d.categories.slice(0,2).join(", ")}{d.categories.length > 2 ? "…" : ""})
+                        </span>
                       )}
                     </span>
                   ))}
-                </span>
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {mode === "view" && !hasIndicator && (
-        <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>No indicator attached — click "Attach indicator" to link one from the LLF2 catalogue.</p>
-      )}
-
-      {/* Mode : attacher un indicateur */}
-      {mode === "attach" && (
-        <div style={{ marginTop: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 180px", gap: 8, marginBottom: 8 }}>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Search catalogue</label>
-              <input className="field-input" placeholder="Code or keyword..." value={search}
-                onChange={(e) => setSearch(e.target.value)} />
+                </div>
+              )}
             </div>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Level in chain</label>
-              <div className="field-input" style={{ background: "var(--surface-2)", color: "var(--muted)", cursor: "default", fontSize: 12 }}>
-                {node.chain_level_display || node.chain_level}
+          </div>
+
+          {/* ── Section Baseline ── */}
+          <SectionHeader icon="anchor" title="Baseline"
+            action={!editBaseline && (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize:10, gap:4 }}
+                onClick={() => {
+                  setBaselineForm({
+                    baseline_value:  node.logframe_baseline_value ?? "",
+                    baseline_year:   node.logframe_baseline_year  ?? "",
+                    baseline_source: existingRow?.baseline_source ?? "",
+                    measurement_frequency: currentFreq,
+                    notes: existingRow?.notes ?? "",
+                  });
+                  setEditBaseline(true);
+                }}>
+                <Icon name="pencil" size={10} /> Edit
+              </button>
+            )}
+          />
+
+          {!editBaseline ? (
+            <div style={{ display:"flex", gap:20, fontSize:13, marginBottom:14,
+              padding:"8px 10px", background:"#fff", borderRadius:8, border:"1px solid #e5e7eb" }}>
+              <div>
+                <span style={{ fontSize:11, color:"#9ca3af" }}>Value </span>
+                <strong>
+                  {node.logframe_baseline_value != null
+                    ? `${fmtNum(node.logframe_baseline_value)} ${node.logframe_indicator_unit}`
+                    : "—"}
+                </strong>
+              </div>
+              <div>
+                <span style={{ fontSize:11, color:"#9ca3af" }}>Year </span>
+                <strong>{node.logframe_baseline_year ?? "—"}</strong>
+              </div>
+              {existingRow?.baseline_source && (
+                <div>
+                  <span style={{ fontSize:11, color:"#9ca3af" }}>Source </span>
+                  <strong>{existingRow.baseline_source}</strong>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ background:"#f0f6dc", border:"1px solid #A4C53F40", borderRadius:8,
+              padding:12, marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+                <div>
+                  <label className="field-label" style={{ fontSize:11 }}>
+                    Value ({node.logframe_indicator_unit})
+                  </label>
+                  <input className="field-input" type="number" step="any"
+                    value={baselineForm.baseline_value}
+                    onChange={e => setBaselineForm(f => ({ ...f, baseline_value: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="field-label" style={{ fontSize:11 }}>Reference year</label>
+                  <input className="field-input" type="number" min="2000" max="2050"
+                    value={baselineForm.baseline_year}
+                    onChange={e => setBaselineForm(f => ({ ...f, baseline_year: e.target.value }))} />
+                </div>
+                <div style={{ gridColumn:"span 2" }}>
+                  <label className="field-label" style={{ fontSize:11 }}>Source / justification</label>
+                  <input className="field-input" value={baselineForm.baseline_source}
+                    onChange={e => setBaselineForm(f => ({ ...f, baseline_source: e.target.value }))} />
+                </div>
+                <div style={{ gridColumn:"span 2" }}>
+                  <label className="field-label" style={{ fontSize:11 }}>Notes</label>
+                  <input className="field-input" value={baselineForm.notes}
+                    onChange={e => setBaselineForm(f => ({ ...f, notes: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditBaseline(false)}>Cancel</button>
+                <button className="btn btn-primary btn-sm row" style={{ gap:5 }}
+                  onClick={() => baselineMutation.mutate(baselineForm)}
+                  disabled={baselineMutation.isPending}>
+                  <Icon name="check" size={12} /> Save baseline
+                </button>
               </div>
             </div>
-          </div>
-          <select className="field-select" style={{ marginBottom: 10 }} value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}>
-            <option value="">{indLoading ? "Loading..." : "Select an indicator..."}</option>
-            {indicators?.map((ind) => (
-              <option key={ind.id} value={ind.id}>{ind.code} — {ind.name.slice(0, 70)}</option>
-            ))}
-          </select>
-          {attachMutation.isError && (
-            <div className="field-error" style={{ marginBottom: 8 }}>
-              {(() => {
-                const d = attachMutation.error?.detail;
-                if (!d) return "Error attaching indicator.";
-                if (typeof d === "string") return d;
-                if (Array.isArray(d)) return d.join(" ");
-                if (d.non_field_errors) return d.non_field_errors.join(" ");
-                if (d.indicator) return `Indicator: ${d.indicator.join(" ")}`;
-                return JSON.stringify(d);
-              })()}
+          )}
+
+          {/* ── Section Cibles ── */}
+          <SectionHeader icon="trending-up" title="Targets"
+            action={!addingTarget && (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize:10, gap:4 }}
+                onClick={() => setAddingTarget(true)}>
+                <Icon name="plus" size={11} /> Add target
+              </button>
+            )}
+          />
+
+          {/* Liste des cibles */}
+          {rowTargets.length === 0 && !addingTarget && (
+            <div style={{ fontSize:12, color:"#9ca3af", fontStyle:"italic", marginBottom:10 }}>
+              No targets defined yet.
             </div>
           )}
-          <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
-            disabled={!selectedId || !chainLevel || attachMutation.isPending}
-            onClick={() => attachMutation.mutate()}>
-            <Icon name="check" size={13} /> {attachMutation.isPending ? "Attaching..." : "Attach to node"}
-          </button>
-        </div>
-      )}
-
-      {/* Mode : saisir baseline */}
-      {mode === "baseline" && (
-        <div style={{ marginTop: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Baseline value ({node.logframe_indicator_unit})</label>
-              <input className="field-input" type="number" step="any" value={baselineForm.baseline_value}
-                onChange={(e) => setBaselineForm({ ...baselineForm, baseline_value: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Reference year</label>
-              <input className="field-input" type="number" min="2000" max="2050" value={baselineForm.baseline_year}
-                onChange={(e) => setBaselineForm({ ...baselineForm, baseline_year: e.target.value })} />
-            </div>
-            <div style={{ gridColumn: "span 2" }}>
-              <label className="field-label" style={{ fontSize: 11 }}>Source</label>
-              <input className="field-input" value={baselineForm.baseline_source}
-                onChange={(e) => setBaselineForm({ ...baselineForm, baseline_source: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Measurement frequency</label>
-              <select className="field-select" value={baselineForm.measurement_frequency}
-                onChange={(e) => setBaselineForm({ ...baselineForm, measurement_frequency: e.target.value })}>
-                <option value="">Select</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="semi_annual">Semi-annual</option>
-                <option value="annual">Annual</option>
-                <option value="end_of_project">End of project</option>
-              </select>
-            </div>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Notes</label>
-              <input className="field-input" value={baselineForm.notes}
-                onChange={(e) => setBaselineForm({ ...baselineForm, notes: e.target.value })} />
-            </div>
-          </div>
-          {baselineMutation.isError && (
-            <div className="field-error" style={{ marginBottom: 8 }}>{JSON.stringify(baselineMutation.error?.detail)}</div>
-          )}
-          <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
-            disabled={baselineMutation.isPending}
-            onClick={() => baselineMutation.mutate({
-              baseline_value: baselineForm.baseline_value || null,
-              baseline_year:  baselineForm.baseline_year  || null,
-              baseline_source: baselineForm.baseline_source,
-              measurement_frequency: baselineForm.measurement_frequency || null,
-              notes: baselineForm.notes,
-            })}>
-            <Icon name="check" size={13} /> {baselineMutation.isPending ? "Saving..." : "Save baseline"}
-          </button>
-        </div>
-      )}
-
-      {/* Mode : ajouter une cible */}
-      {mode === "targets" && (
-        <div style={{ marginTop: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Target value ({node.logframe_indicator_unit})</label>
-              <input className="field-input" type="number" step="any" value={targetForm.target_value}
-                onChange={(e) => setTargetForm({ ...targetForm, target_value: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Target date</label>
-              <input className="field-input" type="date" value={targetForm.target_date}
-                onChange={(e) => setTargetForm({ ...targetForm, target_date: e.target.value })} />
-            </div>
-            <div>
-              <label className="field-label" style={{ fontSize: 11 }}>Label (e.g. 2025, Q3)</label>
-              <input className="field-input" value={targetForm.label}
-                onChange={(e) => setTargetForm({ ...targetForm, label: e.target.value })} />
-            </div>
-          </div>
-          {/* Cibles déjà saisies */}
           {rowTargets.length > 0 && (
-            <div style={{ marginBottom: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {rowTargets.map((t) => (
-                <span key={t.id} className="badge badge-lime" style={{ fontSize: 11 }}>
-                  {t.label || new Date(t.target_date).getFullYear()} : {fmtNum(t.target_value)}
-                  <button type="button" style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 4px", color: "inherit" }}
-                    onClick={async () => { const ok = await dialog.confirm("This target will be permanently deleted.", { title: "Delete target?", confirmLabel: "Delete", danger: true }); if (ok) deleteTargetMutation.mutate(t.id); }}>
-                    ×
-                  </button>
-                </span>
+            <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:10 }}>
+              {rowTargets.map(t => (
+                <div key={t.id} style={{
+                  display:"flex", alignItems:"center", gap:10,
+                  padding:"6px 10px", borderRadius:8,
+                  background: t.status === "approved" ? "#dcfce7" : t.status === "revised" ? "#f3f4f6" : "#fff",
+                  border: `1px solid ${t.status === "approved" ? "#86efac" : "#e5e7eb"}`,
+                  textDecoration: t.status === "revised" ? "line-through" : "none",
+                }}>
+                  {t.is_original_pad && (
+                    <span style={{ fontSize:9, fontWeight:700, color:"#1B5A8C",
+                      background:"#e0ebf6", padding:"1px 5px", borderRadius:99 }}>PAD</span>
+                  )}
+                  <span style={{ fontSize:12, color:"#6b7280", minWidth:60 }}>
+                    {t.label || (t.target_date ? new Date(t.target_date).getFullYear() : "—")}
+                  </span>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#111", flex:1 }}>
+                    {fmtNum(t.target_value)} <span style={{ fontSize:11, color:"#9ca3af" }}>{node.logframe_indicator_unit}</span>
+                  </span>
+                  <span style={{ fontSize:10, fontWeight:600,
+                    color: t.status === "approved" ? "#16a34a" : t.status === "revised" ? "#9ca3af" : "#d97706" }}>
+                    {t.status}
+                  </span>
+                  {!t.is_original_pad && t.status !== "revised" && (
+                    <button style={{ border:"none", background:"none", cursor:"pointer",
+                      color:"#dc2626", fontSize:14, padding:"0 2px" }}
+                      onClick={async () => {
+                        const ok = await dialog.confirm("This target will be permanently deleted.", {
+                          title:"Delete target?", confirmLabel:"Delete", danger:true,
+                        });
+                        if (ok) deleteTargetMutation.mutate(t.id);
+                      }}>×</button>
+                  )}
+                </div>
               ))}
             </div>
           )}
-          {targetMutation.isError && (
-            <div className="field-error" style={{ marginBottom: 8 }}>{JSON.stringify(targetMutation.error?.detail)}</div>
+
+          {/* Formulaire ajout cible */}
+          {addingTarget && (
+            <div style={{ background:"#f0f6dc", border:"1px solid #A4C53F40", borderRadius:8,
+              padding:12, marginBottom:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
+                <div>
+                  <label className="field-label" style={{ fontSize:11 }}>
+                    Value ({node.logframe_indicator_unit})
+                  </label>
+                  <input className="field-input" type="number" step="any"
+                    value={targetForm.target_value}
+                    onChange={e => setTargetForm(f => ({ ...f, target_value: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="field-label" style={{ fontSize:11 }}>Target date</label>
+                  <input className="field-input" type="date"
+                    value={targetForm.target_date}
+                    onChange={e => setTargetForm(f => ({ ...f, target_date: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="field-label" style={{ fontSize:11 }}>Label (optional)</label>
+                  <input className="field-input" placeholder="e.g. Year 2, Q4"
+                    value={targetForm.label}
+                    onChange={e => setTargetForm(f => ({ ...f, label: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => setAddingTarget(false)}>Cancel</button>
+                <button className="btn btn-primary btn-sm row" style={{ gap:5 }}
+                  onClick={() => targetMutation.mutate(targetForm)}
+                  disabled={targetMutation.isPending || !targetForm.target_value || !targetForm.target_date}>
+                  <Icon name="check" size={12} /> Add target
+                </button>
+              </div>
+            </div>
           )}
-          <button className="btn btn-primary btn-sm" style={{ gap: 6 }}
-            disabled={!targetForm.target_value || !targetForm.target_date || targetMutation.isPending}
-            onClick={() => targetMutation.mutate(targetForm)}>
-            <Icon name="plus" size={13} /> {targetMutation.isPending ? "Adding..." : "Add target"}
-          </button>
+        </>
+      )}
+
+      {!hasIndicator && !showAttach && (
+        <div style={{ fontSize:12, color:"#9ca3af", fontStyle:"italic" }}>
+          No indicator attached — click "Attach indicator" to link one from the LLF2 catalogue.
         </div>
       )}
     </div>
   );
 }
 
-/* ── NodeCard ────────────────────────────────────────────────────────────── */
+
 function NodeCard({ node, projectId, onSaved, onDeleted }) {
   const [expanded, setExpanded] = useState(false);
   const [editing,  setEditing]  = useState(false);

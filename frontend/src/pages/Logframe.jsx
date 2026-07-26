@@ -248,15 +248,14 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
                     <label className="field-label">Measurement Frequency</label>
-                    <select className="field-select"
-                      value={baselineForm.measurement_frequency}
-                      onChange={(e) => setBaselineForm({ ...baselineForm, measurement_frequency: e.target.value })}>
-                      <option value="">Select</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="semi_annual">Semi-annual</option>
-                      <option value="annual">Annual</option>
-                      <option value="end_of_project">End of project</option>
-                    </select>
+                    <div className="field-input" style={{ background:"#f3f4f6", color:"#6b7280",
+                      cursor:"default", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+                      <Icon name="lock" size={11} style={{ color:"#9ca3af" }} />
+                      {row.measurement_frequency_display || "—"}
+                      <span style={{ fontSize:10, color:"#9ca3af", marginLeft:"auto" }}>
+                        Set in Theory of Change
+                      </span>
+                    </div>
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
                     <label className="field-label">Notes</label>
