@@ -442,6 +442,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   <div className="dl-desc">{FRAGILITY_CHOICES.find(c => c.value === f.fragility_status)?.label || "—"}</div></div>
                 <div><div className="dl-term">Risk rating</div>
                   <div className="dl-desc">{RISK_CHOICES.find(c => c.value === f.risk_rating)?.label || "—"}</div></div>
+                {f.cross_cutting_theme_ids.length > 0 && (
+                  <div><div className="dl-term">Cross-cutting themes</div>
+                    <div className="dl-desc">{(themes || []).filter(t => f.cross_cutting_theme_ids.map(Number).includes(t.id)).map(t => t.name).join(", ") || "—"}</div></div>
+                )}
               </div>
             </div>
 
