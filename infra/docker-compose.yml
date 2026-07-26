@@ -1,28 +1,24 @@
-name: arbm-mes
+version: "3.9"
 
 services:
   db:
-    image: postgis/postgis:15-3.4
+    image: postgis/postgis:15-3.3
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-arbm_mes}
       POSTGRES_USER: ${POSTGRES_USER:-arbm_mes}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arbm_mes}
-    ports:
-      - "5432:5432"
     volumes:
       - arbm_mes_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arbm_mes}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
 
   backend:
     build:
@@ -35,8 +31,6 @@ services:
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ../backend:/app
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -47,7 +41,7 @@ services:
     build:
       context: ../backend
     restart: unless-stopped
-    command: celery -A config worker --loglevel=info --concurrency=2
+    command: celery -A config worker --loglevel=info
     env_file:
       - ../.env
     environment:
@@ -91,9 +85,7 @@ services:
     depends_on:
       - backend
 
-  # Martin — serveur de tuiles vectorielles PostGIS
-  # Expose les couches GADM Admin 1/2 comme tuiles MVT
-  # URL : http://localhost:3000/{layer}/{z}/{x}/{y}
+  # Martin — serveur de tuiles vectorielles PostGIS (GADM Admin 1/2)
   martin:
     image: ghcr.io/maplibre/martin:latest
     restart: unless-stopped
@@ -101,9 +93,7 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-arbm_mes}:${POSTGRES_PASSWORD:-arbm_mes}@db:5432/${POSTGRES_DB:-arbm_mes}
-    volumes:
-      - ./martin/config.yaml:/config.yaml
-    command: --config /config.yaml
+    command: --listen-addresses 0.0.0.0:3000
     depends_on:
       db:
         condition: service_healthy

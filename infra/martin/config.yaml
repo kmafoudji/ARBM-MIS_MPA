@@ -1,71 +1,53 @@
-# Martin tile server configuration — ARBM-MIS
-# Sert les tuiles vectorielles PostGIS (GADM Admin 1/2 + project scopes)
-# Doc : https://maplibre.org/martin/
+# Martin v1.13 — ARBM-MIS tile server
+# Les variables d'environnement sont interpolées avec la syntaxe ${}
+# La connexion PG est injectée via DATABASE_URL dans docker-compose
 
 listen_addresses: "0.0.0.0:3000"
 
-# Connection PostgreSQL
 postgres:
-  connection_string: "postgresql://${POSTGRES_USER:-arbm_mes}:${POSTGRES_PASSWORD:-arbm_mes}@db:5432/${POSTGRES_DB:-arbm_mes}"
-  pool_size: 10
+  connection_string: "postgresql://arbm_mes:arbm_mes@db:5432/arbm_mes"
+  pool_size: 5
+  # Auto-découverte des tables avec colonne geometry
+  auto_publish:
+    tables:
+      - id: gadm_admin1
+        schema: public
+        table: gadm_area
+        geometry_column: geometry
+        srid: 4326
+        minzoom: 2
+        maxzoom: 14
+        sql_where: "level = 1 AND geometry IS NOT NULL"
+        properties:
+          - id
+          - name
+          - level
+          - gadm_uid
 
-# Sources de tuiles depuis PostGIS
-# Martin détecte automatiquement les tables avec colonnes geometry
-# On filtre sur les tables qui nous intéressent
+      - id: gadm_admin2
+        schema: public
+        table: gadm_area
+        geometry_column: geometry
+        srid: 4326
+        minzoom: 4
+        maxzoom: 14
+        sql_where: "level = 2 AND geometry IS NOT NULL"
+        properties:
+          - id
+          - name
+          - level
+          - gadm_uid
+          - parent_id
 
-pg_config:
-  # Zones GADM Admin 1/2 — fond cartographique
-  - id: gadm_admin1
-    schema: public
-    table: gadm_area
-    srid: 4326
-    geometry_column: geometry
-    geometry_type: MULTIPOLYGON
-    properties:
-      id: integer
-      name: text
-      level: integer
-      gadm_uid: text
-    bounds: [-180, -90, 180, 90]
-    minzoom: 2
-    maxzoom: 14
-    filter: "level = 1"
-
-  - id: gadm_admin2
-    schema: public
-    table: gadm_area
-    srid: 4326
-    geometry_column: geometry
-    geometry_type: MULTIPOLYGON
-    properties:
-      id: integer
-      name: text
-      level: integer
-      gadm_uid: text
-    bounds: [-180, -90, 180, 90]
-    minzoom: 5
-    maxzoom: 14
-    filter: "level = 2"
-
-  # Périmètre géographique projets — zones d'intervention
-  - id: project_scope
-    schema: public
-    table: project_gadm_scope
-    srid: 4326
-    geometry_column: geometry
-    geometry_type: MULTIPOLYGON
-    properties:
-      id: integer
-      project_id: integer
-      area_id: integer
-      is_primary: boolean
-    bounds: [-180, -90, 180, 90]
-    minzoom: 4
-    maxzoom: 14
-
-# CORS — autoriser le frontend
-cors:
-  allowed_origins:
-    - "http://localhost:5173"
-    - "http://localhost:3000"
-    - "http://192.168.1.23:5173"
+      - id: project_gadm_scope
+        schema: public
+        table: project_gadm_scope
+        geometry_column: geometry
+        srid: 4326
+        minzoom: 3
+        maxzoom: 14
+        properties:
+          - id
+          - project_id
+          - area_id
+          - is_primary
