@@ -1,53 +1,11 @@
-# Martin v1.13 — ARBM-MIS tile server
-# Les variables d'environnement sont interpolées avec la syntaxe ${}
-# La connexion PG est injectée via DATABASE_URL dans docker-compose
-
+# Martin v1.13 — ARBM-MIS
 listen_addresses: "0.0.0.0:3000"
 
 postgres:
   connection_string: "postgresql://arbm_mes:arbm_mes@db:5432/arbm_mes"
   pool_size: 5
-  # Auto-découverte des tables avec colonne geometry
   auto_publish:
-    tables:
-      - id: gadm_admin1
-        schema: public
-        table: gadm_area
-        geometry_column: geometry
-        srid: 4326
-        minzoom: 2
-        maxzoom: 14
-        sql_where: "level = 1 AND geometry IS NOT NULL"
-        properties:
-          - id
-          - name
-          - level
-          - gadm_uid
-
-      - id: gadm_admin2
-        schema: public
-        table: gadm_area
-        geometry_column: geometry
-        srid: 4326
-        minzoom: 4
-        maxzoom: 14
-        sql_where: "level = 2 AND geometry IS NOT NULL"
-        properties:
-          - id
-          - name
-          - level
-          - gadm_uid
-          - parent_id
-
-      - id: project_gadm_scope
-        schema: public
-        table: project_gadm_scope
-        geometry_column: geometry
-        srid: 4326
-        minzoom: 3
-        maxzoom: 14
-        properties:
-          - id
-          - project_id
-          - area_id
-          - is_primary
+    schemas:
+      - public
+    tables: true
+    functions: false
