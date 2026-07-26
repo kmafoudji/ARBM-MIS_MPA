@@ -536,7 +536,9 @@ def generate_workspace(project, actor):
         try:
             count, error = generate_reporting_periods(project)
             if not error and count > 0:
-                pass  # Périodes générées
+                # Calculer immédiatement les statuts corrects (open/overdue/upcoming)
+                # sans attendre le cron Celery de 02h00 UTC
+                refresh_period_statuses(project=project)
         except Exception:
             pass
 
