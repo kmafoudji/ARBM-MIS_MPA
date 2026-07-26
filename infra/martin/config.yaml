@@ -2,7 +2,7 @@
 listen_addresses: "0.0.0.0:3000"
 
 postgres:
-  connection_string: "postgresql://arbm_mes:arbm_mes@db:5432/arbm_mes"
+  connection_string: "postgresql://arbm_mes:arbm_mes@arbm-mes-db-1:5432/arbm_mes"
   pool_size: 5
   auto_publish:
     schemas:

@@ -97,6 +97,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - default
+      - arbm_mes_net
+
+networks:
+  arbm_mes_net:
+    external: true
+    name: arbm-mes_default
 
 volumes:
   arbm_mes_pgdata:
