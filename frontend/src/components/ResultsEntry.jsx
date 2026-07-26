@@ -162,7 +162,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 }
 
 function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggregate, disaggActive }) {
-  const isLocked = period.period_status === "upcoming" || period.period_status === "approved";
+  const isLocked = period.period_status === "upcoming";  // overdue = saisissable, approved = via workflow
   const [open, setOpen]           = useState(false);
   const [showEvidence, setShowEvidence] = useState(false);
 
@@ -304,7 +304,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
           </div>
         ) : isLocked ? (
           <span style={{ fontSize: 10, color: "#d1d5db" }}>
-            {period.period_status === "upcoming" ? "🔒 Not open yet" : "—"}
+            "🔒 Not open yet"
           </span>
         ) : (
           <button
@@ -467,7 +467,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
                 {p.label}
                 <div style={{ fontWeight: 400, fontSize: 10, color: "#999", marginTop: 2 }}>
                   {p.status === "open"     ? "🟢 Open"
-                  : p.status === "overdue" ? "🔴 Overdue"
+                  : p.status === "overdue" ? "⚠️ Overdue"
                   : p.status === "approved"? "✅ Approved"
                   : p.status === "upcoming"? "🔒 Upcoming"
                   : ""}
