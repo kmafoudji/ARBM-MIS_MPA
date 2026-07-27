@@ -725,7 +725,11 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
   const addSubComponent = useMutation({
     mutationFn: (data) => apiFetch(`/api/projects/${projectId}/workplan/components/${component.id}/subcomponents/`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); setModal(false); setToast({ type: "success", message: "Sub-component created." }); },
-    onError: (e) => setToast({ type: "error", message: e?.detail || "Creation failed." }),
+    onError: (e) => {
+      const d = e?.detail;
+      const msg = typeof d === "string" ? d : d ? Object.entries(d).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ") : "Creation failed.";
+      setToast({ type: "error", message: msg });
+    },
   });
 
   const subs = component.sub_components?.filter(s => s.is_active !== false) || [];
@@ -804,7 +808,7 @@ export default function Workplan({ projectId, canEdit = true }) {
   const addComponent = useMutation({
     mutationFn: (data) => apiFetch(`/api/projects/${projectId}/workplan/components/`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); setModal(false); setToast({ type: "success", message: "Component created." }); },
-    onError: (e) => setToast({ type: "error", message: e?.detail || "Creation failed." }),
+    onError: (e) => { const d = e?.detail; const msg = typeof d === "string" ? d : d ? Object.entries(d).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ") : "Creation failed."; setToast({ type: "error", message: msg }); },
   });
 
   function handleRefresh() {
