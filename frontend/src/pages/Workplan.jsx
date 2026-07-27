@@ -115,20 +115,20 @@ function ComponentForm({ onSave, onCancel }) {
   const [form, setForm] = useState({ code: "", name: "", description: "", order: 0 });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
-        <div className="form-group">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 12 }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Code *</label>
           <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1" />
         </div>
-        <div className="form-group">
+        <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Name *</label>
-          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Component name" />
+          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Agricultural Productivity Improvement" />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Description</label>
-        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
+      <div className="form-group" style={{ marginBottom: 0 }}>
+        <label className="form-label">Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <textarea className="form-textarea" rows={3} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Brief description of this component..." />
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
@@ -144,20 +144,20 @@ function SubComponentForm({ componentId, onSave, onCancel }) {
   const [form, setForm] = useState({ code: "", name: "", description: "", order: 0, component: componentId });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
-        <div className="form-group">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 12 }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Code *</label>
           <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1.1" />
         </div>
-        <div className="form-group">
+        <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Name *</label>
-          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Sub-component name" />
+          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Input Distribution" />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Description</label>
-        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
+      <div className="form-group" style={{ marginBottom: 0 }}>
+        <label className="form-label">Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <textarea className="form-textarea" rows={3} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Brief description of this sub-component..." />
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
