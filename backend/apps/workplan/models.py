@@ -169,9 +169,16 @@ class Activity(models.Model):
     description = models.TextField(blank=True)
 
     # ── Responsabilité ────────────────────────────────────────────────────
+    responsible_user = models.ForeignKey(
+        "identity.AppUser",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="activities_responsible",
+        help_text="Utilisateur LLFMU responsable (si interne à la plateforme).",
+    )
     responsible_party = models.CharField(
         max_length=255, blank=True,
-        help_text="Utilisateur ou organisation responsable.",
+        help_text="Nom libre pour un responsable externe (contractant, partenaire, ministère).",
     )
 
     # ── Dates ─────────────────────────────────────────────────────────────

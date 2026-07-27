@@ -154,12 +154,13 @@ class ActivitySerializer(serializers.ModelSerializer):
     burn_rate            = serializers.FloatField(read_only=True)
     milestones_count     = serializers.SerializerMethodField()
     pending_delays_count = serializers.SerializerMethodField()
+    responsible_user_detail = serializers.SerializerMethodField()
 
     class Meta:
         model  = Activity
         fields = [
             "id", "sub_component", "code", "name", "description",
-            "responsible_party",
+            "responsible_user", "responsible_user_detail", "responsible_party",
             "planned_start", "planned_end",
             "baseline_start", "baseline_end",
             "revised_end", "actual_end",
@@ -183,6 +184,13 @@ class ActivitySerializer(serializers.ModelSerializer):
     def get_pending_delays_count(self, obj):
         return obj.delay_logs.filter(approval_status="pending").count()
 
+    def get_responsible_user_detail(self, obj):
+        if obj.responsible_user:
+            u = obj.responsible_user
+            full = f"{u.first_name} {u.last_name}".strip() or u.email
+            return {"id": u.id, "email": u.email, "full_name": full}
+        return None
+
 
 class ActivityCreateSerializer(serializers.ModelSerializer):
     """Création d'une activité — valide la liaison output_node."""
@@ -191,7 +199,7 @@ class ActivityCreateSerializer(serializers.ModelSerializer):
         model  = Activity
         fields = [
             "sub_component", "code", "name", "description",
-            "responsible_party",
+            "responsible_user", "responsible_party",
             "planned_start", "planned_end",
             "requires_evidence", "is_kpi_linked", "is_critical_path",
             "output_node",
@@ -225,7 +233,8 @@ class ActivityUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Activity
         fields = [
-            "code", "name", "description", "responsible_party",
+            "code", "name", "description",
+            "responsible_user", "responsible_party",
             "planned_start", "planned_end", "revised_end", "actual_end",
             "status", "progress",
             "requires_evidence", "is_kpi_linked", "is_critical_path",

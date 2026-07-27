@@ -230,9 +230,10 @@ const SECTION_TITLE = {
   marginBottom: 2,
 };
 
-function ActivityForm({ subComponentId, outputNodes, onSave, onCancel }) {
+function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCancel }) {
   const [form, setForm] = useState({
     code: "", name: "", description: "", responsible_party: "",
+    responsible_user: null,
     planned_start: "", planned_end: "", status: "not_started", progress: 0,
     requires_evidence: false, is_critical_path: false,
     output_node: "", budget_planned: "", order: 0,
@@ -287,7 +288,36 @@ function ActivityForm({ subComponentId, outputNodes, onSave, onCancel }) {
         </div>
         <div style={fieldStyle}>
           <label style={labelStyle}>Responsible Party</label>
-          <input style={inputStyle} value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organization or individual responsible" />
+          <select style={sel}
+            value={form.responsible_user != null ? String(form.responsible_user) : (form.responsible_party ? "__external__" : "")}
+            onChange={e => {
+              const val = e.target.value;
+              if (!val) { set("responsible_user", null); set("responsible_party", ""); }
+              else if (val === "__external__") { set("responsible_user", null); if (!form.responsible_party) set("responsible_party", " "); }
+              else {
+                const u = users.find(u => String(u.id) === val);
+                set("responsible_user", Number(val));
+                set("responsible_party", u ? (u.full_name || u.email) : "");
+              }
+            }}>
+            <option value="">— Select —</option>
+            {users.map(u => (
+              <option key={u.id} value={String(u.id)}>{u.full_name || u.email}</option>
+            ))}
+            <option value="__external__">⤷ External / Other (free text)</option>
+          </select>
+          {form.responsible_user != null && (
+            <div style={{ fontSize: 11, color: "#2563eb", padding: "4px 8px", background: "#eff6ff", borderRadius: 6, border: "1px solid #bfdbfe", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+              <Icon name="user" size={11} />
+              {users.find(u => u.id === form.responsible_user)?.email}
+            </div>
+          )}
+          {form.responsible_user == null && form.responsible_party !== "" && (
+            <input style={{ ...inputStyle, marginTop: 6 }}
+              value={form.responsible_party.trim()}
+              onChange={e => set("responsible_party", e.target.value)}
+              placeholder="Organization, contractor or individual name..." />
+          )}
         </div>
       </div>
 
@@ -593,7 +623,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { label: "Responsible",    value: activity.responsible_party || "—" },
+                { label: "Responsible",    value: activity.responsible_user_detail?.full_name || activity.responsible_party || "—" },
                 { label: "Planned Dates",  value: `${activity.planned_start} → ${activity.planned_end}` },
                 { label: "Baseline End",   value: activity.baseline_end ? `→ ${activity.baseline_end}` : "—" },
                 { label: "Revised End",    value: activity.revised_end || "—" },
@@ -719,7 +749,7 @@ function ActivityRow({ activity, onClick }) {
 
 // ─── Sub-Component Block ──────────────────────────────────────────────────────
 
-function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRefresh }) {
+function SubComponentBlock({ projectId, sub, outputNodes, users, onActivityClick, onRefresh }) {
   const [expanded, setExpanded] = useState(true);
   const [modal, setModal] = useState(false);
   const [toast, setToast] = useState(null);
@@ -772,6 +802,7 @@ function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRef
           <ActivityForm
             subComponentId={sub.id}
             outputNodes={outputNodes}
+            users={users}
             onSave={data => addActivity.mutateAsync(data)}
             onCancel={() => setModal(false)}
           />
@@ -784,7 +815,7 @@ function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRef
 
 // ─── Component Block ──────────────────────────────────────────────────────────
 
-function ComponentBlock({ projectId, component, outputNodes, onActivityClick, onRefresh }) {
+function ComponentBlock({ projectId, component, outputNodes, users, onActivityClick, onRefresh }) {
   const [expanded, setExpanded] = useState(true);
   const [modal, setModal] = useState(false);
   const [toast, setToast] = useState(null);
@@ -827,7 +858,7 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
           {subs.length === 0 ? (
             <div style={{ padding: "16px", color: "#94a3b8", fontSize: 13, fontStyle: "italic" }}>No sub-components yet — click "+ Sub-Component" to structure this component.</div>
           ) : subs.map(s => (
-            <SubComponentBlock key={s.id} projectId={projectId} sub={s} outputNodes={outputNodes} onActivityClick={onActivityClick} onRefresh={onRefresh} />
+            <SubComponentBlock key={s.id} projectId={projectId} sub={s} outputNodes={outputNodes} users={users} onActivityClick={onActivityClick} onRefresh={onRefresh} />
           ))}
         </div>
       )}
@@ -871,6 +902,12 @@ export default function Workplan({ projectId, canEdit = true }) {
     queryKey: ["workplan-output-nodes", projectId],
     queryFn: () => apiFetch(`/api/projects/${projectId}/workplan/output-nodes/`),
     staleTime: 60_000,
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => apiFetch("/api/identity/users/"),
+    staleTime: 300_000,
   });
 
   const addComponent = useMutation({
@@ -935,7 +972,7 @@ export default function Workplan({ projectId, canEdit = true }) {
         </div>
       ) : (
         components.map(c => (
-          <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes}
+          <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes} users={users}
             onActivityClick={setSelectedActivity} onRefresh={handleRefresh} />
         ))
       )}
