@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.reference",
     "apps.project",
     "apps.results",
+    "apps.workplan",
     "apps.authentication",
 ]
 
