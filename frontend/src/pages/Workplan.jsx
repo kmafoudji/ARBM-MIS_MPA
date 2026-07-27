@@ -118,6 +118,64 @@ function SummaryCard({ icon, label, value, accent }) {
   );
 }
 
+// ─── Component Form ───────────────────────────────────────────────────────────
+
+function ComponentForm({ onSave, onCancel }) {
+  const [form, setForm] = useState({ code: "", name: "", description: "", order: 0 });
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
+        <div className="form-group">
+          <label className="form-label">Code *</label>
+          <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Name *</label>
+          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Component name" />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Description</label>
+        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}><Icon name="save" size={14} /> Create Component</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-Component Form ───────────────────────────────────────────────────────
+
+function SubComponentForm({ componentId, onSave, onCancel }) {
+  const [form, setForm] = useState({ code: "", name: "", description: "", order: 0, component: componentId });
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
+        <div className="form-group">
+          <label className="form-label">Code *</label>
+          <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1.1" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Name *</label>
+          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Sub-component name" />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Description</label>
+        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}><Icon name="save" size={14} /> Create</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Activity Form ────────────────────────────────────────────────────────────
 
 function ActivityForm({ projectId, subComponentId, outputNodes = [], initial = {}, onSave, onCancel }) {
@@ -770,32 +828,7 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
   const completedActivities = subs.reduce((n, s) => n + (s.activities?.filter(a => a.status === "completed").length || 0), 0);
   const overdueActivities = subs.reduce((n, s) => n + (s.activities?.filter(a => a.is_overdue).length || 0), 0);
 
-  const SubForm = () => {
-    const [form, setForm] = useState({ code: "", name: "", description: "", order: 0, component: component.id });
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
-          <div className="form-group">
-            <label className="form-label">Code *</label>
-            <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1.1" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Name *</label>
-            <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Sub-component name" />
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Description</label>
-          <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-          <button className="btn btn-ghost" onClick={dialog.close}><Icon name="x" size={14} /> Cancel</button>
-          <button className="btn btn-primary" onClick={() => addSubComponent.mutate(form)}><Icon name="save" size={14} /> Create</button>
-        </div>
-      </div>
-    );
-  };
+
 
   return (
     <div style={{ marginBottom: 12, border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
@@ -809,7 +842,16 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
           {overdueActivities > 0 && <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 700 }}>· {overdueActivities} overdue</span>}
         </span>
         <button className="btn" style={{ fontSize: 11, padding: "4px 10px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 6 }}
-          onClick={e => { e.stopPropagation(); dialog.open(<SubForm />, "New Sub-Component"); }}>
+          onClick={e => {
+            e.stopPropagation();
+            dialog.open(
+              <SubComponentForm
+                componentId={component.id}
+                onSave={data => addSubComponent.mutate(data)}
+                onCancel={dialog.close}
+              />, "New Sub-Component"
+            );
+          }}>
           <Icon name="plus" size={12} /> Sub-Component
         </button>
       </div>
@@ -881,32 +923,7 @@ export default function Workplan({ projectId, canEdit = true }) {
     );
   }
 
-  const ComponentForm = () => {
-    const [form, setForm] = useState({ code: "", name: "", description: "", order: 0 });
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
-          <div className="form-group">
-            <label className="form-label">Code *</label>
-            <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Name *</label>
-            <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Component name" />
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Description</label>
-          <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-          <button className="btn btn-ghost" onClick={dialog.close}><Icon name="x" size={14} /> Cancel</button>
-          <button className="btn btn-primary" onClick={() => addComponent.mutate(form)}><Icon name="save" size={14} /> Create Component</button>
-        </div>
-      </div>
-    );
-  };
+
 
   return (
     <div style={{ position: "relative" }}>
@@ -934,7 +951,10 @@ export default function Workplan({ projectId, canEdit = true }) {
           </p>
         </div>
         {canEdit && (
-          <button className="btn btn-primary" onClick={() => dialog.open(<ComponentForm />, "New Component")}>
+          <button className="btn btn-primary" onClick={() => dialog.open(
+            <ComponentForm onSave={data => addComponent.mutate(data)} onCancel={dialog.close} />,
+            "New Component"
+          )}>
             <Icon name="plus" size={14} /> Add Component
           </button>
         )}
@@ -949,7 +969,10 @@ export default function Workplan({ projectId, canEdit = true }) {
             Start by creating the first component of this project, aligned with the PAD structure.
           </div>
           {canEdit && (
-            <button className="btn btn-primary" onClick={() => dialog.open(<ComponentForm />, "New Component")}>
+            <button className="btn btn-primary" onClick={() => dialog.open(
+              <ComponentForm onSave={data => addComponent.mutate(data)} onCancel={dialog.close} />,
+              "New Component"
+            )}>
               <Icon name="plus" size={14} /> Create First Component
             </button>
           )}
