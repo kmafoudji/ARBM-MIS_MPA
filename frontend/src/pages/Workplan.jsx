@@ -14,6 +14,12 @@ import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 
+// Strip HTML tags for plain text display (e.g. in <option> elements)
+function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+}
+
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_COLORS = {
@@ -213,6 +219,17 @@ function SubComponentForm({ componentId, componentName, onSave, onCancel }) {
 
 // ─── Activity Form ────────────────────────────────────────────────────────────
 
+const SECTION = {
+  display: "flex", flexDirection: "column", gap: 10,
+  padding: "14px 16px", borderRadius: 10,
+  border: "1px solid #e2e8f0", background: "#fafafa",
+};
+const SECTION_TITLE = {
+  fontSize: 10, fontWeight: 700, color: "#94a3b8",
+  textTransform: "uppercase", letterSpacing: "0.07em",
+  marginBottom: 2,
+};
+
 function ActivityForm({ subComponentId, outputNodes, onSave, onCancel }) {
   const [form, setForm] = useState({
     code: "", name: "", description: "", responsible_party: "",
@@ -240,85 +257,122 @@ function ActivityForm({ subComponentId, outputNodes, onSave, onCancel }) {
     }
   }
 
+  const selectedOutput = outputNodes.find(n => String(n.id) === String(form.output_node));
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {err && <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>{err}</div>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
-        <div style={fieldStyle}>
-          <label style={labelStyle}>Code *</label>
-          <input style={inputStyle} value={form.code} onChange={e => set("code", e.target.value)} placeholder="A1.1.1" />
+      {err && (
+        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626", display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="alert-circle" size={13} /> {err}
+        </div>
+      )}
+
+      {/* ── Identity ── */}
+      <div style={SECTION}>
+        <div style={SECTION_TITLE}>Identity</div>
+        <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 10 }}>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Code *</label>
+            <input style={inputStyle} value={form.code} onChange={e => set("code", e.target.value)} placeholder="A1.1.1" />
+          </div>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Activity Name *</label>
+            <input style={inputStyle} value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Procurement of improved seeds" />
+          </div>
         </div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Name *</label>
-          <input style={inputStyle} value={form.name} onChange={e => set("name", e.target.value)} placeholder="Activity name" />
-        </div>
-      </div>
-
-      <div style={fieldStyle}>
-        <label style={labelStyle}>Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
-        <textarea style={{ ...textareaStyle, minHeight: 60 }} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Detailed description..." />
-      </div>
-
-      <div style={fieldStyle}>
-        <label style={labelStyle}>Responsible Party</label>
-        <input style={inputStyle} value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organization or individual responsible" />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={fieldStyle}>
-          <label style={labelStyle}>Planned Start *</label>
-          <input style={inputStyle} type="date" value={form.planned_start} onChange={e => set("planned_start", e.target.value)} />
+          <label style={labelStyle}>Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+          <textarea style={{ ...textareaStyle, minHeight: 52 }} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Operational details..." />
         </div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Planned End *</label>
-          <input style={inputStyle} type="date" value={form.planned_end} onChange={e => set("planned_end", e.target.value)} />
+          <label style={labelStyle}>Responsible Party</label>
+          <input style={inputStyle} value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organization or individual responsible" />
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
-        <div style={fieldStyle}>
-          <label style={labelStyle}>Status</label>
-          <select style={sel} value={form.status} onChange={e => set("status", e.target.value)}>
-            {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
+      {/* ── Schedule ── */}
+      <div style={SECTION}>
+        <div style={SECTION_TITLE}>Schedule</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Planned Start *</label>
+            <input style={inputStyle} type="date" value={form.planned_start} onChange={e => set("planned_start", e.target.value)} />
+          </div>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Planned End *</label>
+            <input style={inputStyle} type="date" value={form.planned_end} onChange={e => set("planned_end", e.target.value)} />
+          </div>
         </div>
-        <div style={fieldStyle}>
-          <label style={labelStyle}>Progress (%)</label>
-          <input style={inputStyle} type="number" min={0} max={100} value={form.progress} onChange={e => set("progress", e.target.value)} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 10 }}>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Status</label>
+            <select style={sel} value={form.status} onChange={e => set("status", e.target.value)}>
+              {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Progress %</label>
+            <input style={inputStyle} type="number" min={0} max={100} value={form.progress} onChange={e => set("progress", e.target.value)} />
+          </div>
         </div>
       </div>
 
-      <div style={fieldStyle}>
-        <label style={labelStyle}>Linked Output — ToC (SF-2) <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
-        <select style={sel} value={form.output_node} onChange={e => set("output_node", e.target.value)}>
-          <option value="">— No output linked —</option>
-          {outputNodes.map(n => (
-            <option key={n.id} value={n.id}>{n.code} · {n.statement?.substring(0, 55)}{n.statement?.length > 55 ? "…" : ""}</option>
-          ))}
-        </select>
-        {outputNodes.length === 0 && (
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>No Output nodes defined in the Theory of Change yet.</span>
+      {/* ── Results Link ── */}
+      <div style={{ ...SECTION, borderColor: outputNodes.length > 0 ? "#bbf7d0" : "#e2e8f0", background: outputNodes.length > 0 ? "#f0fdf4" : "#fafafa" }}>
+        <div style={{ ...SECTION_TITLE, color: outputNodes.length > 0 ? "#16a34a" : "#94a3b8" }}>
+          Results Link — ToC Output (SF-2)
+        </div>
+        {outputNodes.length === 0 ? (
+          <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
+            <Icon name="info" size={13} />
+            No Output nodes defined in the Theory of Change yet. You can link this activity later.
+          </div>
+        ) : (
+          <>
+            <select style={{ ...sel, background: "#fff" }} value={form.output_node} onChange={e => set("output_node", e.target.value)}>
+              <option value="">— No output linked —</option>
+              {outputNodes.map(n => (
+                <option key={n.id} value={n.id}>
+                  {n.code} · {stripHtml(n.statement).substring(0, 60)}{stripHtml(n.statement).length > 60 ? "…" : ""}
+                </option>
+              ))}
+            </select>
+            {selectedOutput && (
+              <div style={{ fontSize: 12, color: "#166534", marginTop: 4, padding: "6px 10px", background: "#dcfce7", borderRadius: 6 }}>
+                ↳ {stripHtml(selectedOutput.statement)}
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      <div style={fieldStyle}>
-        <label style={labelStyle}>Planned Budget (USD) <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
-        <input style={inputStyle} type="number" min={0} value={form.budget_planned} onChange={e => set("budget_planned", e.target.value)} placeholder="0" />
+      {/* ── Budget & Flags ── */}
+      <div style={SECTION}>
+        <div style={SECTION_TITLE}>Budget & Flags</div>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Planned Budget (USD) <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+          <input style={{ ...inputStyle, maxWidth: 200 }} type="number" min={0} value={form.budget_planned} onChange={e => set("budget_planned", e.target.value)} placeholder="0" />
+        </div>
+        <div style={{ display: "flex", gap: 20, marginTop: 4 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
+            <input type="checkbox" checked={form.requires_evidence} onChange={e => set("requires_evidence", e.target.checked)} />
+            <span>
+              <strong>Evidence required</strong>
+              <span style={{ color: "#94a3b8", marginLeft: 4, fontSize: 11 }}>before Completed</span>
+            </span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
+            <input type="checkbox" checked={form.is_critical_path} onChange={e => set("is_critical_path", e.target.checked)} />
+            <span>
+              <strong>Critical path</strong>
+              <span style={{ color: "#94a3b8", marginLeft: 4, fontSize: 11 }}>◆</span>
+            </span>
+          </label>
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 24, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
-          <input type="checkbox" checked={form.requires_evidence} onChange={e => set("requires_evidence", e.target.checked)} />
-          Evidence required before Completed
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
-          <input type="checkbox" checked={form.is_critical_path} onChange={e => set("is_critical_path", e.target.checked)} />
-          Critical path
-        </label>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 4 }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
         <button className="btn btn-primary" onClick={handleSave}><Icon name="plus" size={14} /> Save Activity</button>
       </div>
@@ -556,7 +610,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
             {activity.output_node_detail && (
               <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Linked Output (ToC — SF-2)</div>
-                <div style={{ fontSize: 13, color: "#14532d", fontWeight: 500 }}>{activity.output_node_detail.code} · {activity.output_node_detail.statement?.substring(0, 80)}</div>
+                <div style={{ fontSize: 13, color: "#14532d", fontWeight: 500 }}>{activity.output_node_detail.code} · {stripHtml(activity.output_node_detail.statement)?.substring(0, 80)}</div>
               </div>
             )}
 
