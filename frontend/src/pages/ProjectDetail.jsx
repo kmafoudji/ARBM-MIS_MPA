@@ -1785,7 +1785,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             Workplan — Activity & Milestone Tracking
           </h2>
           <div className="card-subtitle">
-            Hiérarchie Composant → Sous-composant → Activité · Liaisons ToC · Jalons · Suivi des retards
+            Component → Sub-Component → Activity · ToC links (SF-2) · Milestones & Delay tracking
           </div>
         </div>
         <div style={{ padding: "16px 20px" }}>

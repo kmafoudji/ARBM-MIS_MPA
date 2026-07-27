@@ -1,10 +1,10 @@
 /**
  * Module 3 — Workplan
- * SF-1 : Hiérarchie Composant → Sous-composant → Activité
- * SF-2 : Liaison Activité → Output (ToC M2)
- * SF-4 : Statuts & progression
- * SF-5 : Jalons
- * SF-7 : DelayLog
+ * SF-1: Component → Sub-Component → Activity hierarchy
+ * SF-2: Activity → Output (ToC M2) link
+ * SF-4: Status & progress tracking
+ * SF-5: Milestones
+ * SF-7: Delay log
  */
 
 import { useState } from "react";
@@ -14,7 +14,7 @@ import Icon from "../components/Icon";
 import { useDialog, DialogModal } from "../components/Dialog";
 import Toast from "../components/Toast";
 
-// ─── Couleurs de statut ──────────────────────────────────────────────────────
+// ─── Status config ───────────────────────────────────────────────────────────
 
 const STATUS_COLORS = {
   not_started: { bg: "#f1f5f9", text: "#64748b", border: "#e2e8f0", label: "Not Started" },
@@ -32,17 +32,17 @@ const MILESTONE_STATUS_COLORS = {
 };
 
 const DELAY_CATEGORIES = [
-  { value: "procurement",   label: "Passation de marchés" },
-  { value: "customs",       label: "Dédouanement" },
-  { value: "weather",       label: "Météo / Environnement" },
-  { value: "land",          label: "Foncier & Tenure" },
-  { value: "security",      label: "Sécurité / Conflit" },
-  { value: "budget",        label: "Contrainte budgétaire" },
-  { value: "contractor",    label: "Non-performance contractant" },
-  { value: "technical",     label: "Conception / Technique" },
-  { value: "counterpart",   label: "Performance contrepartie" },
-  { value: "force_majeure", label: "Force majeure" },
-  { value: "other",         label: "Autre" },
+  { value: "procurement",   label: "Procurement" },
+  { value: "customs",       label: "Customs / Clearance" },
+  { value: "weather",       label: "Weather / Environment" },
+  { value: "land",          label: "Land & Tenure" },
+  { value: "security",      label: "Security / Conflict" },
+  { value: "budget",        label: "Budget Constraint" },
+  { value: "contractor",    label: "Contractor Non-Performance" },
+  { value: "technical",     label: "Design / Technical" },
+  { value: "counterpart",   label: "Counterpart Performance" },
+  { value: "force_majeure", label: "Force Majeure" },
+  { value: "other",         label: "Other" },
 ];
 
 const ACTIVITY_STATUSES = [
@@ -54,12 +54,12 @@ const ACTIVITY_STATUSES = [
 ];
 
 const MILESTONE_CATEGORIES = [
-  { value: "contractual",  label: "Contractuel" },
-  { value: "programmatic", label: "Programmatique" },
+  { value: "contractual",  label: "Contractual" },
+  { value: "programmatic", label: "Programmatic" },
   { value: "reporting",    label: "Reporting" },
 ];
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
   const cfg = STATUS_COLORS[status] || STATUS_COLORS.not_started;
@@ -75,12 +75,9 @@ function StatusBadge({ status }) {
 }
 
 function ProgressBar({ value, status }) {
-  const cfg = STATUS_COLORS[status] || STATUS_COLORS.not_started;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{
-        flex: 1, height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden",
-      }}>
+      <div style={{ flex: 1, height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden" }}>
         <div style={{
           width: `${value}%`, height: "100%",
           background: status === "completed" ? "#16a34a"
@@ -90,9 +87,7 @@ function ProgressBar({ value, status }) {
           borderRadius: 3, transition: "width .3s ease",
         }} />
       </div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", minWidth: 28 }}>
-        {value}%
-      </span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", minWidth: 28 }}>{value}%</span>
     </div>
   );
 }
@@ -116,15 +111,14 @@ function SummaryCard({ icon, label, value, accent }) {
       padding: "14px 18px", display: "flex", flexDirection: "column", gap: 4,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#94a3b8", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        <Icon name={icon} size={12} />
-        {label}
+        <Icon name={icon} size={12} />{label}
       </div>
       <div style={{ fontSize: 24, fontWeight: 700, color: accent || "#1e293b" }}>{value}</div>
     </div>
   );
 }
 
-// ─── Formulaire Activité ─────────────────────────────────────────────────────
+// ─── Activity Form ────────────────────────────────────────────────────────────
 
 function ActivityForm({ projectId, subComponentId, outputNodes = [], initial = {}, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -144,7 +138,6 @@ function ActivityForm({ projectId, subComponentId, outputNodes = [], initial = {
     sub_component: subComponentId,
   });
   const [err, setErr] = useState(null);
-
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
   async function handleSave() {
@@ -157,9 +150,7 @@ function ActivityForm({ projectId, subComponentId, outputNodes = [], initial = {
         progress: Number(form.progress),
         order: Number(form.order),
       });
-    } catch (e) {
-      setErr(e?.detail || e?.message || "Erreur lors de la sauvegarde.");
-    }
+    } catch (e) { setErr(e?.detail || e?.message || "Save failed."); }
   }
 
   return (
@@ -172,63 +163,63 @@ function ActivityForm({ projectId, subComponentId, outputNodes = [], initial = {
           <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="A1.1.1" />
         </div>
         <div className="form-group">
-          <label className="form-label">Nom *</label>
-          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nom de l'activité" />
+          <label className="form-label">Name *</label>
+          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Activity name" />
         </div>
       </div>
 
       <div className="form-group">
         <label className="form-label">Description</label>
-        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Description détaillée..." />
+        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Detailed description..." />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Partie responsable</label>
-        <input className="form-input" value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organisation ou personne responsable" />
+        <label className="form-label">Responsible Party</label>
+        <input className="form-input" value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organization or individual responsible" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="form-group">
-          <label className="form-label">Date début planifiée *</label>
+          <label className="form-label">Planned Start *</label>
           <input className="form-input" type="date" value={form.planned_start} onChange={e => set("planned_start", e.target.value)} />
         </div>
         <div className="form-group">
-          <label className="form-label">Date fin planifiée *</label>
+          <label className="form-label">Planned End *</label>
           <input className="form-input" type="date" value={form.planned_end} onChange={e => set("planned_end", e.target.value)} />
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="form-group">
-          <label className="form-label">Statut</label>
+          <label className="form-label">Status</label>
           <select className="form-select" value={form.status} onChange={e => set("status", e.target.value)}>
             {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
         <div className="form-group">
-          <label className="form-label">Avancement (%)</label>
+          <label className="form-label">Progress (%)</label>
           <input className="form-input" type="number" min={0} max={100} value={form.progress} onChange={e => set("progress", e.target.value)} />
         </div>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Liaison Output (ToC) — SF-2</label>
+        <label className="form-label">Linked Output (ToC) — SF-2</label>
         <select className="form-select" value={form.output_node} onChange={e => set("output_node", e.target.value)}>
-          <option value="">— Aucun output lié —</option>
+          <option value="">— No output linked —</option>
           {outputNodes.map(n => (
             <option key={n.id} value={n.id}>{n.code} · {n.statement?.substring(0, 60)}{n.statement?.length > 60 ? "…" : ""}</option>
           ))}
         </select>
-        <div className="form-hint">Nœuds Output de la Théorie du Changement (RG-2.1)</div>
+        <div className="form-hint">Output nodes from the Theory of Change (RG-2.1)</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="form-group">
-          <label className="form-label">Budget planifié (USD)</label>
+          <label className="form-label">Planned Budget (USD)</label>
           <input className="form-input" type="number" min={0} value={form.budget_planned} onChange={e => set("budget_planned", e.target.value)} placeholder="0" />
         </div>
         <div className="form-group">
-          <label className="form-label">Ordre d'affichage</label>
+          <label className="form-label">Display Order</label>
           <input className="form-input" type="number" min={0} value={form.order} onChange={e => set("order", e.target.value)} />
         </div>
       </div>
@@ -236,27 +227,23 @@ function ActivityForm({ projectId, subComponentId, outputNodes = [], initial = {
       <div style={{ display: "flex", gap: 16 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
           <input type="checkbox" checked={form.requires_evidence} onChange={e => set("requires_evidence", e.target.checked)} />
-          Preuve requise avant Completed
+          Evidence required before Completed
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
           <input type="checkbox" checked={form.is_critical_path} onChange={e => set("is_critical_path", e.target.checked)} />
-          Chemin critique
+          Critical path
         </label>
       </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-        <button className="btn btn-ghost" onClick={onCancel}>
-          <Icon name="x" size={14} /> Annuler
-        </button>
-        <button className="btn btn-primary" onClick={handleSave}>
-          <Icon name="save" size={14} /> Enregistrer l'activité
-        </button>
+        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="save" size={14} /> Save Activity</button>
       </div>
     </div>
   );
 }
 
-// ─── Formulaire Jalon ────────────────────────────────────────────────────────
+// ─── Milestone Form ───────────────────────────────────────────────────────────
 
 function MilestoneForm({ activityId, initial = {}, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -270,13 +257,12 @@ function MilestoneForm({ activityId, initial = {}, onSave, onCancel }) {
     activity: activityId,
   });
   const [err, setErr] = useState(null);
-
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
   async function handleSave() {
     setErr(null);
     try { await onSave(form); }
-    catch (e) { setErr(e?.detail || e?.message || "Erreur."); }
+    catch (e) { setErr(e?.detail || e?.message || "Save failed."); }
   }
 
   return (
@@ -284,25 +270,25 @@ function MilestoneForm({ activityId, initial = {}, onSave, onCancel }) {
       {err && <div className="alert alert-error" style={{ fontSize: 13 }}>{err}</div>}
 
       <div className="form-group">
-        <label className="form-label">Nom du jalon *</label>
-        <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Ex: Rapport d'étude soumis" />
+        <label className="form-label">Milestone Name *</label>
+        <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Study report submitted" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="form-group">
-          <label className="form-label">Catégorie</label>
+          <label className="form-label">Category</label>
           <select className="form-select" value={form.category} onChange={e => set("category", e.target.value)}>
             {MILESTONE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
         <div className="form-group">
-          <label className="form-label">Date planifiée *</label>
+          <label className="form-label">Planned Date *</label>
           <input className="form-input" type="date" value={form.planned_date} onChange={e => set("planned_date", e.target.value)} />
         </div>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Statut</label>
+        <label className="form-label">Status</label>
         <select className="form-select" value={form.status} onChange={e => set("status", e.target.value)}>
           <option value="pending">Pending</option>
           <option value="achieved">Achieved</option>
@@ -312,24 +298,24 @@ function MilestoneForm({ activityId, initial = {}, onSave, onCancel }) {
       </div>
 
       <div className="form-group">
-        <label className="form-label">URL Preuve</label>
+        <label className="form-label">Evidence URL</label>
         <input className="form-input" type="url" value={form.evidence_url} onChange={e => set("evidence_url", e.target.value)} placeholder="https://..." />
       </div>
 
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
         <input type="checkbox" checked={form.is_gate} onChange={e => set("is_gate", e.target.checked)} />
-        Jalon-gate (bloque le passage à 100% de l'activité)
+        Gate milestone (blocks activity from reaching 100%)
       </label>
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Annuler</button>
-        <button className="btn btn-primary" onClick={handleSave}><Icon name="save" size={14} /> Enregistrer le jalon</button>
+        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="save" size={14} /> Save Milestone</button>
       </div>
     </div>
   );
 }
 
-// ─── Formulaire Retard ───────────────────────────────────────────────────────
+// ─── Delay Form ───────────────────────────────────────────────────────────────
 
 function DelayForm({ activity, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -341,15 +327,14 @@ function DelayForm({ activity, onSave, onCancel }) {
     cascade_applied: false,
   });
   const [err, setErr] = useState(null);
-
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
   async function handleSave() {
     setErr(null);
-    if (!form.revised_end) { setErr("La nouvelle date de fin est requise."); return; }
-    if (!form.justification.trim()) { setErr("La justification est obligatoire (RG-7.2)."); return; }
+    if (!form.revised_end) { setErr("New end date is required."); return; }
+    if (!form.justification.trim()) { setErr("Justification is mandatory (RG-7.2)."); return; }
     try { await onSave(form); }
-    catch (e) { setErr(e?.detail || e?.message || "Erreur."); }
+    catch (e) { setErr(e?.detail || e?.message || "Save failed."); }
   }
 
   return (
@@ -357,25 +342,25 @@ function DelayForm({ activity, onSave, onCancel }) {
       {err && <div className="alert alert-error" style={{ fontSize: 13 }}>{err}</div>}
 
       <div style={{ padding: "10px 14px", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, fontSize: 13, color: "#92400e" }}>
-        <strong>Date de fin actuelle :</strong> {activity.revised_end || activity.planned_end}
+        <strong>Current end date:</strong> {activity.revised_end || activity.planned_end}
         {activity.baseline_end && activity.baseline_end !== activity.planned_end && (
-          <span style={{ marginLeft: 12, color: "#b45309" }}>· Baseline : {activity.baseline_end}</span>
+          <span style={{ marginLeft: 12, color: "#b45309" }}>· Baseline: {activity.baseline_end}</span>
         )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="form-group">
-          <label className="form-label">Date précédente</label>
+          <label className="form-label">Previous End Date</label>
           <input className="form-input" type="date" value={form.previous_end} onChange={e => set("previous_end", e.target.value)} />
         </div>
         <div className="form-group">
-          <label className="form-label">Nouvelle date de fin *</label>
+          <label className="form-label">New End Date *</label>
           <input className="form-input" type="date" value={form.revised_end} onChange={e => set("revised_end", e.target.value)} />
         </div>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Catégorie du retard * (RG-7.2)</label>
+        <label className="form-label">Delay Category * (RG-7.2)</label>
         <select className="form-select" value={form.delay_category} onChange={e => set("delay_category", e.target.value)}>
           {DELAY_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
@@ -383,23 +368,23 @@ function DelayForm({ activity, onSave, onCancel }) {
 
       <div className="form-group">
         <label className="form-label">Justification *</label>
-        <textarea className="form-textarea" rows={3} value={form.justification} onChange={e => set("justification", e.target.value)} placeholder="Description narrative obligatoire du retard et de ses causes..." />
+        <textarea className="form-textarea" rows={3} value={form.justification} onChange={e => set("justification", e.target.value)} placeholder="Mandatory narrative description of the delay and its root causes..." />
       </div>
 
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
         <input type="checkbox" checked={form.cascade_applied} onChange={e => set("cascade_applied", e.target.checked)} />
-        Appliquer la cascade sur les activités successeurs (RG-7.3)
+        Apply cascade to successor activities (RG-7.3)
       </label>
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Annuler</button>
-        <button className="btn btn-primary" onClick={handleSave}><Icon name="clock" size={14} /> Enregistrer le retard</button>
+        <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="clock" size={14} /> Record Delay</button>
       </div>
     </div>
   );
 }
 
-// ─── Panneau détail Activité ─────────────────────────────────────────────────
+// ─── Activity Detail Panel ────────────────────────────────────────────────────
 
 function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefresh }) {
   const qc = useQueryClient();
@@ -421,8 +406,8 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       `/api/projects/${projectId}/workplan/activities/${activity.id}/progress/`,
       { method: "PATCH", body: JSON.stringify({ status, progress }) }
     ),
-    onSuccess: () => { onRefresh(); setToast({ type: "success", message: "Progression mise à jour." }); },
-    onError: (e) => setToast({ type: "error", message: e?.detail || "Erreur." }),
+    onSuccess: () => { onRefresh(); setToast({ type: "success", message: "Progress updated." }); },
+    onError: (e) => setToast({ type: "error", message: e?.detail || "Update failed." }),
   });
 
   const addMilestone = useMutation({
@@ -430,7 +415,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       `/api/projects/${projectId}/workplan/activities/${activity.id}/milestones/`,
       { method: "POST", body: JSON.stringify(data) }
     ),
-    onSuccess: () => { refetchMilestones(); dialog.close(); setToast({ type: "success", message: "Jalon ajouté." }); },
+    onSuccess: () => { refetchMilestones(); dialog.close(); setToast({ type: "success", message: "Milestone added." }); },
   });
 
   const addDelay = useMutation({
@@ -438,10 +423,8 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       `/api/projects/${projectId}/workplan/activities/${activity.id}/delays/`,
       { method: "POST", body: JSON.stringify(data) }
     ),
-    onSuccess: () => { refetchDelays(); onRefresh(); dialog.close(); setToast({ type: "success", message: "Retard enregistré." }); },
+    onSuccess: () => { refetchDelays(); onRefresh(); dialog.close(); setToast({ type: "success", message: "Delay recorded." }); },
   });
-
-  const sc = STATUS_COLORS[activity.status] || STATUS_COLORS.not_started;
 
   return (
     <div style={{
@@ -455,9 +438,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>
-                {activity.code}
-              </span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>{activity.code}</span>
               {activity.is_overdue && <OverduePill />}
               {activity.is_critical_path && (
                 <span style={{ fontSize: 10, fontWeight: 700, background: "#fdf4ff", color: "#9333ea", border: "1px solid #e9d5ff", borderRadius: 10, padding: "1px 6px" }}>
@@ -479,19 +460,17 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
         {[
-          { key: "info", label: "Détails", icon: "info" },
-          { key: "milestones", label: `Jalons (${milestones.length})`, icon: "flag" },
-          { key: "delays", label: `Retards (${delays.length})`, icon: "clock" },
+          { key: "info",       label: "Details",                            icon: "info" },
+          { key: "milestones", label: `Milestones (${milestones.length})`,  icon: "flag" },
+          { key: "delays",     label: `Delays (${delays.length})`,          icon: "clock" },
         ].map(t => (
-          <button key={t.key}
-            onClick={() => setActiveSection(t.key)}
-            style={{
-              padding: "10px 16px", border: "none", background: "none", cursor: "pointer",
-              fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
-              color: activeSection === t.key ? "#A4C53F" : "#64748b",
-              borderBottom: activeSection === t.key ? "2px solid #A4C53F" : "2px solid transparent",
-            }}>
-            <Icon name={t.icon} size={12} /> {t.label}
+          <button key={t.key} onClick={() => setActiveSection(t.key)} style={{
+            padding: "10px 16px", border: "none", background: "none", cursor: "pointer",
+            fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
+            color: activeSection === t.key ? "#A4C53F" : "#64748b",
+            borderBottom: activeSection === t.key ? "2px solid #A4C53F" : "2px solid transparent",
+          }}>
+            <Icon name={t.icon} size={12} />{t.label}
           </button>
         ))}
       </div>
@@ -499,24 +478,24 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       {/* Body */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
 
-        {/* ── Info ── */}
+        {/* Details */}
         {activeSection === "info" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {/* Mise à jour rapide statut + % */}
+            {/* Quick update */}
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
-                Mise à jour rapide
+                Quick Update
               </div>
               <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
                 <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: 11 }}>Statut</label>
+                  <label className="form-label" style={{ fontSize: 11 }}>Status</label>
                   <select className="form-select" defaultValue={activity.status}
                     onChange={e => updateProgress.mutate({ status: e.target.value, progress: activity.progress })}>
                     {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
                 <div className="form-group" style={{ width: 80, marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: 11 }}>% Avancement</label>
+                  <label className="form-label" style={{ fontSize: 11 }}>Progress %</label>
                   <input className="form-input" type="number" min={0} max={100}
                     defaultValue={activity.progress}
                     onBlur={e => updateProgress.mutate({ status: activity.status, progress: Number(e.target.value) })}
@@ -525,15 +504,15 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
               </div>
             </div>
 
-            {/* Métadonnées */}
+            {/* Metadata grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { label: "Responsable", value: activity.responsible_party || "—" },
-                { label: "Dates planifiées", value: `${activity.planned_start} → ${activity.planned_end}` },
-                { label: "Baseline", value: activity.baseline_end ? `→ ${activity.baseline_end}` : "—" },
-                { label: "Date révisée", value: activity.revised_end || "—" },
-                { label: "Budget planifié", value: activity.budget_planned ? `${Number(activity.budget_planned).toLocaleString()} USD` : "—" },
-                { label: "Budget dépensé", value: activity.budget_spent ? `${Number(activity.budget_spent).toLocaleString()} USD` : "—" },
+                { label: "Responsible",    value: activity.responsible_party || "—" },
+                { label: "Planned Dates",  value: `${activity.planned_start} → ${activity.planned_end}` },
+                { label: "Baseline End",   value: activity.baseline_end ? `→ ${activity.baseline_end}` : "—" },
+                { label: "Revised End",    value: activity.revised_end || "—" },
+                { label: "Planned Budget", value: activity.budget_planned ? `${Number(activity.budget_planned).toLocaleString()} USD` : "—" },
+                { label: "Spent",          value: activity.budget_spent ? `${Number(activity.budget_spent).toLocaleString()} USD` : "—" },
               ].map(item => (
                 <div key={item.label} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 12px" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{item.label}</div>
@@ -542,11 +521,11 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
               ))}
             </div>
 
-            {/* Output lié (SF-2) */}
+            {/* Linked output (SF-2) */}
             {activity.output_node_detail && (
               <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
-                  Output lié (ToC — SF-2)
+                  Linked Output (ToC — SF-2)
                 </div>
                 <div style={{ fontSize: 13, color: "#14532d", fontWeight: 500 }}>
                   {activity.output_node_detail.code} · {activity.output_node_detail.statement?.substring(0, 80)}
@@ -564,22 +543,19 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
           </div>
         )}
 
-        {/* ── Jalons ── */}
+        {/* Milestones */}
         {activeSection === "milestones" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button className="btn btn-primary" onClick={() => dialog.open(
-              <MilestoneForm
-                activityId={activity.id}
-                onSave={data => addMilestone.mutateAsync(data)}
-                onCancel={dialog.close}
-              />, "Ajouter un jalon"
+              <MilestoneForm activityId={activity.id} onSave={data => addMilestone.mutateAsync(data)} onCancel={dialog.close} />,
+              "Add Milestone"
             )}>
-              <Icon name="plus" size={14} /> Ajouter un jalon
+              <Icon name="plus" size={14} /> Add Milestone
             </button>
 
             {milestones.length === 0 && (
               <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>
-                Aucun jalon défini pour cette activité.
+                No milestones defined for this activity.
               </div>
             )}
 
@@ -609,22 +585,19 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
           </div>
         )}
 
-        {/* ── Retards ── */}
+        {/* Delays */}
         {activeSection === "delays" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button className="btn btn-warning" onClick={() => dialog.open(
-              <DelayForm
-                activity={activity}
-                onSave={data => addDelay.mutateAsync(data)}
-                onCancel={dialog.close}
-              />, "Enregistrer un retard"
+              <DelayForm activity={activity} onSave={data => addDelay.mutateAsync(data)} onCancel={dialog.close} />,
+              "Record a Delay"
             )}>
-              <Icon name="clock" size={14} /> Signaler un retard
+              <Icon name="clock" size={14} /> Report a Delay
             </button>
 
             {delays.length === 0 && (
               <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>
-                Aucun retard enregistré pour cette activité.
+                No delays recorded for this activity.
               </div>
             )}
 
@@ -634,7 +607,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
                     {d.delay_category_display}
                     <span style={{ marginLeft: 8, fontWeight: 400, color: d.variance_days > 0 ? "#dc2626" : "#16a34a" }}>
-                      {d.variance_days > 0 ? "+" : ""}{d.variance_days} j
+                      {d.variance_days > 0 ? "+" : ""}{d.variance_days}d
                     </span>
                   </div>
                   <span style={{
@@ -649,14 +622,12 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
                   {d.previous_end} → {d.revised_end}
                   {d.cumulative_variance_days > 0 && (
                     <span style={{ marginLeft: 12, color: "#dc2626", fontWeight: 600 }}>
-                      Cumulé : +{d.cumulative_variance_days} j
+                      Cumulative: +{d.cumulative_variance_days}d
                     </span>
                   )}
                 </div>
                 {d.justification && (
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 6, fontStyle: "italic" }}>
-                    {d.justification}
-                  </div>
+                  <div style={{ fontSize: 12, color: "#475569", marginTop: 6, fontStyle: "italic" }}>{d.justification}</div>
                 )}
               </div>
             ))}
@@ -670,46 +641,28 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
   );
 }
 
-// ─── Ligne Activité ──────────────────────────────────────────────────────────
+// ─── Activity Row ─────────────────────────────────────────────────────────────
 
 function ActivityRow({ activity, onClick }) {
   return (
-    <div
-      onClick={onClick}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "180px 1fr 120px 130px 90px 80px",
-        alignItems: "center", gap: 12,
-        padding: "10px 16px",
-        borderBottom: "1px solid #f1f5f9",
-        cursor: "pointer",
-        background: activity.is_overdue ? "#fff7f7" : "#fff",
-        transition: "background .15s",
-      }}
+    <div onClick={onClick} style={{
+      display: "grid", gridTemplateColumns: "180px 1fr 120px 130px 90px 80px",
+      alignItems: "center", gap: 12, padding: "10px 16px",
+      borderBottom: "1px solid #f1f5f9", cursor: "pointer",
+      background: activity.is_overdue ? "#fff7f7" : "#fff", transition: "background .15s",
+    }}
       onMouseEnter={e => e.currentTarget.style.background = activity.is_overdue ? "#fef2f2" : "#f8fafc"}
       onMouseLeave={e => e.currentTarget.style.background = activity.is_overdue ? "#fff7f7" : "#fff"}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontFamily: "monospace" }}>
-          {activity.code}
-        </span>
-        {activity.is_critical_path && (
-          <span title="Chemin critique" style={{ color: "#9333ea", fontSize: 10 }}>◆</span>
-        )}
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontFamily: "monospace" }}>{activity.code}</span>
+        {activity.is_critical_path && <span title="Critical path" style={{ color: "#9333ea", fontSize: 10 }}>◆</span>}
         {activity.is_overdue && <OverduePill />}
       </div>
-      <div style={{ fontSize: 13, color: "#1e293b", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {activity.name}
-      </div>
-      <div style={{ fontSize: 11, color: "#64748b" }}>
-        {activity.revised_end || activity.planned_end || "—"}
-      </div>
-      <div>
-        <StatusBadge status={activity.status} />
-      </div>
-      <div>
-        <ProgressBar value={activity.progress} status={activity.status} />
-      </div>
+      <div style={{ fontSize: 13, color: "#1e293b", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activity.name}</div>
+      <div style={{ fontSize: 11, color: "#64748b" }}>{activity.revised_end || activity.planned_end || "—"}</div>
+      <div><StatusBadge status={activity.status} /></div>
+      <div><ProgressBar value={activity.progress} status={activity.status} /></div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <Icon name="chevron-right" size={14} style={{ color: "#94a3b8" }} />
       </div>
@@ -717,7 +670,7 @@ function ActivityRow({ activity, onClick }) {
   );
 }
 
-// ─── Bloc Sous-composant ─────────────────────────────────────────────────────
+// ─── Sub-Component Block ──────────────────────────────────────────────────────
 
 function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRefresh }) {
   const [expanded, setExpanded] = useState(true);
@@ -729,12 +682,8 @@ function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRef
     mutationFn: (data) => apiFetch(`/api/projects/${projectId}/workplan/activities/`, {
       method: "POST", body: JSON.stringify(data),
     }),
-    onSuccess: () => {
-      qc.invalidateQueries(["workplan", projectId]);
-      dialog.close();
-      setToast({ type: "success", message: "Activité créée." });
-    },
-    onError: (e) => setToast({ type: "error", message: e?.detail || "Erreur lors de la création." }),
+    onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); dialog.close(); setToast({ type: "success", message: "Activity created." }); },
+    onError: (e) => setToast({ type: "error", message: e?.detail || "Creation failed." }),
   });
 
   const activities = sub.activities?.filter(a => a.is_active !== false) || [];
@@ -743,70 +692,50 @@ function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRef
 
   return (
     <div style={{ marginBottom: 2 }}>
-      {/* En-tête sous-composant */}
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
         padding: "8px 16px", background: "#f1f5f9",
-        borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0",
-        cursor: "pointer",
+        borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", cursor: "pointer",
       }} onClick={() => setExpanded(e => !e)}>
         <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} style={{ color: "#94a3b8" }} />
         <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", fontFamily: "monospace" }}>{sub.code}</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: "#374151", flex: 1 }}>{sub.name}</span>
         <span style={{ fontSize: 11, color: "#94a3b8" }}>
-          {completedCount}/{activities.length} terminées
-          {overdueCount > 0 && (
-            <span style={{ marginLeft: 8, color: "#dc2626", fontWeight: 700 }}>
-              · {overdueCount} en retard
-            </span>
-          )}
+          {completedCount}/{activities.length} completed
+          {overdueCount > 0 && <span style={{ marginLeft: 8, color: "#dc2626", fontWeight: 700 }}>· {overdueCount} overdue</span>}
         </span>
-        <button
-          className="btn btn-ghost"
-          style={{ fontSize: 11, padding: "3px 8px" }}
+        <button className="btn btn-ghost" style={{ fontSize: 11, padding: "3px 8px" }}
           onClick={e => {
             e.stopPropagation();
             dialog.open(
-              <ActivityForm
-                projectId={projectId}
-                subComponentId={sub.id}
-                outputNodes={outputNodes}
-                onSave={data => addActivity.mutateAsync(data)}
-                onCancel={dialog.close}
-              />, "Nouvelle activité"
+              <ActivityForm projectId={projectId} subComponentId={sub.id} outputNodes={outputNodes}
+                onSave={data => addActivity.mutateAsync(data)} onCancel={dialog.close} />,
+              "New Activity"
             );
-          }}
-        >
-          <Icon name="plus" size={12} /> Activité
+          }}>
+          <Icon name="plus" size={12} /> Activity
         </button>
       </div>
 
-      {/* Activités */}
       {expanded && (
         <div>
           {activities.length === 0 ? (
             <div style={{ padding: "14px 16px", color: "#94a3b8", fontSize: 12, fontStyle: "italic" }}>
-              Aucune activité — cliquez sur "+ Activité" pour commencer.
+              No activities yet — click "+ Activity" to get started.
             </div>
           ) : (
             <>
-              {/* En-tête colonnes */}
               <div style={{
-                display: "grid",
-                gridTemplateColumns: "180px 1fr 120px 130px 90px 80px",
+                display: "grid", gridTemplateColumns: "180px 1fr 120px 130px 90px 80px",
                 gap: 12, padding: "6px 16px",
                 fontSize: 10, fontWeight: 700, color: "#94a3b8",
                 textTransform: "uppercase", letterSpacing: "0.05em",
                 borderBottom: "1px solid #e2e8f0", background: "#fafafa",
               }}>
-                <span>Code</span><span>Nom</span><span>Fin</span><span>Statut</span><span>Avancement</span><span></span>
+                <span>Code</span><span>Name</span><span>End Date</span><span>Status</span><span>Progress</span><span></span>
               </div>
               {activities.map(a => (
-                <ActivityRow
-                  key={a.id}
-                  activity={a}
-                  onClick={() => onActivityClick(a)}
-                />
+                <ActivityRow key={a.id} activity={a} onClick={() => onActivityClick(a)} />
               ))}
             </>
           )}
@@ -819,7 +748,7 @@ function SubComponentBlock({ projectId, sub, outputNodes, onActivityClick, onRef
   );
 }
 
-// ─── Bloc Composant ──────────────────────────────────────────────────────────
+// ─── Component Block ──────────────────────────────────────────────────────────
 
 function ComponentBlock({ projectId, component, outputNodes, onActivityClick, onRefresh }) {
   const [expanded, setExpanded] = useState(true);
@@ -832,8 +761,8 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
       `/api/projects/${projectId}/workplan/components/${component.id}/subcomponents/`,
       { method: "POST", body: JSON.stringify(data) }
     ),
-    onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); dialog.close(); setToast({ type: "success", message: "Sous-composant créé." }); },
-    onError: (e) => setToast({ type: "error", message: e?.detail || "Erreur." }),
+    onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); dialog.close(); setToast({ type: "success", message: "Sub-component created." }); },
+    onError: (e) => setToast({ type: "error", message: e?.detail || "Creation failed." }),
   });
 
   const subs = component.sub_components?.filter(s => s.is_active !== false) || [];
@@ -841,81 +770,59 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
   const completedActivities = subs.reduce((n, s) => n + (s.activities?.filter(a => a.status === "completed").length || 0), 0);
   const overdueActivities = subs.reduce((n, s) => n + (s.activities?.filter(a => a.is_overdue).length || 0), 0);
 
+  const SubForm = () => {
+    const [form, setForm] = useState({ code: "", name: "", description: "", order: 0, component: component.id });
+    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
+          <div className="form-group">
+            <label className="form-label">Code *</label>
+            <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1.1" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Name *</label>
+            <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Sub-component name" />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Description</label>
+          <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+          <button className="btn btn-ghost" onClick={dialog.close}><Icon name="x" size={14} /> Cancel</button>
+          <button className="btn btn-primary" onClick={() => addSubComponent.mutate(form)}><Icon name="save" size={14} /> Create</button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{ marginBottom: 12, border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-      {/* En-tête composant */}
-      <div
-        style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "12px 16px", background: "#1B5A8C", cursor: "pointer",
-        }}
-        onClick={() => setExpanded(e => !e)}
-      >
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#1B5A8C", cursor: "pointer" }}
+        onClick={() => setExpanded(e => !e)}>
         <Icon name={expanded ? "chevron-down" : "chevron-right"} size={14} style={{ color: "rgba(255,255,255,.6)" }} />
         <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.7)", fontFamily: "monospace" }}>{component.code}</span>
         <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>{component.name}</span>
         <span style={{ fontSize: 11, color: "rgba(255,255,255,.65)" }}>
-          {completedActivities}/{totalActivities} activités
-          {overdueActivities > 0 && (
-            <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 700 }}>
-              · {overdueActivities} en retard
-            </span>
-          )}
+          {completedActivities}/{totalActivities} activities
+          {overdueActivities > 0 && <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 700 }}>· {overdueActivities} overdue</span>}
         </span>
-        <button
-          className="btn"
-          style={{ fontSize: 11, padding: "4px 10px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 6 }}
-          onClick={e => {
-            e.stopPropagation();
-            const SubForm = () => {
-              const [form, setForm] = useState({ code: "", name: "", description: "", order: 0, component: component.id });
-              const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
-                    <div className="form-group">
-                      <label className="form-label">Code *</label>
-                      <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1.1" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Nom *</label>
-                      <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nom du sous-composant" />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Description</label>
-                    <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-                    <button className="btn btn-ghost" onClick={dialog.close}><Icon name="x" size={14} /> Annuler</button>
-                    <button className="btn btn-primary" onClick={() => addSubComponent.mutate(form)}><Icon name="save" size={14} /> Créer</button>
-                  </div>
-                </div>
-              );
-            };
-            dialog.open(<SubForm />, "Nouveau sous-composant");
-          }}
-        >
-          <Icon name="plus" size={12} /> Sous-composant
+        <button className="btn" style={{ fontSize: 11, padding: "4px 10px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 6 }}
+          onClick={e => { e.stopPropagation(); dialog.open(<SubForm />, "New Sub-Component"); }}>
+          <Icon name="plus" size={12} /> Sub-Component
         </button>
       </div>
 
-      {/* Sous-composants */}
       {expanded && (
         <div>
           {subs.length === 0 ? (
             <div style={{ padding: "16px", color: "#94a3b8", fontSize: 13, fontStyle: "italic" }}>
-              Aucun sous-composant — cliquez sur "+ Sous-composant" pour structurer ce composant.
+              No sub-components yet — click "+ Sub-Component" to structure this component.
             </div>
           ) : subs.map(s => (
-            <SubComponentBlock
-              key={s.id}
-              projectId={projectId}
-              sub={s}
-              outputNodes={outputNodes}
-              onActivityClick={onActivityClick}
-              onRefresh={onRefresh}
-            />
+            <SubComponentBlock key={s.id} projectId={projectId} sub={s} outputNodes={outputNodes}
+              onActivityClick={onActivityClick} onRefresh={onRefresh} />
           ))}
         </div>
       )}
@@ -926,7 +833,7 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
   );
 }
 
-// ─── Page principale Workplan ────────────────────────────────────────────────
+// ─── Workplan Main Page ───────────────────────────────────────────────────────
 
 export default function Workplan({ projectId, canEdit = true }) {
   const qc = useQueryClient();
@@ -956,27 +863,20 @@ export default function Workplan({ projectId, canEdit = true }) {
     mutationFn: (data) => apiFetch(`/api/projects/${projectId}/workplan/components/`, {
       method: "POST", body: JSON.stringify(data),
     }),
-    onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); dialog.close(); setToast({ type: "success", message: "Composant créé." }); },
-    onError: (e) => setToast({ type: "error", message: e?.detail || "Erreur lors de la création." }),
+    onSuccess: () => { qc.invalidateQueries(["workplan", projectId]); dialog.close(); setToast({ type: "success", message: "Component created." }); },
+    onError: (e) => setToast({ type: "error", message: e?.detail || "Creation failed." }),
   });
 
   function handleRefresh() {
     qc.invalidateQueries(["workplan", projectId]);
     qc.invalidateQueries(["workplan-summary", projectId]);
-    if (selectedActivity) {
-      // Mettre à jour l'activité sélectionnée depuis les nouvelles données
-      const updated = components.flatMap(c => c.sub_components || [])
-        .flatMap(s => s.activities || [])
-        .find(a => a.id === selectedActivity.id);
-      if (updated) setSelectedActivity(updated);
-    }
   }
 
   if (isLoading) {
     return (
       <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
         <Icon name="loader" size={20} style={{ marginBottom: 8 }} />
-        <div style={{ fontSize: 13 }}>Chargement du workplan…</div>
+        <div style={{ fontSize: 13 }}>Loading workplan…</div>
       </div>
     );
   }
@@ -992,8 +892,8 @@ export default function Workplan({ projectId, canEdit = true }) {
             <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="C1" />
           </div>
           <div className="form-group">
-            <label className="form-label">Nom *</label>
-            <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Nom du composant" />
+            <label className="form-label">Name *</label>
+            <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Component name" />
           </div>
         </div>
         <div className="form-group">
@@ -1001,8 +901,8 @@ export default function Workplan({ projectId, canEdit = true }) {
           <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} />
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
-          <button className="btn btn-ghost" onClick={dialog.close}><Icon name="x" size={14} /> Annuler</button>
-          <button className="btn btn-primary" onClick={() => addComponent.mutate(form)}><Icon name="save" size={14} /> Créer le composant</button>
+          <button className="btn btn-ghost" onClick={dialog.close}><Icon name="x" size={14} /> Cancel</button>
+          <button className="btn btn-primary" onClick={() => addComponent.mutate(form)}><Icon name="save" size={14} /> Create Component</button>
         </div>
       </div>
     );
@@ -1010,83 +910,64 @@ export default function Workplan({ projectId, canEdit = true }) {
 
   return (
     <div style={{ position: "relative" }}>
-      {/* ── Résumé exécutif ── */}
+      {/* Summary cards */}
       {summary && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 20 }}>
-          <SummaryCard icon="activity" label="Total" value={summary.total_activities} />
-          <SummaryCard icon="clock" label="En cours" value={summary.in_progress} accent="#2563eb" />
-          <SummaryCard icon="check-circle" label="Terminées" value={summary.completed} accent="#16a34a" />
-          <SummaryCard icon="alert-circle" label="En retard" value={summary.overdue_count} accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
-          <SummaryCard icon="trending-up" label="Avancement" value={`${summary.overall_progress}%`} accent="#A4C53F" />
-          <SummaryCard icon="zap" label="SPI" value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"} accent={summary.latest_spi >= 1 ? "#16a34a" : summary.latest_spi != null ? "#dc2626" : "#64748b"} />
+          <SummaryCard icon="activity"     label="Total"       value={summary.total_activities} />
+          <SummaryCard icon="clock"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
+          <SummaryCard icon="check-circle" label="Completed"   value={summary.completed}          accent="#16a34a" />
+          <SummaryCard icon="alert-circle" label="Overdue"     value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
+          <SummaryCard icon="trending-up"  label="Progress"    value={`${summary.overall_progress}%`} accent="#A4C53F" />
+          <SummaryCard icon="zap"          label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
+            accent={summary.latest_spi >= 1 ? "#16a34a" : summary.latest_spi != null ? "#dc2626" : "#64748b"} />
         </div>
       )}
 
-      {/* ── En-tête + action ── */}
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", margin: 0 }}>
-            Workplan — Composants & Activités
+            Workplan — Components & Activities
           </h3>
           <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0" }}>
-            Hiérarchie Composant → Sous-composant → Activité · Liaisons ToC (SF-2) · Jalons & Retards
+            Component → Sub-Component → Activity · ToC links (SF-2) · Milestones & Delays
           </p>
         </div>
         {canEdit && (
-          <button className="btn btn-primary"
-            onClick={() => dialog.open(<ComponentForm />, "Nouveau composant")}>
-            <Icon name="plus" size={14} /> Ajouter un composant
+          <button className="btn btn-primary" onClick={() => dialog.open(<ComponentForm />, "New Component")}>
+            <Icon name="plus" size={14} /> Add Component
           </button>
         )}
       </div>
 
-      {/* ── Composants ── */}
+      {/* Components */}
       {components.length === 0 ? (
-        <div style={{
-          textAlign: "center", padding: "48px 24px",
-          border: "2px dashed #e2e8f0", borderRadius: 12, color: "#94a3b8",
-        }}>
+        <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed #e2e8f0", borderRadius: 12, color: "#94a3b8" }}>
           <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Workplan vide</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Empty Workplan</div>
           <div style={{ fontSize: 13, marginBottom: 16 }}>
-            Commencez par créer le premier composant de ce projet, aligné sur la structure du PAD.
+            Start by creating the first component of this project, aligned with the PAD structure.
           </div>
           {canEdit && (
-            <button className="btn btn-primary" onClick={() => dialog.open(<ComponentForm />, "Nouveau composant")}>
-              <Icon name="plus" size={14} /> Créer le premier composant
+            <button className="btn btn-primary" onClick={() => dialog.open(<ComponentForm />, "New Component")}>
+              <Icon name="plus" size={14} /> Create First Component
             </button>
           )}
         </div>
       ) : (
         components.map(c => (
-          <ComponentBlock
-            key={c.id}
-            projectId={projectId}
-            component={c}
-            outputNodes={outputNodes}
-            onActivityClick={setSelectedActivity}
-            onRefresh={handleRefresh}
-          />
+          <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes}
+            onActivityClick={setSelectedActivity} onRefresh={handleRefresh} />
         ))
       )}
 
-      {/* ── Panneau détail activité ── */}
+      {/* Activity detail panel */}
       {selectedActivity && (
         <>
-          <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.2)", zIndex: 199 }}
-            onClick={() => setSelectedActivity(null)}
-          />
-          <ActivityDetailPanel
-            projectId={projectId}
-            activity={selectedActivity}
-            outputNodes={outputNodes}
-            onClose={() => setSelectedActivity(null)}
-            onRefresh={() => {
-              qc.invalidateQueries(["workplan", projectId]);
-              qc.invalidateQueries(["workplan-summary", projectId]);
-            }}
-          />
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.2)", zIndex: 199 }}
+            onClick={() => setSelectedActivity(null)} />
+          <ActivityDetailPanel projectId={projectId} activity={selectedActivity} outputNodes={outputNodes}
+            onClose={() => setSelectedActivity(null)} onRefresh={handleRefresh} />
         </>
       )}
 
