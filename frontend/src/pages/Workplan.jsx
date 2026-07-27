@@ -223,90 +223,104 @@ function ActivityForm({ subComponentId, outputNodes, onSave, onCancel }) {
   });
   const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const sel = { ...inputStyle, appearance: "auto", cursor: "pointer" };
 
   async function handleSave() {
     setErr(null);
+    if (!form.code.trim())   { setErr("Code is required."); return; }
+    if (!form.name.trim())   { setErr("Name is required."); return; }
+    if (!form.planned_start) { setErr("Planned start date is required."); return; }
+    if (!form.planned_end)   { setErr("Planned end date is required."); return; }
     try {
       await onSave({ ...form, output_node: form.output_node || null, budget_planned: form.budget_planned || 0, progress: Number(form.progress), order: Number(form.order) });
-    } catch (e) { setErr(e?.detail || e?.message || "Save failed."); }
+    } catch (e) {
+      const d = e?.detail;
+      const msg = typeof d === "string" ? d : d ? Object.entries(d).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ") : "Save failed.";
+      setErr(msg);
+    }
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {err && <div className="alert alert-error" style={{ fontSize: 13 }}>{err}</div>}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Code *</label>
-          <input className="form-input" value={form.code} onChange={e => set("code", e.target.value)} placeholder="A1.1.1" />
+      {err && <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>{err}</div>}
+
+      <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Code *</label>
+          <input style={inputStyle} value={form.code} onChange={e => set("code", e.target.value)} placeholder="A1.1.1" />
         </div>
-        <div className="form-group">
-          <label className="form-label">Name *</label>
-          <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="Activity name" />
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Name *</label>
+          <input style={inputStyle} value={form.name} onChange={e => set("name", e.target.value)} placeholder="Activity name" />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Description</label>
-        <textarea className="form-textarea" rows={2} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Detailed description..." />
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <textarea style={{ ...textareaStyle, minHeight: 60 }} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Detailed description..." />
       </div>
-      <div className="form-group">
-        <label className="form-label">Responsible Party</label>
-        <input className="form-input" value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organization or individual responsible" />
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Responsible Party</label>
+        <input style={inputStyle} value={form.responsible_party} onChange={e => set("responsible_party", e.target.value)} placeholder="Organization or individual responsible" />
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Planned Start *</label>
-          <input className="form-input" type="date" value={form.planned_start} onChange={e => set("planned_start", e.target.value)} />
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Planned Start *</label>
+          <input style={inputStyle} type="date" value={form.planned_start} onChange={e => set("planned_start", e.target.value)} />
         </div>
-        <div className="form-group">
-          <label className="form-label">Planned End *</label>
-          <input className="form-input" type="date" value={form.planned_end} onChange={e => set("planned_end", e.target.value)} />
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Planned End *</label>
+          <input style={inputStyle} type="date" value={form.planned_end} onChange={e => set("planned_end", e.target.value)} />
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Status</label>
-          <select className="form-select" value={form.status} onChange={e => set("status", e.target.value)}>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Status</label>
+          <select style={sel} value={form.status} onChange={e => set("status", e.target.value)}>
             {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
-        <div className="form-group">
-          <label className="form-label">Progress (%)</label>
-          <input className="form-input" type="number" min={0} max={100} value={form.progress} onChange={e => set("progress", e.target.value)} />
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Progress (%)</label>
+          <input style={inputStyle} type="number" min={0} max={100} value={form.progress} onChange={e => set("progress", e.target.value)} />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Linked Output (ToC) — SF-2</label>
-        <select className="form-select" value={form.output_node} onChange={e => set("output_node", e.target.value)}>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Linked Output — ToC (SF-2) <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <select style={sel} value={form.output_node} onChange={e => set("output_node", e.target.value)}>
           <option value="">— No output linked —</option>
           {outputNodes.map(n => (
-            <option key={n.id} value={n.id}>{n.code} · {n.statement?.substring(0, 60)}{n.statement?.length > 60 ? "…" : ""}</option>
+            <option key={n.id} value={n.id}>{n.code} · {n.statement?.substring(0, 55)}{n.statement?.length > 55 ? "…" : ""}</option>
           ))}
         </select>
-        <div className="form-hint">Output nodes from the Theory of Change (RG-2.1)</div>
+        {outputNodes.length === 0 && (
+          <span style={{ fontSize: 11, color: "#94a3b8" }}>No Output nodes defined in the Theory of Change yet.</span>
+        )}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Planned Budget (USD)</label>
-          <input className="form-input" type="number" min={0} value={form.budget_planned} onChange={e => set("budget_planned", e.target.value)} placeholder="0" />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Display Order</label>
-          <input className="form-input" type="number" min={0} value={form.order} onChange={e => set("order", e.target.value)} />
-        </div>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Planned Budget (USD) <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <input style={inputStyle} type="number" min={0} value={form.budget_planned} onChange={e => set("budget_planned", e.target.value)} placeholder="0" />
       </div>
-      <div style={{ display: "flex", gap: 16 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+
+      <div style={{ display: "flex", gap: 24, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
           <input type="checkbox" checked={form.requires_evidence} onChange={e => set("requires_evidence", e.target.checked)} />
           Evidence required before Completed
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
           <input type="checkbox" checked={form.is_critical_path} onChange={e => set("is_critical_path", e.target.checked)} />
           Critical path
         </label>
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
-        <button className="btn btn-primary" onClick={handleSave}><Icon name="save" size={14} /> Save Activity</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="plus" size={14} /> Save Activity</button>
       </div>
     </div>
   );
