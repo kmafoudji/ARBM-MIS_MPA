@@ -208,14 +208,7 @@ class ActivityCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def validate_sub_component(self, value):
-        """Le sous-composant doit appartenir au projet courant."""
-        project_pk = self.context.get("project_pk")
-        if project_pk and value.component.project_id != int(project_pk):
-            raise serializers.ValidationError(
-                "Ce sous-composant n'appartient pas au projet courant."
-            )
-        return value
+
 
     def validate(self, data):
         if data.get("planned_end") and data.get("planned_start"):
@@ -356,14 +349,6 @@ class WorkplanSubComponentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = WorkplanSubComponent
         fields = ["component", "code", "name", "description", "order"]
-
-    def validate_component(self, value):
-        project_pk = self.context.get("project_pk")
-        if project_pk and value.project_id != int(project_pk):
-            raise serializers.ValidationError(
-                "Ce composant n'appartient pas au projet courant."
-            )
-        return value
 
 
 class WorkplanSubComponentWithActivitiesSerializer(serializers.ModelSerializer):
