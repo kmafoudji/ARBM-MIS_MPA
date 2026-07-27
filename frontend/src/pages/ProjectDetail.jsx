@@ -9,6 +9,7 @@ import ReportingSchedule from "../components/ReportingSchedule";
 import ResultsEntry from "../components/ResultsEntry";
 import TheoryOfChange from "../pages/TheoryOfChange.jsx";
 import Logframe from "../pages/Logframe.jsx";
+import Workplan from "../pages/Workplan.jsx";
 import Toast from "../components/Toast";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
@@ -399,6 +400,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     { key: "toc",        label: "Theory of Change", icon: "globe"       },
     { key: "logframe",   label: "Logframe",         icon: "bar-chart-2" },
     { key: "results",    label: "Results",          icon: "trending-up" },
+    { key: "workplan",   label: "Workplan",         icon: "layout"      },
     { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
     { key: "partners",   label: "Partners",         icon: "users"       },
     { key: "reporting",  label: "Reporting",        icon: "calendar"    },
@@ -439,6 +441,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       depends: "Theory of Change: at least one node defined",
     },
     results: {
+      locked: !hasWorkspace,
+      reason: "Available when project reaches Effective stage",
+      depends: "Lifecycle stage: Effective (workspace activated)",
+    },
+    workplan: {
       locked: !hasWorkspace,
       reason: "Available when project reaches Effective stage",
       depends: "Lifecycle stage: Effective (workspace activated)",
@@ -1761,6 +1768,29 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
           </div>
         </div>
         <ResultsEntry projectId={projectId} canEdit={true} />
+      </div>
+
+      </>)}
+      </>)}
+
+      {activeTab === "workplan" && (<>
+      {TAB_LOCKS["workplan"]?.locked
+        ? <LockedTabPanel tabKey="workplan" />
+        : (<>
+      {/* ── Module 3 — Workplan ───────────────────────────────────────── */}
+      <div className="card mt-4">
+        <div className="card-header">
+          <h2 className="card-title">
+            <Icon name="layout" size={15} style={{ marginRight: 6 }} />
+            Workplan — Activity & Milestone Tracking
+          </h2>
+          <div className="card-subtitle">
+            Hiérarchie Composant → Sous-composant → Activité · Liaisons ToC · Jalons · Suivi des retards
+          </div>
+        </div>
+        <div style={{ padding: "16px 20px" }}>
+          <Workplan projectId={projectId} canEdit={canEdit} />
+        </div>
       </div>
 
       </>)}
