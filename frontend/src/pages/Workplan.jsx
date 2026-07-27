@@ -416,49 +416,91 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
   const [form, setForm] = useState({ name: "", category: "programmatic", planned_date: "", status: "pending", is_gate: false, evidence_url: "", activity: activityId });
   const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const sel = { ...inputStyle, appearance: "auto", cursor: "pointer" };
+
   async function handleSave() {
     setErr(null);
-    try { await onSave(form); } catch (e) { setErr(e?.detail || e?.message || "Save failed."); }
+    if (!form.name.trim()) { setErr("Milestone name is required."); return; }
+    if (!form.planned_date) { setErr("Planned date is required."); return; }
+    try { await onSave(form); }
+    catch (e) {
+      const d = e?.detail;
+      setErr(typeof d === "string" ? d : d ? Object.entries(d).map(([k,v]) => `${k}: ${Array.isArray(v)?v.join(", "):v}`).join(" | ") : "Save failed.");
+    }
   }
+
+  const MILESTONE_STATUS_OPTS = [
+    { value: "pending",    label: "Pending",    icon: "⏳" },
+    { value: "achieved",   label: "Achieved",   icon: "✅" },
+    { value: "missed",     label: "Missed",     icon: "❌" },
+    { value: "forecasted", label: "Forecasted", icon: "🔮" },
+  ];
+
+  const CAT_ICONS = { contractual: "📋", programmatic: "🎯", reporting: "📊" };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {err && <div className="alert alert-error" style={{ fontSize: 13 }}>{err}</div>}
-      <div className="form-group">
-        <label className="form-label">Milestone Name *</label>
-        <input className="form-input" value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Study report submitted" />
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {err && (
+        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626", display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="alert-circle" size={13} /> {err}
+        </div>
+      )}
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Milestone Name *</label>
+        <input style={inputStyle} value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Study report submitted" />
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Category</label>
-          <select className="form-select" value={form.category} onChange={e => set("category", e.target.value)}>
-            {MILESTONE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Category</label>
+          <select style={sel} value={form.category} onChange={e => set("category", e.target.value)}>
+            {MILESTONE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{CAT_ICONS[c.value]} {c.label}</option>)}
           </select>
         </div>
-        <div className="form-group">
-          <label className="form-label">Planned Date *</label>
-          <input className="form-input" type="date" value={form.planned_date} onChange={e => set("planned_date", e.target.value)} />
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Planned Date *</label>
+          <input style={inputStyle} type="date" value={form.planned_date} onChange={e => set("planned_date", e.target.value)} />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Status</label>
-        <select className="form-select" value={form.status} onChange={e => set("status", e.target.value)}>
-          <option value="pending">Pending</option>
-          <option value="achieved">Achieved</option>
-          <option value="missed">Missed</option>
-          <option value="forecasted">Forecasted</option>
-        </select>
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Status</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          {MILESTONE_STATUS_OPTS.map(opt => (
+            <button key={opt.value} type="button"
+              onClick={() => set("status", opt.value)}
+              style={{
+                flex: 1, padding: "8px 4px", borderRadius: 8, border: "2px solid",
+                cursor: "pointer", fontSize: 12, fontWeight: 600,
+                borderColor: form.status === opt.value ? "#A4C53F" : "#e2e8f0",
+                background: form.status === opt.value ? "#f7ffe6" : "#fff",
+                color: form.status === opt.value ? "#4a7c0a" : "#64748b",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+              }}>
+              <span style={{ fontSize: 16 }}>{opt.icon}</span>
+              <span>{opt.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Evidence URL</label>
-        <input className="form-input" type="url" value={form.evidence_url} onChange={e => set("evidence_url", e.target.value)} placeholder="https://..." />
+
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Evidence URL <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <input style={inputStyle} type="url" value={form.evidence_url} onChange={e => set("evidence_url", e.target.value)} placeholder="https://..." />
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+
+      <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#fdf4ff", border: "1px solid #e9d5ff", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
         <input type="checkbox" checked={form.is_gate} onChange={e => set("is_gate", e.target.checked)} />
-        Gate milestone (blocks activity from reaching 100%)
+        <div>
+          <strong>Gate milestone</strong>
+          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>Blocks this activity from reaching 100% until achieved</div>
+        </div>
       </label>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
-        <button className="btn btn-primary" onClick={handleSave}><Icon name="save" size={14} /> Save Milestone</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="flag" size={14} /> Save Milestone</button>
       </div>
     </div>
   );
@@ -470,46 +512,99 @@ function DelayForm({ activity, onSave, onCancel }) {
   const [form, setForm] = useState({ previous_end: activity.revised_end || activity.planned_end || "", revised_end: "", delay_category: "procurement", delay_subcategory: "", justification: "", cascade_applied: false });
   const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const sel = { ...inputStyle, appearance: "auto", cursor: "pointer" };
+
   async function handleSave() {
     setErr(null);
     if (!form.revised_end) { setErr("New end date is required."); return; }
     if (!form.justification.trim()) { setErr("Justification is mandatory (RG-7.2)."); return; }
-    try { await onSave(form); } catch (e) { setErr(e?.detail || e?.message || "Save failed."); }
+    try { await onSave(form); }
+    catch (e) {
+      const d = e?.detail;
+      setErr(typeof d === "string" ? d : d ? Object.entries(d).map(([k,v]) => `${k}: ${Array.isArray(v)?v.join(", "):v}`).join(" | ") : "Save failed.");
+    }
   }
+
+  const variance = form.revised_end && form.previous_end
+    ? Math.round((new Date(form.revised_end) - new Date(form.previous_end)) / 86400000)
+    : null;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {err && <div className="alert alert-error" style={{ fontSize: 13 }}>{err}</div>}
-      <div style={{ padding: "10px 14px", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, fontSize: 13, color: "#92400e" }}>
-        <strong>Current end date:</strong> {activity.revised_end || activity.planned_end}
-        {activity.baseline_end && <span style={{ marginLeft: 12, color: "#b45309" }}>· Baseline: {activity.baseline_end}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {err && (
+        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626", display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="alert-circle" size={13} /> {err}
+        </div>
+      )}
+
+      {/* Context banner */}
+      <div style={{ padding: "12px 14px", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Activity Timeline</div>
+        <div style={{ display: "flex", gap: 20, fontSize: 13 }}>
+          <div>
+            <div style={{ fontSize: 10, color: "#b45309", fontWeight: 600, textTransform: "uppercase" }}>Baseline</div>
+            <div style={{ fontWeight: 600, color: "#92400e" }}>{activity.baseline_end || activity.planned_end}</div>
+          </div>
+          <div style={{ color: "#fed7aa", fontSize: 18, alignSelf: "center" }}>→</div>
+          <div>
+            <div style={{ fontSize: 10, color: "#b45309", fontWeight: 600, textTransform: "uppercase" }}>Current End</div>
+            <div style={{ fontWeight: 600, color: "#92400e" }}>{activity.revised_end || activity.planned_end}</div>
+          </div>
+          {variance !== null && (
+            <>
+              <div style={{ color: "#fed7aa", fontSize: 18, alignSelf: "center" }}>→</div>
+              <div>
+                <div style={{ fontSize: 10, color: "#b45309", fontWeight: 600, textTransform: "uppercase" }}>New End</div>
+                <div style={{ fontWeight: 700, color: variance > 0 ? "#dc2626" : "#16a34a" }}>
+                  {form.revised_end} {variance > 0 ? `(+${variance}d)` : variance < 0 ? `(${variance}d)` : "(no change)"}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Dates */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Previous End Date</label>
-          <input className="form-input" type="date" value={form.previous_end} onChange={e => set("previous_end", e.target.value)} />
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Previous End Date</label>
+          <input style={inputStyle} type="date" value={form.previous_end} onChange={e => set("previous_end", e.target.value)} />
         </div>
-        <div className="form-group">
-          <label className="form-label">New End Date *</label>
-          <input className="form-input" type="date" value={form.revised_end} onChange={e => set("revised_end", e.target.value)} />
+        <div style={fieldStyle}>
+          <label style={{ ...labelStyle, color: "#dc2626" }}>New End Date *</label>
+          <input style={{ ...inputStyle, borderColor: form.revised_end ? "#d1d5db" : "#fca5a5" }} type="date" value={form.revised_end} onChange={e => set("revised_end", e.target.value)} />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">Delay Category * (RG-7.2)</label>
-        <select className="form-select" value={form.delay_category} onChange={e => set("delay_category", e.target.value)}>
+
+      {/* Delay category */}
+      <div style={fieldStyle}>
+        <label style={labelStyle}>Delay Category * <span style={{ color: "#94a3b8", fontWeight: 400, fontSize: 11 }}>(RG-7.2 standardized taxonomy)</span></label>
+        <select style={sel} value={form.delay_category} onChange={e => set("delay_category", e.target.value)}>
           {DELAY_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
-      <div className="form-group">
-        <label className="form-label">Justification *</label>
-        <textarea className="form-textarea" rows={3} value={form.justification} onChange={e => set("justification", e.target.value)} placeholder="Mandatory narrative description of the delay and its root causes..." />
+
+      {/* Justification */}
+      <div style={fieldStyle}>
+        <label style={{ ...labelStyle, color: "#dc2626" }}>Justification *</label>
+        <textarea style={{ ...textareaStyle, minHeight: 80, borderColor: form.justification.trim() ? "#d1d5db" : "#fca5a5" }}
+          value={form.justification} onChange={e => set("justification", e.target.value)}
+          placeholder="Mandatory narrative: describe the root cause, impact, and corrective actions taken..." />
+        <span style={{ fontSize: 11, color: "#94a3b8" }}>{form.justification.length} characters</span>
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+
+      {/* Cascade */}
+      <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, cursor: "pointer" }}>
         <input type="checkbox" checked={form.cascade_applied} onChange={e => set("cascade_applied", e.target.checked)} />
-        Apply cascade to successor activities (RG-7.3)
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e" }}>Apply cascade to successor activities</div>
+          <div style={{ fontSize: 11, color: "#b45309" }}>Automatically shift dependent activities by the same delay (RG-7.3)</div>
+        </div>
       </label>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 8, borderTop: "1px solid #e2e8f0" }}>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
-        <button className="btn btn-primary" onClick={handleSave}><Icon name="clock" size={14} /> Record Delay</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="alert-triangle" size={14} /> Record Delay</button>
       </div>
     </div>
   );
@@ -583,9 +678,9 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
         {[
-          { key: "info",       label: "Details",                           icon: "info"  },
-          { key: "milestones", label: `Milestones (${milestones.length})`, icon: "flag"  },
-          { key: "delays",     label: `Delays (${delays.length})`,         icon: "clock" },
+          { key: "info",       label: "Details",                           icon: "layout"        },
+          { key: "milestones", label: `Milestones (${milestones.length})`, icon: "check-square"  },
+          { key: "delays",     label: `Delays (${delays.length})`,         icon: "alert-triangle" },
         ].map(t => (
           <button key={t.key} onClick={() => setActiveSection(t.key)} style={{
             padding: "10px 16px", border: "none", background: "none", cursor: "pointer",
@@ -656,7 +751,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
         {activeSection === "milestones" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button className="btn btn-primary" onClick={() => setModal({ title: "Add Milestone" })}>
-              <Icon name="plus" size={14} /> Add Milestone
+              <Icon name="check-square" size={14} /> Add Milestone
             </button>
             {milestones.length === 0 && (
               <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>No milestones defined for this activity.</div>
@@ -684,7 +779,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
         {activeSection === "delays" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button className="btn btn-warning" onClick={() => setModal({ title: "Record a Delay", isDelay: true })}>
-              <Icon name="clock" size={14} /> Report a Delay
+              <Icon name="alert-triangle" size={14} /> Report a Delay
             </button>
             {delays.length === 0 && (
               <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>No delays recorded for this activity.</div>
@@ -935,12 +1030,12 @@ export default function Workplan({ projectId, canEdit = true }) {
       {/* Summary cards */}
       {summary && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 20 }}>
-          <SummaryCard icon="activity"     label="Total"       value={summary.total_activities} />
-          <SummaryCard icon="clock"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
-          <SummaryCard icon="check-circle" label="Completed"   value={summary.completed}          accent="#16a34a" />
-          <SummaryCard icon="alert-circle" label="Overdue"     value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
-          <SummaryCard icon="trending-up"  label="Progress"    value={`${summary.overall_progress}%`} accent="#A4C53F" />
-          <SummaryCard icon="zap"          label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
+          <SummaryCard icon="list"          label="Total"       value={summary.total_activities} />
+          <SummaryCard icon="loader"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
+          <SummaryCard icon="check-circle"  label="Completed"   value={summary.completed}          accent="#16a34a" />
+          <SummaryCard icon="alert-triangle" label="Overdue"    value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
+          <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="#A4C53F" />
+          <SummaryCard icon="zap"           label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
             accent={summary.latest_spi >= 1 ? "#16a34a" : summary.latest_spi != null ? "#dc2626" : "#64748b"} />
         </div>
       )}
