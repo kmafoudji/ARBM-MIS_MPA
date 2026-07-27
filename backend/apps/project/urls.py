@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from apps.results.urls import project_urlpatterns as results_project_urls
+from apps.workplan.urls import workplan_project_urlpatterns
 from apps.results.views import TheoryOfChangeView, ToCNodeDetailView, ToCNodeListView
 
 from .views import (
@@ -63,4 +64,7 @@ urlpatterns = router.urls + [
 ] + [
     path(f"projects/<int:pk>/{pattern.pattern}", pattern.callback, name=pattern.name)
     for pattern in results_project_urls
+] + [
+    path(f"projects/<int:pk>/{pattern.pattern}", pattern.callback, name=pattern.name)
+    for pattern in workplan_project_urlpatterns
 ]
