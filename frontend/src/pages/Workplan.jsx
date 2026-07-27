@@ -500,7 +500,7 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
-        <button className="btn btn-primary" onClick={handleSave}><Icon name="flag" size={14} /> Save Milestone</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="check" size={14} /> Save Milestone</button>
       </div>
     </div>
   );
@@ -678,8 +678,8 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
         {[
-          { key: "info",       label: "Details",                           icon: "layout"        },
-          { key: "milestones", label: `Milestones (${milestones.length})`, icon: "check-square"  },
+          { key: "info",       label: "Details",                           icon: "info"        },
+          { key: "milestones", label: `Milestones (${milestones.length})`, icon: "check"  },
           { key: "delays",     label: `Delays (${delays.length})`,         icon: "alert-triangle" },
         ].map(t => (
           <button key={t.key} onClick={() => setActiveSection(t.key)} style={{
@@ -700,17 +700,17 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Quick Update</div>
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-                <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: 11 }}>Status</label>
-                  <select className="form-select" defaultValue={activity.status}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 12 }}>
+                <div style={fieldStyle}>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>Status</label>
+                  <select style={{ ...inputStyle, appearance: "auto", cursor: "pointer" }} defaultValue={activity.status}
                     onChange={e => updateProgress.mutate({ status: e.target.value, progress: activity.progress })}>
                     {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
-                <div className="form-group" style={{ width: 80, marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: 11 }}>Progress %</label>
-                  <input className="form-input" type="number" min={0} max={100} defaultValue={activity.progress}
+                <div style={fieldStyle}>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>Progress %</label>
+                  <input style={inputStyle} type="number" min={0} max={100} defaultValue={activity.progress}
                     onBlur={e => updateProgress.mutate({ status: activity.status, progress: Number(e.target.value) })} />
                 </div>
               </div>
@@ -751,7 +751,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
         {activeSection === "milestones" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button className="btn btn-primary" onClick={() => setModal({ title: "Add Milestone" })}>
-              <Icon name="check-square" size={14} /> Add Milestone
+              <Icon name="check" size={14} /> Add Milestone
             </button>
             {milestones.length === 0 && (
               <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>No milestones defined for this activity.</div>
@@ -1019,7 +1019,7 @@ export default function Workplan({ projectId, canEdit = true }) {
   if (isLoading) {
     return (
       <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
-        <Icon name="loader" size={20} style={{ marginBottom: 8 }} />
+        <Icon name="clock" size={20} style={{ marginBottom: 8 }} />
         <div style={{ fontSize: 13 }}>Loading workplan…</div>
       </div>
     );
@@ -1031,8 +1031,8 @@ export default function Workplan({ projectId, canEdit = true }) {
       {summary && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 20 }}>
           <SummaryCard icon="list"          label="Total"       value={summary.total_activities} />
-          <SummaryCard icon="loader"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
-          <SummaryCard icon="check-circle"  label="Completed"   value={summary.completed}          accent="#16a34a" />
+          <SummaryCard icon="clock"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
+          <SummaryCard icon="circle-check"  label="Completed"   value={summary.completed}          accent="#16a34a" />
           <SummaryCard icon="alert-triangle" label="Overdue"    value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
           <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="#A4C53F" />
           <SummaryCard icon="zap"           label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
