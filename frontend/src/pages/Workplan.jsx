@@ -118,9 +118,24 @@ const textareaStyle = { ...inputStyle, resize: "vertical", fontFamily: "inherit"
 
 function ComponentForm({ onSave, onCancel }) {
   const [form, setForm] = useState({ code: "", name: "", description: "", order: 0 });
+  const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleSave() {
+    setErr(null);
+    if (!form.code.trim()) { setErr("Code is required."); return; }
+    if (!form.name.trim()) { setErr("Name is required."); return; }
+    try { await onSave(form); }
+    catch (e) {
+      const detail = e?.detail || e?.message;
+      const msg = typeof detail === "object" ? JSON.stringify(detail) : detail;
+      setErr(msg || "Save failed.");
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {err && <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>{err}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
         <div style={fieldStyle}>
           <label style={labelStyle}>Code *</label>
@@ -137,7 +152,7 @@ function ComponentForm({ onSave, onCancel }) {
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
-        <button className="btn btn-primary" onClick={() => onSave(form)}><Icon name="plus" size={14} /> Create Component</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="plus" size={14} /> Create Component</button>
       </div>
     </div>
   );
@@ -145,11 +160,35 @@ function ComponentForm({ onSave, onCancel }) {
 
 // ─── Sub-Component Form ───────────────────────────────────────────────────────
 
-function SubComponentForm({ componentId, onSave, onCancel }) {
+function SubComponentForm({ componentId, componentName, onSave, onCancel }) {
   const [form, setForm] = useState({ code: "", name: "", description: "", order: 0, component: componentId });
+  const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleSave() {
+    setErr(null);
+    if (!form.code.trim()) { setErr("Code is required."); return; }
+    if (!form.name.trim()) { setErr("Name is required."); return; }
+    try { await onSave(form); }
+    catch (e) {
+      const detail = e?.detail || e?.message;
+      const msg = typeof detail === "object" ? JSON.stringify(detail) : detail;
+      setErr(msg || "Save failed.");
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Parent component badge */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#eff6ff", borderRadius: 8, border: "1px solid #bfdbfe" }}>
+        <Icon name="layers" size={13} style={{ color: "#2563eb" }} />
+        <span style={{ fontSize: 12, color: "#1e40af" }}>
+          <strong>Component:</strong> {componentName || `#${componentId}`}
+        </span>
+      </div>
+
+      {err && <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>{err}</div>}
+
       <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
         <div style={fieldStyle}>
           <label style={labelStyle}>Code *</label>
@@ -166,7 +205,7 @@ function SubComponentForm({ componentId, onSave, onCancel }) {
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
-        <button className="btn btn-primary" onClick={() => onSave(form)}><Icon name="plus" size={14} /> Create Sub-Component</button>
+        <button className="btn btn-primary" onClick={handleSave}><Icon name="plus" size={14} /> Create Sub-Component</button>
       </div>
     </div>
   );
@@ -725,6 +764,7 @@ function ComponentBlock({ projectId, component, outputNodes, onActivityClick, on
         <Modal title="New Sub-Component" onClose={() => setModal(false)}>
           <SubComponentForm
             componentId={component.id}
+            componentName={`${component.code} — ${component.name}`}
             onSave={data => addSubComponent.mutateAsync(data)}
             onCancel={() => setModal(false)}
           />
