@@ -35,6 +35,9 @@ class RegionalHub(models.Model):
     class Meta:
         db_table = "regional_hub"
         ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["name"], name="unique_regional_hub_name")
+        ]
 
     def __str__(self):
         return self.name
