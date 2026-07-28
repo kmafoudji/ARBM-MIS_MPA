@@ -993,6 +993,12 @@ export default function Workplan({ projectId, canEdit = true }) {
     staleTime: 30_000,
   });
 
+  const { data: alerts = [], refetch: refetchAlerts } = useQuery({
+    queryKey: ["workplan-alerts", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/workplan/alerts/?status=active`),
+    staleTime: 60_000,
+  });
+
   const { data: outputNodes = [] } = useQuery({
     queryKey: ["workplan-output-nodes", projectId],
     queryFn: () => apiFetch(`/api/projects/${projectId}/workplan/output-nodes/`),
@@ -1037,6 +1043,61 @@ export default function Workplan({ projectId, canEdit = true }) {
           <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="#A4C53F" />
           <SummaryCard icon="zap"           label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
             accent={summary.latest_spi >= 1 ? "#16a34a" : summary.latest_spi != null ? "#dc2626" : "#64748b"} />
+        </div>
+      )}
+
+      {/* SF-6 — Alerts panel */}
+      {alerts.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Icon name="alert-triangle" size={15} style={{ color: "#dc2626" }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#dc2626" }}>
+                {alerts.length} Active Alert{alerts.length > 1 ? "s" : ""}
+              </span>
+            </div>
+            <button className="btn btn-ghost" style={{ fontSize: 11 }}
+              onClick={() => apiFetch(`/api/projects/${projectId}/workplan/alerts/run/`, { method: "POST" }).then(() => refetchAlerts())}>
+              <Icon name="refresh" size={12} /> Refresh alerts
+            </button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {alerts.slice(0, 5).map(alert => {
+              const ALERT_COLORS = {
+                escalation_l3:    { bg: "#fef2f2", border: "#fecaca", text: "#dc2626", icon: "alert-triangle" },
+                escalation_l2:    { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c", icon: "alert-triangle" },
+                escalation_l1:    { bg: "#fefce8", border: "#fde68a", text: "#ca8a04", icon: "alert-triangle" },
+                milestone_missed: { bg: "#fef2f2", border: "#fecaca", text: "#dc2626", icon: "circle-x" },
+                activity_overdue: { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c", icon: "clock" },
+                milestone_t0:     { bg: "#fefce8", border: "#fde68a", text: "#ca8a04", icon: "clock" },
+                milestone_t7:     { bg: "#eff6ff", border: "#bfdbfe", text: "#2563eb", icon: "info" },
+                milestone_t30:    { bg: "#f8fafc", border: "#e2e8f0", text: "#64748b", icon: "info" },
+                delay_pending:    { bg: "#fdf4ff", border: "#e9d5ff", text: "#9333ea", icon: "clock" },
+              };
+              const cfg = ALERT_COLORS[alert.alert_type] || ALERT_COLORS.activity_overdue;
+              return (
+                <div key={alert.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px", borderRadius: 8, background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+                  <Icon name={cfg.icon} size={14} style={{ color: cfg.text, marginTop: 1, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: cfg.text, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
+                      {alert.alert_type_display}
+                      {alert.days_overdue > 0 && <span style={{ marginLeft: 8, fontWeight: 400 }}>· +{alert.days_overdue}d</span>}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.4 }}>{alert.message}</div>
+                  </div>
+                  <button onClick={() => apiFetch(`/api/projects/${projectId}/workplan/alerts/${alert.id}/acknowledge/`, { method: "PATCH" }).then(() => refetchAlerts())}
+                    style={{ border: "none", background: "none", cursor: "pointer", fontSize: 11, color: cfg.text, fontWeight: 600, whiteSpace: "nowrap", padding: "2px 6px" }}>
+                    ✓ Ack
+                  </button>
+                </div>
+              );
+            })}
+            {alerts.length > 5 && (
+              <div style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "6px 0" }}>
+                +{alerts.length - 5} more alert{alerts.length - 5 > 1 ? "s" : ""}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

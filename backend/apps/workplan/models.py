@@ -461,7 +461,95 @@ class DelayLog(models.Model):
 # SF-8 · SPI Snapshot (BRQ-3.14)
 # ---------------------------------------------------------------------------
 
-class SPISnapshot(models.Model):
+ALERT_TYPE_CHOICES = [
+    ("milestone_t30",   "Milestone due in 30 days"),
+    ("milestone_t7",    "Milestone due in 7 days"),
+    ("milestone_t0",    "Milestone due today"),
+    ("milestone_missed","Milestone missed"),
+    ("activity_overdue","Activity overdue"),
+    ("delay_pending",   "Delay revision pending approval"),
+    ("escalation_l1",   "Escalation L1 — PMU PM (>15d overdue)"),
+    ("escalation_l2",   "Escalation L2 — Regional Hub (>30d overdue)"),
+    ("escalation_l3",   "Escalation L3 — LLFMU (>60d overdue)"),
+]
+
+ALERT_STATUS_CHOICES = [
+    ("active",      "Active"),
+    ("acknowledged","Acknowledged"),
+    ("resolved",    "Resolved"),
+]
+
+
+class WorkplanAlert(models.Model):
+    """
+    Alerte générée automatiquement par le moteur SF-6.
+    Créée par la tâche Celery check_workplan_alerts (quotidienne).
+    BRQ-3.16 / RG-6.1 / RG-6.2 / RG-6.3
+    """
+    project    = models.ForeignKey(
+        "project.Project",
+        on_delete=models.CASCADE,
+        related_name="workplan_alerts",
+    )
+    activity   = models.ForeignKey(
+        Activity,
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name="alerts",
+    )
+    milestone  = models.ForeignKey(
+        Milestone,
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name="alerts",
+    )
+    alert_type = models.CharField(max_length=30, choices=ALERT_TYPE_CHOICES)
+    status     = models.CharField(
+        max_length=15, choices=ALERT_STATUS_CHOICES, default="active",
+    )
+    # Contexte de l'alerte (RG-6.3)
+    message        = models.TextField(help_text="Message descriptif de l'alerte.")
+    days_overdue   = models.IntegerField(
+        default=0,
+        help_text="Nombre de jours de retard au moment de la génération.",
+    )
+    # Qui doit agir
+    assigned_to    = models.ForeignKey(
+        "identity.AppUser",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="workplan_alerts_assigned",
+    )
+    # Email envoyé ?
+    email_sent     = models.BooleanField(default=False)
+    email_sent_at  = models.DateTimeField(null=True, blank=True)
+    # Acknowledgement
+    acknowledged_by = models.ForeignKey(
+        "identity.AppUser",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="workplan_alerts_acked",
+    )
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    # Déduplication — évite de recréer la même alerte chaque jour
+    dedup_key      = models.CharField(
+        max_length=100, unique=True,
+        help_text="Clé de déduplication : type:activity_id:date ou type:milestone_id:date.",
+    )
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "workplan_alert"
+        ordering = ["-created_at"]
+        indexes  = [
+            models.Index(fields=["project", "status"]),
+            models.Index(fields=["alert_type", "status"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_alert_type_display()} — {self.project.code} ({self.status})"
+
     """
     Instantané du Schedule Performance Index calculé périodiquement.
     Niveaux : activity · project · portfolio.

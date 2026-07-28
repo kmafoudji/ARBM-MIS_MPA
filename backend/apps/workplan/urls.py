@@ -10,6 +10,9 @@ from .views import (
     MilestoneDetailView,
     MilestoneListView,
     SPISnapshotView,
+    WorkplanAlertDetailView,
+    WorkplanAlertListView,
+    WorkplanAlertRunView,
     WorkplanChoicesView,
     WorkplanComponentDetailView,
     WorkplanComponentListView,
@@ -72,4 +75,12 @@ workplan_project_urlpatterns = [
     # SF-8 — SPI
     path("workplan/spi/",
          SPISnapshotView.as_view(), name="project-workplan-spi"),
+
+    # SF-6 — Alertes
+    path("workplan/alerts/",
+         WorkplanAlertListView.as_view(), name="project-workplan-alerts"),
+    path("workplan/alerts/run/",
+         WorkplanAlertRunView.as_view(), name="project-workplan-alerts-run"),
+    path("workplan/alerts/<int:a_pk>/<str:action>/",
+         WorkplanAlertDetailView.as_view(), name="project-workplan-alert-action"),
 ]

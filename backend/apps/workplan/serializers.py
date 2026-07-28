@@ -473,3 +473,41 @@ def get_workplan_choices():
         "delay_category":     [{"value": v, "label": l} for v, l in DELAY_CATEGORY_CHOICES],
         "delay_subcategory":  [{"value": v, "label": l} for v, l in DELAY_SUBCATEGORY_CHOICES],
     }
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — WorkplanAlert
+# ---------------------------------------------------------------------------
+
+class WorkplanAlertSerializer(serializers.ModelSerializer):
+    from .models import WorkplanAlert
+    alert_type_display = serializers.CharField(source="get_alert_type_display", read_only=True)
+    status_display     = serializers.CharField(source="get_status_display",     read_only=True)
+    activity_code      = serializers.CharField(source="activity.code",          read_only=True)
+    activity_name      = serializers.CharField(source="activity.name",          read_only=True)
+    milestone_name     = serializers.CharField(source="milestone.name",         read_only=True)
+    acknowledged_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        from .models import WorkplanAlert
+        model  = WorkplanAlert
+        fields = [
+            "id", "project", "alert_type", "alert_type_display",
+            "status", "status_display",
+            "message", "days_overdue",
+            "activity", "activity_code", "activity_name",
+            "milestone", "milestone_name",
+            "assigned_to", "email_sent", "email_sent_at",
+            "acknowledged_by", "acknowledged_by_name", "acknowledged_at",
+            "dedup_key", "created_at", "updated_at",
+        ]
+        read_only_fields = [
+            "id", "dedup_key", "email_sent", "email_sent_at",
+            "created_at", "updated_at",
+        ]
+
+    def get_acknowledged_by_name(self, obj):
+        if obj.acknowledged_by:
+            u = obj.acknowledged_by
+            return f"{u.first_name} {u.last_name}".strip() or u.email
+        return None

@@ -28,7 +28,12 @@ app.conf.beat_schedule = {
     "refresh-reporting-period-statuses-daily": {
         "task": "apps.project.tasks.refresh_reporting_period_statuses",
         "schedule": crontab(hour=2, minute=0),  # 02h00 UTC chaque nuit
-        "options": {"expires": 3600},           # expire après 1h si non exécuté
+        "options": {"expires": 3600},
+    },
+    "check-workplan-alerts-daily": {
+        "task": "apps.workplan.tasks.check_workplan_alerts",
+        "schedule": crontab(hour=6, minute=0),  # 06h00 UTC chaque matin
+        "options": {"expires": 3600},
     },
 }
 app.conf.timezone = "UTC"

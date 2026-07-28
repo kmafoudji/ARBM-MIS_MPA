@@ -708,3 +708,74 @@ class WorkplanSummaryView(APIView):
             "latest_spi":          float(latest_spi_obj.spi) if latest_spi_obj else None,
         }
         return Response(WorkplanSummarySerializer(summary).data)
+
+
+# ---------------------------------------------------------------------------
+# SF-6 — WorkplanAlert
+# ---------------------------------------------------------------------------
+
+from .models import WorkplanAlert
+from .serializers import WorkplanAlertSerializer
+
+
+class WorkplanAlertListView(APIView):
+    """
+    GET  /api/projects/{pk}/workplan/alerts/        — liste des alertes actives
+    POST /api/projects/{pk}/workplan/alerts/run/    — déclencher le moteur manuellement
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        project = get_project_or_404(pk)
+        qs = WorkplanAlert.objects.filter(project=project).select_related(
+            "activity", "milestone", "assigned_to", "acknowledged_by"
+        )
+        # Filtres optionnels
+        status_filter = request.query_params.get("status", "active")
+        if status_filter != "all":
+            qs = qs.filter(status=status_filter)
+        alert_type = request.query_params.get("type")
+        if alert_type:
+            qs = qs.filter(alert_type=alert_type)
+        return Response(WorkplanAlertSerializer(qs, many=True).data)
+
+
+class WorkplanAlertRunView(APIView):
+    """
+    POST /api/projects/{pk}/workplan/alerts/run/
+    Déclenche le moteur d'alertes SF-6 immédiatement pour ce projet.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        project = get_project_or_404(pk)
+        from .tasks import check_workplan_alerts_project
+        task = check_workplan_alerts_project.delay(project.pk)
+        return Response({"task_id": task.id, "status": "queued"}, status=status.HTTP_202_ACCEPTED)
+
+
+class WorkplanAlertDetailView(APIView):
+    """
+    PATCH /api/projects/{pk}/workplan/alerts/{a_pk}/acknowledge/
+    PATCH /api/projects/{pk}/workplan/alerts/{a_pk}/resolve/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _get_alert(self, pk, a_pk):
+        return get_object_or_404(WorkplanAlert, pk=a_pk, project_id=pk)
+
+    def patch(self, request, pk, a_pk, action):
+        alert = self._get_alert(pk, a_pk)
+        if action == "acknowledge":
+            if alert.status != "active":
+                return Response({"detail": "Only active alerts can be acknowledged."}, status=status.HTTP_400_BAD_REQUEST)
+            alert.status = "acknowledged"
+            alert.acknowledged_by = request.user
+            alert.acknowledged_at = timezone.now()
+            alert.save(update_fields=["status", "acknowledged_by", "acknowledged_at", "updated_at"])
+        elif action == "resolve":
+            alert.status = "resolved"
+            alert.save(update_fields=["status", "updated_at"])
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(WorkplanAlertSerializer(alert).data)
