@@ -61,10 +61,12 @@ def run_alert_engine(project=None):
     # ── Scope ────────────────────────────────────────────────────────────
     from apps.project.models import Project
     if project:
-        projects = Project.objects.filter(pk=project.pk, has_workspace=True)
+        projects = Project.objects.filter(pk=project.pk, workspace__isnull=False)
     else:
         projects = Project.objects.filter(
-            lifecycle_stage__in=["effective", "implementing", "mid_term_review"],
+            workspace__isnull=False,
+        ).exclude(
+            lifecycle_stage__in=["cancelled", "closed", "concept_note"],
         ).select_related("workspace")
 
     for proj in projects:

@@ -798,7 +798,9 @@ class GlobalWorkplanNotificationsView(APIView):
 
         # Tous les projets avec workspace actif
         projects = Project.objects.filter(
-            lifecycle_stage__in=["effective", "implementing", "mid_term_review"],
+            workspace__isnull=False,
+        ).exclude(
+            lifecycle_stage__in=["cancelled", "closed", "concept_note"],
         ).values_list("id", flat=True)
 
         qs = WorkplanAlert.objects.filter(
