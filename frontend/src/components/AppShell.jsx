@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
 import i18n from "../i18n/index.js";
+import NotificationBell from "./NotificationBell";
 
 const NAV_GROUPS = [
   {
@@ -212,6 +213,10 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
             })}
           </nav>
           <div className="topbar-actions">
+            {/* Notification bell */}
+            <NotificationBell
+              onNavigateProject={projectId => onNavigate("project-detail", { projectId })}
+            />
             {/* Switcher langue EN / FR */}
             <div className="row" style={{ gap: 4 }}>
               {["en", "fr", "ar"].map((l) => (

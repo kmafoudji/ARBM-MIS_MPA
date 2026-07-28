@@ -487,12 +487,13 @@ class WorkplanAlertSerializer(serializers.ModelSerializer):
     activity_name      = serializers.CharField(source="activity.name",          read_only=True)
     milestone_name     = serializers.CharField(source="milestone.name",         read_only=True)
     acknowledged_by_name = serializers.SerializerMethodField()
+    project_code       = serializers.CharField(source="project.code",           read_only=True)
 
     class Meta:
         from .models import WorkplanAlert
         model  = WorkplanAlert
         fields = [
-            "id", "project", "alert_type", "alert_type_display",
+            "id", "project", "project_code", "alert_type", "alert_type_display",
             "status", "status_display",
             "message", "days_overdue",
             "activity", "activity_code", "activity_name",

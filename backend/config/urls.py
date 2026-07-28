@@ -16,6 +16,8 @@ urlpatterns = [
     path("api/", include("apps.project.urls")),
     path("api/reference/", include("apps.reference.urls")),
     path("api/identity/", include("apps.identity.urls")),
+    # Notifications globales (topbar)
+    path("api/workplan/notifications/", __import__("apps.workplan.views", fromlist=["GlobalWorkplanNotificationsView"]).GlobalWorkplanNotificationsView.as_view(), name="global-notifications"),
     # Catalogue indicateurs (routes independantes du projet)
     path("api/results/", include((indicator_urlpatterns, "results"))),
 ]

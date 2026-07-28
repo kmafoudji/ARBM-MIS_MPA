@@ -779,3 +779,90 @@ class WorkplanAlertDetailView(APIView):
         else:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(WorkplanAlertSerializer(alert).data)
+
+
+# ---------------------------------------------------------------------------
+# Notifications globales (topbar) — toutes alertes actives de l'utilisateur
+# ---------------------------------------------------------------------------
+
+class GlobalWorkplanNotificationsView(APIView):
+    """
+    GET /api/workplan/notifications/
+    Retourne toutes les alertes actives sur tous les projets,
+    groupées par catégorie, pour la cloche de notifications topbar.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.project.models import Project
+
+        # Tous les projets avec workspace actif
+        projects = Project.objects.filter(
+            lifecycle_stage__in=["effective", "implementing", "mid_term_review"],
+        ).values_list("id", flat=True)
+
+        qs = WorkplanAlert.objects.filter(
+            project_id__in=projects,
+            status="active",
+        ).select_related(
+            "project", "activity", "milestone"
+        ).order_by("-created_at")
+
+        # Groupement par catégorie
+        CATEGORIES = [
+            {
+                "key":   "escalation",
+                "label": "Escalations",
+                "types": ["escalation_l3", "escalation_l2", "escalation_l1"],
+                "color": "#dc2626",
+                "icon":  "alert-triangle",
+            },
+            {
+                "key":   "overdue",
+                "label": "Overdue Activities",
+                "types": ["activity_overdue"],
+                "color": "#ea580c",
+                "icon":  "clock",
+            },
+            {
+                "key":   "milestone",
+                "label": "Milestones",
+                "types": ["milestone_missed", "milestone_t0", "milestone_t7", "milestone_t30"],
+                "color": "#9333ea",
+                "icon":  "check-square",
+            },
+            {
+                "key":   "pending",
+                "label": "Pending Approvals",
+                "types": ["delay_pending"],
+                "color": "#2563eb",
+                "icon":  "clock",
+            },
+        ]
+
+        alerts_by_cat = {}
+        for cat in CATEGORIES:
+            cat_alerts = [a for a in qs if a.alert_type in cat["types"]]
+            alerts_by_cat[cat["key"]] = {
+                "label":  cat["label"],
+                "color":  cat["color"],
+                "icon":   cat["icon"],
+                "count":  len(cat_alerts),
+                "alerts": WorkplanAlertSerializer(cat_alerts[:10], many=True).data,
+            }
+
+        total = qs.count()
+        return Response({
+            "total":      total,
+            "categories": alerts_by_cat,
+        })
+
+    def post(self, request):
+        """PATCH /api/workplan/notifications/acknowledge-all/ — tout accuser."""
+        from django.utils import timezone
+        WorkplanAlert.objects.filter(status="active").update(
+            status="acknowledged",
+            acknowledged_by=request.user,
+            acknowledged_at=timezone.now(),
+        )
+        return Response({"acknowledged": True})
