@@ -1,188 +1,220 @@
 /**
- * SF-3 — Diagramme de Gantt interactif (RG-3.1 / BRQ-3.15)
- * SVG custom — pas de dépendance externe.
- *
- * Fonctionnalités :
- *  - Zoom Semaine / Mois / Trimestre
- *  - Barres colorées par statut + chemin critique
- *  - Marqueurs losange pour les jalons
- *  - Ligne "aujourd'hui"
- *  - Baseline en fond semi-transparent
- *  - Click sur barre → callback onActivityClick
- *  - Performance : rendu < 5s jusqu'à 500 activités (RG-3.3)
+ * SF-3 — Diagramme de Gantt interactif v2
+ * - Tooltip dynamique au survol
+ * - Colonne labels redimensionnable (drag)
+ * - Scroll vertical synchronisé labels ↔ timeline
+ * - Row highlight au survol
+ * - Dates affichées sur barres (zoom Month+)
+ * - Ellipsis + title natif sur tous les labels
+ * - Mini-nav en bas pour la position dans la timeline
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Icon from "./Icon";
 
-// ─── Constantes de mise en page ───────────────────────────────────────────────
-const ROW_H        = 36;   // hauteur d'une ligne activité
-const LABEL_W      = 220;  // largeur de la colonne labels
-const BAR_H        = 18;   // hauteur d'une barre activité
+// ─── Layout constants ─────────────────────────────────────────────────────────
+const ROW_H        = 38;
+const BAR_H        = 20;
 const BAR_Y_OFFSET = (ROW_H - BAR_H) / 2;
-const HEADER_H     = 48;   // hauteur de l'en-tête timeline
-const MILESTONE_R  = 7;    // rayon losange jalon
+const HEADER_H     = 52;
+const MILESTONE_R  = 8;
+const MIN_LABEL_W  = 160;
+const MAX_LABEL_W  = 420;
+const DEFAULT_LABEL_W = 260;
 
-// ─── Couleurs par statut ──────────────────────────────────────────────────────
-const STATUS_FILL = {
-  not_started: "#cbd5e1",
-  in_progress:  "#3b82f6",
-  on_hold:      "#f59e0b",
-  completed:    "#22c55e",
-  cancelled:    "#ef4444",
-};
-const STATUS_STROKE = {
-  not_started: "#94a3b8",
-  in_progress:  "#2563eb",
-  on_hold:      "#d97706",
-  completed:    "#16a34a",
-  cancelled:    "#dc2626",
+// ─── Status palette ───────────────────────────────────────────────────────────
+const S = {
+  not_started: { fill: "#e2e8f0", stroke: "#94a3b8", text: "Not Started" },
+  in_progress:  { fill: "#3b82f6", stroke: "#2563eb", text: "In Progress" },
+  on_hold:      { fill: "#f59e0b", stroke: "#d97706", text: "On Hold"     },
+  completed:    { fill: "#22c55e", stroke: "#16a34a", text: "Completed"   },
+  cancelled:    { fill: "#ef4444", stroke: "#dc2626", text: "Cancelled"   },
 };
 
-// ─── Utilitaires date ─────────────────────────────────────────────────────────
-function parseDate(str) {
-  if (!str) return null;
-  return new Date(str + "T00:00:00");
-}
-
-function addDays(date, n) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n);
-  return d;
-}
-
-function startOfWeek(date) {
-  const d = new Date(date);
-  d.setDate(d.getDate() - d.getDay() + 1); // lundi
-  return d;
-}
-
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function startOfQuarter(date) {
-  const q = Math.floor(date.getMonth() / 3);
-  return new Date(date.getFullYear(), q * 3, 1);
-}
-
-function fmtDate(date, zoom) {
-  if (zoom === "week") {
-    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
-  }
-  if (zoom === "month") {
-    return date.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
-  }
-  return `Q${Math.floor(date.getMonth() / 3) + 1} ${date.getFullYear()}`;
-}
-
-function daysBetween(a, b) {
-  return Math.round((b - a) / 86400000);
-}
+const MILESTONE_COLOR = {
+  pending:    "#9333ea",
+  achieved:   "#16a34a",
+  missed:     "#dc2626",
+  forecasted: "#2563eb",
+};
 
 // ─── Zoom config ──────────────────────────────────────────────────────────────
-const ZOOM_CONFIG = {
-  week:    { pxPerDay: 20, tickFn: startOfWeek,    advanceDays: 7   },
-  month:   { pxPerDay: 4,  tickFn: startOfMonth,   advanceDays: 30  },
-  quarter: { pxPerDay: 1.4, tickFn: startOfQuarter, advanceDays: 90 },
+const ZOOM = {
+  week:    { px: 24,  tickDays: 7,  fmt: d => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) },
+  month:   { px: 5,   tickDays: 30, fmt: d => d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" }) },
+  quarter: { px: 1.8, tickDays: 90, fmt: d => `Q${Math.floor(d.getMonth()/3)+1} ${d.getFullYear()}` },
 };
 
-// ─── Flatten activities from workplan hierarchy ───────────────────────────────
-function flattenActivities(components) {
+// ─── Date utils ───────────────────────────────────────────────────────────────
+const pd    = s => s ? new Date(s + "T00:00:00") : null;
+const addD  = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+const diffD = (a, b) => Math.round((b - a) / 86400000);
+const fmtD  = d => d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+function tickStart(date, zoom) {
+  const d = new Date(date);
+  if (zoom === "week")    { d.setDate(d.getDate() - d.getDay() + 1); return d; }
+  if (zoom === "month")   return new Date(d.getFullYear(), d.getMonth(), 1);
+  return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1);
+}
+
+// ─── Flatten hierarchy ────────────────────────────────────────────────────────
+function flatten(components) {
   const rows = [];
-  for (const comp of components) {
-    rows.push({ type: "component", id: `c-${comp.id}`, label: `${comp.code} — ${comp.name}`, comp });
-    for (const sub of comp.sub_components || []) {
-      rows.push({ type: "subcomponent", id: `s-${sub.id}`, label: `  ${sub.code} — ${sub.name}`, sub });
-      for (const act of sub.activities || []) {
-        if (act.is_active === false) continue;
-        rows.push({ type: "activity", id: `a-${act.id}`, label: `    ${act.code} — ${act.name}`, act });
+  for (const c of components) {
+    rows.push({ kind: "comp", id: `c${c.id}`, label: `${c.code} — ${c.name}`, obj: c });
+    for (const s of c.sub_components || []) {
+      rows.push({ kind: "sub", id: `s${s.id}`, label: `${s.code} — ${s.name}`, obj: s });
+      for (const a of s.activities || []) {
+        if (a.is_active === false) continue;
+        rows.push({ kind: "act", id: `a${a.id}`, label: `${a.code} — ${a.name}`, obj: a });
       }
     }
   }
   return rows;
 }
 
+// ─── Tooltip ─────────────────────────────────────────────────────────────────
+function Tooltip({ tip }) {
+  if (!tip) return null;
+  return (
+    <div style={{
+      position: "fixed", zIndex: 9999, pointerEvents: "none",
+      left: tip.x + 16, top: tip.y - 10,
+      background: "#1e293b", color: "#fff", borderRadius: 8,
+      padding: "10px 14px", fontSize: 12, lineHeight: 1.6,
+      boxShadow: "0 4px 20px rgba(0,0,0,.25)", maxWidth: 280,
+    }}>
+      <div style={{ fontWeight: 700, marginBottom: 4, color: "#A4C53F" }}>{tip.title}</div>
+      {tip.lines.map((l, i) => <div key={i} style={{ color: "#cbd5e1" }}>{l}</div>)}
+    </div>
+  );
+}
+
 // ─── GanttChart ──────────────────────────────────────────────────────────────
-
 export default function GanttChart({ components = [], onActivityClick }) {
-  const [zoom, setZoom]       = useState("month");
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const scrollRef = useRef(null);
-  const today = useMemo(() => new Date(), []);
+  const [zoom,      setZoom]      = useState("month");
+  const [labelW,    setLabelW]    = useState(DEFAULT_LABEL_W);
+  const [hoveredId, setHoveredId] = useState(null);
+  const [tip,       setTip]       = useState(null);
+  const [scrollTop, setScrollTop] = useState(0);
 
-  const rows = useMemo(() => flattenActivities(components), [components]);
+  const labelScrollRef    = useRef(null);
+  const timelineScrollRef = useRef(null);
+  const dragging          = useRef(false);
+  const dragStartX        = useRef(0);
+  const dragStartW        = useRef(0);
+  const today             = useMemo(() => new Date(), []);
 
-  // Calcul de la plage de dates
+  const rows = useMemo(() => flatten(components), [components]);
+  const cfg  = ZOOM[zoom];
+
+  // ── Date range ──────────────────────────────────────────────────────────────
   const { rangeStart, rangeEnd } = useMemo(() => {
     let min = null, max = null;
-    for (const row of rows) {
-      if (row.type !== "activity") continue;
-      const s = parseDate(row.act.planned_start);
-      const e = parseDate(row.act.revised_end || row.act.planned_end);
+    for (const r of rows) {
+      if (r.kind !== "act") continue;
+      const s = pd(r.obj.planned_start);
+      const e = pd(r.obj.revised_end || r.obj.planned_end);
       if (s && (!min || s < min)) min = s;
       if (e && (!max || e > max)) max = e;
     }
     if (!min) min = today;
-    if (!max) max = addDays(today, 90);
-    // Padding
-    min = addDays(min, -7);
-    max = addDays(max, 14);
-    return { rangeStart: min, rangeEnd: max };
+    if (!max) max = addD(today, 90);
+    return { rangeStart: addD(min, -7), rangeEnd: addD(max, 21) };
   }, [rows, today]);
 
-  const cfg      = ZOOM_CONFIG[zoom];
-  const totalDays = daysBetween(rangeStart, rangeEnd);
-  const gridW    = Math.max(totalDays * cfg.pxPerDay, 400);
-  const totalH   = rows.length * ROW_H;
+  const totalDays = diffD(rangeStart, rangeEnd);
+  const gridW     = Math.max(totalDays * cfg.px, 600);
+  const gridH     = rows.length * ROW_H;
 
-  // Génération des ticks de l'en-tête
+  // ── Ticks ───────────────────────────────────────────────────────────────────
   const ticks = useMemo(() => {
-    const result = [];
-    let cur = cfg.tickFn(rangeStart);
+    const out = [];
+    let cur = tickStart(rangeStart, zoom);
     while (cur <= rangeEnd) {
-      const x = daysBetween(rangeStart, cur) * cfg.pxPerDay;
-      result.push({ date: new Date(cur), x });
-      cur = addDays(cur, cfg.advanceDays);
+      out.push({ date: new Date(cur), x: diffD(rangeStart, cur) * cfg.px });
+      cur = addD(cur, cfg.tickDays);
     }
-    return result;
-  }, [rangeStart, rangeEnd, cfg]);
+    return out;
+  }, [rangeStart, rangeEnd, zoom, cfg]);
 
-  // Position X de "aujourd'hui"
-  const todayX = daysBetween(rangeStart, today) * cfg.pxPerDay;
+  const todayX = diffD(rangeStart, today) * cfg.px;
 
-  function xOf(dateStr) {
-    const d = parseDate(dateStr);
-    if (!d) return 0;
-    return daysBetween(rangeStart, d) * cfg.pxPerDay;
-  }
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const xOf = s => { const d = pd(s); return d ? diffD(rangeStart, d) * cfg.px : 0; };
+  const wOf = (s, e) => { const a = pd(s), b = pd(e); return a && b ? Math.max(diffD(a, b) * cfg.px, 4) : 0; };
 
-  function wOf(startStr, endStr) {
-    const s = parseDate(startStr);
-    const e = parseDate(endStr);
-    if (!s || !e) return 0;
-    return Math.max(daysBetween(s, e) * cfg.pxPerDay, 4);
-  }
+  // ── Synchronized scroll ─────────────────────────────────────────────────────
+  const syncingLabel    = useRef(false);
+  const syncingTimeline = useRef(false);
+
+  const onLabelScroll = useCallback(e => {
+    if (syncingTimeline.current) return;
+    syncingLabel.current = true;
+    if (timelineScrollRef.current) timelineScrollRef.current.scrollTop = e.target.scrollTop;
+    setScrollTop(e.target.scrollTop);
+    syncingLabel.current = false;
+  }, []);
+
+  const onTimelineScroll = useCallback(e => {
+    if (syncingLabel.current) return;
+    syncingTimeline.current = true;
+    if (labelScrollRef.current) labelScrollRef.current.scrollTop = e.target.scrollTop;
+    setScrollTop(e.target.scrollTop);
+    syncingTimeline.current = false;
+  }, []);
+
+  // ── Drag resize label column ────────────────────────────────────────────────
+  const onDragStart = useCallback(e => {
+    dragging.current  = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = labelW;
+    e.preventDefault();
+  }, [labelW]);
+
+  useEffect(() => {
+    const move = e => {
+      if (!dragging.current) return;
+      const nw = dragStartW.current + (e.clientX - dragStartX.current);
+      setLabelW(Math.min(MAX_LABEL_W, Math.max(MIN_LABEL_W, nw)));
+    };
+    const up = () => { dragging.current = false; };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+  }, []);
+
+  // ── Tooltip handlers ────────────────────────────────────────────────────────
+  const showTip = useCallback((e, title, lines) => {
+    setTip({ x: e.clientX, y: e.clientY, title, lines });
+  }, []);
+  const moveTip = useCallback(e => {
+    setTip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null);
+  }, []);
+  const hideTip = useCallback(() => setTip(null), []);
 
   if (rows.length === 0) {
     return (
       <div style={{ padding: "48px 24px", textAlign: "center", color: "#94a3b8" }}>
-        <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-        <div style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>No activities to display</div>
-        <div style={{ fontSize: 12, marginTop: 4 }}>Add components and activities in the List view first.</div>
+        <Icon name="bar-chart-2" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+        <div style={{ fontSize: 14, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>No activities to display</div>
+        <div style={{ fontSize: 12 }}>Add components and activities in the List view first.</div>
       </div>
     );
   }
 
+  const MAX_VISIBLE_H = 520; // px max before scroll
+
   return (
-    <div style={{ fontFamily: "inherit" }}>
+    <div style={{ userSelect: "none" }}>
 
       {/* ── Toolbar ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "0 4px" }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginRight: 4 }}>Zoom</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Zoom</span>
         {["week", "month", "quarter"].map(z => (
           <button key={z} onClick={() => setZoom(z)} style={{
-            padding: "4px 12px", borderRadius: 6, border: "1px solid",
+            padding: "4px 14px", borderRadius: 6, border: "1.5px solid",
             fontSize: 12, fontWeight: 600, cursor: "pointer",
             borderColor: zoom === z ? "#A4C53F" : "#e2e8f0",
             background: zoom === z ? "#f7ffe6" : "#fff",
@@ -193,233 +225,311 @@ export default function GanttChart({ components = [], onActivityClick }) {
         ))}
         <div style={{ flex: 1 }} />
         {/* Legend */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          {Object.entries(STATUS_FILL).map(([k, color]) => (
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {Object.entries(S).map(([k, v]) => (
             <div key={k} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
-              <div style={{ width: 12, height: 8, borderRadius: 2, background: color }} />
-              {k.replace("_", " ")}
+              <div style={{ width: 14, height: 8, borderRadius: 2, background: v.fill, border: `1px solid ${v.stroke}` }} />
+              {v.text}
             </div>
           ))}
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9333ea" }}>
-            <svg width={12} height={12} viewBox="0 0 12 12">
-              <polygon points="6,0 12,6 6,12 0,6" fill="#9333ea" />
-            </svg>
+            <svg width={12} height={12}><polygon points="6,0 12,6 6,12 0,6" fill="#9333ea" /></svg>
             Milestone
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9333ea" }}>
+            <div style={{ width: 3, height: 14, background: "#9333ea", borderRadius: 2 }} />
+            Critical path
           </div>
         </div>
       </div>
 
-      {/* ── Gantt body ── */}
-      <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+      {/* ── Main grid ── */}
+      <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
 
-        {/* Left: label column */}
-        <div style={{ width: LABEL_W, flexShrink: 0, borderRight: "1px solid #e2e8f0", background: "#fafafa" }}>
-          {/* Header spacer */}
-          <div style={{ height: HEADER_H, borderBottom: "1px solid #e2e8f0", background: "#f1f5f9" }} />
-          {/* Row labels */}
-          {rows.map((row, i) => {
-            const isComp = row.type === "component";
-            const isSub  = row.type === "subcomponent";
-            return (
-              <div key={row.id} style={{
-                height: ROW_H,
-                display: "flex", alignItems: "center",
-                padding: isComp ? "0 8px" : isSub ? "0 8px 0 16px" : "0 8px 0 28px",
-                borderBottom: "1px solid #f1f5f9",
-                background: isComp ? "#1B5A8C" : isSub ? "#f1f5f9" : "#fff",
-                cursor: row.type === "activity" ? "pointer" : "default",
-              }}
-              onClick={() => row.type === "activity" && onActivityClick && onActivityClick(row.act)}>
-                <span style={{
-                  fontSize: isComp ? 11 : isSub ? 11 : 12,
-                  fontWeight: isComp ? 700 : isSub ? 600 : 400,
-                  color: isComp ? "#fff" : isSub ? "#374151" : "#1e293b",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  maxWidth: LABEL_W - (isComp ? 16 : isSub ? 24 : 36),
-                }}>
-                  {isComp ? `${row.comp.code} — ${row.comp.name}` :
-                   isSub  ? `${row.sub.code} — ${row.sub.name}`  :
-                   `${row.act.code} — ${row.act.name}`}
-                </span>
-                {row.type === "activity" && row.act.is_critical_path && (
-                  <span style={{ marginLeft: 4, color: "#9333ea", fontSize: 9 }}>◆</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Right: scrollable timeline */}
-        <div ref={scrollRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden" }}
-          onScroll={e => setScrollLeft(e.target.scrollLeft)}>
-          <svg
-            width={gridW}
-            height={HEADER_H + totalH}
-            style={{ display: "block" }}
-          >
-            {/* ── Background grid ── */}
-            <rect width={gridW} height={HEADER_H + totalH} fill="#fff" />
-
-            {/* Alternating row backgrounds */}
-            {rows.map((row, i) => (
-              <rect key={`bg-${row.id}`}
-                x={0} y={HEADER_H + i * ROW_H}
-                width={gridW} height={ROW_H}
-                fill={row.type === "component" ? "#e8f0f8"
-                    : row.type === "subcomponent" ? "#f8f9fa"
-                    : i % 2 === 0 ? "#fff" : "#fafafa"}
-              />
-            ))}
-
-            {/* Vertical tick lines */}
-            {ticks.map((tick, i) => (
-              <line key={i} x1={tick.x} y1={HEADER_H} x2={tick.x} y2={HEADER_H + totalH}
-                stroke="#e2e8f0" strokeWidth={1} />
-            ))}
-
-            {/* Horizontal row lines */}
-            {rows.map((row, i) => (
-              <line key={`hl-${row.id}`}
-                x1={0} y1={HEADER_H + (i + 1) * ROW_H}
-                x2={gridW} y2={HEADER_H + (i + 1) * ROW_H}
-                stroke="#f1f5f9" strokeWidth={1} />
-            ))}
-
-            {/* ── Header ticks ── */}
-            <rect x={0} y={0} width={gridW} height={HEADER_H} fill="#f8fafc" />
-            <line x1={0} y1={HEADER_H} x2={gridW} y2={HEADER_H} stroke="#e2e8f0" strokeWidth={1} />
-            {ticks.map((tick, i) => (
-              <g key={`tick-${i}`}>
-                <line x1={tick.x} y1={32} x2={tick.x} y2={HEADER_H} stroke="#e2e8f0" strokeWidth={1} />
-                <text x={tick.x + 4} y={28} fontSize={10} fill="#64748b" fontWeight={600}>
-                  {fmtDate(tick.date, zoom)}
-                </text>
-              </g>
-            ))}
-
-            {/* ── Today line ── */}
-            {todayX >= 0 && todayX <= gridW && (
-              <g>
-                <line x1={todayX} y1={0} x2={todayX} y2={HEADER_H + totalH}
-                  stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4,3" />
-                <rect x={todayX - 18} y={4} width={36} height={16} rx={4} fill="#ef4444" />
-                <text x={todayX} y={16} fontSize={9} fill="#fff" textAnchor="middle" fontWeight={700}>TODAY</text>
-              </g>
-            )}
-
-            {/* ── Activity bars ── */}
+        {/* Label column */}
+        <div style={{ width: labelW, flexShrink: 0, display: "flex", flexDirection: "column", borderRight: "2px solid #e2e8f0", background: "#fafafa" }}>
+          {/* Header */}
+          <div style={{ height: HEADER_H, background: "#f1f5f9", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", padding: "0 12px" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Activity</span>
+          </div>
+          {/* Scrollable labels */}
+          <div ref={labelScrollRef} onScroll={onLabelScroll}
+            style={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: MAX_VISIBLE_H }}>
             {rows.map((row, i) => {
-              if (row.type !== "activity") return null;
-              const act = row.act;
-              const y   = HEADER_H + i * ROW_H + BAR_Y_OFFSET;
-
-              const startStr = act.planned_start;
-              const endStr   = act.revised_end || act.planned_end;
-              if (!startStr || !endStr) return null;
-
-              const x = xOf(startStr);
-              const w = wOf(startStr, endStr);
-              const fill   = STATUS_FILL[act.status]   || "#cbd5e1";
-              const stroke = STATUS_STROKE[act.status] || "#94a3b8";
-
-              // Baseline bar (si différente)
-              const hasBaseline = act.baseline_end && act.baseline_end !== act.planned_end;
-
-              // Progress fill
-              const progressW = Math.max((act.progress / 100) * w, 0);
-
-              // Milestones positions
-              const milestones = act.milestones || [];
-
+              const isComp = row.kind === "comp";
+              const isSub  = row.kind === "sub";
+              const isAct  = row.kind === "act";
+              const hovered = hoveredId === row.id;
               return (
-                <g key={row.id} style={{ cursor: "pointer" }}
-                  onClick={() => onActivityClick && onActivityClick(act)}>
-
-                  {/* Baseline ghost bar */}
-                  {hasBaseline && (
-                    <rect
-                      x={xOf(startStr)}
-                      y={y + BAR_H - 4}
-                      width={wOf(startStr, act.baseline_end)}
-                      height={4}
-                      rx={2}
-                      fill="#94a3b8"
-                      opacity={0.35}
-                    />
+                <div key={row.id}
+                  title={row.label}
+                  onClick={() => isAct && onActivityClick && onActivityClick(row.obj)}
+                  onMouseEnter={() => { setHoveredId(row.id); }}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    height: ROW_H,
+                    display: "flex", alignItems: "center",
+                    padding: isComp ? "0 10px" : isSub ? "0 10px 0 20px" : "0 10px 0 32px",
+                    borderBottom: "1px solid #f1f5f9",
+                    background: isComp ? "#1B5A8C"
+                              : isSub  ? (hovered ? "#e8edf2" : "#f1f5f9")
+                              : (hovered ? "#eff6ff" : (i % 2 === 0 ? "#fff" : "#fafafa")),
+                    cursor: isAct ? "pointer" : "default",
+                    transition: "background .1s",
+                  }}>
+                  {isComp && <Icon name="layers" size={11} style={{ color: "rgba(255,255,255,.6)", marginRight: 6, flexShrink: 0 }} />}
+                  {isSub  && <Icon name="git-branch" size={11} style={{ color: "#94a3b8", marginRight: 6, flexShrink: 0 }} />}
+                  {isAct  && <Icon name="activity" size={11} style={{ color: "#64748b", marginRight: 6, flexShrink: 0 }} />}
+                  <span style={{
+                    fontSize: isComp ? 11 : 12,
+                    fontWeight: isComp ? 700 : isSub ? 600 : 400,
+                    color: isComp ? "#fff" : isSub ? "#374151" : "#1e293b",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    flex: 1,
+                  }}>
+                    {isAct && row.obj.is_critical_path
+                      ? <><span style={{ color: "#9333ea", marginRight: 4 }}>◆</span>{row.label}</>
+                      : row.label}
+                  </span>
+                  {isAct && row.obj.is_overdue && (
+                    <span style={{ marginLeft: 4, fontSize: 9, color: "#dc2626", fontWeight: 700, flexShrink: 0 }}>!</span>
                   )}
-
-                  {/* Main bar background */}
-                  <rect x={x} y={y} width={w} height={BAR_H} rx={4}
-                    fill={fill} opacity={0.25} />
-
-                  {/* Progress fill */}
-                  {progressW > 0 && (
-                    <rect x={x} y={y} width={progressW} height={BAR_H} rx={4}
-                      fill={fill} opacity={0.9} />
-                  )}
-
-                  {/* Bar border */}
-                  <rect x={x} y={y} width={w} height={BAR_H} rx={4}
-                    fill="none" stroke={stroke} strokeWidth={act.is_critical_path ? 2 : 1}
-                    strokeDasharray={act.status === "cancelled" ? "4,2" : "none"}
-                  />
-
-                  {/* Critical path marker */}
-                  {act.is_critical_path && (
-                    <rect x={x} y={y} width={3} height={BAR_H} rx={2} fill="#9333ea" />
-                  )}
-
-                  {/* Overdue indicator */}
-                  {act.is_overdue && (
-                    <rect x={x + w - 4} y={y} width={4} height={BAR_H}
-                      rx={2} fill="#ef4444" opacity={0.8} />
-                  )}
-
-                  {/* Progress % label */}
-                  {w > 30 && (
-                    <text x={x + w / 2} y={y + BAR_H / 2 + 4}
-                      fontSize={9} fill={act.progress > 50 ? "#fff" : stroke}
-                      textAnchor="middle" fontWeight={700} opacity={0.9}>
-                      {act.progress}%
-                    </text>
-                  )}
-
-                  {/* Milestone diamonds */}
-                  {milestones.map(ms => {
-                    const mx = xOf(ms.planned_date);
-                    if (mx < 0 || mx > gridW) return null;
-                    const my = y + BAR_H / 2;
-                    const msColor = ms.status === "achieved" ? "#16a34a"
-                      : ms.status === "missed" ? "#dc2626"
-                      : "#9333ea";
-                    return (
-                      <g key={ms.id}>
-                        <polygon
-                          points={`${mx},${my - MILESTONE_R} ${mx + MILESTONE_R},${my} ${mx},${my + MILESTONE_R} ${mx - MILESTONE_R},${my}`}
-                          fill={msColor}
-                          stroke="#fff"
-                          strokeWidth={1.5}
-                        />
-                        {ms.is_gate && (
-                          <circle cx={mx} cy={my} r={2} fill="#fff" />
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
+                </div>
               );
             })}
-          </svg>
+          </div>
+        </div>
+
+        {/* Drag handle */}
+        <div onMouseDown={onDragStart} style={{
+          width: 5, cursor: "col-resize", background: "transparent",
+          flexShrink: 0, position: "relative", zIndex: 10,
+          transition: "background .15s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = "#A4C53F"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        />
+
+        {/* Timeline */}
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {/* Fixed header */}
+          <div style={{ overflowX: "auto", overflowY: "hidden", flexShrink: 0 }}
+            id="gantt-header-scroll">
+            <svg width={gridW} height={HEADER_H} style={{ display: "block" }}>
+              <rect width={gridW} height={HEADER_H} fill="#f8fafc" />
+              {/* Month/quarter background bands */}
+              {ticks.map((tick, i) => {
+                const nextX = ticks[i + 1]?.x ?? gridW;
+                const isEven = i % 2 === 0;
+                return (
+                  <rect key={i} x={tick.x} y={0} width={nextX - tick.x} height={HEADER_H}
+                    fill={isEven ? "#f8fafc" : "#f1f5f9"} />
+                );
+              })}
+              {/* Tick lines and labels */}
+              {ticks.map((tick, i) => (
+                <g key={i}>
+                  <line x1={tick.x} y1={36} x2={tick.x} y2={HEADER_H} stroke="#d1d5db" strokeWidth={1} />
+                  <text x={tick.x + 6} y={30} fontSize={11} fill="#374151" fontWeight={600}>
+                    {cfg.fmt(tick.date)}
+                  </text>
+                </g>
+              ))}
+              {/* Today marker in header */}
+              {todayX >= 0 && todayX <= gridW && (
+                <>
+                  <rect x={todayX - 20} y={36} width={40} height={16} rx={4} fill="#ef4444" />
+                  <text x={todayX} y={48} fontSize={9} fill="#fff" textAnchor="middle" fontWeight={700}>TODAY</text>
+                </>
+              )}
+              <line x1={0} y1={HEADER_H - 1} x2={gridW} y2={HEADER_H - 1} stroke="#e2e8f0" strokeWidth={1} />
+            </svg>
+          </div>
+
+          {/* Scrollable body */}
+          <div ref={timelineScrollRef} onScroll={onTimelineScroll}
+            style={{ overflowX: "auto", overflowY: "auto", flex: 1, maxHeight: MAX_VISIBLE_H }}
+            id="gantt-body-scroll">
+            <svg width={gridW} height={gridH} style={{ display: "block" }}
+              onMouseMove={moveTip} onMouseLeave={hideTip}>
+
+              {/* Row backgrounds */}
+              {rows.map((row, i) => {
+                const isComp  = row.kind === "comp";
+                const isSub   = row.kind === "sub";
+                const hovered = hoveredId === row.id;
+                return (
+                  <rect key={`bg${row.id}`}
+                    x={0} y={i * ROW_H} width={gridW} height={ROW_H}
+                    fill={isComp ? "#dbeafe"
+                        : isSub  ? "#f1f5f9"
+                        : hovered ? "#eff6ff"
+                        : i % 2 === 0 ? "#fff" : "#fafafa"}
+                  />
+                );
+              })}
+
+              {/* Vertical grid lines */}
+              {ticks.map((tick, i) => (
+                <line key={`vl${i}`} x1={tick.x} y1={0} x2={tick.x} y2={gridH}
+                  stroke="#e2e8f0" strokeWidth={1} strokeDasharray={zoom === "week" ? "none" : "3,3"} />
+              ))}
+
+              {/* Horizontal row lines */}
+              {rows.map((row, i) => (
+                <line key={`hl${row.id}`}
+                  x1={0} y1={(i + 1) * ROW_H} x2={gridW} y2={(i + 1) * ROW_H}
+                  stroke="#f1f5f9" strokeWidth={1} />
+              ))}
+
+              {/* Today line */}
+              {todayX >= 0 && todayX <= gridW && (
+                <line x1={todayX} y1={0} x2={todayX} y2={gridH}
+                  stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5,4" opacity={0.7} />
+              )}
+
+              {/* Activity bars */}
+              {rows.map((row, i) => {
+                if (row.kind !== "act") return null;
+                const act = row.obj;
+                const pal = S[act.status] || S.not_started;
+                const y   = i * ROW_H + BAR_Y_OFFSET;
+
+                const startStr = act.planned_start;
+                const endStr   = act.revised_end || act.planned_end;
+                if (!startStr || !endStr) return null;
+
+                const x  = xOf(startStr);
+                const w  = wOf(startStr, endStr);
+                const pw = Math.max((act.progress / 100) * w, 0);
+
+                // Baseline
+                const hasBaseline = act.baseline_end && act.baseline_end !== (act.revised_end || act.planned_end);
+                const bw = hasBaseline ? wOf(startStr, act.baseline_end) : 0;
+
+                const milestones = act.milestones || [];
+                const hovered = hoveredId === row.id;
+
+                return (
+                  <g key={row.id}
+                    style={{ cursor: "pointer" }}
+                    onMouseEnter={e => {
+                      setHoveredId(row.id);
+                      const lines = [
+                        "Status: " + pal.text + " · " + act.progress + "%",
+                        "Start: " + fmtD(pd(act.planned_start)),
+                        "End: " + fmtD(pd(act.revised_end || act.planned_end)),
+                        act.baseline_end ? "Baseline end: " + fmtD(pd(act.baseline_end)) : null,
+                        act.responsible_party ? "Responsible: " + act.responsible_party : null,
+                        act.budget_planned > 0 ? "Budget: " + Number(act.budget_planned).toLocaleString() + " USD" : null,
+                        act.is_critical_path ? "◆ Critical path" : null,
+                        act.is_overdue ? "⚠ Overdue by " + (act.schedule_variance_days || "?") + " days" : null,
+                      ].filter(Boolean);
+                      showTip(e, act.code + " — " + act.name, lines);
+                    }}
+                    onMouseLeave={() => { setHoveredId(null); hideTip(); }}
+                    onClick={() => onActivityClick && onActivityClick(act)}>
+
+                    {/* Baseline ghost */}
+                    {hasBaseline && (
+                      <rect x={x} y={y + BAR_H} width={bw} height={3} rx={1.5}
+                        fill="#94a3b8" opacity={0.4} />
+                    )}
+
+                    {/* Bar shadow */}
+                    {hovered && (
+                      <rect x={x - 1} y={y - 1} width={w + 2} height={BAR_H + 2} rx={5}
+                        fill="none" stroke="#A4C53F" strokeWidth={2} opacity={0.7} />
+                    )}
+
+                    {/* Bar background */}
+                    <rect x={x} y={y} width={w} height={BAR_H} rx={4}
+                      fill={pal.fill} opacity={act.status === "not_started" ? 0.5 : 0.25} />
+
+                    {/* Progress fill */}
+                    {pw > 0 && (
+                      <rect x={x} y={y} width={pw} height={BAR_H} rx={4}
+                        fill={pal.fill} opacity={act.status === "not_started" ? 0.3 : 0.9} />
+                    )}
+
+                    {/* Bar border */}
+                    <rect x={x} y={y} width={w} height={BAR_H} rx={4}
+                      fill="none" stroke={pal.stroke} strokeWidth={hovered ? 2 : 1}
+                      strokeDasharray={act.status === "cancelled" ? "4,2" : "none"} />
+
+                    {/* Critical path left accent */}
+                    {act.is_critical_path && (
+                      <rect x={x} y={y} width={3} height={BAR_H} rx={2} fill="#9333ea" />
+                    )}
+
+                    {/* Overdue right accent */}
+                    {act.is_overdue && (
+                      <rect x={x + w - 4} y={y} width={4} height={BAR_H}
+                        rx={2} fill="#ef4444" opacity={0.85} />
+                    )}
+
+                    {/* Progress label */}
+                    {w > 36 && (
+                      <text x={x + Math.min(pw, w) / 2} y={y + BAR_H / 2 + 4}
+                        fontSize={9} fontWeight={700} textAnchor="middle"
+                        fill={act.progress > 50 ? "#fff" : pal.stroke} opacity={0.95}>
+                        {act.progress}%
+                      </text>
+                    )}
+
+                    {/* End date label (month+ zoom) */}
+                    {zoom !== "week" && w > 60 && (
+                      <text x={x + w + 4} y={y + BAR_H / 2 + 4}
+                        fontSize={9} fill="#64748b" dominantBaseline="middle">
+                        {pd(endStr)?.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                      </text>
+                    )}
+
+                    {/* Milestone diamonds */}
+                    {milestones.map(ms => {
+                      const mx = xOf(ms.planned_date);
+                      if (mx < x - 20 || mx > gridW) return null;
+                      const my = y + BAR_H / 2;
+                      const mc = MILESTONE_COLOR[ms.status] || "#9333ea";
+                      return (
+                        <g key={ms.id}
+                          onMouseEnter={e => {
+                            const lines = [
+                              "Category: " + ms.category,
+                              "Planned: " + fmtD(pd(ms.planned_date)),
+                              "Status: " + ms.status,
+                              ms.is_gate ? "🔒 Gate milestone" : null,
+                            ].filter(Boolean);
+                            showTip(e, "Milestone: " + ms.name, lines);
+                          }}
+                          onMouseLeave={hideTip}>
+                          <polygon
+                            points={`${mx},${my - MILESTONE_R} ${mx + MILESTONE_R},${my} ${mx},${my + MILESTONE_R} ${mx - MILESTONE_R},${my}`}
+                            fill={mc} stroke="#fff" strokeWidth={1.5} />
+                          {ms.is_gate && <circle cx={mx} cy={my} r={2.5} fill="#fff" />}
+                        </g>
+                      );
+                    })}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* ── Footer hint ── */}
-      <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#94a3b8", paddingLeft: 4 }}>
-        <span>◆ <span style={{ color: "#9333ea" }}>Critical path</span></span>
-        <span>— Baseline (grey underline)</span>
-        <span><span style={{ color: "#ef4444" }}>Red end</span> = overdue</span>
-        <span>Click a bar to open activity details</span>
+      {/* ── Footer ── */}
+      <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#94a3b8", alignItems: "center" }}>
+        <span>Drag the divider to resize the label column</span>
+        <span>·</span>
+        <span><span style={{ color: "#ef4444" }}>Red right edge</span> = overdue</span>
+        <span>·</span>
+        <span>Grey underline = baseline shift</span>
+        <span>·</span>
+        <span>Click any bar to open activity details</span>
       </div>
+
+      <Tooltip tip={tip} />
     </div>
   );
 }
