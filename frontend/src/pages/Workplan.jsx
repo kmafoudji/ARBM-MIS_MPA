@@ -13,6 +13,7 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
+import GanttChart from "../components/GanttChart";
 
 // Strip HTML tags for plain text display (e.g. in <option> elements)
 function stripHtml(html) {
@@ -980,6 +981,7 @@ export default function Workplan({ projectId, canEdit = true }) {
   const [modal, setModal] = useState(false);
   const [toast, setToast] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [viewMode, setViewMode] = useState("list"); // "list" | "gantt"
 
   const { data: components = [], isLoading } = useQuery({
     queryKey: ["workplan", projectId],
@@ -1112,25 +1114,59 @@ export default function Workplan({ projectId, canEdit = true }) {
             <Icon name="plus" size={14} /> Add Component
           </button>
         )}
+        {/* View toggle */}
+        <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginLeft: 4 }}>
+          <button onClick={() => setViewMode("list")} style={{
+            padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 6,
+            background: viewMode === "list" ? "#1B5A8C" : "#fff",
+            color: viewMode === "list" ? "#fff" : "#64748b",
+          }}>
+            <Icon name="list" size={13} /> List
+          </button>
+          <button onClick={() => setViewMode("gantt")} style={{
+            padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 6,
+            background: viewMode === "gantt" ? "#1B5A8C" : "#fff",
+            color: viewMode === "gantt" ? "#fff" : "#64748b",
+            borderLeft: "1px solid #e2e8f0",
+          }}>
+            <Icon name="bar-chart-2" size={13} /> Gantt
+          </button>
+        </div>
       </div>
 
-      {/* Components */}
-      {components.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed #e2e8f0", borderRadius: 12, color: "#94a3b8" }}>
-          <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Empty Workplan</div>
-          <div style={{ fontSize: 13, marginBottom: 16 }}>Start by creating the first component of this project, aligned with the PAD structure.</div>
-          {canEdit && (
-            <button className="btn btn-primary" onClick={() => setModal(true)}>
-              <Icon name="plus" size={14} /> Create First Component
-            </button>
+      {/* Components — List view */}
+      {viewMode === "list" && (
+        <>
+          {components.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed #e2e8f0", borderRadius: 12, color: "#94a3b8" }}>
+              <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Empty Workplan</div>
+              <div style={{ fontSize: 13, marginBottom: 16 }}>Start by creating the first component of this project, aligned with the PAD structure.</div>
+              {canEdit && (
+                <button className="btn btn-primary" onClick={() => setModal(true)}>
+                  <Icon name="plus" size={14} /> Create First Component
+                </button>
+              )}
+            </div>
+          ) : (
+            components.map(c => (
+              <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes} users={users}
+                onActivityClick={setSelectedActivity} onRefresh={handleRefresh} />
+            ))
           )}
+        </>
+      )}
+
+      {/* Gantt view */}
+      {viewMode === "gantt" && (
+        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", padding: "16px" }}>
+          <GanttChart
+            components={components}
+            onActivityClick={setSelectedActivity}
+          />
         </div>
-      ) : (
-        components.map(c => (
-          <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes} users={users}
-            onActivityClick={setSelectedActivity} onRefresh={handleRefresh} />
-        ))
       )}
 
       {/* Add Component modal */}
