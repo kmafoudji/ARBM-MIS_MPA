@@ -550,6 +550,12 @@ class WorkplanAlert(models.Model):
     def __str__(self):
         return f"{self.get_alert_type_display()} — {self.project.code} ({self.status})"
 
+
+# ---------------------------------------------------------------------------
+# SF-8 · SPI Snapshot (BRQ-3.14)
+# ---------------------------------------------------------------------------
+
+class SPISnapshot(models.Model):
     """
     Instantané du Schedule Performance Index calculé périodiquement.
     Niveaux : activity · project · portfolio.
