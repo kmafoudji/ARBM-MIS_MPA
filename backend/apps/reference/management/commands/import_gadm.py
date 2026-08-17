@@ -22,12 +22,20 @@ from django.db import transaction
 
 GADM_BASE = "https://geodata.ucdavis.edu/gadm/gadm4.1/json"
 
-# Pays du portefeuille LLF2
+# Pays du portefeuille LLF2 — doit refléter reference.Country (57 pays).
+# À resynchroniser à chaque évolution du portefeuille, sinon on télécharge des
+# pays absents de la base et on ignore ceux qui viennent d'être ajoutés :
+#   python manage.py shell -c "from apps.reference.models import Country; \
+#     print(sorted(Country.objects.filter(is_active=True).values_list('iso3', flat=True)))"
 PORTFOLIO_ISO3 = [
-    "BDI","BEN","BFA","BGD","CIV","CMR","DJI","EGY",
-    "GIN","GMB","GNB","IDN","MAR","MDV","MLI","MOZ",
-    "MRT","NER","NGA","PAK","RWA","SDN","SEN","SLE",
-    "SSD","TCD","TGO","TJK","UGA","YEM",
+    "AFG","ALB","ARE","AZE","BEN","BFA","BGD","BHR",
+    "BRN","CIV","CMR","COM","DJI","DZA","EGY","GAB",
+    "GIN","GMB","GNB","GUY","IDN","IRN","IRQ","JOR",
+    "KAZ","KGZ","KWT","LBN","LBY","MAR","MDV","MLI",
+    "MOZ","MRT","MYS","NER","NGA","OMN","PAK","PSE",
+    "QAT","SAU","SDN","SEN","SLE","SOM","SUR","SYR",
+    "TCD","TGO","TJK","TKM","TUN","TUR","UGA","UZB",
+    "YEM",
 ]
 
 
@@ -67,7 +75,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--countries", nargs="+", default=None,
-            help="Codes ISO3 à importer (défaut : les 30 pays du portefeuille).",
+            help="Codes ISO3 à importer (défaut : les 57 pays du portefeuille).",
         )
         parser.add_argument(
             "--level", type=int, choices=[1, 2], default=None,
