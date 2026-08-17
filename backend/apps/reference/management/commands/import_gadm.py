@@ -7,6 +7,11 @@ Format : GeoJSON par pays, un fichier par niveau.
 Idempotent : utilise gadm_uid comme clé d'upsert.
 La géométrie est optionnelle (--geom pour l'importer).
 
+Un pays qui échoue au téléchargement n'interrompt pas les autres, mais la
+commande sort en erreur si au moins un échec subsiste en fin de run : un import
+partiel ne doit pas être indiscernable d'un import complet pour un script ou un
+job de CI. Les 404 attendus (GADM_GAPS_EXPECTED) ne sont pas des échecs.
+
 Note : --geom ne change pas le volume téléchargé (~31 Mo pour les 57 pays aux
 deux niveaux), seulement ce qui est stocké. Le coût de --geom est le parsing
 GEOS et l'écriture PostGIS, pas le réseau.
@@ -231,22 +236,31 @@ class Command(BaseCommand):
                 total_updated += updated
 
         self.stdout.write(f"\n{'═' * 50}")
-        self.stdout.write(self.style.SUCCESS(
-            f"Import terminé : {total_created} zones créées, {total_updated} mises à jour."
-        ))
+        # Un import partiel n'est pas un succès : le style suit le résultat réel,
+        # sinon 114 échecs s'affichent en vert sous « Import terminé ».
+        recap = f"Import terminé : {total_created} zones créées, {total_updated} mises à jour."
+        self.stdout.write(
+            self.style.WARNING(recap) if failures else self.style.SUCCESS(recap)
+        )
         if absent:
             self.stdout.write(self.style.WARNING(
                 f"Absents de GADM ({len(absent)}) : {', '.join(absent)}"
-            ))
-        if failures:
-            self.stdout.write(self.style.ERROR(
-                f"Échecs de téléchargement ({len(failures)}) : {', '.join(failures)}"
-            ))
-            self.stdout.write(self.style.ERROR(
-                "Rattrapage : relancer avec --countries sur les pays concernés "
-                "(l'import est idempotent via gadm_uid)."
             ))
         if not import_geom:
             self.stdout.write(self.style.WARNING(
                 "Géométries non importées. Relancer avec --geom pour les cartes."
             ))
+        if failures:
+            self.stdout.write(self.style.ERROR(
+                f"Échecs de téléchargement ({len(failures)}) : {', '.join(failures)}"
+            ))
+            # Le récapitulatif est écrit avant de lever : l'instruction de
+            # rattrapage doit rester lisible même quand la commande sort en
+            # erreur. Les absences attendues (404 documentés dans
+            # GADM_GAPS_EXPECTED) ne comptent pas comme des échecs et ne font
+            # donc pas sortir la commande en erreur.
+            raise CommandError(
+                f"Import incomplet : {len(failures)} téléchargement(s) en échec. "
+                "Rattrapage : relancer avec --countries sur les pays concernés "
+                "(l'import est idempotent via gadm_uid)."
+            )
