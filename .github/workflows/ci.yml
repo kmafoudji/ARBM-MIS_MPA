@@ -28,6 +28,67 @@ jobs:
           POSTGRES_HOST: localhost
         run: python manage.py check
 
+  # Migrations depuis une base vide, puis suite de tests.
+  #
+  # `manage.py check` ne touche pas au graphe de migrations : le depot est reste
+  # impossible a provisionner depuis zero de juillet a aout 2026 (deux migrations
+  # results.0005 creant les memes colonnes) sans qu'aucun job ne le signale. Ce
+  # job aurait echoue sur le commit fautif.
+  #
+  # PostGIS et non PostgreSQL : les modeles utilisent django.contrib.gis. L'image
+  # postgis/postgis cree l'extension dans POSTGRES_DB au demarrage, il n'y a donc
+  # pas de CREATE EXTENSION a faire ici. Version epinglee sur celle de
+  # infra/docker-compose.yml.
+  #
+  # Les tests tournent dans le meme job parce qu'ils ont besoin de la meme base
+  # (pytest-django cree test_<nom> a partir de rien, ce qui est exactement ce que
+  # l'etape precedente verifie). Ils sont en `continue-on-error` tant que la
+  # suite n'est pas verte : cinq tests attendent une double autorisation que
+  # RBAC_ENFORCED=False desactive depuis 2026-07-25. Retirer `continue-on-error`
+  # une fois ces tests alignes — c'est ce qui rend le job utile a long terme.
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_DB: arbm_mes
+          POSTGRES_USER: arbm_mes
+          POSTGRES_PASSWORD: arbm_mes
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U arbm_mes"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-test-key
+      POSTGRES_DB: arbm_mes
+      POSTGRES_USER: arbm_mes
+      POSTGRES_PASSWORD: arbm_mes
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer les dependances systeme (GDAL/GEOS/PROJ)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev libgeos-dev libproj-dev
+      - name: Installer les dependances Python
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Appliquer les migrations depuis une base vide
+        working-directory: backend
+        run: python manage.py migrate --noinput
+      - name: Lancer la suite de tests
+        working-directory: backend
+        continue-on-error: true
+        run: python -m pytest -q --no-header -p no:cacheprovider
+
   frontend:
     runs-on: ubuntu-latest
     steps:
