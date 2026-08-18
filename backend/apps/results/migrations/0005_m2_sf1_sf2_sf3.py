@@ -1,5 +1,30 @@
 """
-Migration M2 SF-1/SF-2/SF-3 — générée manuellement.
+Migration M2 SF-1/SF-2/SF-3 — générée manuellement le 2026-07-25, puis vidée.
+
+VIDÉE VOLONTAIREMENT. Ne pas y remettre d'opérations.
+
+Cette migration et 0005_indicator_aggregation_rule_indicator_chain_level_and_more
+ont été ajoutées le même jour et créent les mêmes colonnes : les douze opérations
+qu'elle contenait figurent toutes, à l'identique (seuls des help_text diffèrent),
+dans la migration auto-générée, qui en porte cinq de plus. Comme celle-ci est
+déclarée dans les dépendances ci-dessous, elle s'appliquait toujours en second et
+échouait toujours sur une base vide :
+
+    django.db.utils.ProgrammingError: column "version" of relation "indicator"
+    already exists
+
+La migration de fusion 0006_merge_20260725_1228 réconcilie le graphe mais ne
+déduplique pas les opérations. Résultat : `migrate` depuis zéro était impossible
+depuis juillet 2026 — nouveaux postes, environnements de CI, restauration à partir
+du schéma seul, et la suite de tests (pytest-django construit sa base à partir de
+rien).
+
+Le fichier est conservé, avec ses dépendances, pour que l'historique enregistré
+dans django_migrations reste valide : sur toute base déjà migrée, Django ne
+ré-exécute pas une migration déjà appliquée, ce changement n'y a donc aucun effet.
+Sur une base vide, elle s'applique désormais comme un no-op.
+
+Ce que cette migration décrivait (désormais porté par sa jumelle auto-générée) :
 
 SF-1 Indicator :
   - aggregation_rule    (CharField, default='sum')
@@ -24,9 +49,9 @@ SF-3 LogframeTarget :
 
 SF-3 TargetRevision (nouveau modèle)
 """
-import django.db.models.deletion
 from django.conf import settings
-from django.db import migrations, models
+from django.db import migrations
+
 
 class Migration(migrations.Migration):
 
@@ -36,179 +61,4 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
-    operations = [
-
-        # ── SF-1 : Indicator ────────────────────────────────────────────
-
-        migrations.AddField(
-            model_name="indicator",
-            name="version",
-            field=models.PositiveIntegerField(
-                default=1,
-                help_text="Numéro de version. Auto-incrémenté à chaque modification validée (RG-1.1).",
-            ),
-        ),
-        migrations.AlterField(
-            model_name="indicator",
-            name="indicator_type",
-            field=models.CharField(
-                choices=[
-                    ("numeric", "Numeric"), ("percentage", "Percentage"),
-                    ("yes_no", "Yes / No"), ("count", "Count"),
-                ],
-                default="numeric", max_length=15,
-            ),
-        ),
-        migrations.AlterField(
-            model_name="indicator",
-            name="reporting_frequency",
-            field=models.CharField(
-                blank=True, max_length=15,
-                choices=[
-                    ("monthly", "Monthly"), ("quarterly", "Quarterly"),
-                    ("semi_annual", "Semi-annual"), ("annual", "Annual"),
-                    ("end_of_project", "End of project"),
-                ],
-            ),
-        ),
-
-        # ── SF-2 : TheoryOfChange ────────────────────────────────────────
-
-        migrations.AddField(
-            model_name="theoryofchange",
-            name="local_actors",
-            field=models.TextField(
-                blank=True,
-                help_text="Acteurs locaux ayant participé à l'élaboration de la ToC (BRQ-2.06b).",
-            ),
-        ),
-
-        # ── SF-2 : ToCNode — nouveau niveau + cross_pathways ─────────────
-
-        migrations.AlterField(
-            model_name="tocnode",
-            name="chain_level",
-            field=models.CharField(
-                max_length=25,
-                choices=[
-                    ("activity", "Activity"), ("output", "Output"),
-                    ("immediate_outcome", "Immediate outcome"),
-                    ("intermediate_outcome", "Intermediate outcome"),
-                    ("ultimate_outcome", "Ultimate outcome"),
-                ],
-            ),
-        ),
-        migrations.AddField(
-            model_name="tocnode",
-            name="cross_pathways",
-            field=models.ManyToManyField(
-                blank=True,
-                related_name="incoming_pathways",
-                to="results.tocnode",
-                help_text="Liaisons non linéaires vers d'autres nœuds de la chaîne (RG-2.6).",
-            ),
-        ),
-
-        # ── SF-3 : LogframeTarget — statut + PAD + approbation ───────────
-
-        migrations.AddField(
-            model_name="logframetarget",
-            name="status",
-            field=models.CharField(
-                choices=[
-                    ("draft", "Draft"), ("approved", "Approved"), ("revised", "Revised"),
-                ],
-                default="draft", max_length=10,
-                help_text="Statut de la cible.",
-            ),
-        ),
-        migrations.AddField(
-            model_name="logframetarget",
-            name="is_original_pad",
-            field=models.BooleanField(
-                default=False,
-                help_text="True = cible issue du PAD. Jamais écrasée, toujours consultable (RG-3.4).",
-            ),
-        ),
-        migrations.AddField(
-            model_name="logframetarget",
-            name="approved_by",
-            field=models.ForeignKey(
-                blank=True, null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="targets_approved",
-                to=settings.AUTH_USER_MODEL,
-                help_text="Approbateur LLFMU/IsDB (RG-3.5).",
-            ),
-        ),
-        migrations.AddField(
-            model_name="logframetarget",
-            name="approved_at",
-            field=models.DateTimeField(null=True, blank=True),
-        ),
-
-        # ── SF-3 : TargetRevision — nouveau modèle ───────────────────────
-
-        migrations.CreateModel(
-            name="TargetRevision",
-            fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("previous_value", models.DecimalField(
-                    decimal_places=4, max_digits=18,
-                    help_text="Valeur de la cible avant révision.",
-                )),
-                ("previous_date", models.DateField(
-                    help_text="Date cible avant révision.",
-                )),
-                ("justification", models.TextField(
-                    help_text="Justification narrative obligatoire (RG-3.3).",
-                )),
-                ("revision_status", models.CharField(
-                    choices=[
-                        ("pending", "Pending approval"),
-                        ("approved", "Approved"),
-                        ("rejected", "Rejected"),
-                    ],
-                    default="pending", max_length=15,
-                )),
-                ("revision_comment", models.TextField(blank=True)),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("resolved_at", models.DateTimeField(blank=True, null=True)),
-                ("target", models.ForeignKey(
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name="revisions",
-                    to="results.logframetarget",
-                )),
-                ("revised_by", models.ForeignKey(
-                    null=True,
-                    on_delete=django.db.models.deletion.SET_NULL,
-                    related_name="target_revisions_initiated",
-                    to=settings.AUTH_USER_MODEL,
-                )),
-                ("approved_by", models.ForeignKey(
-                    blank=True, null=True,
-                    on_delete=django.db.models.deletion.SET_NULL,
-                    related_name="target_revisions_approved",
-                    to=settings.AUTH_USER_MODEL,
-                )),
-            ],
-            options={"db_table": "target_revision", "ordering": ["-created_at"]},
-        ),
-
-        # ── LogframeRow + ToCNode chain_level : ajout ultimate_outcome ────
-
-        migrations.AlterField(
-            model_name="logframerow",
-            name="chain_level",
-            field=models.CharField(
-                max_length=25,
-                choices=[
-                    ("activity", "Activity"), ("output", "Output"),
-                    ("immediate_outcome", "Immediate outcome"),
-                    ("intermediate_outcome", "Intermediate outcome"),
-                    ("ultimate_outcome", "Ultimate outcome"),
-                    ("impact", "Impact"),
-                ],
-            ),
-        ),
-    ]
+    operations = []
