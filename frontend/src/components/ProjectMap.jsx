@@ -358,7 +358,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
         color: "#9ca3af", zIndex: 5, background: "rgba(255,255,255,0.7)",
         padding: "2px 6px", borderRadius: 4 }}>
-        © Natural Earth · GADM · ARBM-MIS
+        © Natural Earth · GADM · aRBM-MIS
       </div>
     </div>
   );

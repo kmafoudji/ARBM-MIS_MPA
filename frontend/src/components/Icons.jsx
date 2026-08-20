@@ -85,7 +85,7 @@ export const LogoFull = ({ dark = false }) => (
       letterSpacing: "-0.02em",
       color: dark ? "#ffffff" : "#111111",
       lineHeight: 1,
-    }}>ARBM-MIS</span>
+    }}>aRBM-MIS</span>
   </div>
 );
 

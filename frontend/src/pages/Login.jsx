@@ -142,7 +142,7 @@ export default function Login() {
         </p>
       </div>
       <div className="login-side">
-        ARBM-MIS · POC ·{" "}
+        aRBM-MIS · POC ·{" "}
         {stats?.project_count ?? 44} projects ·{" "}
         {stats?.country_count ?? 22} countries ·{" "}
         {stats?.hub_count ?? 8} hubs

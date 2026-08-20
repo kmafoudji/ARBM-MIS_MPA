@@ -332,7 +332,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", textAlign: "center", fontSize: 11, color: "#9ca3af" }}>
-        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · ARBM-MIS · IsDB LLF2
+        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · aRBM-MIS · IsDB LLF2
       </div>
     </div>
   );

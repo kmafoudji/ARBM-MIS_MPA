@@ -306,7 +306,7 @@ export default function Overview({ user }) {
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="check" size={14} style={{ marginRight: 6 }} />System Readiness</h2>
-            <div className="card-sub">Configuration status — ARBM-MIS POC</div>
+            <div className="card-sub">Configuration status — aRBM-MIS POC</div>
           </div>
           <span className="badge badge-lime">● Live</span>
         </div>
