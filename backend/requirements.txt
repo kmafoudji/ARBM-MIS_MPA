@@ -13,6 +13,9 @@ whitenoise==6.6.0
 # le disque local disparait au redemarrage du conteneur).
 django-storages[azure]==1.14.4
 python-dateutil==2.9.0
+# Lecture des classeurs AS-IS (core/asis_import). Ouverts en read_only +
+# data_only : aucune formule evaluee, aucun lien externe suivi.
+openpyxl==3.1.5
 # Tests
 pytest==8.2.2
 pytest-django==4.8.0
