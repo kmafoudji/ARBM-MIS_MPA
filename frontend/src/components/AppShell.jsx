@@ -28,6 +28,7 @@ const NAV_GROUPS = [
     label: "Projects & Monitoring",
     items: [
       { key: "projects", label: "Projects", Icon: IconProjects, badgeKey: "projects" },
+      { key: "bulk-import", label: "Bulk Import", Icon: IconNewProject },
       { key: "indicator-catalogue", label: "Indicator Catalogue", Icon: IconCatalogue },
       { key: "portfolio", label: "Portfolio Results", Icon: IconPortfolio },
     ],
@@ -51,6 +52,7 @@ const CRUMBS = {
   "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
   portfolio: { label: "Portfolio Results", parent: "overview" },
   "dq-portfolio": { label: "Data Quality", parent: "overview" },
+  "bulk-import": { label: "Bulk Import", parent: "projects" },
   pirs:      { label: "PIRS", parent: "project-logframe" },
   rbac: { label: "Users & Roles", parent: "overview" },
 };
@@ -121,6 +123,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
       label: t("nav.portfolio"),
       items: [
         { key: "projects", label: t("nav.projects"), Icon: IconProjects, badgeKey: "projects" },
+        { key: "bulk-import", label: t("nav.bulk_import"), Icon: IconNewProject },
         { key: "indicator-catalogue", label: t("nav.indicator_catalogue"), Icon: IconCatalogue },
         { key: "portfolio", label: "Portfolio Results", Icon: IconPortfolio },
         { key: "dq-portfolio", label: "Data Quality", Icon: IconCatalogue },

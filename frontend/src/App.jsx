@@ -15,6 +15,7 @@ import PIRSView from "./pages/PIRSView.jsx";
 import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
 import Rbac from "./pages/Rbac.jsx";
+import BulkImport from "./pages/BulkImport.jsx";
 import { apiFetch } from "./api";
 import { Component } from "react";
 
@@ -159,6 +160,11 @@ export default function App() {
           projectId={selectedProjectId}
           rowId={selectedRowId}
           onBack={() => setNav("project-logframe")}
+        />
+      )}
+      {nav === "bulk-import" && (
+        <BulkImport
+          onOpenProject={(pid) => { setSelectedProjectId(pid); setNav("project-detail"); }}
         />
       )}
       {nav === "rbac" && <Rbac currentUser={user} />}
