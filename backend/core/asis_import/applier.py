@@ -20,7 +20,11 @@ from apps.project.models import (
     ProjectGadmScope,
     ProjectImplementingPartner,
 )
-from apps.project.services import generate_project_code, generate_reporting_periods
+from apps.project.services import (
+    generate_project_code,
+    generate_reporting_periods,
+    generate_workspace,
+)
 from apps.reference.models import Currency, Donor, ImplementingAgency, Sdg
 from apps.results.models import Indicator, LogframeRow, LogframeTarget, ResultsData
 from apps.workplan.models import Activity, Milestone, WorkplanComponent, WorkplanSubComponent
@@ -41,6 +45,7 @@ from .parser import (
     SHEET_PROJECT,
     SHEET_RESULTS,
     SHEET_TARGETS,
+    SHEET_WORKSPACE,
 )
 
 WRITES = (ACTION_CREATE, ACTION_UPDATE, ACTION_REPLACE)
@@ -83,6 +88,7 @@ def apply(plan, actor=None):
     _apply_milestones(context)
     _apply_gadm(context)
     _apply_reporting_periods(context)
+    _apply_workspace(context)
     _apply_results(context)
 
     plan.committed = True
@@ -407,6 +413,21 @@ def _apply_reporting_periods(context):
         return
     # Idempotent: creates only the missing periods, none beyond end_date.
     generate_reporting_periods(context.project)
+
+
+def _apply_workspace(context):
+    """
+    Activate the workspace the imported stage implies (SF-10).
+
+    Idempotent, and it does the rest of what Effective means: locks the ToC
+    and sets the module-ready flags. Without it the Workplan and Results tabs
+    stay locked and everything this import loaded is unreachable from the
+    interface.
+    """
+    changes = context.plan.changes_for(SHEET_WORKSPACE)
+    if not changes or changes[0].action not in WRITES:
+        return
+    generate_workspace(context.project, context.actor)
 
 
 def _apply_results(context):
