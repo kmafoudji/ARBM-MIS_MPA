@@ -826,6 +826,12 @@ def _parse_donors(context):
                 f"name is required to create the donor {code}.", column="name",
             )
             continue
+
+        _warn_near_duplicates(
+            context, SHEET_DONORS, row_number, "donor(s)",
+            name, code, Donor.objects.all(),
+        )
+
         context.plan.add_change(
             SHEET_DONORS, ACTION_CREATE, code, detail=name,
             payload={"code": code, "name": name},
@@ -878,15 +884,10 @@ def _parse_agencies(context):
                 column="agency_type_note",
             )
 
-        near = _near_duplicate_agency(name)
-        if near is not None:
-            context.warn(
-                SHEET_AGENCIES, row_number,
-                f"An agency with a matching name already exists in the reference table: "
-                f"{near.code} ({near.name}). The file will create a second one under the "
-                f"code {code}.",
-                column="code",
-            )
+        _warn_near_duplicates(
+            context, SHEET_AGENCIES, row_number, "agency/agencies",
+            name, code, ImplementingAgency.objects.all(),
+        )
 
         context.plan.add_change(
             SHEET_AGENCIES, ACTION_CREATE, code, detail=f"{name} [{agency_type}]",
@@ -899,19 +900,85 @@ def _parse_agencies(context):
         )
 
 
-def _near_duplicate_agency(name):
-    """
-    An existing agency with the same name up to case and spacing.
+# A code segment shorter than this is too generic to mean anything: `NGA`
+# and `SLE` are country prefixes, `PMU` and `MOF` name a different body in
+# every project. Four characters is also what keeps `NGA-PMU` from being
+# read as a duplicate of `SLE-PMU`.
+MIN_CODE_TOKEN_LENGTH = 4
 
-    The workbooks prefix their codes with the country (`NGA-KNARDA`) where
-    the reference table uses a short code (`knarda`): the code cannot detect
-    the duplicate, the name can.
+
+def _code_tokens(code):
     """
-    normalised = vocab.normalise(name)
-    for agency in ImplementingAgency.objects.all().only("code", "name"):
-        if vocab.normalise(agency.name) == normalised:
-            return agency
-    return None
+    The significant segments of a reference code.
+
+    `NGA-KNARDA` -> {"KNARDA"}: the country prefix falls below the length
+    floor, which is exactly what should happen to it.
+    """
+    token = ""
+    tokens = set()
+    for char in str(code):
+        if char.isalnum():
+            token += char
+        else:
+            tokens.add(token)
+            token = ""
+    tokens.add(token)
+    return {t.upper() for t in tokens if len(t) >= MIN_CODE_TOKEN_LENGTH}
+
+
+def _near_duplicates(name, code, queryset):
+    """
+    Existing reference rows that look like the one the file wants to create.
+
+    Comparing normalised names alone is not enough, and missed a real case:
+    the reference table held `knarda` named "KNARDA" while NGA1007 declared
+    `NGA-KNARDA` named "Kano State Agricultural and Rural Development
+    Authority". Same organisation, no shared name — the acronym is a
+    contraction, not the initials, so nothing derived from the name would
+    have matched either. The signal that *was* there sits in the code.
+
+    Three signals, each reported with the reason it fired:
+      - the same name, up to case and spacing;
+      - a significant segment shared between the two codes;
+      - the existing row's name being one of those segments, which is what
+        an acronym-named row looks like.
+
+    Deliberately no fuzzy or substring matching on names: "KSADP PMU (hosted
+    by KNARDA)" contains "KNARDA" and is a different body, so containment
+    would produce exactly the false positive that makes warnings ignorable.
+    """
+    normalised_name = vocab.normalise(name)
+    tokens = _code_tokens(code)
+    matches = []
+
+    for existing in queryset.only("code", "name"):
+        existing_tokens = _code_tokens(existing.code)
+        if vocab.normalise(existing.name) == normalised_name:
+            matches.append((existing, "same name"))
+        elif tokens & existing_tokens:
+            shared = ", ".join(sorted(tokens & existing_tokens))
+            matches.append((existing, f"shared code segment {shared}"))
+        elif vocab.normalise(existing.name).upper() in tokens:
+            matches.append(
+                (existing, f"its name {existing.name!r} is a segment of the code")
+            )
+    return matches
+
+
+def _warn_near_duplicates(context, sheet_name, row_number, label, name, code, queryset):
+    """Report near-duplicates before a reference row is created, or say nothing."""
+    matches = _near_duplicates(name, code, queryset)
+    if not matches:
+        return
+    detail = "; ".join(f"{obj.code} ({obj.name}) — {reason}" for obj, reason in matches)
+    context.warn(
+        sheet_name, row_number,
+        f"The reference table already holds {len(matches)} {label} that may be the same "
+        f"body: {detail}. The file will create another one under the code {code}. "
+        "Nothing is merged automatically — reference tables are governed outside this "
+        "import, and merging needs the rows that point at them repointed first.",
+        column="code",
+    )
 
 
 # ---------------------------------------------------------------------------

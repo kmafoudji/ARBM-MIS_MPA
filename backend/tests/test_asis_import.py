@@ -376,6 +376,60 @@ def test_activityless_milestone_gets_a_declared_placeholder(auth_client, rows):
 
 
 @pytest.mark.django_db
+def test_an_acronym_named_reference_row_is_flagged_as_a_near_duplicate(auth_client, rows):
+    """
+    The case a name-only comparison missed on the real data: the reference
+    table held `knarda` named "KNARDA" while NGA1007 declared `NGA-KNARDA`
+    named "Kano State Agricultural and Rural Development Authority". Same
+    body, no shared name — the signal is in the code.
+    """
+    from apps.reference.models import ImplementingAgency
+
+    ImplementingAgency.objects.create(
+        code="knarda", name="KNARDA", agency_type="national_agency"
+    )
+    rows["04_agencies"] = [[
+        "NGA-KNARDA", "Kano State Agricultural and Rural Development Authority", "government",
+    ]]
+    rows["05_project_partners"] = [["NGA-KNARDA", "lead", "Yes"]]
+
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    flagged = [
+        w for w in response.data["warnings"]
+        if w["sheet"] == "04_agencies" and w["column"] == "code"
+    ]
+    assert flagged, messages(response.data["warnings"])
+    assert "knarda" in flagged[0]["message"]
+    # A warning, never a merge: the reference tables are governed outside
+    # this import and rows pointing at them would have to be repointed.
+    assert response.data["errors"] == []
+
+
+@pytest.mark.django_db
+def test_a_short_shared_code_segment_is_not_a_near_duplicate(auth_client, rows):
+    """
+    `NGA-PMU` and `SLE-PMU` share `PMU` and are different bodies. Below the
+    length floor nothing fires — a warning that cries wolf is a warning
+    nobody reads.
+    """
+    from apps.reference.models import ImplementingAgency
+
+    ImplementingAgency.objects.create(
+        code="SLE-PMU", name="SL-RVCP PMU", agency_type="national_agency"
+    )
+    rows["04_agencies"] = [["NGA-PMU", "KSADP PMU", "government"]]
+    rows["05_project_partners"] = [["NGA-PMU", "lead", "Yes"]]
+
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    assert not [
+        w for w in response.data["warnings"]
+        if w["sheet"] == "04_agencies" and w["column"] == "code"
+    ], messages(response.data["warnings"])
+
+
+@pytest.mark.django_db
 def test_existing_donor_is_matched_case_insensitively(auth_client, rows):
     """
     The database holds `isdb`, the workbooks write `ISDB`. A literal match
