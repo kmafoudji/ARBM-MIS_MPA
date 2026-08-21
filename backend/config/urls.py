@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.asis_import.views import AsisImportView
 from core.uploads import LogoUploadView
 from core.views import csrf_bootstrap, health_check
 from apps.results.urls import indicator_urlpatterns
@@ -12,6 +13,7 @@ urlpatterns = [
     path("health/", health_check, name="health-check"),
     path("api/csrf/", csrf_bootstrap, name="csrf-bootstrap"),
     path("api/uploads/logo/", LogoUploadView.as_view(), name="upload-logo"),
+    path("api/import/asis/", AsisImportView.as_view(), name="import-asis"),
     path("auth/", include("apps.authentication.urls")),
     path("api/", include("apps.project.urls")),
     path("api/reference/", include("apps.reference.urls")),
