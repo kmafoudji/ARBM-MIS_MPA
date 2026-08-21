@@ -1,11 +1,11 @@
 /**
- * BulkImport — chargement d'un classeur AS-IS (13 feuilles).
+ * BulkImport — loading an AS-IS workbook (13 sheets).
  *
- * Deux temps, imposés par le design : on valide, on lit ce qui va changer,
- * puis on confirme. Le fichier n'est stocké nulle part côté serveur — c'est
- * le même objet File qui est renvoyé au moment de confirmer, accompagné du
- * SHA-256 rendu par la validation. Le serveur le recalcule et refuse un
- * fichier qui ne serait pas celui qui a été relu (409).
+ * Two steps, imposed by the design: validate, read what is going to change,
+ * then confirm. The file is stored nowhere on the server — the same File
+ * object is sent back on confirm, together with the SHA-256 the validation
+ * returned. The server recomputes it and refuses anything that is not the
+ * file that was reviewed (409).
  */
 import { useState } from "react";
 import { apiUpload } from "../api";
@@ -22,7 +22,7 @@ const ACTION_STYLE = {
 
 const ACTION_ORDER = ["create", "update", "replace", "unchanged"];
 
-/** Le rapport arrive dans le corps de la réponse, y compris sur un 422. */
+/** The report arrives in the response body, including on a 422. */
 function reportFrom(error) {
   const detail = error?.detail;
   if (detail && Array.isArray(detail.changes)) return detail;
@@ -162,8 +162,8 @@ export default function BulkImport({ onOpenProject }) {
     } catch (error) {
       const parsed = reportFrom(error);
       if (parsed) {
-        // 422 : le rapport est dans le corps, il doit s'afficher comme
-        // n'importe quel autre — c'est là que sont les erreurs à corriger.
+        // 422: the report is in the body and must render like any other —
+        // that is where the errors to fix are.
         setReport(parsed);
         setCommitted(null);
       } else {

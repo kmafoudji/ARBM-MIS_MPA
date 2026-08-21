@@ -1,9 +1,13 @@
 """
-Import en masse d'un classeur AS-IS (13 feuilles) — voir
+Bulk import of an AS-IS workbook (13 sheets) — see
 docs/superpowers/specs/2026-08-21-asis-bulk-import-design.md.
 
-La frontiere qui compte : `parser` decide tout, `applier` ne fait qu'ecrire.
-Les deux modes de l'endpoint executent la meme analyse ; seul l'appel a
-`apply()` les distingue. Un rapport de validation ne peut donc jamais
-diverger de ce qu'un commit ferait reellement.
+The boundary that matters: `parser` decides everything, `applier` only
+writes. Both endpoint modes run the same parse; the only difference is
+whether `apply()` is called afterwards. A validation report can therefore
+never disagree with what a confirm would do.
+
+Written in English, unlike the rest of the backend. The report this package
+produces is user-facing content on an English screen, not an incidental
+error string — see the language Issue drafted in `.dev-notes`.
 """

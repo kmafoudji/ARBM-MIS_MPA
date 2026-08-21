@@ -1,15 +1,14 @@
 """
-Vocabulaires acceptes par l'import (design §8) et correspondances entre le
-langage du classeur et les litteraux du modele (plan §3).
+Vocabularies the import accepts (design §8) and the mappings between the
+workbook's language and the model's literals (plan §3).
 
-Les ensembles de valeurs valides sont DERIVES des modeles, jamais recopies :
-si une liste de choix change, le validateur suit sans intervention. C'est la
-seule facon de garantir qu'un fichier accepte ici est ecrivable la-bas.
+The sets of valid values are DERIVED from the models, never retyped: if a
+choice list changes, the validator follows without intervention. That is the
+only way to guarantee a file accepted here is writable there.
 
-Les correspondances, elles, sont des decisions — confirmees avec le
-developpeur le 21 aout 2026. Chacune declenche un avertissement sur la ligne
-ou elle s'applique : une valeur traduite silencieusement est une valeur que
-personne ne relit.
+The mappings are decisions — confirmed with the developer on 21 August 2026.
+Each one raises a warning on the row where it applies: a value translated
+silently is a value nobody reviews.
 """
 from apps.project.models import (
     FRAGILITY_STATUS_CHOICES,
@@ -41,7 +40,7 @@ def _literals(choices):
     return {value for value, _label in choices}
 
 
-# --- Ensembles derives des modeles -----------------------------------------
+# --- Sets derived from the models ------------------------------------------
 
 LIFECYCLE_STAGES = _literals(LIFECYCLE_STAGE_CHOICES)
 GENDER_MARKERS = _literals(GENDER_MARKER_CHOICES)
@@ -63,11 +62,11 @@ MILESTONE_STATUSES = _literals(MILESTONE_STATUS_CHOICES)
 MILESTONE_CATEGORIES = _literals(MILESTONE_CATEGORY_CHOICES)
 
 
-# --- Correspondances classeur -> modele (plan §3) --------------------------
+# --- Workbook -> model mappings (plan §3) ----------------------------------
 
-# `04_agencies.agency_type_note`. Le classeur decrit une fonction ("pmu",
-# "technical partner"), le modele une nature juridique. Aucune des deux
-# n'est traduisible sans perte : on trace la traduction.
+# `04_agencies.agency_type_note`. The workbook describes a function ("pmu",
+# "technical partner"), the model a legal nature. Neither translates to the
+# other without loss, so the translation is reported.
 AGENCY_TYPE_MAP = {
     "government": "government",
     "national agency": "national_agency",
@@ -78,8 +77,8 @@ AGENCY_TYPE_MAP = {
     "un agency": "un_agency",
 }
 
-# `05_project_partners.role`. PARTNER_ROLE_CHOICES n'a pas de "pmu" ;
-# co_executor est le plus proche sans inventer de role.
+# `05_project_partners.role`. PARTNER_ROLE_CHOICES has no "pmu";
+# co_executor is the closest without inventing a role.
 PARTNER_ROLE_MAP = {
     "lead": "lead",
     "pmu": "co_executor",
@@ -91,7 +90,7 @@ PARTNER_ROLE_MAP = {
     "government": "government",
 }
 
-# `09_components.level` : choisit le modele cible, pas une valeur de champ.
+# `09_components.level`: picks the target model, not a field value.
 COMPONENT_LEVEL_MAP = {
     "component": "component",
     "sub-component": "sub_component",
@@ -99,15 +98,15 @@ COMPONENT_LEVEL_MAP = {
     "sub component": "sub_component",
 }
 
-# Categorie par defaut des jalons : le classeur n'a pas de colonne
-# `category` alors que le modele l'exige. Les six jalons SLE1013 sont des
-# echeances contractuelles (signature, entree en vigueur, decaissements,
-# rapport d'achevement) — d'ou ce defaut, signale ligne par ligne.
+# Default milestone category: the workbook has no `category` column while
+# the model requires one. The six SLE1013 milestones are contractual
+# deadlines (signature, effectiveness, disbursements, completion report) —
+# hence this default, reported once per sheet.
 DEFAULT_MILESTONE_CATEGORY = "contractual"
 
 
 def normalise(value):
-    """Forme de comparaison d'une valeur de vocabulaire venue du classeur."""
+    """Comparison form of a vocabulary value coming from the workbook."""
     if value is None:
         return ""
     return " ".join(str(value).strip().lower().replace("_", " ").split())
@@ -115,14 +114,14 @@ def normalise(value):
 
 def map_value(mapping, raw):
     """
-    Traduit `raw` via `mapping`. Renvoie (valeur, traduite) ou
-    (None, False) si aucune correspondance — l'appelant decide si c'est
-    une erreur ou un avertissement.
+    Translate `raw` through `mapping`. Returns (value, translated) or
+    (None, False) if there is no match — the caller decides whether that is
+    an error or a warning.
     """
     key = normalise(raw)
     if key in mapping:
         value = mapping[key]
-        # `traduite` distingue "reconnue telle quelle" de "reinterpretee",
-        # pour n'avertir que dans le second cas.
+        # `translated` separates "recognised as-is" from "reinterpreted",
+        # so that only the second case warns.
         return value, normalise(value) != key
     return None, False
