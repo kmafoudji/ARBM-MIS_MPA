@@ -27,7 +27,7 @@ Let a user upload an AS-IS workbook through the interface, see exactly what will
 | D-5 | Existing projects are updated, not refused | The file is the authoritative source; PAD and AWPB revisions must be able to land |
 | D-6 | The file wins on conflict, with a diff shown first | Predictable. Overwriting a UI edit becomes visible and deliberate rather than silent |
 | D-7 | Never delete rows present in the tool but absent from the file | Deleting an activity cascades to its delay logs, alerts and SPI snapshots; deleting a logframe row cascades to loaded actuals. Report the drift instead |
-| D-8 | Replace-all for financing sources and milestones, **scoped to the project being loaded** | Neither has a stable identifier (see §7). Verified safe: no model references `FinancingSource` or `Milestone`, so replacement leaves no orphans. Rows belonging to other projects are never touched |
+| D-8 | Replace-all for financing sources and milestones, **scoped to the project being loaded** | Neither has a stable identifier (see §7). Rows belonging to other projects are never touched. **Corrected 21 Aug 2026 — see the note below; this row originally claimed the replacement was orphan-free, and that is only true of `FinancingSource`** |
 
 ## 4. Architecture
 
@@ -94,6 +94,37 @@ Every sheet has a note in row 1, headers in row 2, data from row 3. `00_README`,
 | `13_results_data` | `ResultsData` | `(logframe_row, reporting_period)` |
 
 **Why those two are replace-all.** `FinancingSource` has no natural key: SLE1013 carries two rows that are both `co_financing` + `loan` (ISFD and BADEA), distinguishable only by their note. `Milestone` has no code column at all, so the workbook's `SLE1013-M02` has nowhere to land. Adding identifier columns to both models is the better long-term fix and is listed in §12.
+
+**What replace-all costs — corrected 21 August 2026.** This section originally
+asserted that nothing references either model, so replacement left no orphans.
+Measured against the models rather than assumed, that holds for
+`FinancingSource` and **not** for `Milestone`: `WorkplanAlert.milestone` exists
+with `on_delete=CASCADE`, so replacing a project's milestones deletes any alerts
+attached to them, silently and inside the same transaction. `WorkplanAlert` was
+empty when the two pilot files were loaded, so nothing was destroyed — but the
+original claim was wrong and the exposure is real once M3 generates alerts.
+
+The same measurement turned up a second cost the decision had not weighed.
+Recreating a row writes only what the workbook supplies; every other field
+reverts to its default, even where the change report says the values are
+identical, because the report only compares the fields the file carries:
+
+| Table | Written by the import | **Reset on every load** |
+|---|---|---|
+| `FinancingSource` | 8 of 10 fields | `donor`, `exchange_rate_date` |
+| `Milestone` | 7 of 14 fields | `evidence_url`, `evidence_note`, `is_gate`, `is_procurement`, `ai_forecast_date` |
+
+`is_gate` is the one that matters beyond data loss: it is what stops an activity
+reaching 100 % before its milestone is achieved (RG-5.2), so clearing it removes
+a control rather than a value. And this is not hypothetical — a financing row
+entered through the interface on another project carries a `donor` and an
+`exchange_rate_date` that a load would blank.
+
+Neither cost changes the decision, because without a key there is no safe
+alternative. Both are now stated in the change report, so an operator sees them
+before confirming, and both disappear with the identifier columns in §13. Until
+then the honest scope of D-8 is: **safe to import into while nobody has
+hand-edited these two tables.**
 
 **Reporting periods.** After the project is created or its dates change, call `generate_reporting_periods`. It needs `reporting_frequency`, `next_reporting_due` and `end_date`, all of which `01_project` now supplies, and it generates no period beyond `end_date`. `13_results_data` ships empty in both current files, so this path is specified but barely exercised: match the period by label, and if none exists, raise an error naming the period rather than inventing one.
 

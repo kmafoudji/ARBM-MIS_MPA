@@ -375,6 +375,90 @@ def test_activityless_milestone_gets_a_declared_placeholder(auth_client, rows):
     assert milestone.category == "contractual"
 
 
+def test_the_written_field_sets_name_real_model_fields():
+    """
+    The replace-all warning subtracts these sets from the model to say what a
+    confirm costs. A typo would silently inflate the list of losses, so the
+    names are checked against the models. Nothing can prove the applier writes
+    exactly these — that part stays a comment on the constants.
+    """
+    from apps.project.models import FinancingSource
+    from apps.workplan.models import Milestone
+    from core.asis_import.parser import (
+        FINANCING_WRITTEN_FIELDS,
+        MILESTONE_WRITTEN_FIELDS,
+        _fields_reset_by_replacement,
+    )
+
+    for model, written in (
+        (FinancingSource, FINANCING_WRITTEN_FIELDS),
+        (Milestone, MILESTONE_WRITTEN_FIELDS),
+    ):
+        names = {f.name for f in model._meta.fields}
+        assert written <= names, f"{model.__name__}: {written - names}"
+
+    # The two the design missed until 21 August 2026.
+    assert "donor" in _fields_reset_by_replacement(FinancingSource, FINANCING_WRITTEN_FIELDS)
+    assert "is_gate" in _fields_reset_by_replacement(Milestone, MILESTONE_WRITTEN_FIELDS)
+
+
+@pytest.mark.django_db
+def test_replacing_milestones_warns_about_the_fields_it_clears(auth_client, rows):
+    """
+    An operator about to confirm an irreversible write is told what is lost,
+    not merely that rows are replaced.
+    """
+    rows["11_milestones"] = [[
+        "REF001-M01", "", "Financing agreement signature",
+        "2025-02-01", "", "", "pending",
+    ]]
+    workbook = build_workbook(rows)
+    validation = post(auth_client, workbook, mode="validate")
+    workbook.seek(0)
+    post(auth_client, workbook, mode="commit",
+         expected_sha256=validation.data["file_sha256"])
+
+    # Second pass: milestones now exist, so the replacement warning fires.
+    again = post(auth_client, build_workbook(rows))
+    assert again.status_code == 200
+    text = messages(again.data["warnings"])
+    assert "DELETED and recreated" in text
+    assert "is_gate" in text
+    assert "evidence_url" in text
+
+
+@pytest.mark.django_db
+def test_replacing_milestones_warns_when_alerts_hang_off_them(auth_client, rows):
+    """
+    WorkplanAlert.milestone is CASCADE. The design asserted nothing referenced
+    Milestone; it was wrong, so the alerts are counted and reported.
+    """
+    from apps.workplan.models import Milestone, WorkplanAlert
+
+    rows["11_milestones"] = [[
+        "REF001-M01", "", "Financing agreement signature",
+        "2025-02-01", "", "", "pending",
+    ]]
+    workbook = build_workbook(rows)
+    validation = post(auth_client, workbook, mode="validate")
+    workbook.seek(0)
+    post(auth_client, workbook, mode="commit",
+         expected_sha256=validation.data["file_sha256"])
+
+    milestone = Milestone.objects.get(name="Financing agreement signature")
+    WorkplanAlert.objects.create(
+        project=milestone.activity.project,
+        activity=milestone.activity,
+        milestone=milestone,
+        alert_type="milestone_t30",
+        message="Milestone due in 30 days.",
+    )
+
+    again = post(auth_client, build_workbook(rows))
+    assert again.status_code == 200
+    assert "workplan alert(s)" in messages(again.data["warnings"])
+
+
 @pytest.mark.django_db
 def test_an_acronym_named_reference_row_is_flagged_as_a_near_duplicate(auth_client, rows):
     """

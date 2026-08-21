@@ -35,7 +35,13 @@ from apps.reference.models import (
     Sector,
 )
 from apps.results.models import Indicator, LogframeRow, LogframeTarget, ResultsData
-from apps.workplan.models import Activity, Milestone, WorkplanComponent, WorkplanSubComponent
+from apps.workplan.models import (
+    Activity,
+    Milestone,
+    WorkplanAlert,
+    WorkplanComponent,
+    WorkplanSubComponent,
+)
 
 from . import vocab
 from .plan import (
@@ -103,6 +109,37 @@ SHEET_HEADER_MARKERS = {
 
 HEADER_SEARCH_DEPTH = 3  # rows examined before giving up
 EXCEL_EPOCH = date(1899, 12, 30)  # 1900 system offset, leap-year bug included
+
+# The fields `applier` writes when it recreates a replace-all row. Everything
+# else on those models reverts to its default, so these two sets are what the
+# report subtracts from the model to tell an operator what a confirm costs.
+#
+# They are declared here rather than in `applier` because `applier` imports
+# this module and the reverse would be a cycle. **Keep them in step with the
+# `objects.create(...)` calls in `_apply_financing` and `_apply_milestones`** —
+# a test asserts they name real model fields, but nothing can prove the applier
+# writes exactly these.
+FINANCING_WRITTEN_FIELDS = {
+    "envelope", "source", "instrument", "amount", "amount_usd", "currency", "label", "order",
+}
+MILESTONE_WRITTEN_FIELDS = {
+    "activity", "name", "category", "planned_date", "actual_date", "status", "order",
+}
+
+# Bookkeeping columns: resetting them is noise, not a loss worth reporting.
+_HOUSEKEEPING_FIELDS = {"id", "created_at", "updated_at"}
+
+
+def _fields_reset_by_replacement(model, written):
+    """
+    The fields a recreated row loses, derived from the model itself.
+
+    Derived rather than listed so that a field added to `Milestone` or
+    `FinancingSource` tomorrow shows up in the warning without anyone
+    remembering to update a string.
+    """
+    names = {f.name for f in model._meta.fields}
+    return sorted(names - set(written) - _HOUSEKEEPING_FIELDS)
 
 
 # ---------------------------------------------------------------------------
@@ -772,12 +809,14 @@ def _parse_financing(context):
     if context.project is not None:
         existing = FinancingSource.objects.filter(envelope__project=context.project).count()
         if existing and sheet.rows:
+            lost = _fields_reset_by_replacement(FinancingSource, FINANCING_WRITTEN_FIELDS)
             context.warn(
                 SHEET_FINANCING, None,
-                f"{existing} existing financing row(s) will be replaced by the "
-                f"{len(sheet.rows)} in the file (D-8). These two tables have no natural "
-                "key to match on, so replacement is the only safe operation; rows "
-                "belonging to other projects are never touched.",
+                f"{existing} existing financing row(s) will be DELETED and recreated from the "
+                f"{len(sheet.rows)} in the file (D-8) — this table has no key to match rows on. "
+                f"The workbook has no column for {', '.join(lost)}, so those are cleared on "
+                "every load even where the values above are identical. Rows belonging to "
+                "other projects are never touched.",
             )
         elif existing:
             # An empty sheet means "not supplied", not "wipe this": replace-all
@@ -1654,12 +1693,29 @@ def _parse_milestones(context):
             activity__sub_component__component__project=context.project
         ).count()
         if existing and sheet.rows:
+            lost = _fields_reset_by_replacement(Milestone, MILESTONE_WRITTEN_FIELDS)
             context.warn(
                 SHEET_MILESTONES, None,
-                f"{existing} existing milestone(s) will be replaced by the {len(sheet.rows)} "
-                "in the file (D-8). Milestone has no code column to match on, so "
-                "replacement is the only safe operation; other projects are never touched.",
+                f"{existing} existing milestone(s) will be DELETED and recreated from the "
+                f"{len(sheet.rows)} in the file (D-8) — Milestone has no code column to match "
+                f"rows on. The workbook has no column for {', '.join(lost)}, so those are "
+                "cleared on every load. `is_gate` in particular is what stops an activity "
+                "reaching 100% before its milestone is achieved (RG-5.2), so clearing it "
+                "removes a control, not just a value. Other projects are never touched.",
             )
+            # WorkplanAlert.milestone is CASCADE. The design claimed nothing
+            # referenced Milestone; that was wrong, so the count is checked
+            # rather than assumed, and only reported when it is not zero.
+            alerts = WorkplanAlert.objects.filter(
+                milestone__activity__sub_component__component__project=context.project
+            ).count()
+            if alerts:
+                context.warn(
+                    SHEET_MILESTONES, None,
+                    f"{alerts} workplan alert(s) hang off those milestones and will be "
+                    "DELETED with them (WorkplanAlert.milestone is CASCADE). This is not "
+                    "recoverable from the file.",
+                )
         elif existing:
             context.warn(
                 SHEET_MILESTONES, None,
