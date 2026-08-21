@@ -375,6 +375,66 @@ def test_activityless_milestone_gets_a_declared_placeholder(auth_client, rows):
     assert milestone.category == "contractual"
 
 
+@pytest.mark.django_db
+def test_a_stage_at_or_past_effective_activates_the_workspace(auth_client, rows):
+    """
+    The importer writes `lifecycle_stage` directly, so the SF-4 state machine
+    never runs and never generates the workspace. `ProjectDetail` locks the
+    Workplan and Results tabs on that row, which left everything the import
+    loaded present in the database and unreachable in the interface.
+    """
+    from apps.project.models import Project, ProjectWorkspace
+
+    workbook = build_workbook(rows)  # 01_project declares `implementing`
+    validation = post(auth_client, workbook, mode="validate")
+    assert validation.status_code == 200, validation.data
+    planned = [c for c in validation.data["changes"] if c["sheet"] == "workspace"]
+    assert planned and planned[0]["action"] == "create"
+
+    workbook.seek(0)
+    post(auth_client, workbook, mode="commit",
+         expected_sha256=validation.data["file_sha256"])
+
+    project = Project.objects.get(official_reference_number="REF001")
+    assert ProjectWorkspace.objects.filter(project=project).exists()
+
+    # Idempotent: a second pass reports it as already activated.
+    again = post(auth_client, build_workbook(rows))
+    planned = [c for c in again.data["changes"] if c["sheet"] == "workspace"]
+    assert planned and planned[0]["action"] == "unchanged"
+
+
+@pytest.mark.django_db
+def test_a_stage_before_effective_activates_nothing(auth_client, rows):
+    """Below Effective the workspace is not implied and must not be invented."""
+    rows["01_project"][0][15] = "appraisal"  # lifecycle_stage
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    assert "workspace" not in response.data["summary"]
+
+
+@pytest.mark.django_db
+def test_setting_the_stage_directly_warns_that_no_audit_row_is_written(auth_client, rows):
+    """
+    A project loaded from a file has no transition history. Reconstructing it
+    would invent dates, actors and justifications in the one table whose value
+    is being immutable and true (POL-1.09), so the report says so instead.
+    """
+    from apps.project.models import ProjectStageTransition, Project
+
+    workbook = build_workbook(rows)
+    validation = post(auth_client, workbook, mode="validate")
+    assert any(
+        w["column"] == "lifecycle_stage" for w in validation.data["warnings"]
+    ), messages(validation.data["warnings"])
+
+    workbook.seek(0)
+    post(auth_client, workbook, mode="commit",
+         expected_sha256=validation.data["file_sha256"])
+    project = Project.objects.get(official_reference_number="REF001")
+    assert ProjectStageTransition.objects.filter(project=project).count() == 0
+
+
 def test_the_written_field_sets_name_real_model_fields():
     """
     The replace-all warning subtracts these sets from the model to say what a

@@ -17,11 +17,13 @@ from decimal import Decimal, InvalidOperation
 from openpyxl import load_workbook
 
 from apps.project.models import (
+    LIFECYCLE_ORDER,
     FinancingSource,
     Project,
     ProjectFinancialEnvelope,
     ProjectGadmScope,
     ProjectImplementingPartner,
+    ProjectWorkspace,
     ReportingPeriod,
 )
 from apps.reference.models import (
@@ -70,6 +72,7 @@ SHEET_MILESTONES = "11_milestones"
 SHEET_GADM = "12_gadm_scope"
 SHEET_RESULTS = "13_results_data"
 SHEET_PERIODS = "reporting_periods"  # not a sheet: a side effect (design §7)
+SHEET_WORKSPACE = "workspace"        # not a sheet either: see _plan_workspace
 
 REQUIRED_SHEETS = [
     SHEET_PROJECT,
@@ -450,6 +453,7 @@ def parse(file_obj):
         _parse_milestones(context)
         _parse_gadm(context)
         _plan_reporting_periods(context)
+        _plan_workspace(context)
         _parse_results(context)
         _report_drift(context)
         return plan
@@ -585,6 +589,24 @@ def _parse_project(context):
         value = _read_enum(context, SHEET_PROJECT, row_number, values, column, allowed)
         if value is not None:
             desired[column] = value
+
+    # The import writes `lifecycle_stage` directly. The SF-4 state machine
+    # lives in `transition_stage()`, so nothing it guards runs: no audit row,
+    # no gate prerequisites, no dual authorisation. That is a real gap in what
+    # a loaded project records, and it belongs in the report rather than in a
+    # design note nobody reads at confirm time.
+    stage = desired.get("lifecycle_stage")
+    stored_stage = context.project.lifecycle_stage if context.project else None
+    if stage and stage != stored_stage:
+        context.warn(
+            SHEET_PROJECT, row_number,
+            f"lifecycle_stage is set to {stage!r} directly, without going through the "
+            "SF-4 state machine: no ProjectStageTransition audit row is written, gate "
+            "prerequisites (TRC/IC/BED) are not checked, and no dual authorisation is "
+            "recorded. A project loaded from a file has no transition history — that is "
+            "the honest record, not a defect to be reconstructed.",
+            column="lifecycle_stage",
+        )
 
     # -- numbers and dates ------------------------------------------------
 
@@ -1963,6 +1985,56 @@ def _plan_reporting_periods(context):
         SHEET_PERIODS, ACTION_CREATE, context.project_ref,
         detail=f"{frequency} periods from {first_due.isoformat()} through "
                f"{end_date.isoformat()} (existing periods are kept).",
+        payload={"generate": True},
+    )
+
+
+def _plan_workspace(context):
+    """
+    The workspace `lifecycle_stage` implies but the import does not transition
+    into.
+
+    The importer writes `lifecycle_stage` as a plain field. The SF-4 state
+    machine lives in `transition_stage()`, and so do its side effects — so a
+    file declaring `implementing` produced a project past Effective with no
+    `ProjectWorkspace`, and `ProjectDetail` locks the Workplan and Results
+    tabs on exactly that row. The data was all loaded and none of it was
+    reachable.
+
+    So the workspace is generated here, the same way reporting periods are:
+    a derived effect the file implies, planned by the parser and reported
+    before it happens. `generate_workspace` is idempotent and also locks the
+    ToC and sets the module flags, which is what Effective is supposed to do.
+
+    What is deliberately NOT reconstructed is the audit trail. Synthesising
+    `ProjectStageTransition` rows would invent dates, actors and
+    justifications for transitions that never happened, in the one table
+    whose value is being immutable and true (POL-1.09). A project loaded from
+    a file simply has no transition history, and that is the honest record.
+    """
+    stage = context.project_fields.get("lifecycle_stage") or (
+        context.project.lifecycle_stage if context.project else None
+    )
+    if stage not in LIFECYCLE_ORDER:
+        # Exception stages (suspended / cancelled) imply nothing here.
+        return
+    if LIFECYCLE_ORDER.index(stage) < LIFECYCLE_ORDER.index("effective"):
+        return
+
+    exists = context.project is not None and ProjectWorkspace.objects.filter(
+        project=context.project
+    ).exists()
+    if exists:
+        context.plan.add_change(
+            SHEET_WORKSPACE, ACTION_UNCHANGED, context.project_ref,
+            detail="Project workspace already activated.",
+        )
+        return
+
+    context.plan.add_change(
+        SHEET_WORKSPACE, ACTION_CREATE, context.project_ref,
+        detail=f"Workspace activated: {stage!r} is at or past Effective, and the "
+               "Workplan and Results tabs stay locked without it.",
         payload={"generate": True},
     )
 
