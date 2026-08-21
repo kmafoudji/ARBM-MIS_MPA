@@ -1806,10 +1806,25 @@ def _plan_reporting_periods(context):
         )
         return
 
-    dates_changed = any(
-        field in fields for field in ("start_date", "end_date", "reporting_frequency", "next_reporting_due")
+    # Le calendrier ne bouge que si une des dates qui le determinent bouge
+    # REELLEMENT. Se fier a la presence de la colonne dans le fichier ferait
+    # annoncer une creation a chaque rejeu, alors que rien ne serait ecrit :
+    # le rapport doit dire ce qui va se passer, pas ce qui a ete lu.
+    schedule_fields = {"start_date", "end_date", "reporting_frequency", "next_reporting_due"}
+    project_changes = context.plan.changes_for(SHEET_PROJECT)
+    project_created = bool(project_changes) and project_changes[0].action == ACTION_CREATE
+    dates_changed = project_created or any(
+        diff.field in schedule_fields
+        for change in project_changes
+        for diff in change.diffs
     )
-    if context.project is not None and not dates_changed:
+    # Un projet dont les dates n'ont pas bouge mais qui n'a encore aucune
+    # periode en a tout de meme besoin.
+    has_periods = (
+        context.project is not None
+        and ReportingPeriod.objects.filter(project=context.project).exists()
+    )
+    if context.project is not None and not dates_changed and has_periods:
         context.plan.add_change(
             SHEET_PERIODS, ACTION_UNCHANGED, context.project_ref,
             detail="Calendrier de reporting inchange.",
