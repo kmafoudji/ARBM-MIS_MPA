@@ -1,14 +1,14 @@
 """
-Structures de donnees du plan d'import (design §6).
+Data structures of the import plan (design §6).
 
-Volontairement sans dependance Django : ce module decrit ce qui *va* etre
-fait, pas comment l'ecrire. Il est donc testable seul, et le rapport rendu
-au client est exactement ce que le parser a decide.
+Deliberately free of any Django import: this module describes what *will* be
+done, not how to write it. It is therefore testable on its own, and the
+report handed to the client is exactly what the parser decided.
 """
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-# Actions possibles sur une ligne (design §6).
+# Possible actions on a row (design §6).
 ACTION_CREATE = "create"
 ACTION_UPDATE = "update"
 ACTION_REPLACE = "replace"
@@ -19,7 +19,7 @@ ACTIONS = (ACTION_CREATE, ACTION_UPDATE, ACTION_REPLACE, ACTION_UNCHANGED)
 
 @dataclass
 class FieldDiff:
-    """Ecart sur un champ, porte par une action `update`."""
+    """A difference on one field, carried by an `update` action."""
 
     field: str
     from_value: Any
@@ -32,9 +32,9 @@ class FieldDiff:
 @dataclass
 class PlannedChange:
     """
-    Une ligne du rapport. `target` identifie l'objet en langage humain
-    (code d'activite, reference projet...), pas par cle primaire : le
-    rapport est lu avant que quoi que ce soit existe en base.
+    One line of the report. `target` identifies the object in human terms
+    (activity code, project reference…), never by primary key: the report is
+    read before anything exists.
     """
 
     sheet: str
@@ -42,8 +42,8 @@ class PlannedChange:
     target: str
     detail: str = ""
     diffs: list[FieldDiff] = field(default_factory=list)
-    # Charge utile a ecrire, remplie par le parser et consommee par
-    # l'applier. Jamais serialisee vers le client.
+    # Payload to write, filled by the parser and consumed by the applier.
+    # Never serialised to the client.
     payload: dict = field(default_factory=dict, repr=False)
 
     def to_dict(self):
@@ -61,9 +61,9 @@ class PlannedChange:
 @dataclass
 class ImportIssue:
     """
-    Une erreur (bloquante) ou un avertissement (informatif). Toutes deux
-    portent la feuille et la ligne : un message sans coordonnees n'est pas
-    exploitable dans un classeur de 13 feuilles.
+    An error (blocking) or a warning (informative). Both carry their sheet
+    and row: a message without coordinates is unusable in a 13-sheet
+    workbook.
     """
 
     sheet: str
@@ -82,7 +82,7 @@ class ImportIssue:
 
 @dataclass
 class ImportPlan:
-    """Resultat complet d'une analyse de classeur."""
+    """Complete result of parsing one workbook."""
 
     project_ref: str = ""
     project_exists: bool = False
@@ -90,11 +90,11 @@ class ImportPlan:
     errors: list[ImportIssue] = field(default_factory=list)
     warnings: list[ImportIssue] = field(default_factory=list)
     file_sha256: str = ""
-    # Renseigne par l'applier, apres ecriture.
+    # Filled by the applier, after writing.
     committed: bool = False
     project_id: Optional[int] = None
 
-    # -- construction -----------------------------------------------------
+    # -- building ---------------------------------------------------------
 
     def add_change(self, sheet, action, target, detail="", diffs=None, payload=None):
         change = PlannedChange(
@@ -119,19 +119,19 @@ class ImportPlan:
         return bool(self.errors)
 
     def changes_for(self, sheet, action=None):
-        """Filtre utilise par l'applier pour rejouer le plan feuille par feuille."""
+        """Filter used by the applier to replay the plan sheet by sheet."""
         return [
             c
             for c in self.changes
             if c.sheet == sheet and (action is None or c.action == action)
         ]
 
-    # -- rapport ----------------------------------------------------------
+    # -- report -----------------------------------------------------------
 
     def summary(self):
         """
-        Comptes par feuille et par action (design §6) : l'ecran mene avec
-        une ligne par feuille avant d'ouvrir le detail.
+        Counts by sheet and by action (design §6): the screen leads with one
+        line per sheet before opening the detail.
         """
         by_sheet = {}
         for change in self.changes:

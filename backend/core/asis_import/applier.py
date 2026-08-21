@@ -1,14 +1,14 @@
 """
-Ecriture d'un ImportPlan en base (design §4, §9).
+Writing an ImportPlan to the database (design §4, §9).
 
-Ce module ne valide rien et ne decide rien : il fait confiance au plan. Toute
-question — cette ligne existe-t-elle, cette valeur est-elle acceptable, faut-il
-creer ou mettre a jour — a deja ete tranchee par `parser`. C'est ce qui garantit
-qu'un rapport de validation ne peut pas mentir sur ce qu'un commit ferait.
+This module validates nothing and decides nothing: it trusts the plan. Every
+question — does this row exist, is this value acceptable, create or update —
+has already been settled by `parser`. That is what guarantees a validation
+report cannot lie about what a commit would do.
 
-L'ensemble s'execute dans une seule `transaction.atomic()` (D-2) : la base est
-partagee et un projet a moitie charge est difficile a reparer dans un arbre
-relationnel.
+The whole sequence runs inside a single `transaction.atomic()` (D-2): the
+database is shared and a half-loaded project is hard to repair in a
+relational tree.
 """
 from django.db import transaction
 
@@ -47,16 +47,16 @@ WRITES = (ACTION_CREATE, ACTION_UPDATE, ACTION_REPLACE)
 
 
 class ApplyContext:
-    """Objets ecrits au fil de l'eau, pour que les feuilles suivantes s'y adossent."""
+    """Objects written along the way, so later sheets can hang off them."""
 
     def __init__(self, plan, actor):
         self.plan = plan
         self.actor = actor
         self.project = None
         self.envelope = None
-        self.agencies = {}  # code du fichier -> ImplementingAgency
+        self.agencies = {}  # workbook code -> ImplementingAgency
         self.indicators = {}  # code -> Indicator
-        self.logframe_rows = {}  # code indicateur -> LogframeRow
+        self.logframe_rows = {}  # indicator code -> LogframeRow
         self.components = {}  # code -> WorkplanComponent
         self.sub_components = {}  # code -> WorkplanSubComponent
         self.activities = {}  # code -> Activity
@@ -65,9 +65,9 @@ class ApplyContext:
 @transaction.atomic
 def apply(plan, actor=None):
     """
-    Ecrit le plan et renvoie le Project touche.
+    Write the plan and return the Project it touched.
 
-    Ne doit etre appele que sur un plan sans erreur ; l'endpoint s'en assure.
+    Must only be called on a plan without errors; the endpoint sees to that.
     """
     context = ApplyContext(plan, actor)
 
@@ -96,7 +96,7 @@ def apply(plan, actor=None):
 def _apply_project(context):
     changes = context.plan.changes_for(SHEET_PROJECT)
     if not changes:
-        raise ValueError("Plan sans projet : rien a ecrire.")
+        raise ValueError("Plan without a project: nothing to write.")
     change = changes[0]
     payload = change.payload
     fields = payload.get("fields", {})
@@ -117,8 +117,8 @@ def _apply_project(context):
 
     lead_country_id = payload.get("lead_country_id")
     if lead_country_id:
-        # Une seule ligne chef de file par projet (contrainte du modele) :
-        # on retire le drapeau ailleurs avant de le poser ici.
+        # One lead row per project (model constraint): clear the flag
+        # elsewhere before setting it here.
         ProjectCountry.objects.filter(project=project, is_lead=True).exclude(
             country_id=lead_country_id
         ).update(is_lead=False)
@@ -150,11 +150,11 @@ def _apply_envelope(context):
 
 def _apply_financing(context):
     """
-    Remplacement integral borne au projet (D-8).
+    Replace-all, scoped to the project (D-8).
 
-    Un classeur sans ligne de financement ne vide pas l'existant : une
-    feuille vide veut dire "non fournie", comme une cellule vide. Sans cette
-    reserve, remplacer-tout ferait d'un fichier partiel un effaceur.
+    A workbook with no financing row does not empty what exists: an empty
+    sheet means "not supplied", exactly like an empty cell. Without that
+    reservation, replace-all would turn a partial file into an eraser.
     """
     changes = context.plan.changes_for(SHEET_FINANCING, ACTION_REPLACE)
     if not changes:
@@ -184,8 +184,9 @@ def _apply_donors(context):
         )
         context.project.donors.add(donor)
 
-    # Les bailleurs deja au referentiel sont rattaches au projet sans etre
-    # modifies (design §7 : le catalogue global n'est pas reecrit ici).
+    # Donors already in the reference table are attached to the project
+    # without being modified (design §7: a project file does not rewrite the
+    # global catalogue).
     for change in context.plan.changes_for(SHEET_DONORS, ACTION_UNCHANGED):
         donor = Donor.objects.filter(code__iexact=change.target).first()
         if donor is not None:
@@ -228,9 +229,9 @@ def _apply_partners(context):
 
 def _apply_indicators(context):
     """
-    Les feuilles 07 et 08 sont rejouees dans l'ordre d'emission : indicateur,
-    puis ligne de cadre logique, puis cible. Chaque objet retrouve le
-    precedent par son code, sans que rien n'ait a exister au prealable.
+    Sheets 07 and 08 are replayed in the order they were emitted: indicator,
+    then logframe row, then target. Each object finds the previous one by its
+    code, without anything having to exist beforehand.
     """
     changes = context.plan.changes_for(SHEET_INDICATORS) + context.plan.changes_for(SHEET_TARGETS)
     for change in changes:
@@ -315,8 +316,8 @@ def _apply_components(context):
 def _apply_activities(context):
     for change in context.plan.changes_for(SHEET_ACTIVITIES):
         if change.action not in WRITES:
-            # Une activite inchangee doit tout de meme etre connue : un
-            # jalon peut s'y rattacher.
+            # An unchanged activity still has to be known: a milestone may
+            # hang off it.
             payload = change.payload
             sub = context.sub_components.get(payload.get("sub_component_code"))
             if sub is not None:
@@ -347,8 +348,8 @@ def _apply_activities(context):
 
 def _apply_milestones(context):
     """
-    Remplacement integral borne au projet (D-8). Comme pour le financement,
-    une feuille vide ne vide pas l'existant.
+    Replace-all, scoped to the project (D-8). As with financing, an empty
+    sheet does not empty what exists.
     """
     changes = context.plan.changes_for(SHEET_MILESTONES, ACTION_REPLACE)
     if not changes:
@@ -376,7 +377,7 @@ def _apply_milestones(context):
 
 
 def _placeholder_activity(context):
-    """Activite de rattachement des jalons sans activite (D-10), si le plan en declare une."""
+    """The activity carrying activity-less milestones (D-10), if the plan declares one."""
     from .parser import PLACEHOLDER_ACTIVITY_SUFFIX
 
     for code, activity in context.activities.items():
@@ -404,7 +405,7 @@ def _apply_reporting_periods(context):
     changes = context.plan.changes_for(SHEET_PERIODS)
     if not changes or changes[0].action not in WRITES:
         return
-    # Idempotent : ne cree que les periodes manquantes, aucune au-dela de end_date.
+    # Idempotent: creates only the missing periods, none beyond end_date.
     generate_reporting_periods(context.project)
 
 

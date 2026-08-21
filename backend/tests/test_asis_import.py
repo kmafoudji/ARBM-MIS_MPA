@@ -1,10 +1,9 @@
 """
-Tests de l'import AS-IS (core/asis_import) — design §12.
+Tests for the AS-IS import (core/asis_import) — design §12.
 
-Les classeurs sont construits en memoire par `build_workbook`, qui reproduit
-la forme des fichiers reels : treize feuilles, en-tetes annotes, et une ligne
-de note sur certaines feuilles seulement — c'est ce qui exerce la detection
-de la ligne d'en-tete.
+The workbooks are built in memory by `build_workbook`, which reproduces the
+shape of the real files: thirteen sheets, annotated headers, and a note row
+on some sheets only — which is what exercises the header-row detection.
 """
 import io
 
@@ -23,8 +22,8 @@ from tests.factories import (
 
 ENDPOINT = "/api/import/asis/"
 
-# Feuilles dont la ligne 1 porte une note, comme dans les classeurs reels.
-# 02a_envelope, 03_donors et 04_agencies commencent par leur en-tete.
+# Sheets whose row 1 carries a note, as in the real workbooks.
+# 02a_envelope, 03_donors and 04_agencies start with their header.
 SHEETS_WITH_NOTE = {
     "01_project",
     "02_financing_source",
@@ -77,35 +76,37 @@ SHEET_ORDER = [
     "12_gadm_scope", "13_results_data", "99_Parked",
 ]
 
+PROJECT_NAME = "Test project"
+
 
 def base_rows(country_iso3, hub_code, sector_code):
-    """Un projet coherent et minimal : le point de depart de chaque test."""
+    """A coherent, minimal project: the starting point of every test."""
     return {
         "01_project": [[
-            "REF001", "Projet de test", "PT", country_iso3, hub_code, sector_code,
+            "REF001", PROJECT_NAME, "TP", country_iso3, hub_code, sector_code,
             1, "2; 5", "", "rural", "moderate", 1000, "USD", "quarterly",
             "2025-03-31", "implementing", "2025-01-01", "2026-12-31",
         ]],
-        "02a_envelope": [["REF001", "Note d'enveloppe"]],
+        "02a_envelope": [["REF001", "Envelope note"]],
         "02_financing_source": [
-            ["llf", "grant", 400, "USD", 400, "Part don"],
-            ["isdb_oc", "loan", 600, "USD", 600, "Part prêt"],
+            ["llf", "grant", 400, "USD", 400, "Grant share"],
+            ["isdb_oc", "loan", 600, "USD", 600, "Loan share"],
         ],
-        "03_donors": [["TESTDONOR", "Bailleur de test"]],
-        "04_agencies": [["TEST-AG", "Agence de test", "government"]],
+        "03_donors": [["TESTDONOR", "Test donor"]],
+        "04_agencies": [["TEST-AG", "Test agency", "government"]],
         "05_project_partners": [["TEST-AG", "lead", "Yes"]],
         "07_indicators_logframe": [[
-            "REF001-IND-01", "output", sector_code, "Indicateur de test",
+            "REF001-IND-01", "output", sector_code, "Test indicator",
             "Definition", "Hectares", "increase", 0, 2024, 100, "2026-12-31",
             "annual", "REF001-OUT-1",
         ]],
         "08_logframe_targets": [],
         "09_components": [
-            ["REF001-C1", "", "Component", 1, "Composante 1"],
-            ["REF001-C1.1", "REF001-C1", "Sub-component", 1, "Sous-composante 1.1"],
+            ["REF001-C1", "", "Component", 1, "Component 1"],
+            ["REF001-C1.1", "REF001-C1", "Sub-component", 1, "Sub-component 1.1"],
         ],
         "10_activities": [[
-            "REF001-A1", "REF001-C1.1", "Activite de test",
+            "REF001-A1", "REF001-C1.1", "Test activity",
             "2025-01-01", "2026-12-31", "2025-01-01", "2026-12-31",
             "not_started", 500, "",
         ]],
@@ -116,16 +117,16 @@ def base_rows(country_iso3, hub_code, sector_code):
 
 
 def build_workbook(rows):
-    """Serialise `rows` en classeur xlsx et renvoie un fichier en memoire."""
+    """Serialise `rows` into an xlsx workbook and return an in-memory file."""
     book = Workbook()
     book.remove(book.active)
     for name in SHEET_ORDER:
         sheet = book.create_sheet(name)
         if name not in HEADERS:
-            sheet.append([f"Feuille {name} — ignoree par l'import."])
+            sheet.append([f"Sheet {name} — ignored by the import."])
             continue
         if name in SHEETS_WITH_NOTE:
-            sheet.append([f"Note de la feuille {name}."])
+            sheet.append([f"Note for sheet {name}."])
         sheet.append(HEADERS[name])
         for row in rows.get(name, []):
             sheet.append(row)
@@ -137,7 +138,7 @@ def build_workbook(rows):
 
 @pytest.fixture
 def reference_data(db):
-    """Referentiel minimal : le parser resout ses FK contre la base reelle."""
+    """Minimal reference tables: the parser resolves its FKs against the real database."""
     country = CountryFactory(iso3="TST", iso2="TS")
     hub = HubFactory(code="hub-test")
     sector = SectorFactory(code="sector-test")
@@ -175,7 +176,7 @@ def messages(items):
 
 
 # ---------------------------------------------------------------------------
-# Analyse
+# Parsing
 # ---------------------------------------------------------------------------
 
 
@@ -192,7 +193,7 @@ def test_valid_workbook_validates_without_errors(auth_client, rows):
 
 @pytest.mark.django_db
 def test_enum_outside_model_choices_is_an_error(auth_client, rows):
-    """Design §8 : une valeur qui n'est pas un litteral du modele bloque."""
+    """Design §8: a value that is not a model literal blocks the import."""
     rows["10_activities"][0][7] = "Delayed"  # status
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 422
@@ -204,7 +205,7 @@ def test_enum_outside_model_choices_is_an_error(auth_client, rows):
 
 @pytest.mark.django_db
 def test_unresolved_internal_reference_is_an_error(auth_client, rows):
-    """Une activite qui nomme un sous-composant absent de 09_components."""
+    """An activity naming a sub-component absent from 09_components."""
     rows["10_activities"][0][1] = "REF001-C9.9"
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 422
@@ -215,8 +216,8 @@ def test_unresolved_internal_reference_is_an_error(auth_client, rows):
 
 @pytest.mark.django_db
 def test_financing_must_reconcile_to_budget_amount(auth_client, rows):
-    """VAL015 : la somme des lignes doit reconstituer budget_amount."""
-    rows["02_financing_source"][0][4] = 300  # amount_usd : 300 + 600 != 1000
+    """VAL015: the financing rows must add back up to budget_amount."""
+    rows["02_financing_source"][0][4] = 300  # amount_usd: 300 + 600 != 1000
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 422
     assert "VAL015" in messages(response.data["errors"])
@@ -234,10 +235,10 @@ def test_end_date_before_start_date_is_an_error(auth_client, rows):
 @pytest.mark.django_db
 def test_unresolved_gadm_area_warns_and_does_not_block(auth_client, rows):
     """
-    D-9 : les classeurs decrivent des niveaux que le referentiel GADM charge
-    ne connait pas. On signale la lacune et on charge le reste.
+    D-9: the workbooks describe levels the loaded GADM reference does not
+    know. The gap is reported and the rest of the file is loaded.
     """
-    rows["12_gadm_scope"] = [["ADM3", "Province", "District", "Chefferie", "site S01"]]
+    rows["12_gadm_scope"] = [["ADM3", "Province", "District", "Chiefdom", "site S01"]]
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 200, response.data
     assert any(
@@ -247,15 +248,15 @@ def test_unresolved_gadm_area_warns_and_does_not_block(auth_client, rows):
 
 
 # ---------------------------------------------------------------------------
-# Ecriture
+# Writing
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 def test_commit_writes_then_revalidation_reports_unchanged(auth_client, rows):
     """
-    La preuve que l'upsert fonctionne (design §12, etape 4) : rejouer le
-    meme fichier ne doit plus rien changer.
+    The proof that the upsert works (design §12, step 4): replaying the same
+    file must change nothing.
     """
     from apps.project.models import Project
     from apps.workplan.models import Activity
@@ -285,8 +286,8 @@ def test_commit_writes_then_revalidation_reports_unchanged(auth_client, rows):
     actions = {
         change["action"]
         for change in again.data["changes"]
-        # Le financement et les jalons sont en remplacement integral par
-        # construction (D-8) : ils ne peuvent pas se declarer `unchanged`.
+        # Financing and milestones are replace-all by construction (D-8):
+        # they cannot report themselves as unchanged.
         if change["sheet"] not in ("02_financing_source", "11_milestones")
     }
     assert actions == {"unchanged"}, again.data["changes"]
@@ -294,31 +295,32 @@ def test_commit_writes_then_revalidation_reports_unchanged(auth_client, rows):
 
 @pytest.mark.django_db
 def test_update_reports_a_field_level_diff(auth_client, rows):
-    """Design §6 : une action `update` porte l'ecart champ par champ."""
+    """Design §6: an `update` action carries the difference field by field."""
     workbook = build_workbook(rows)
     validation = post(auth_client, workbook, mode="validate")
     workbook.seek(0)
     post(auth_client, workbook, mode="commit",
          expected_sha256=validation.data["file_sha256"])
 
-    rows["01_project"][0][1] = "Projet de test renomme"
+    renamed = f"{PROJECT_NAME} renamed"
+    rows["01_project"][0][1] = renamed
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 200
     change = next(c for c in response.data["changes"] if c["sheet"] == "01_project")
     assert change["action"] == "update"
     diff = next(d for d in change["diffs"] if d["field"] == "name")
-    assert diff["from"] == "Projet de test"
-    assert diff["to"] == "Projet de test renomme"
+    assert diff["from"] == PROJECT_NAME
+    assert diff["to"] == renamed
 
 
 @pytest.mark.django_db
 def test_blank_cell_never_clears_a_stored_value(auth_client, rows):
     """
-    Regle du parser : une cellule vide veut dire "non renseignee".
+    The parser's rule: an empty cell means "not supplied".
 
-    Les classeurs AS-IS laissent des colonnes de classification vides
-    deliberement ; sans cette regle, le premier commit effacerait ce que
-    l'interface contient deja.
+    The AS-IS workbooks leave classification columns empty deliberately;
+    without this rule the first commit would erase what the interface
+    already holds.
     """
     from apps.project.models import Project
 
@@ -329,7 +331,7 @@ def test_blank_cell_never_clears_a_stored_value(auth_client, rows):
          expected_sha256=validation.data["file_sha256"])
     assert Project.objects.get(official_reference_number="REF001").risk_rating == "moderate"
 
-    rows["01_project"][0][10] = ""  # risk_rating vide
+    rows["01_project"][0][10] = ""  # risk_rating left empty
     workbook = build_workbook(rows)
     validation = post(auth_client, workbook, mode="validate")
     assert validation.status_code == 200
@@ -345,13 +347,13 @@ def test_blank_cell_never_clears_a_stored_value(auth_client, rows):
 @pytest.mark.django_db
 def test_activityless_milestone_gets_a_declared_placeholder(auth_client, rows):
     """
-    D-10 : Milestone.activity est un FK obligatoire. L'activite de
-    rattachement est creee, et sa creation figure au rapport.
+    D-10: Milestone.activity is a required FK. The placeholder activity is
+    created, and its creation appears in the report.
     """
     from apps.workplan.models import Milestone
 
     rows["11_milestones"] = [[
-        "REF001-M01", "", "Signature de l'accord de financement",
+        "REF001-M01", "", "Financing agreement signature",
         "2025-02-01", "", "", "pending",
     ]]
     workbook = build_workbook(rows)
@@ -368,7 +370,7 @@ def test_activityless_milestone_gets_a_declared_placeholder(auth_client, rows):
     commit = post(auth_client, workbook, mode="commit",
                   expected_sha256=validation.data["file_sha256"])
     assert commit.status_code == 200, commit.data
-    milestone = Milestone.objects.get(name="Signature de l'accord de financement")
+    milestone = Milestone.objects.get(name="Financing agreement signature")
     assert milestone.activity.code.endswith("-A-MILESTONES")
     assert milestone.category == "contractual"
 
@@ -376,12 +378,12 @@ def test_activityless_milestone_gets_a_declared_placeholder(auth_client, rows):
 @pytest.mark.django_db
 def test_existing_donor_is_matched_case_insensitively(auth_client, rows):
     """
-    La base porte `isdb`, les classeurs ecrivent `ISDB`. Un rapprochement
-    litteral creerait un doublon d'une ligne de referentiel deja presente.
+    The database holds `isdb`, the workbooks write `ISDB`. A literal match
+    would duplicate a reference row that already exists.
     """
     from apps.reference.models import Donor
 
-    Donor.objects.create(code="testdonor", name="Bailleur deja au referentiel")
+    Donor.objects.create(code="testdonor", name="Donor already in the reference table")
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 200
     change = next(c for c in response.data["changes"] if c["sheet"] == "03_donors")
@@ -397,8 +399,8 @@ def test_existing_donor_is_matched_case_insensitively(auth_client, rows):
 @pytest.mark.django_db
 def test_commit_with_a_mismatched_hash_returns_409(auth_client, rows):
     """
-    D-4 : rien n'est stocke entre les deux appels, donc l'echo de hash est
-    ce qui empeche de valider le fichier A puis de confirmer le B.
+    D-4: nothing is stored between the two calls, so the hash echo is what
+    stops someone validating file A and confirming file B.
     """
     from apps.project.models import Project
 
@@ -418,9 +420,9 @@ def test_commit_without_a_hash_is_refused(auth_client, rows):
 
 @pytest.mark.django_db
 def test_a_file_that_is_not_a_zip_is_refused(auth_client):
-    """Design §11 : la signature est verifiee sur le contenu, pas sur l'annonce."""
-    fake = io.BytesIO(b"Ceci n'est pas un classeur.")
-    fake.name = "faux.xlsx"
+    """Design §11: the signature is checked on the content, not on the claim."""
+    fake = io.BytesIO(b"This is not a workbook.")
+    fake.name = "fake.xlsx"
     response = auth_client.post(
         ENDPOINT, {"file": fake, "mode": "validate"}, format="multipart"
     )
@@ -437,7 +439,7 @@ def test_a_workbook_missing_sheets_is_refused(auth_client):
     buffer.seek(0)
     response = post(auth_client, buffer)
     assert response.status_code == 422
-    assert "Feuilles absentes" in messages(response.data["errors"])
+    assert "Sheets missing" in messages(response.data["errors"])
 
 
 @pytest.mark.django_db
