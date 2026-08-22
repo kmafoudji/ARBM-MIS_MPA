@@ -16,11 +16,14 @@ const ENDPOINT = "/api/import/asis/";
 const ACTION_STYLE = {
   create:    { label: "Created",   color: "#16a34a", bg: "#dcfce7" },
   update:    { label: "Updated",   color: "#d97706", bg: "#fef9c3" },
+  // The only destructive action, and the only one coloured as a warning:
+  // rows the file dropped from a table that has no key to match on.
+  delete:    { label: "Deleted",   color: "#dc2626", bg: "#fee2e2" },
   replace:   { label: "Replaced",  color: "#6366f1", bg: "#e0e7ff" },
   unchanged: { label: "Unchanged", color: "#6b7280", bg: "#f3f4f6" },
 };
 
-const ACTION_ORDER = ["create", "update", "replace", "unchanged"];
+const ACTION_ORDER = ["create", "update", "delete", "replace", "unchanged"];
 
 /** The report arrives in the response body, including on a 422. */
 function reportFrom(error) {

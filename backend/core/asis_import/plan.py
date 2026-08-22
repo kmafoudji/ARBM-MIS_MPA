@@ -13,8 +13,13 @@ ACTION_CREATE = "create"
 ACTION_UPDATE = "update"
 ACTION_REPLACE = "replace"
 ACTION_UNCHANGED = "unchanged"
+# `delete` exists for the two tables with no key, which are synced by content
+# rather than matched by identifier. Removals there are real and have to be
+# visible; folding them into `replace` would hide them behind a word that
+# sounds reversible.
+ACTION_DELETE = "delete"
 
-ACTIONS = (ACTION_CREATE, ACTION_UPDATE, ACTION_REPLACE, ACTION_UNCHANGED)
+ACTIONS = (ACTION_CREATE, ACTION_UPDATE, ACTION_REPLACE, ACTION_DELETE, ACTION_UNCHANGED)
 
 
 @dataclass
