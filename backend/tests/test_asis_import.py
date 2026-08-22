@@ -283,13 +283,10 @@ def test_commit_writes_then_revalidation_reports_unchanged(auth_client, rows):
     again = post(auth_client, workbook, mode="validate")
     assert again.status_code == 200
     assert again.data["project_exists"] is True
-    actions = {
-        change["action"]
-        for change in again.data["changes"]
-        # Financing and milestones are replace-all by construction (D-8):
-        # they cannot report themselves as unchanged.
-        if change["sheet"] not in ("02_financing_source", "11_milestones")
-    }
+    # Every sheet, with no exception. Financing and milestones used to be
+    # excluded here because replace-all could not report itself as unchanged;
+    # syncing them by content is what removed that exception.
+    actions = {change["action"] for change in again.data["changes"]}
     assert actions == {"unchanged"}, again.data["changes"]
 
 
@@ -462,29 +459,122 @@ def test_the_written_field_sets_name_real_model_fields():
     assert "is_gate" in _fields_reset_by_replacement(Milestone, MILESTONE_WRITTEN_FIELDS)
 
 
-@pytest.mark.django_db
-def test_replacing_milestones_warns_about_the_fields_it_clears(auth_client, rows):
-    """
-    An operator about to confirm an irreversible write is told what is lost,
-    not merely that rows are replaced.
-    """
-    rows["11_milestones"] = [[
-        "REF001-M01", "", "Financing agreement signature",
-        "2025-02-01", "", "", "pending",
-    ]]
-    workbook = build_workbook(rows)
-    validation = post(auth_client, workbook, mode="validate")
-    workbook.seek(0)
-    post(auth_client, workbook, mode="commit",
-         expected_sha256=validation.data["file_sha256"])
+MILESTONE_ROW = [
+    "REF001-M01", "", "Financing agreement signature",
+    "2025-02-01", "", "", "pending",
+]
 
-    # Second pass: milestones now exist, so the replacement warning fires.
+
+def commit_once(client, rows):
+    """Validate then commit, returning the committed report."""
+    workbook = build_workbook(rows)
+    validation = post(client, workbook, mode="validate")
+    assert validation.status_code == 200, validation.data
+    workbook.seek(0)
+    committed = post(client, workbook, mode="commit",
+                     expected_sha256=validation.data["file_sha256"])
+    assert committed.status_code == 200, committed.data
+    return committed
+
+
+@pytest.mark.django_db
+def test_an_unchanged_reload_warns_about_nothing_and_touches_nothing(auth_client, rows):
+    """
+    The point of syncing by content: a file that has not changed costs
+    nothing. No warning, no write, and the stored rows keep their identity.
+    """
+    from apps.project.models import FinancingSource, Project
+    from apps.workplan.models import Milestone
+
+    rows["11_milestones"] = [list(MILESTONE_ROW)]
+    commit_once(auth_client, rows)
+
+    project = Project.objects.get(official_reference_number="REF001")
+    before_financing = set(
+        FinancingSource.objects.filter(envelope__project=project).values_list("pk", flat=True)
+    )
+    before_milestones = set(
+        Milestone.objects.filter(
+            activity__sub_component__component__project=project
+        ).values_list("pk", flat=True)
+    )
+
     again = post(auth_client, build_workbook(rows))
     assert again.status_code == 200
     text = messages(again.data["warnings"])
-    assert "DELETED and recreated" in text
-    assert "is_gate" in text
-    assert "evidence_url" in text
+    assert "will be deleted" not in text
+
+    commit_once(auth_client, rows)
+    assert before_financing == set(
+        FinancingSource.objects.filter(envelope__project=project).values_list("pk", flat=True)
+    )
+    assert before_milestones == set(
+        Milestone.objects.filter(
+            activity__sub_component__component__project=project
+        ).values_list("pk", flat=True)
+    )
+
+
+@pytest.mark.django_db
+def test_hand_edited_fields_survive_an_unchanged_reload(auth_client, rows):
+    """
+    `donor` and `is_gate` have no column in the workbook. Under replace-all
+    they were cleared on every load; rows that do not change are now left
+    alone, so they survive. `is_gate` is a control, not just a value — it is
+    what stops an activity reaching 100% before its milestone (RG-5.2).
+    """
+    from apps.project.models import FinancingSource, Project
+    from apps.reference.models import Donor
+    from apps.workplan.models import Milestone
+
+    rows["11_milestones"] = [list(MILESTONE_ROW)]
+    commit_once(auth_client, rows)
+    project = Project.objects.get(official_reference_number="REF001")
+
+    donor = Donor.objects.create(code="handpicked", name="Entered through the interface")
+    financing = FinancingSource.objects.filter(envelope__project=project).first()
+    financing.donor = donor
+    financing.save()
+    milestone = Milestone.objects.filter(
+        activity__sub_component__component__project=project
+    ).first()
+    milestone.is_gate = True
+    milestone.evidence_url = "https://example.test/evidence.pdf"
+    milestone.save()
+
+    commit_once(auth_client, rows)
+
+    financing.refresh_from_db()
+    milestone.refresh_from_db()
+    assert financing.donor == donor
+    assert milestone.is_gate is True
+    assert milestone.evidence_url == "https://example.test/evidence.pdf"
+
+
+@pytest.mark.django_db
+def test_a_changed_row_is_one_delete_and_one_create(auth_client, rows):
+    """
+    Without a key there is no way to recognise a changed row as the same row,
+    so it is removed and written again — but only that row. The others stay
+    untouched, which is the whole difference from replace-all.
+    """
+    rows["02_financing_source"] = [
+        ["llf", "grant", 400, "USD", 400, "Grant share"],
+        ["isdb_oc", "loan", 600, "USD", 600, "Loan share"],
+    ]
+    commit_once(auth_client, rows)
+
+    # The note changes; the amounts still reconcile, so VAL015 stays happy.
+    rows["02_financing_source"][1][5] = "Loan share — renegotiated"
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    counts = response.data["summary"]["02_financing_source"]
+    assert counts["create"] == 1
+    assert counts["delete"] == 1
+    assert counts["unchanged"] == 1
+    text = messages(response.data["warnings"])
+    assert "is_gate" not in text  # the milestone warning must not fire here
+    assert "1 financing row(s) will be deleted and 1 created" in text
 
 
 @pytest.mark.django_db
@@ -514,6 +604,13 @@ def test_replacing_milestones_warns_when_alerts_hang_off_them(auth_client, rows)
         message="Milestone due in 30 days.",
     )
 
+    # Unchanged file: the milestone is not deleted, so nothing is at risk.
+    quiet = post(auth_client, build_workbook(rows))
+    assert "workplan alert(s)" not in messages(quiet.data["warnings"])
+
+    # Change the milestone: now it is deleted and recreated, and the alert
+    # goes with it (WorkplanAlert.milestone is CASCADE).
+    rows["11_milestones"][0][6] = "achieved"
     again = post(auth_client, build_workbook(rows))
     assert again.status_code == 200
     assert "workplan alert(s)" in messages(again.data["warnings"])
