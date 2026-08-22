@@ -48,7 +48,7 @@ from apps.workplan.models import (
 from . import vocab
 from .plan import (
     ACTION_CREATE,
-    ACTION_REPLACE,
+    ACTION_DELETE,
     ACTION_UNCHANGED,
     ACTION_UPDATE,
     FieldDiff,
@@ -131,6 +131,96 @@ MILESTONE_WRITTEN_FIELDS = {
 
 # Bookkeeping columns: resetting them is noise, not a loss worth reporting.
 _HOUSEKEEPING_FIELDS = {"id", "created_at", "updated_at"}
+
+
+def _signature(values):
+    """
+    A hashable, normalised fingerprint of one row.
+
+    Normalisation is the whole trick. Comparing these tables by hand on
+    21 August 2026 reported six false differences purely because the file
+    yields `Decimal('7000000')` and the column stores `Decimal('7000000.00')`.
+    Anything that reduces to the same number, date or text has to reduce to
+    the same tuple, or nothing ever matches and the sync silently degrades
+    back into replace-all.
+    """
+    out = []
+    for value in values:
+        if value is None:
+            out.append(None)
+        elif isinstance(value, Decimal):
+            out.append(Decimal(str(value)).normalize())
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            out.append(Decimal(str(value)).normalize())
+        elif isinstance(value, datetime):
+            out.append(value.date())
+        else:
+            out.append(value)
+    return tuple(out)
+
+
+def _sync_by_content(context, sheet_name, file_rows, stored_rows):
+    """
+    Match rows by what they contain, for the two tables that have no key.
+
+    `FinancingSource` and `Milestone` cannot be matched by identifier, so the
+    importer used to delete every row of the project and write the file's
+    rows back. That reported `replace` on every load even when nothing had
+    changed, and it reset the fields the workbook has no column for — `donor`,
+    `is_gate`, the evidence links — on rows that were identical.
+
+    Comparing content instead: identical rows are left alone, and only what
+    genuinely differs is written. Multisets rather than sets, so two rows that
+    are identical in every compared field are handled by count instead of
+    collapsing into one.
+
+    `file_rows`   -> [(signature, target, detail, payload)]
+    `stored_rows` -> [(signature, pk, target, detail)]
+
+    Returns (created, deleted, unchanged) counts so the caller can warn in
+    proportion to what actually happens.
+    """
+    from collections import Counter
+
+    file_bag = Counter(sig for sig, *_ in file_rows)
+    stored_bag = Counter(sig for sig, *_ in stored_rows)
+    matched = file_bag & stored_bag  # multiset intersection
+
+    remaining = Counter(matched)
+    unchanged = 0
+    for sig, target, detail, _payload in file_rows:
+        if remaining[sig]:
+            remaining[sig] -= 1
+            context.plan.add_change(
+                sheet_name, ACTION_UNCHANGED, target, detail=detail,
+            )
+            unchanged += 1
+
+    remaining = Counter(matched)
+    created = 0
+    for sig, target, detail, payload in file_rows:
+        if remaining[sig]:
+            remaining[sig] -= 1
+            continue
+        context.plan.add_change(
+            sheet_name, ACTION_CREATE, target, detail=detail, payload=payload,
+        )
+        created += 1
+
+    remaining = Counter(matched)
+    deleted = []
+    for sig, pk, target, detail in stored_rows:
+        if remaining[sig]:
+            remaining[sig] -= 1
+            continue
+        context.plan.add_change(
+            sheet_name, ACTION_DELETE, target,
+            detail=f"{detail} — in the tool, absent from the file",
+            payload={"existing_pk": pk},
+        )
+        deleted.append(pk)
+
+    return created, deleted, unchanged
 
 
 def _fields_reset_by_replacement(model, written):
@@ -755,17 +845,20 @@ def _parse_envelope(context):
 
 def _parse_financing(context):
     """
-    Replace-all, scoped to the project being loaded (D-8).
+    Synced by content, scoped to the project being loaded (D-8).
 
     FinancingSource has no natural key: SLE1013 carries two co_financing +
-    loan rows that only their note tells apart. So every row of THIS project
-    is replaced, never another project's.
+    loan rows that only their note tells apart. So rows cannot be matched by
+    identifier — they are matched by what they contain instead. Identical
+    rows are left alone; only genuine differences are written. Rows belonging
+    to other projects are never touched.
     """
     sheet = context.reader.read(SHEET_FINANCING)
     if sheet is None:
         return
 
     total = Decimal("0")
+    file_rows = []
     for row_number, values in sheet.rows:
         source = _read_enum(context, SHEET_FINANCING, row_number, values, "source", vocab.FINANCING_SOURCES)
         instrument = _read_enum(
@@ -805,20 +898,23 @@ def _parse_financing(context):
                 column="note",
             )
 
-        context.plan.add_change(
-            SHEET_FINANCING, ACTION_REPLACE,
+        label = note[:200]
+        order = len(file_rows)
+        payload = {
+            "source": source,
+            "instrument": instrument,
+            "amount": amount,
+            "amount_usd": amount_usd,
+            "currency_code": currency_code,
+            "label": label,
+            "order": order,
+        }
+        file_rows.append((
+            _signature((source, instrument, amount, amount_usd, currency_code, label, order)),
             f"{source or '?'} / {instrument or '?'}",
-            detail=f"{amount_usd:,.0f} USD — {note}" if amount_usd is not None else note,
-            payload={
-                "source": source,
-                "instrument": instrument,
-                "amount": amount,
-                "amount_usd": amount_usd,
-                "currency_code": currency_code,
-                "label": note[:200],
-                "order": len(context.plan.changes_for(SHEET_FINANCING)),
-            },
-        )
+            f"{amount_usd:,.0f} USD — {note}" if amount_usd is not None else note,
+            payload,
+        ))
 
     # VAL015 — the financing rows must reconcile to the budget.
     if sheet.rows and context.budget_amount is not None and total != context.budget_amount:
@@ -828,25 +924,44 @@ def _parse_financing(context):
             f"budget_amount is {context.budget_amount:,.2f} USD.",
         )
 
+    stored_rows = []
     if context.project is not None:
-        existing = FinancingSource.objects.filter(envelope__project=context.project).count()
-        if existing and sheet.rows:
-            lost = _fields_reset_by_replacement(FinancingSource, FINANCING_WRITTEN_FIELDS)
+        for row in FinancingSource.objects.filter(
+            envelope__project=context.project
+        ).select_related("currency").order_by("order", "pk"):
+            stored_rows.append((
+                _signature((
+                    row.source, row.instrument, row.amount, row.amount_usd,
+                    row.currency_id, row.label, row.order,
+                )),
+                row.pk,
+                f"{row.source} / {row.instrument}",
+                f"{row.amount_usd:,.0f} USD — {row.label}",
+            ))
+
+    # An empty sheet means "not supplied", not "wipe this": a partial file
+    # must never become an eraser.
+    if not sheet.rows:
+        if stored_rows:
             context.warn(
                 SHEET_FINANCING, None,
-                f"{existing} existing financing row(s) will be DELETED and recreated from the "
-                f"{len(sheet.rows)} in the file (D-8) — this table has no key to match rows on. "
-                f"The workbook has no column for {', '.join(lost)}, so those are cleared on "
-                "every load even where the values above are identical. Rows belonging to "
-                "other projects are never touched.",
+                f"Sheet is empty; the {len(stored_rows)} existing financing row(s) are kept.",
             )
-        elif existing:
-            # An empty sheet means "not supplied", not "wipe this": replace-all
-            # must not turn a partial file into an eraser.
-            context.warn(
-                SHEET_FINANCING, None,
-                f"Sheet is empty; the {existing} existing financing row(s) are kept.",
-            )
+        return
+
+    created, deleted, unchanged = _sync_by_content(
+        context, SHEET_FINANCING, file_rows, stored_rows
+    )
+    if created or deleted:
+        lost = _fields_reset_by_replacement(FinancingSource, FINANCING_WRITTEN_FIELDS)
+        context.warn(
+            SHEET_FINANCING, None,
+            f"{len(deleted)} financing row(s) will be deleted and {created} created; "
+            f"{unchanged} are identical and will not be touched. This table has no key, "
+            "so a row whose values changed cannot be recognised as the same row — it is "
+            f"removed and written again, losing {', '.join(lost)}, which the workbook has "
+            "no column for. Rows belonging to other projects are never touched.",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1610,8 +1725,9 @@ PLACEHOLDER_ACTIVITY_NAME = "Project milestones (placeholder activity)"
 
 def _parse_milestones(context):
     """
-    Replace-all, scoped to the project (D-8): Milestone has no code column,
-    therefore no key to match on.
+    Synced by content, scoped to the project (D-8): Milestone has no code
+    column, therefore no key to match on — so rows are matched by what they
+    contain, and identical ones are left where they are.
 
     D-10: `Milestone.activity` is a required FK, and the six SLE1013
     milestones have no activity. They attach to a placeholder activity,
@@ -1622,6 +1738,8 @@ def _parse_milestones(context):
     if sheet is None:
         return
 
+    placeholder_code = _placeholder_activity_code(context)
+    file_rows = []
     for row_number, values in sheet.rows:
         milestone_id = as_text(values.get("milestone_id"))
         name = as_text(values.get("name"))
@@ -1683,18 +1801,28 @@ def _parse_milestones(context):
                 column="baseline_date",
             )
 
-        context.plan.add_change(
-            SHEET_MILESTONES, ACTION_REPLACE, milestone_id or name, detail=name[:120],
-            payload={
-                "name": name,
-                "category": vocab.DEFAULT_MILESTONE_CATEGORY,
-                "planned_date": planned_date,
-                "actual_date": actual_date,
-                "status": status,
-                "activity_code": activity_code,
-                "order": row_number,
-            },
-        )
+        # An empty activity_id resolves to the D-10 placeholder, and the
+        # signature has to use the resolved code: the same milestone name on
+        # two different activities is two different rows.
+        resolved_activity = activity_code or placeholder_code
+        payload = {
+            "name": name,
+            "category": vocab.DEFAULT_MILESTONE_CATEGORY,
+            "planned_date": planned_date,
+            "actual_date": actual_date,
+            "status": status,
+            "activity_code": activity_code,
+            "order": row_number,
+        }
+        file_rows.append((
+            _signature((
+                name, vocab.DEFAULT_MILESTONE_CATEGORY, planned_date, actual_date,
+                status, resolved_activity, row_number,
+            )),
+            milestone_id or name,
+            name[:120],
+            payload,
+        ))
 
     if sheet.rows:
         # The workbook has no `category` column and the model requires one:
@@ -1710,39 +1838,68 @@ def _parse_milestones(context):
     if context.has_activityless_milestone:
         _plan_placeholder_activity(context)
 
+    stored_rows = []
     if context.project is not None:
-        existing = Milestone.objects.filter(
+        for row in Milestone.objects.filter(
             activity__sub_component__component__project=context.project
-        ).count()
-        if existing and sheet.rows:
-            lost = _fields_reset_by_replacement(Milestone, MILESTONE_WRITTEN_FIELDS)
+        ).select_related("activity").order_by("order", "pk"):
+            stored_rows.append((
+                _signature((
+                    row.name, row.category, row.planned_date, row.actual_date,
+                    row.status, row.activity.code, row.order,
+                )),
+                row.pk,
+                row.name[:60],
+                f"{row.planned_date.isoformat()} · {row.status}",
+            ))
+
+    if not sheet.rows:
+        if stored_rows:
             context.warn(
                 SHEET_MILESTONES, None,
-                f"{existing} existing milestone(s) will be DELETED and recreated from the "
-                f"{len(sheet.rows)} in the file (D-8) — Milestone has no code column to match "
-                f"rows on. The workbook has no column for {', '.join(lost)}, so those are "
-                "cleared on every load. `is_gate` in particular is what stops an activity "
-                "reaching 100% before its milestone is achieved (RG-5.2), so clearing it "
-                "removes a control, not just a value. Other projects are never touched.",
+                f"Sheet is empty; the {len(stored_rows)} existing milestone(s) are kept.",
             )
-            # WorkplanAlert.milestone is CASCADE. The design claimed nothing
-            # referenced Milestone; that was wrong, so the count is checked
-            # rather than assumed, and only reported when it is not zero.
-            alerts = WorkplanAlert.objects.filter(
-                milestone__activity__sub_component__component__project=context.project
-            ).count()
-            if alerts:
-                context.warn(
-                    SHEET_MILESTONES, None,
-                    f"{alerts} workplan alert(s) hang off those milestones and will be "
-                    "DELETED with them (WorkplanAlert.milestone is CASCADE). This is not "
-                    "recoverable from the file.",
-                )
-        elif existing:
+        return
+
+    created, deleted, unchanged = _sync_by_content(
+        context, SHEET_MILESTONES, file_rows, stored_rows
+    )
+    if created or deleted:
+        lost = _fields_reset_by_replacement(Milestone, MILESTONE_WRITTEN_FIELDS)
+        context.warn(
+            SHEET_MILESTONES, None,
+            f"{len(deleted)} milestone(s) will be deleted and {created} created; "
+            f"{unchanged} are identical and will not be touched. Milestone has no code "
+            "column, so a row whose values changed cannot be recognised as the same row — "
+            f"it is removed and written again, losing {', '.join(lost)}. `is_gate` in "
+            "particular is what stops an activity reaching 100% before its milestone is "
+            "achieved (RG-5.2), so clearing it removes a control, not just a value.",
+        )
+
+    # WorkplanAlert.milestone is CASCADE. The design claimed nothing
+    # referenced Milestone; that was wrong, so the alerts are counted rather
+    # than assumed — and only on the rows actually being deleted.
+    if deleted:
+        alerts = WorkplanAlert.objects.filter(milestone_id__in=deleted).count()
+        if alerts:
             context.warn(
                 SHEET_MILESTONES, None,
-                f"Sheet is empty; the {existing} existing milestone(s) are kept.",
+                f"{alerts} workplan alert(s) hang off the milestone(s) being deleted and "
+                "will go with them (WorkplanAlert.milestone is CASCADE). This is not "
+                "recoverable from the file.",
             )
+
+
+def _placeholder_activity_code(context):
+    """
+    The code of the D-10 placeholder activity, without planning anything.
+
+    The milestone signature needs it before `_plan_placeholder_activity`
+    runs, because an empty `activity_id` resolves to this activity and the
+    signature has to compare like with like against what is stored.
+    """
+    code = f"{context.project_ref}{PLACEHOLDER_ACTIVITY_SUFFIX}"
+    return code[:30]
 
 
 def _plan_placeholder_activity(context):
@@ -1772,9 +1929,7 @@ def _plan_placeholder_activity(context):
         )
         return
 
-    code = f"{context.project_ref}{PLACEHOLDER_ACTIVITY_SUFFIX}"
-    if len(code) > 30:
-        code = code[:30]
+    code = _placeholder_activity_code(context)
     sub_code = sub_codes[-1]
 
     existing = None

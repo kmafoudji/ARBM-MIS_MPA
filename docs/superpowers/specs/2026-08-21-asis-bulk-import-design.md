@@ -69,7 +69,7 @@ Permission: `IsAuthenticated` + `HasModulePermission` on `m1_config_access`, mat
 
 ## 6. The report
 
-`changes[]` is a flat list, each entry `{sheet, action, target, detail}` where `action` is `create`, `update`, `replace` or `unchanged`. An `update` carries the field-level diff (`field, from, to`). Drift found under D-7 is reported as a `warning`, never an error.
+`changes[]` is a flat list, each entry `{sheet, action, target, detail}` where `action` is `create`, `update`, `delete`, `replace` or `unchanged`. `delete` was added on 21 Aug 2026 for the two keyless tables, which are synced by content — a row the file dropped has to be visible as a removal rather than hidden inside a `replace`. An `update` carries the field-level diff (`field, from, to`). Drift found under D-7 is reported as a `warning`, never an error.
 
 `summary` counts by sheet and action, so the screen can lead with one line per sheet before the detail.
 
@@ -120,11 +120,22 @@ a control rather than a value. And this is not hypothetical — a financing row
 entered through the interface on another project carries a `donor` and an
 `exchange_rate_date` that a load would blank.
 
-Neither cost changes the decision, because without a key there is no safe
-alternative. Both are now stated in the change report, so an operator sees them
-before confirming, and both disappear with the identifier columns in §13. Until
-then the honest scope of D-8 is: **safe to import into while nobody has
-hand-edited these two tables.**
+**Narrowed the same day — the two tables are synced by content.** Rows are
+matched on a normalised fingerprint of every field the import writes, as
+multisets. A row that is identical is reported `unchanged` and **not touched at
+all**, so it keeps `donor`, `is_gate`, the evidence links and any attached
+alert. Only rows that genuinely differ are removed and written again, and a
+removal is now reported as `delete` rather than hidden inside a `replace`.
+
+Without a key there is still no way to recognise a *changed* row as the same
+row, so editing one financing amount costs that row its `donor` — but only that
+row, not all six. D-8's rationale is untouched; its cost is now proportional to
+what actually changed, and disappears entirely with the identifier columns in
+§13.
+
+Verified against both workbooks after the change: every sheet reports
+`unchanged`, including these two, and a rolled-back commit leaves every stored
+primary key exactly as it was.
 
 **Reporting periods.** After the project is created or its dates change, call `generate_reporting_periods`. It needs `reporting_frequency`, `next_reporting_due` and `end_date`, all of which `01_project` now supplies, and it generates no period beyond `end_date`. `13_results_data` ships empty in both current files, so this path is specified but barely exercised: match the period by label, and if none exists, raise an error naming the period rather than inventing one.
 

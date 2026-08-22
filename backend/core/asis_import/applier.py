@@ -29,7 +29,7 @@ from apps.reference.models import Currency, Donor, ImplementingAgency, Sdg
 from apps.results.models import Indicator, LogframeRow, LogframeTarget, ResultsData
 from apps.workplan.models import Activity, Milestone, WorkplanComponent, WorkplanSubComponent
 
-from .plan import ACTION_CREATE, ACTION_REPLACE, ACTION_UNCHANGED, ACTION_UPDATE
+from .plan import ACTION_CREATE, ACTION_DELETE, ACTION_REPLACE, ACTION_UNCHANGED, ACTION_UPDATE
 from .parser import (
     SHEET_ACTIVITIES,
     SHEET_AGENCIES,
@@ -156,18 +156,20 @@ def _apply_envelope(context):
 
 def _apply_financing(context):
     """
-    Replace-all, scoped to the project (D-8).
+    Content sync, scoped to the project (D-8).
 
-    A workbook with no financing row does not empty what exists: an empty
-    sheet means "not supplied", exactly like an empty cell. Without that
-    reservation, replace-all would turn a partial file into an eraser.
+    Deletes exactly the primary keys the plan lists and creates exactly the
+    rows it lists. Rows the plan called `unchanged` are not touched at all,
+    which is what keeps `donor` and `exchange_rate_date` — fields the
+    workbook has no column for — on rows that did not change.
+
+    A workbook with no financing row plans nothing here, so an empty sheet
+    means "not supplied" rather than "wipe this".
     """
-    changes = context.plan.changes_for(SHEET_FINANCING, ACTION_REPLACE)
-    if not changes:
-        return
+    for change in context.plan.changes_for(SHEET_FINANCING, ACTION_DELETE):
+        FinancingSource.objects.filter(pk=change.payload["existing_pk"]).delete()
 
-    FinancingSource.objects.filter(envelope=context.envelope).delete()
-    for change in changes:
+    for change in context.plan.changes_for(SHEET_FINANCING, ACTION_CREATE):
         payload = change.payload
         currency = Currency.objects.get(code=payload["currency_code"])
         FinancingSource.objects.create(
@@ -354,16 +356,16 @@ def _apply_activities(context):
 
 def _apply_milestones(context):
     """
-    Replace-all, scoped to the project (D-8). As with financing, an empty
-    sheet does not empty what exists.
+    Content sync, scoped to the project (D-8). As with financing, rows the
+    plan called `unchanged` are left alone — which is what keeps `is_gate`,
+    the evidence fields, and any WorkplanAlert hanging off them.
     """
-    changes = context.plan.changes_for(SHEET_MILESTONES, ACTION_REPLACE)
+    for change in context.plan.changes_for(SHEET_MILESTONES, ACTION_DELETE):
+        Milestone.objects.filter(pk=change.payload["existing_pk"]).delete()
+
+    changes = context.plan.changes_for(SHEET_MILESTONES, ACTION_CREATE)
     if not changes:
         return
-
-    Milestone.objects.filter(
-        activity__sub_component__component__project=context.project
-    ).delete()
 
     placeholder = _placeholder_activity(context)
     for change in changes:
