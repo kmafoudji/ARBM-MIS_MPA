@@ -31,7 +31,11 @@ from .views import (
 router = DefaultRouter()
 router.register("projects", ProjectViewSet, basename="project")
 
-urlpatterns = router.urls + [
+urlpatterns = [
+    # Avant router.urls : la route detail du routeur (projects/<pk>/, regex
+    # [^/.]+) capturerait "stats" et exigerait une authentification.
+    path("projects/stats/", ProjectStatsView.as_view(), name="project-stats"),
+] + router.urls + [
     path("projects/<int:pk>/envelope/",
          ProjectFinancialEnvelopeView.as_view(), name="project-envelope"),
     path("projects/<int:pk>/envelope/sources/",
@@ -44,7 +48,6 @@ urlpatterns = router.urls + [
     path("projects/<int:pk>/reporting-config/",
          ProjectReportingConfigView.as_view(), name="project-reporting-config"),
     path("projects/<int:pk>/dates/", ProjectDatesView.as_view(), name="project-dates"),
-    path("projects/stats/", ProjectStatsView.as_view(), name="project-stats"),
     path("projects/<int:pk>/basic/", ProjectBasicUpdateView.as_view(), name="project-basic-update"),
     path("projects/<int:pk>/gadm-scope/", ProjectGadmScopeView.as_view(), name="project-gadm-scope"),
     path("projects/<int:pk>/gadm-scope/<int:area_pk>/", ProjectGadmScopeView.as_view(), name="project-gadm-scope-detail"),

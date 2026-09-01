@@ -406,7 +406,7 @@ class ProjectStatsView(APIView):
 
     def get(self, request):
         from .models import Project
-        from apps.reference.models import Hub
+        from apps.reference.models import RegionalHub
         projects = Project.objects.all()
         countries = set()
         for p in projects.prefetch_related("project_countries__country"):
@@ -416,7 +416,7 @@ class ProjectStatsView(APIView):
         return Response({
             "project_count": projects.count(),
             "country_count": len(countries),
-            "hub_count": Hub.objects.filter(is_active=True).count(),
+            "hub_count": RegionalHub.objects.filter(is_active=True).count(),
         })
 
 
