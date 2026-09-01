@@ -10,6 +10,7 @@ from .views import (
     ProjectBasicUpdateView,
     ProjectGadmScopeView,
     ProjectGeoJSONView,
+    ProjectMapPointsView,
     ReportingPeriodView,
     ReportingPeriodDetailView,
     ReportingPeriodRefreshView,
@@ -31,7 +32,11 @@ from .views import (
 router = DefaultRouter()
 router.register("projects", ProjectViewSet, basename="project")
 
-urlpatterns = router.urls + [
+urlpatterns = [
+    # Avant router.urls : la route detail du routeur (projects/<pk>/, regex
+    # [^/.]+) capturerait le segment litteral "map".
+    path("projects/map/", ProjectMapPointsView.as_view(), name="project-map-points"),
+] + router.urls + [
     path("projects/<int:pk>/envelope/",
          ProjectFinancialEnvelopeView.as_view(), name="project-envelope"),
     path("projects/<int:pk>/envelope/sources/",

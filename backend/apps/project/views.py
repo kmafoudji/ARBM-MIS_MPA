@@ -867,3 +867,76 @@ class ProjectGeoJSONView(APIView):
             "type":     "FeatureCollection",
             "features": features,
         })
+
+
+class ProjectMapPointsView(APIView):
+    """
+    GET /api/projects/map/
+    FeatureCollection de points — un par projet — pour la vue carte du
+    portefeuille. Le point est ST_PointOnSurface de l'union des zones
+    d'intervention (project_gadm_scope) ; a defaut, repli sur l'union des
+    Admin 1 du pays chef de file. Les projets sans aucune geometrie sont
+    omis.
+
+    PORTEE : comme ProjectViewSet, pas de filtrage par perimetre — tout
+    compte authentifie voit l'integralite du portefeuille (le row-level
+    security n'est pas encore implemente).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db import connection
+
+        projects = Project.objects.select_related(
+            "primary_sector"
+        ).prefetch_related("project_countries__country")
+
+        meta = {}
+        for p in projects:
+            lead = p.lead_country
+            meta[p.id] = {
+                "id":                      p.id,
+                "code":                    p.code,
+                "name":                    p.name,
+                "acronym":                 p.acronym,
+                "lifecycle_stage":         p.lifecycle_stage,
+                "lifecycle_stage_display": p.get_lifecycle_stage_display(),
+                # `or None` : une couleur vide casserait le coalesce MapLibre
+                "primary_sector_name":  (p.primary_sector.name or None) if p.primary_sector_id else None,
+                "primary_sector_color": (p.primary_sector.color or None) if p.primary_sector_id else None,
+                "lead_country_name":    lead.name if lead else None,
+            }
+
+        if not meta:
+            return Response({"type": "FeatureCollection", "features": []})
+
+        with connection.cursor() as cur:
+            cur.execute("""
+                SELECT p.id, ST_AsGeoJSON(ST_PointOnSurface(g.geom))::json
+                FROM project p
+                CROSS JOIN LATERAL (
+                    SELECT COALESCE(
+                        -- Zones d'intervention explicites
+                        (SELECT ST_Union(ga.geometry)
+                           FROM project_gadm_scope pgs
+                           JOIN gadm_area ga ON ga.id = pgs.area_id
+                          WHERE pgs.project_id = p.id
+                            AND ga.geometry IS NOT NULL),
+                        -- Repli : Admin 1 du pays chef de file
+                        (SELECT ST_Union(ga.geometry)
+                           FROM project_country pc
+                           JOIN gadm_area ga ON ga.country_id = pc.country_id
+                                            AND ga.level = 1
+                          WHERE pc.project_id = p.id AND pc.is_lead
+                            AND ga.geometry IS NOT NULL)
+                    ) AS geom
+                ) g
+                WHERE p.id = ANY(%s) AND g.geom IS NOT NULL
+            """, [list(meta.keys())])
+            rows = cur.fetchall()
+
+        features = [
+            {"type": "Feature", "geometry": geom, "properties": meta[pid]}
+            for pid, geom in rows
+        ]
+        return Response({"type": "FeatureCollection", "features": features})
