@@ -18,6 +18,7 @@ from .serializers import (
     StageTransitionRequestSerializer,
 )
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
+from core.scope import ProjectInScope
 
 from .services import check_transition_authorization, transition_stage
 
@@ -30,18 +31,23 @@ class ProjectViewSet(viewsets.ModelViewSet):
     exposees via des endpoints dedies au fur et a mesure.
     """
 
-    queryset = Project.objects.select_related(
-        "primary_sector", "primary_sdg", "created_by"
-    ).prefetch_related("project_countries__country", "contributing_sectors", "contributing_sdgs").all()
-
     # Lecture ouverte a tout compte authentifie ; ecriture soumise au RBAC.
     #
-    # PORTEE : ce controle est module-large. Le filtrage par perimetre
-    # (un PMU ne voit que ses projets, un hub que sa region) n'est pas
-    # implemente — il releve du row-level security, encore absent. Tout
-    # compte authentifie voit donc l'integralite du portefeuille.
+    # PORTEE : le filtrage par perimetre (row-level security) est applique
+    # dans get_queryset() via Project.objects.in_scope() — un PMU ne voit que
+    # ses projets, un membre de hub que sa region, un role global tout le
+    # portefeuille (voir core/scope.py). Un projet hors perimetre repond 404.
     permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
     permission_module = "m1_config_access"
+
+    def get_queryset(self):
+        return (
+            Project.objects.in_scope(self.request)
+            .select_related("primary_sector", "primary_sdg", "created_by")
+            .prefetch_related(
+                "project_countries__country", "contributing_sectors", "contributing_sdgs"
+            )
+        )
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -166,7 +172,7 @@ class ProjectFinancialEnvelopeView(APIView):
     PATCH /api/projects/{pk}/envelope/  — met a jour les notes
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_project(self, pk):
@@ -194,7 +200,7 @@ class FinancingSourceListView(APIView):
     POST /api/projects/{pk}/envelope/sources/   — ajouter une ligne
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_envelope(self, pk):
@@ -229,7 +235,7 @@ class FinancingSourceDetailView(APIView):
     DELETE /api/projects/{pk}/envelope/sources/{src_pk}/
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_source(self, pk, src_pk):
@@ -261,7 +267,7 @@ class ComponentAllocationView(APIView):
     POST /api/projects/{pk}/envelope/allocations/   — upsert par composante
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_envelope(self, pk):
@@ -325,7 +331,7 @@ class ProjectPadView(APIView):
                                         logos : nettoyage differe si besoin)
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
     parser_classes = [MultiPartParser]
 
@@ -384,7 +390,7 @@ class ProjectReportingConfigView(APIView):
     PATCH /api/projects/{pk}/reporting-config/  — SF-1 Etape 5 (perimetre reduit)
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def patch(self, request, pk):
@@ -425,7 +431,7 @@ class ProjectDatesView(APIView):
     PATCH /api/projects/{pk}/dates/  — SF-1 Etape 3 (dates de debut/fin)
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def patch(self, request, pk):
@@ -445,7 +451,7 @@ class ProjectBasicUpdateView(APIView):
     name, pays, secteur primaire — champs non couverts par
     ProjectClassificationUpdateSerializer.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def patch(self, request, pk):
@@ -489,7 +495,7 @@ class ProjectImplementingPartnerListView(APIView):
     GET  /api/projects/<pk>/partners/   — liste des partenaires d'exécution
     POST /api/projects/<pk>/partners/   — ajouter un partenaire
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_project(self, pk):
@@ -527,7 +533,7 @@ class ProjectImplementingPartnerDetailView(APIView):
     PATCH  /api/projects/<pk>/partners/<partner_pk>/
     DELETE /api/projects/<pk>/partners/<partner_pk>/
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_partner(self, pk, partner_pk):
@@ -559,7 +565,7 @@ class ProjectGadmScopeView(APIView):
     DELETE /api/projects/<pk>/gadm-scope/<area_pk>/ — retirer une zone
     PATCH  /api/projects/<pk>/gadm-scope/<area_pk>/ — marquer zone primaire
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def get(self, request, pk):
@@ -610,7 +616,7 @@ class ReportingPeriodView(APIView):
     POST /api/projects/<pk>/reporting-periods/generate/  — générer les périodes
     PATCH /api/projects/<pk>/reporting-periods/<p_pk>/   — mettre à jour le statut
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def get(self, request, pk):
@@ -644,7 +650,7 @@ class ReportingPeriodView(APIView):
 
 class ReportingPeriodResetView(APIView):
     """DELETE /api/projects/<pk>/reporting-periods/reset/ — purge et régénère"""
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def delete(self, request, pk):
@@ -656,7 +662,7 @@ class ReportingPeriodResetView(APIView):
 
 class ReportingPeriodDetailView(APIView):
     """PATCH /api/projects/<pk>/reporting-periods/<p_pk>/ — statut"""
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def patch(self, request, pk, p_pk):
@@ -682,7 +688,7 @@ class ReportingPeriodRefreshView(APIView):
 
     Retourne le nombre de périodes mises à jour + le détail par statut.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def post(self, request, pk):
@@ -694,7 +700,7 @@ class ReportingPeriodRefreshView(APIView):
 
 class ProjectWorkspaceView(APIView):
     """GET /api/projects/<pk>/workspace/ — état du workspace SF-10"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         from apps.project.models import ProjectWorkspace
@@ -726,7 +732,7 @@ class ProjectStageTransitionDetailView(APIView):
            Supprime la DERNIÈRE transition et restaure le stade précédent.
            Bloqué si c'est la seule transition enregistrée.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def _get_last_transition(self, pk, t_pk):
@@ -773,7 +779,7 @@ class ProjectGeoJSONView(APIView):
       - Admin 1 et Admin 2 depuis gadm_area (si géométries chargées)
       - Zones d'intervention ProjectGadmScope
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         from django.db import connection

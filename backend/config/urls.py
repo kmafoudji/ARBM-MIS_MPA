@@ -4,13 +4,14 @@ from django.contrib import admin
 from django.urls import include, path
 
 from core.uploads import LogoUploadView
-from core.views import csrf_bootstrap, health_check
+from core.views import HubScopeView, csrf_bootstrap, health_check
 from apps.results.urls import indicator_urlpatterns
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", health_check, name="health-check"),
     path("api/csrf/", csrf_bootstrap, name="csrf-bootstrap"),
+    path("api/scope/hub/", HubScopeView.as_view(), name="hub-scope"),
     path("api/uploads/logo/", LogoUploadView.as_view(), name="upload-logo"),
     path("auth/", include("apps.authentication.urls")),
     path("api/", include("apps.project.urls")),
