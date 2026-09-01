@@ -20,6 +20,7 @@ from django.shortcuts import redirect
 
 from apps.identity.models import RoleAssignment
 from apps.identity.services import get_user_permissions
+from core.scope import HUB_SESSION_KEY, scope_payload
 
 User = get_user_model()
 
@@ -106,6 +107,8 @@ def callback_view(request):
         user.save(update_fields=["idp_subject", "auth_method"])
 
     login(request, user)
+    # Le hub selectionne appartient a la session precedente : on repart neutre.
+    request.session.pop(HUB_SESSION_KEY, None)
     return redirect(settings.FRONTEND_URL)
 
 
@@ -132,6 +135,10 @@ def me_view(request):
             "is_superuser": request.user.is_superuser,
             "roles": roles,
             "permissions": sorted(get_user_permissions(request.user)),
+            # Perimetre de visibilite (row-level) — voir core/scope.py. Le
+            # frontend s'en sert pour le selecteur de hub et l'entree directe
+            # d'un PMU dans son projet.
+            "scope": scope_payload(request),
         }
     )
 
@@ -174,6 +181,8 @@ def local_login_view(request):
         return JsonResponse({"error": "Invalid email or password."}, status=401)
 
     auth_login(request, user)
+    # Le hub selectionne appartient a la session precedente : on repart neutre.
+    request.session.pop(HUB_SESSION_KEY, None)
     return JsonResponse({"ok": True})
 
 

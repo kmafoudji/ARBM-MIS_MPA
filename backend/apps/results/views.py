@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
+from core.scope import ProjectInScope, hub_q
 from apps.project.models import Project
 
 from .models import Indicator, LogframeRow, LogframeTarget, TargetRevision, TheoryOfChange, ToCNode
@@ -172,7 +173,7 @@ class LogframeView(APIView):
     GET  /api/projects/{pk}/logframe/choices/  — vocabulaires pour les selects
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def get(self, request, pk):
@@ -207,7 +208,7 @@ class LogframeView(APIView):
 class LogframeChoicesView(APIView):
     """GET /api/projects/{pk}/logframe/choices/"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         return Response(get_logframe_choices())
@@ -220,7 +221,7 @@ class LogframeRowDetailView(APIView):
     DELETE /api/projects/{pk}/logframe/{row_pk}/
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_row(self, pk, row_pk):
@@ -248,7 +249,7 @@ class LogframeTargetListView(APIView):
     POST /api/projects/{pk}/logframe/{row_pk}/targets/
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def post(self, request, pk, row_pk):
@@ -265,7 +266,7 @@ class LogframeTargetDetailView(APIView):
     DELETE /api/projects/{pk}/logframe/{row_pk}/targets/{t_pk}/
     """
 
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_target(self, pk, row_pk, t_pk):
@@ -288,7 +289,7 @@ class LogframeTargetDetailView(APIView):
 # ---------------------------------------------------------------------------
 
 class TheoryOfChangeView(APIView):
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_toc(self, pk):
@@ -308,7 +309,7 @@ class TheoryOfChangeView(APIView):
 
 
 class ToCNodeListView(APIView):
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def post(self, request, pk):
@@ -340,7 +341,7 @@ class ToCNodeListView(APIView):
 
 
 class ToCNodeDetailView(APIView):
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module = "m1_config_access"
 
     def _get_node(self, pk, node_pk):
@@ -381,7 +382,7 @@ class TargetRevisionView(APIView):
     GET  /api/projects/{pk}/logframe/{row_pk}/targets/{t_pk}/revisions/
          Liste l'historique des révisions (immuable).
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def _get_target(self, pk, row_pk, t_pk):
@@ -459,7 +460,7 @@ class TargetRevisionActionView(APIView):
          action=approve → approuve la nouvelle cible (status draft → approved)
          action=reject  → rejette (commentaire obligatoire, ancienne cible redevient active)
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def post(self, request, pk, row_pk, t_pk, rev_pk):
@@ -547,7 +548,7 @@ class ToCNodeCrossPathwayView(APIView):
     DELETE /api/projects/{pk}/toc/nodes/{node_pk}/cross-pathways/{target_pk}/
            Retire la liaison.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def _get_node(self, pk, node_pk):
@@ -592,7 +593,7 @@ class ResultsDataView(APIView):
          Crée ou met à jour une valeur (upsert sur logframe_row + reporting_period).
          Calcule le RAG automatiquement.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def get(self, request, pk):
@@ -671,7 +672,7 @@ class ResultsDataDetailView(APIView):
     PATCH  /api/projects/<pk>/results/<rd_pk>/  Mise à jour (valeur, narrative, approve).
     DELETE /api/projects/<pk>/results/<rd_pk>/  Suppression (draft uniquement).
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def _get(self, pk, rd_pk):
@@ -728,7 +729,7 @@ class ResultsSummaryView(APIView):
     avec leur valeur saisie, RAG et taux d'atteinte.
     Utilisé par le frontend pour afficher la grille de saisie.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def get(self, request, pk):
@@ -865,7 +866,7 @@ class DisaggregationValueView(APIView):
          Sauvegarde les valeurs d'une dimension.
          Body: { "dimension_id": 3, "values": [{"category":"Homme","value":120}, ...] }
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def _get_rd(self, pk, rd_pk):
@@ -990,16 +991,15 @@ class PortfolioAggregationView(APIView):
         fragility   = request.query_params.get("fragility")
         rag_filter  = request.query_params.get("rag")
 
-        # Projets Effective uniquement (workspace actif)
-        projects = Project.objects.filter(
+        # Projets Effective uniquement (workspace actif), dans le perimetre
+        # de l'utilisateur (core/scope.py). ?hub= ne peut que restreindre a
+        # l'interieur de ce perimetre, jamais l'elargir.
+        projects = Project.objects.in_scope(request).filter(
             workspace__isnull=False,
         ).select_related("hub", "primary_sector")
 
         if hub_id:
-            projects = projects.filter(
-                models.Q(hub_id=hub_id) |
-                models.Q(project_countries__is_lead=True, project_countries__country__hub_id=hub_id)
-            ).distinct()
+            projects = projects.filter(hub_q((hub_id,))).distinct()
         if sector_id:
             projects = projects.filter(primary_sector_id=sector_id)
         if country_id:
@@ -1216,7 +1216,7 @@ class PIRSDataView(APIView):
     GET /api/projects/<pk>/logframe/<row_pk>/pirs/?format=docx
         Génère et retourne le fichier DOCX.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def get(self, request, pk, row_pk):
@@ -1801,7 +1801,7 @@ class DQScoreView(APIView):
     POST /api/projects/<pk>/logframe/<row_pk>/dq-score/
          Sauvegarde un snapshot DQ en base.
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def get(self, request, pk, row_pk):
@@ -1869,9 +1869,13 @@ class DQPortfolioView(APIView):
         from apps.project.models import Project
 
         project_id = request.query_params.get("project")
+        # Meme denominateur que le portefeuille : perimetre de l'utilisateur.
         rows_qs = LogframeRow.objects.select_related(
             "indicator", "project"
-        ).filter(project__workspace__isnull=False)
+        ).filter(
+            project__workspace__isnull=False,
+            project__in=Project.objects.in_scope(request),
+        )
 
         if project_id:
             rows_qs = rows_qs.filter(project_id=project_id)
@@ -1938,7 +1942,7 @@ class EvidenceView(APIView):
     GET    /api/projects/<pk>/logframe/<row_pk>/results/<rd_pk>/evidence/
     POST   — upload fichier ou URL externe
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
     parser_classes     = [MultiPartParser, FormParser, JSONParser]
 
@@ -2012,7 +2016,7 @@ class EvidenceDetailView(APIView):
     PATCH  /api/.../evidence/<ev_pk>/  — vérifier ou rejeter
     DELETE — soft-delete
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     def _get_ev(self, pk, row_pk, rd_pk, ev_pk):
@@ -2069,7 +2073,7 @@ class ResultsWorkflowView(APIView):
     Séparation des tâches : le saisisseur ne peut pas approuver sa propre saisie
     (neutralisé si RBAC_ENFORCED=False).
     """
-    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission, ProjectInScope]
     permission_module  = "m1_config_access"
 
     TRANSITIONS = {

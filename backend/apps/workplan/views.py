@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from core.scope import ProjectInScope
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -58,7 +59,7 @@ def get_project_or_404(pk):
 
 class WorkplanChoicesView(APIView):
     """GET /api/projects/{pk}/workplan/choices/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         return Response(get_workplan_choices())
@@ -73,7 +74,7 @@ class WorkplanOutputNodesView(APIView):
     GET /api/projects/{pk}/workplan/output-nodes/
     Retourne tous les nœuds Output de la ToC du projet.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -93,7 +94,7 @@ class WorkplanComponentListView(APIView):
     GET  /api/projects/{pk}/workplan/components/        — liste
     POST /api/projects/{pk}/workplan/components/        — créer
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -123,7 +124,7 @@ class WorkplanComponentDetailView(APIView):
     PATCH  /api/projects/{pk}/workplan/components/{c_pk}/
     DELETE /api/projects/{pk}/workplan/components/{c_pk}/  — soft-delete
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_component(self, pk, c_pk):
         return get_object_or_404(WorkplanComponent, pk=c_pk, project_id=pk, is_active=True)
@@ -159,7 +160,7 @@ class WorkplanSubComponentListView(APIView):
     GET  /api/projects/{pk}/workplan/components/{c_pk}/subcomponents/
     POST /api/projects/{pk}/workplan/components/{c_pk}/subcomponents/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_component(self, pk, c_pk):
         return get_object_or_404(WorkplanComponent, pk=c_pk, project_id=pk, is_active=True)
@@ -191,7 +192,7 @@ class WorkplanSubComponentDetailView(APIView):
     PATCH  /api/projects/{pk}/workplan/components/{c_pk}/subcomponents/{s_pk}/
     DELETE /api/projects/{pk}/workplan/components/{c_pk}/subcomponents/{s_pk}/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_sub(self, pk, c_pk, s_pk):
         return get_object_or_404(
@@ -231,7 +232,7 @@ class ActivityListView(APIView):
     GET  /api/projects/{pk}/workplan/activities/
     POST /api/projects/{pk}/workplan/activities/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -289,7 +290,7 @@ class ActivityDetailView(APIView):
     PATCH  /api/projects/{pk}/workplan/activities/{a_pk}/
     DELETE /api/projects/{pk}/workplan/activities/{a_pk}/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_activity(self, pk, a_pk):
         return get_object_or_404(
@@ -340,7 +341,7 @@ class ActivityProgressView(APIView):
     PATCH /api/projects/{pk}/workplan/activities/{a_pk}/progress/
     Mise à jour rapide statut + % (SF-4).
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def patch(self, request, pk, a_pk):
         activity = get_object_or_404(
@@ -366,7 +367,7 @@ class ActivityDependencyView(APIView):
     GET  /api/projects/{pk}/workplan/activities/{a_pk}/dependencies/
     POST /api/projects/{pk}/workplan/activities/{a_pk}/dependencies/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_activity(self, pk, a_pk):
         return get_object_or_404(
@@ -428,7 +429,7 @@ class ActivityDependencyDetailView(APIView):
     """
     DELETE /api/projects/{pk}/workplan/activities/{a_pk}/dependencies/{d_pk}/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def delete(self, request, pk, a_pk, d_pk):
         dep = get_object_or_404(
@@ -452,7 +453,7 @@ class MilestoneListView(APIView):
     GET  /api/projects/{pk}/workplan/activities/{a_pk}/milestones/
     POST /api/projects/{pk}/workplan/activities/{a_pk}/milestones/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_activity(self, pk, a_pk):
         return get_object_or_404(
@@ -488,7 +489,7 @@ class MilestoneDetailView(APIView):
     PATCH  /api/projects/{pk}/workplan/activities/{a_pk}/milestones/{m_pk}/
     DELETE /api/projects/{pk}/workplan/activities/{a_pk}/milestones/{m_pk}/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_milestone(self, pk, a_pk, m_pk):
         return get_object_or_404(
@@ -523,7 +524,7 @@ class DelayLogListView(APIView):
     GET  /api/projects/{pk}/workplan/activities/{a_pk}/delays/
     POST /api/projects/{pk}/workplan/activities/{a_pk}/delays/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_activity(self, pk, a_pk):
         return get_object_or_404(
@@ -586,7 +587,7 @@ class DelayLogApprovalView(APIView):
     POST /api/projects/{pk}/workplan/activities/{a_pk}/delays/{d_pk}/reject/
     RG-7.4 : approbation des révisions de dates.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_delay(self, pk, a_pk, d_pk):
         return get_object_or_404(
@@ -631,7 +632,7 @@ class SPISnapshotView(APIView):
     GET /api/projects/{pk}/workplan/spi/
     Retourne les snapshots SPI du projet.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -650,7 +651,7 @@ class WorkplanView(APIView):
     GET /api/projects/{pk}/workplan/
     Vue complète du workplan : tous les composants avec sous-composants et activités.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -668,7 +669,7 @@ class WorkplanSummaryView(APIView):
     GET /api/projects/{pk}/workplan/summary/
     Résumé exécutif : compteurs, progress global, overdue, SPI.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -723,7 +724,7 @@ class WorkplanAlertListView(APIView):
     GET  /api/projects/{pk}/workplan/alerts/        — liste des alertes actives
     POST /api/projects/{pk}/workplan/alerts/run/    — déclencher le moteur manuellement
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def get(self, request, pk):
         project = get_project_or_404(pk)
@@ -745,7 +746,7 @@ class WorkplanAlertRunView(APIView):
     POST /api/projects/{pk}/workplan/alerts/run/
     Déclenche le moteur d'alertes SF-6 immédiatement pour ce projet.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def post(self, request, pk):
         project = get_project_or_404(pk)
@@ -759,7 +760,7 @@ class WorkplanAlertDetailView(APIView):
     PATCH /api/projects/{pk}/workplan/alerts/{a_pk}/acknowledge/
     PATCH /api/projects/{pk}/workplan/alerts/{a_pk}/resolve/
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ProjectInScope]
 
     def _get_alert(self, pk, a_pk):
         return get_object_or_404(WorkplanAlert, pk=a_pk, project_id=pk)
@@ -796,8 +797,9 @@ class GlobalWorkplanNotificationsView(APIView):
     def get(self, request):
         from apps.project.models import Project
 
-        # Tous les projets avec workspace actif
-        projects = Project.objects.filter(
+        # Tous les projets avec workspace actif, dans le perimetre de
+        # l'utilisateur (core/scope.py)
+        projects = Project.objects.in_scope(request).filter(
             workspace__isnull=False,
         ).exclude(
             lifecycle_stage__in=["cancelled", "closed", "concept_note"],
@@ -860,9 +862,17 @@ class GlobalWorkplanNotificationsView(APIView):
         })
 
     def post(self, request):
-        """PATCH /api/workplan/notifications/acknowledge-all/ — tout accuser."""
+        """PATCH /api/workplan/notifications/acknowledge-all/ — tout accuser.
+
+        Limite au perimetre de l'utilisateur : sans ce filtre, un membre d'un
+        hub accuserait les alertes de tous les autres hubs.
+        """
         from django.utils import timezone
-        WorkplanAlert.objects.filter(status="active").update(
+        from apps.project.models import Project
+        WorkplanAlert.objects.filter(
+            status="active",
+            project__in=Project.objects.in_scope(request),
+        ).update(
             status="acknowledged",
             acknowledged_by=request.user,
             acknowledged_at=timezone.now(),

@@ -14,6 +14,7 @@ Non couvert dans cette passe (a construire plus tard) :
 """
 from django.db import models
 
+from .managers import ProjectQuerySet
 from apps.identity.models import AppUser
 from apps.reference.models import (
     Country,
@@ -245,6 +246,10 @@ class Project(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Manager par defaut inchange ; .in_scope(request) applique le perimetre
+    # par role (row-level security) — voir core/scope.py et managers.py.
+    objects = ProjectQuerySet.as_manager()
 
     class Meta:
         db_table = "project"
