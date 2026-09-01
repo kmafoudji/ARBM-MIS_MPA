@@ -9,6 +9,7 @@ import Flag from "../components/Flag.jsx";
 import SectorIcon from "../components/SectorIcon.jsx";
 import Icon from "../components/Icon.jsx";
 import RefreshBar, { SkeletonCard, SkeletonRow } from "../components/RefreshBar.jsx";
+import PortfolioMap from "../components/PortfolioMap.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 const STAGE_GROUPS = {
@@ -281,6 +282,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
             {[
               { mode: "list", icon: "align-center" },
               { mode: "cards", icon: "grid" },
+              { mode: "map", icon: "map-pin" },
             ].map(({ mode, icon }) => (
               <button key={mode} onClick={() => setViewMode(mode)}
                 style={{
@@ -391,8 +393,13 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
         </div>
       )}
 
+      {/* ── Carte ───────────────────────────────────────────────────── */}
+      {!isLoading && viewMode === "map" && (
+        <PortfolioMap projects={filtered} onProjectClick={onProjectClick} />
+      )}
+
       {/* ── Aucun résultat après filtre ─────────────────────────────── */}
-      {!isLoading && data.length > 0 && filtered.length === 0 && (
+      {!isLoading && data.length > 0 && filtered.length === 0 && viewMode !== "map" && (
         <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
           <Icon name="filter" size={28} style={{ display: "block", margin: "0 auto 10px", opacity: 0.3 }} />
           <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 6 }}>No projects match</div>
