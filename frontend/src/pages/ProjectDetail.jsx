@@ -125,11 +125,89 @@ function Dt({ term, children }) {
   );
 }
 
-export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogframe, onOpenPIRS, canEdit = false }) {
+// Project-scope sections — consumed both by this page and by the AppShell's
+// project sidebar (sidebar B), which renders them with their lock state.
+// Module level so the shell never duplicates the rules.
+export const PROJECT_TABS = [
+  { key: "overview",   label: "Overview",         icon: "info-circle" },
+  { key: "lifecycle",  label: "Lifecycle",        icon: "zap"         },
+  { key: "financial",  label: "Financial",        icon: "database"    },
+  { key: "toc",        label: "Theory of Change", icon: "globe"       },
+  { key: "logframe",   label: "Logframe",         icon: "bar-chart-2" },
+  { key: "results",    label: "Results",          icon: "trending-up" },
+  { key: "workplan",   label: "Workplan",         icon: "layout"      },
+  { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
+  { key: "partners",   label: "Partners",         icon: "users"       },
+  { key: "reporting",  label: "Reporting",        icon: "calendar"    },
+  { key: "documents",  label: "Documents",        icon: "folder"      },
+];
+
+// Stage order for comparisons (SF-4 lifecycle)
+const STAGE_ORDER = [
+  "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
+  "preparation_identification", "trc_endorsed", "ic_approved", "appraisal",
+  "bed_approved", "effective", "implementing", "mid_term_review",
+  "substantially_complete", "closed",
+];
+const stageIdx = (s) => STAGE_ORDER.indexOf(s);
+
+// Per-section lock rules, derived from the project detail payload alone.
+export function computeTabLocks(project) {
+  const currentIdx = stageIdx(project?.lifecycle_stage || "concept_note");
+  const atLeast = (s) => currentIdx >= stageIdx(s);
+  const hasWorkspace = !!project?.has_workspace;
+  const hasTocNodes  = (project?.toc_node_count || 0) > 0;
+  return {
+    overview:   { locked: false },
+    lifecycle:  { locked: false },
+    documents:  { locked: false },
+    financial:  {
+      locked: !atLeast("pipeline_taskforce_review"),
+      reason: "Available from Pipeline Taskforce Review stage",
+      depends: "Lifecycle stage: Pipeline Taskforce Review",
+    },
+    toc: {
+      locked: !atLeast("pipeline_taskforce_approved"),
+      reason: "Available from Pipeline Taskforce Approved stage",
+      depends: "Lifecycle stage: Pipeline Taskforce Approved",
+    },
+    logframe: {
+      locked: !hasTocNodes,
+      reason: "Requires Theory of Change to be started first",
+      depends: "Theory of Change: at least one node defined",
+    },
+    results: {
+      locked: !hasWorkspace,
+      reason: "Available when project reaches Effective stage",
+      depends: "Lifecycle stage: Effective (workspace activated)",
+    },
+    workplan: {
+      locked: !hasWorkspace,
+      reason: "Available when project reaches Effective stage",
+      depends: "Lifecycle stage: Effective (workspace activated)",
+    },
+    geographic: {
+      locked: !atLeast("preparation_identification"),
+      reason: "Available from Preparation/Identification stage",
+      depends: "Lifecycle stage: Preparation/Identification",
+    },
+    partners: {
+      locked: !atLeast("appraisal"),
+      reason: "Available from Appraisal stage",
+      depends: "Lifecycle stage: Appraisal",
+    },
+    reporting: {
+      locked: !atLeast("bed_approved"),
+      reason: "Available from BED Approved gate",
+      depends: "Lifecycle stage: BED Approved",
+    },
+  };
+}
+
+export default function ProjectDetail({ projectId, activeTab = "overview", onTabChange = () => {}, onOpenPIRS, canEdit = false }) {
   const queryClient = useQueryClient();
   const dialog = useDialog();
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
   const [showForm, setShowForm] = useState(false);
   const [tForm, setTForm] = useState({
     to_stage: "",
@@ -393,79 +471,11 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const otherCountries = countries.filter((c) => !c.is_lead);
 
 
-  const TABS = [
-    { key: "overview",   label: "Overview",        icon: "info-circle" },
-    { key: "lifecycle",  label: "Lifecycle",        icon: "zap"         },
-    { key: "financial",  label: "Financial",        icon: "database"    },
-    { key: "toc",        label: "Theory of Change", icon: "globe"       },
-    { key: "logframe",   label: "Logframe",         icon: "bar-chart-2" },
-    { key: "results",    label: "Results",          icon: "trending-up" },
-    { key: "workplan",   label: "Workplan",         icon: "layout"      },
-    { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
-    { key: "partners",   label: "Partners",         icon: "users"       },
-    { key: "reporting",  label: "Reporting",        icon: "calendar"    },
-    { key: "documents",  label: "Documents",        icon: "folder"      },
-  ];
-
-  // Ordre des stades pour comparaison
-  const STAGE_ORDER = [
-    "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
-    "preparation_identification", "trc_endorsed", "ic_approved", "appraisal",
-    "bed_approved", "effective", "implementing", "mid_term_review",
-    "substantially_complete", "closed",
-  ];
-  const stageIdx = (s) => STAGE_ORDER.indexOf(s);
+  // Sections et verrous : definis au niveau module (PROJECT_TABS,
+  // computeTabLocks) car la sidebar projet du AppShell les affiche aussi.
   const currentIdx = stageIdx(project?.lifecycle_stage || "concept_note");
   const atLeast = (s) => currentIdx >= stageIdx(s);
-  const hasWorkspace = !!project?.has_workspace;
-  const hasTocNodes  = (project?.toc_node_count || 0) > 0;
-
-  // Règles de verrouillage par tab
-  const TAB_LOCKS = {
-    overview:   { locked: false },
-    lifecycle:  { locked: false },
-    documents:  { locked: false },
-    financial:  {
-      locked: !atLeast("pipeline_taskforce_review"),
-      reason: "Available from Pipeline Taskforce Review stage",
-      depends: "Lifecycle stage: Pipeline Taskforce Review",
-    },
-    toc: {
-      locked: !atLeast("pipeline_taskforce_approved"),
-      reason: "Available from Pipeline Taskforce Approved stage",
-      depends: "Lifecycle stage: Pipeline Taskforce Approved",
-    },
-    logframe: {
-      locked: !hasTocNodes,
-      reason: "Requires Theory of Change to be started first",
-      depends: "Theory of Change: at least one node defined",
-    },
-    results: {
-      locked: !hasWorkspace,
-      reason: "Available when project reaches Effective stage",
-      depends: "Lifecycle stage: Effective (workspace activated)",
-    },
-    workplan: {
-      locked: !hasWorkspace,
-      reason: "Available when project reaches Effective stage",
-      depends: "Lifecycle stage: Effective (workspace activated)",
-    },
-    geographic: {
-      locked: !atLeast("preparation_identification"),
-      reason: "Available from Preparation/Identification stage",
-      depends: "Lifecycle stage: Preparation/Identification",
-    },
-    partners: {
-      locked: !atLeast("appraisal"),
-      reason: "Available from Appraisal stage",
-      depends: "Lifecycle stage: Appraisal",
-    },
-    reporting: {
-      locked: !atLeast("bed_approved"),
-      reason: "Available from BED Approved gate",
-      depends: "Lifecycle stage: BED Approved",
-    },
-  };
+  const TAB_LOCKS = computeTabLocks(project);
 
   // ── Règles de modification par section ──────────────────────────────────
   // Overview/Classification : modifiable avant Effective
@@ -554,65 +564,21 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     );
   }
 
-  const TAB_BAR = (
-    <div style={{ display:"flex", borderBottom:"2px solid #e5e7eb", marginBottom:24, marginTop:8, overflowX:"auto", gap:0 }}>
-      {TABS.map(tab => {
-        const lock = TAB_LOCKS[tab.key] || { locked: false };
-        const isActive = activeTab === tab.key;
-        return (
-          <button key={tab.key}
-            onClick={() => { if (lock.locked) return; setActiveTab(tab.key); }}
-            title={lock.locked ? lock.reason : ""}
-            style={{
-              display:"flex", alignItems:"center", gap:6, padding:"10px 16px", fontSize:13,
-              fontWeight: isActive ? 700 : 500,
-              color: isActive ? "#A4C53F" : lock.locked ? "#d1d5db" : "#6b7280",
-              background:"none", border:"none",
-              borderBottom: isActive ? "2px solid #A4C53F" : "2px solid transparent",
-              marginBottom:-2,
-              cursor: lock.locked ? "not-allowed" : "pointer",
-              whiteSpace:"nowrap", fontFamily:"inherit", transition:"color .15s",
-              opacity: lock.locked ? 0.55 : 1,
-            }}>
-            <Icon name={tab.icon} size={14} />
-            {tab.label}
-            {lock.locked && <Icon name="lock" size={11} style={{ marginLeft:2, color:"#d1d5db" }} />}
-          </button>
-        );
-      })}
-    </div>
-  );
+  // La barre d'onglets et l'en-tete projet (code, nom, retour) vivent
+  // desormais dans la sidebar projet du AppShell (scope PROJECT).
+  const sectionLabel = PROJECT_TABS.find((tb) => tb.key === activeTab)?.label;
 
   return (
     <div className="view">
       <Toast toast={toast} onClose={() => setToast(null)} />
       <DialogModal {...dialog.dialogProps} />
-      <button className="btn btn-ghost btn-sm mb-3" onClick={onBack}>
-        ← Portefeuille
-      </button>
 
       <div className="view-header">
         <div className="view-eyebrow text-mono">{project.code}</div>
-        <h1 className="view-title">{project.name}</h1>
-        <div className="row mt-2">
-          <span className={STAGE_BADGE[project.lifecycle_stage] || "badge"}>
-            {project.lifecycle_stage_display}
-          </span>
-          {workspace?.exists && (
-            <span className="badge badge-lime" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <Icon name="zap" size={11} /> Workspace active
-            </span>
-          )}
-          <span className="text-muted text-sm">
-            {leadCountry && `${leadCountry.flag} ${leadCountry.name}`}
-            {otherCountries.length > 0 &&
-              ` + ${otherCountries.map((c) => `${c.flag} ${c.name}`).join(", ")}`}
-          </span>
-        </div>
+        <h1 className="view-title">{sectionLabel}</h1>
       </div>
 
       {GLOBAL_BANNER}
-      {TAB_BAR}
 
       {activeTab === "overview" && (<>
       {/* ── Bandeau de complétion ── */}
@@ -632,7 +598,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             label: "Theory of Change",
             done: tocNodes > 0,
             detail: tocNodes > 0 ? `${tocNodes} node${tocNodes > 1 ? "s" : ""}` : "Not started",
-            action: onOpenToC,
+            action: () => onTabChange("toc"),
             actionLabel: tocNodes > 0 ? "Open" : "Start",
           },
           {
@@ -641,7 +607,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
             label: "Logical Framework",
             done: logframeRows.length > 0,
             detail: logframeRows.length > 0 ? `${logframeRows.length} indicator${logframeRows.length > 1 ? "s" : ""}` : "No indicators",
-            action: onOpenLogframe,
+            action: () => onTabChange("logframe"),
             actionLabel: logframeRows.length > 0 ? "Open" : "Start",
           },
           {
@@ -1259,7 +1225,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         ? <LockedTabPanel tabKey="toc" />
         : (<>
       {/* SF-1 Etape 2 — Theorie du Changement */}
-      <TheoryOfChange projectId={projectId} onBack={() => setActiveTab("overview")} embedded={true} canEdit={canEditClassification} />
+      <TheoryOfChange projectId={projectId} onBack={() => onTabChange("overview")} embedded={true} canEdit={canEditClassification} />
 
 
       </>)}
@@ -1270,7 +1236,7 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       {TAB_LOCKS["logframe"]?.locked
         ? <LockedTabPanel tabKey="logframe" />
         : (<>
-      <Logframe projectId={projectId} onBack={() => setActiveTab("overview")} onOpenPIRS={onOpenPIRS} embedded={true} />
+      <Logframe projectId={projectId} onBack={() => onTabChange("overview")} onOpenPIRS={onOpenPIRS} embedded={true} />
 
 
       </>)}

@@ -8,7 +8,16 @@
     "users_roles": "Users & Roles",
     "portfolio": "Portfolio",
     "system": "System",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "portfolio_results": "Portfolio Results",
+    "data_quality": "Data Quality",
+    "all_hubs": "All hubs",
+    "hub_scope": "Portfolio scope",
+    "hub_fixed_hint": "Your scope covers a single hub",
+    "back_to": "Back to",
+    "project_sections": "Project",
+    "scope_portfolio": "PORTFOLIO",
+    "scope_project": "PROJECT"
   },
   "common": {
     "loading": "Loading...",

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BrandMark,
   LogoFull,
@@ -14,44 +15,25 @@ import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
 import i18n from "../i18n/index.js";
 import NotificationBell from "./NotificationBell";
+import { PROJECT_TABS, computeTabLocks } from "../pages/ProjectDetail.jsx";
+import { apiFetch } from "../api";
 
-const NAV_GROUPS = [
-  {
-    label: "Steering",
-    items: [{ key: "overview", label: "Dashboard", Icon: IconDashboard }],
-  },
-  {
-    label: "Reference Data",
-    items: [{ key: "masterdata", label: "Reference Data", Icon: IconMasterData }],
-  },
-  {
-    label: "Projects & Monitoring",
-    items: [
-      { key: "projects", label: "Projects", Icon: IconProjects, badgeKey: "projects" },
-      { key: "indicator-catalogue", label: "Indicator Catalogue", Icon: IconCatalogue },
-      { key: "portfolio", label: "Portfolio Results", Icon: IconPortfolio },
-    ],
-  },
-  {
-    label: "System",
-    items: [{ key: "rbac", label: "Users & Roles", Icon: IconUsers, badgeKey: "users" }],
-  },
-];
+// Views that belong to the PROJECT scope: opening them swaps the whole
+// sidebar for the project sidebar (sidebar B) with its context header.
+const PROJECT_VIEWS = new Set(["project-detail", "pirs"]);
 
-// Chaine du fil d'Ariane : chaque vue declare son parent, ce qui permet de
-// reconstruire un chemin cliquable jusqu'au tableau de bord.
+// Breadcrumb chain: each view declares its parent, so a clickable trail up to
+// the dashboard can be rebuilt.
 const CRUMBS = {
   overview: { label: "Dashboard", parent: null },
   masterdata: { label: "Reference Data", parent: "overview" },
   projects: { label: "Projects", parent: "overview" },
   "new-project": { label: "New Project", parent: "projects" },
   "project-detail": { label: "Project", parent: "projects" },
-  "project-toc":      { label: "Theory of Change", parent: "project-detail" },
-  "project-logframe": { label: "Logframe", parent: "project-detail" },
   "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
   portfolio: { label: "Portfolio Results", parent: "overview" },
   "dq-portfolio": { label: "Data Quality", parent: "overview" },
-  pirs:      { label: "PIRS", parent: "project-logframe" },
+  pirs:      { label: "PIRS", parent: "project-detail" },
   rbac: { label: "Users & Roles", parent: "overview" },
 };
 
@@ -78,13 +60,10 @@ const API_PATHS = {
   rbac: "/api/identity/roles",
 };
 
-// La fiche projet est une sous-vue de Projets : on garde l'entree "Projets"
-// active dans la navigation laterale.
+// Portfolio-sidebar active entry for sub-views that have no entry of their own.
 const NAV_ALIAS = {
-  "project-detail":   "projects",
-  "project-toc":      "/api/projects/:id/toc",
-  "project-logframe": "/api/projects/:id/logframe",
-  "pirs":             "projects",
+  "project-detail": "projects",
+  "pirs":           "projects",
 };
 
 function initials(user) {
@@ -93,10 +72,117 @@ function initials(user) {
   return (parts[0]?.[0] || "?").toUpperCase() + (parts[1]?.[0] || "").toUpperCase();
 }
 
-export default function AppShell({ view, onNavigate, user, counts = {}, children }) {
+// ── Hub scope selector ──────────────────────────────────────────────────────
+// The hub is a denominator, not a filter: changing it recomputes every figure
+// on screen (the backend recomputes inside the session scope), so a change
+// invalidates every query. Rendered only in the PORTFOLIO scope, and only
+// when the user's scope offers a choice; a single allowed hub renders as a
+// fixed label. Users scoped to a project (or nothing) get no control at all.
+function HubScopeSelector({ scope }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  if (!scope || !["global", "hubs"].includes(scope.kind)) return null;
+  const hubs = scope.allowed_hubs || [];
+  if (hubs.length === 0) return null;
+
+  const selected = hubs.find((h) => h.id === scope.selected_hub_id) || null;
+  const label = selected ? selected.name : t("nav.all_hubs");
+
+  if (hubs.length === 1 && scope.kind === "hubs") {
+    // One hub in scope: an attribute, not a choice.
+    return (
+      <span className="hubsel-fixed" title={t("nav.hub_fixed_hint")}>
+        <Icon name="map-pin" size={12} /> {hubs[0].name}
+      </span>
+    );
+  }
+
+  async function choose(hubId) {
+    setOpen(false);
+    if (saving) return;
+    setSaving(true);
+    try {
+      await apiFetch("/api/scope/hub/", {
+        method: "POST",
+        body: JSON.stringify({ hub: hubId }),
+      });
+      // Denominator changed: every figure on screen must recompute.
+      await queryClient.invalidateQueries();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <span className="hubsel">
+      <button
+        className="hubsel-btn"
+        onClick={() => setOpen((o) => !o)}
+        disabled={saving}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <Icon name="map-pin" size={12} /> {label} <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="hubsel-drop" role="listbox">
+          <div className="hubsel-title">{t("nav.hub_scope")}</div>
+          {scope.kind === "global" && (
+            <button
+              className={`hubsel-opt${!selected ? " on" : ""}`}
+              onClick={() => choose(null)}
+            >
+              {t("nav.all_hubs")}
+            </button>
+          )}
+          {hubs.map((h) => (
+            <button
+              key={h.id}
+              className={`hubsel-opt${selected?.id === h.id ? " on" : ""}`}
+              onClick={() => choose(h.id)}
+            >
+              {h.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
+export default function AppShell({
+  view,
+  onNavigate,
+  user,
+  counts = {},
+  projectId = null,
+  projectTab = "overview",
+  onProjectTab = () => {},
+  returnTo = "projects",
+  children,
+}) {
   const { t } = useTranslation();
   const [lang, setLang] = useState(i18n.language || "en");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const scope = user?.scope; // absent on an older backend: no selector, no gating
+  const inProject = PROJECT_VIEWS.has(view) && !!projectId;
+  const isProjectOnly = scope?.kind === "project";
+
+  // Both queries hit keys the app already uses — the cache dedupes them.
+  const { data: project } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: () => apiFetch(`/api/projects/${projectId}/`),
+    enabled: inProject,
+  });
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => apiFetch("/api/projects/"),
+    enabled: inProject,
+  });
 
   function closeSidebar() { setSidebarOpen(false); }
   function openSidebar()  { setSidebarOpen(true); }
@@ -122,8 +208,8 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
       items: [
         { key: "projects", label: t("nav.projects"), Icon: IconProjects, badgeKey: "projects" },
         { key: "indicator-catalogue", label: t("nav.indicator_catalogue"), Icon: IconCatalogue },
-        { key: "portfolio", label: "Portfolio Results", Icon: IconPortfolio },
-        { key: "dq-portfolio", label: "Data Quality", Icon: IconCatalogue },
+        { key: "portfolio", label: t("nav.portfolio_results"), Icon: IconPortfolio },
+        { key: "dq-portfolio", label: t("nav.data_quality"), Icon: IconCatalogue },
       ],
     },
     {
@@ -131,6 +217,99 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
       items: [{ key: "rbac", label: t("nav.users_roles"), Icon: IconUsers, badgeKey: "users" }],
     },
   ];
+
+  const locks = inProject ? computeTabLocks(project) : {};
+  const activeSection = view === "pirs" ? "logframe" : projectTab;
+  const leadCountry = project?.countries_detail?.find((c) => c.is_lead);
+  const siblings = (projects || []).filter((p) => p.id !== projectId).slice(0, 6);
+
+  // Sidebar B — project scope: context header on top, then the sections.
+  const projectSidebar = (
+    <>
+      <div className="ctx-card">
+        {!isProjectOnly && (
+          <button
+            className="ctx-back"
+            onClick={() => { onNavigate(returnTo); closeSidebar(); }}
+          >
+            ← {t("nav.back_to")} {CRUMBS[returnTo]?.label || CRUMBS.projects.label}
+          </button>
+        )}
+        <div className="ctx-code text-mono">{project?.code || "…"}</div>
+        <div className="ctx-name">{project?.name || ""}</div>
+        <div className="ctx-meta">
+          {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : ""}
+          {project?.hub_name ? ` · ${project.hub_name}` : ""}
+        </div>
+        {project?.lifecycle_stage_display && (
+          <div className="ctx-stage">{project.lifecycle_stage_display}</div>
+        )}
+        {siblings.length > 0 && (
+          <div className="ctx-siblings">
+            {siblings.map((p) => (
+              <button
+                key={p.id}
+                title={p.name}
+                onClick={() => { onNavigate("project-detail", { projectId: p.id }); closeSidebar(); }}
+              >
+                {p.code || p.acronym || `#${p.id}`}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <nav className="nav">
+        <div className="nav-label">{t("nav.project_sections")}</div>
+        {PROJECT_TABS.map(({ key, label, icon }) => {
+          const lock = locks[key] || { locked: false };
+          const isActive = activeSection === key;
+          return (
+            <button
+              key={key}
+              className={`nav-item${isActive ? " active" : ""}${lock.locked ? " locked" : ""}`}
+              onClick={() => {
+                if (lock.locked) return;
+                onProjectTab(key);
+                closeSidebar();
+              }}
+              title={lock.locked ? lock.reason : ""}
+              disabled={lock.locked}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <Icon name={icon} size={14} />
+              <span>{label}</span>
+              {lock.locked && <Icon name="lock" size={11} />}
+            </button>
+          );
+        })}
+      </nav>
+    </>
+  );
+
+  // Sidebar A — portfolio scope: the cross-project navigation.
+  const portfolioSidebar = (
+    <nav className="nav">
+      {NAV_GROUPS_T.map((group) => (
+        <div key={group.label}>
+          <div className="nav-label">{group.label}</div>
+          {group.items.map(({ key, label, Icon: ItemIcon, badgeKey }) => (
+            <button
+              key={key}
+              className={`nav-item${activeKey === key ? " active" : ""}`}
+              onClick={() => { onNavigate(key); closeSidebar(); }}
+              aria-current={activeKey === key ? "page" : undefined}
+            >
+              <ItemIcon />
+              <span>{label}</span>
+              {badgeKey && counts[badgeKey] !== undefined && (
+                <span className="nav-badge">{counts[badgeKey]}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
 
   return (
     <div className="app">
@@ -145,27 +324,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
           </div>
         </div>
 
-        <nav className="nav">
-          {NAV_GROUPS_T.map((group) => (
-            <div key={group.label}>
-              <div className="nav-label">{group.label}</div>
-              {group.items.map(({ key, label, Icon, badgeKey }) => (
-                <button
-                  key={key}
-                  className={`nav-item${activeKey === key ? " active" : ""}`}
-                  onClick={() => { onNavigate(key); closeSidebar(); }}
-                  aria-current={activeKey === key ? "page" : undefined}
-                >
-                  <Icon />
-                  <span>{label}</span>
-                  {badgeKey && counts[badgeKey] !== undefined && (
-                    <span className="nav-badge">{counts[badgeKey]}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
+        {inProject ? projectSidebar : portfolioSidebar}
 
         <div className="sidebar-footer">
           <div className="user-card">
@@ -194,6 +353,13 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
+          <span className={`scope-badge${inProject ? " proj" : ""}`}>
+            {inProject ? t("nav.scope_project") : t("nav.scope_portfolio")}
+          </span>
+          {/* The hub selector sits on the identity line, before the section
+              name: it is the denominator of everything shown. Inside a
+              project it disappears — the hub is in the context header. */}
+          {!inProject && <HubScopeSelector scope={scope} />}
           <nav className="crumb" aria-label={t("nav.breadcrumb")}>
             <span className="diamond" />
             {crumbTrail(view).map((c, i, arr) => {

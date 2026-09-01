@@ -7,8 +7,6 @@ import Overview from "./pages/Overview.jsx";
 import ProjectList from "./pages/ProjectList.jsx";
 import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
-import TheoryOfChange from "./pages/TheoryOfChange.jsx";
-import Logframe from "./pages/Logframe.jsx";
 import Portfolio from "./pages/Portfolio.jsx";
 import DQPortfolio from "./pages/DQPortfolio.jsx";
 import PIRSView from "./pages/PIRSView.jsx";
@@ -41,12 +39,21 @@ class ErrorBoundary extends Component {
   }
 }
 
+// Portfolio-scope views: entering a project remembers which one we came from,
+// so the project sidebar's back link returns there — not to the dashboard.
+const PORTFOLIO_VIEWS = new Set([
+  "overview", "masterdata", "projects", "new-project",
+  "indicator-catalogue", "portfolio", "dq-portfolio", "rbac",
+]);
+
 export default function App() {
   const [authState, setAuthState] = useState("checking");
   const [user, setUser] = useState(null);
   const [nav, setNav] = useState("overview");
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedRowId, setSelectedRowId] = useState(null);
+  const [projectTab, setProjectTab] = useState("overview");
+  const [returnTo, setReturnTo] = useState("projects");
 
   useEffect(() => {
     fetch("/auth/me/", { credentials: "include" })
@@ -55,12 +62,37 @@ export default function App() {
         if (data) {
           setUser(data);
           setAuthState("authenticated");
+          // A user whose scope is a single project (PMU) lands directly in
+          // it: the portfolio views would be empty for them anyway.
+          const scope = data.scope;
+          if (scope?.kind === "project" && scope.project_ids?.length) {
+            setSelectedProjectId(scope.project_ids[0]);
+            setNav("project-detail");
+          }
         } else {
           setAuthState("anonymous");
         }
       })
       .catch(() => setAuthState("anonymous"));
   }, []);
+
+  function openProject(id, tab = "overview") {
+    setReturnTo((prev) => (PORTFOLIO_VIEWS.has(nav) ? nav : prev));
+    setSelectedProjectId(id);
+    setProjectTab(tab);
+    setNav("project-detail");
+  }
+
+  // Single navigation entry point for the shell: portfolio keys navigate
+  // directly; params.projectId (notification bell, sibling switcher) opens
+  // that project.
+  function navigate(key, params) {
+    if (params?.projectId) {
+      openProject(params.projectId, key === "project-detail" ? projectTab : "overview");
+      return;
+    }
+    setNav(key);
+  }
 
   const authed = authState === "authenticated";
   const { data: projects } = useQuery({
@@ -111,42 +143,37 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-    <AppShell view={nav} onNavigate={setNav} user={user} counts={counts}>
+    <AppShell
+      view={nav}
+      onNavigate={navigate}
+      user={user}
+      counts={counts}
+      projectId={selectedProjectId}
+      projectTab={projectTab}
+      onProjectTab={(tab) => { setProjectTab(tab); setNav("project-detail"); }}
+      returnTo={returnTo}
+    >
       {nav === "overview" && <Overview user={user} />}
 
       {nav === "projects" && (
         <ProjectList
           onCreateClick={() => setNav("new-project")}
-          onProjectClick={(id) => {
-            setSelectedProjectId(id);
-            setNav("project-detail");
-          }}
+          onProjectClick={(id) => openProject(id)}
         />
       )}
       {nav === "new-project" && (
         <ProjectCreateForm
-          onCreated={(pid) => { if (pid) { setSelectedProjectId(pid); setNav("project-detail"); } else { setNav("projects"); } }}
+          onCreated={(pid) => { if (pid) { openProject(pid); } else { setNav("projects"); } }}
           onCancel={() => setNav("projects")}
         />
       )}
       {nav === "project-detail" && (
         <ProjectDetail
           projectId={selectedProjectId}
-          onBack={() => setNav("projects")}
-          onOpenToC={() => setNav("project-toc")}
-          onOpenLogframe={() => setNav("project-logframe")}
+          activeTab={projectTab}
+          onTabChange={setProjectTab}
           onOpenPIRS={(rowId) => { setSelectedRowId(rowId); setNav("pirs"); }}
           canEdit={canEditReference}
-        />
-      )}
-      {nav === "project-toc" && (
-        <TheoryOfChange projectId={selectedProjectId} onBack={() => setNav("project-detail")} />
-      )}
-      {nav === "project-logframe" && (
-        <Logframe
-          projectId={selectedProjectId}
-          onBack={() => setNav("project-detail")}
-          onOpenPIRS={(rowId) => { setSelectedRowId(rowId); setNav("pirs"); }}
         />
       )}
 
@@ -158,7 +185,7 @@ export default function App() {
         <PIRSView
           projectId={selectedProjectId}
           rowId={selectedRowId}
-          onBack={() => setNav("project-logframe")}
+          onBack={() => { setProjectTab("logframe"); setNav("project-detail"); }}
         />
       )}
       {nav === "rbac" && <Rbac currentUser={user} />}
