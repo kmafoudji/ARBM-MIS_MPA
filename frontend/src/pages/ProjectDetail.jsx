@@ -393,6 +393,23 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
   const otherCountries = countries.filter((c) => !c.is_lead);
 
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // DEV-ONLY UNLOCK — integration environment only, NEVER merge into `main`
+  // ═══════════════════════════════════════════════════════════════════════
+  // Five of the six projects in the shared database sit at `effective` or
+  // beyond, which freezes Basic Identity, Classification, Financial,
+  // Reporting and Geographic to read-only, and all six have zero Theory of
+  // Change nodes, which shuts the Logframe tab. None of that is enforced by
+  // the API — `ProjectClassificationUpdateSerializer` carries no stage
+  // guard — so the freeze is presentational, and it makes the integration
+  // environment unusable for testing the AS-IS bulk import.
+  //
+  // This switch lifts both. It is a testing affordance, not a decision: the
+  // stage rules encode real policy (configuration freezes after the approval
+  // gates) and the Logframe gate is the subject of Issue I-10. Revert this
+  // block before either question is answered.
+  const DEV_UNLOCK_ALL = true;
+
   const TABS = [
     { key: "overview",   label: "Overview",        icon: "info-circle" },
     { key: "lifecycle",  label: "Lifecycle",        icon: "zap"         },
@@ -436,7 +453,8 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
       depends: "Lifecycle stage: Pipeline Taskforce Approved",
     },
     logframe: {
-      locked: !hasTocNodes,
+      // DEV-ONLY UNLOCK — see the block at the end of this file's lock rules.
+      locked: DEV_UNLOCK_ALL ? false : !hasTocNodes,
       reason: "Requires Theory of Change to be started first",
       depends: "Theory of Change: at least one node defined",
     },
@@ -469,15 +487,15 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
 
   // ── Règles de modification par section ──────────────────────────────────
   // Overview/Classification : modifiable avant Effective
-  const canEditClassification = !atLeast("effective");
+  const canEditClassification = DEV_UNLOCK_ALL || !atLeast("effective");
   // Basic Identity : modifiable avant BED Approved
-  const canEditBasicIdentity = !atLeast("bed_approved");
+  const canEditBasicIdentity = DEV_UNLOCK_ALL || !atLeast("bed_approved");
   // Financial : modifiable avant BED Approved
-  const canEditFinancial = !atLeast("bed_approved");
+  const canEditFinancial = DEV_UNLOCK_ALL || !atLeast("bed_approved");
   // Reporting config : modifiable avant Effective
-  const canEditReporting = !atLeast("effective");
+  const canEditReporting = DEV_UNLOCK_ALL || !atLeast("effective");
   // Geographic : modifiable avant Effective
-  const canEditGeographic = !atLeast("effective");
+  const canEditGeographic = DEV_UNLOCK_ALL || !atLeast("effective");
 
   // ── Bannière globale selon le stade ─────────────────────────────────────
   const STAGE_BANNERS = {
