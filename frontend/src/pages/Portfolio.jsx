@@ -11,10 +11,10 @@ import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 const RAG = {
-  green: { color: "#16a34a", bg: "#dcfce7", border: "#86efac", label: "On track",  icon: "circle-check" },
-  amber: { color: "#d97706", bg: "#fef9c3", border: "#fde047", label: "At risk",   icon: "alert-triangle" },
-  red:   { color: "#dc2626", bg: "#fee2e2", border: "#fca5a5", label: "Off track", icon: "circle-x" },
-  na:    { color: "#9ca3af", bg: "#f3f4f6", border: "#e5e7eb", label: "No data",   icon: "minus" },
+  green: { color: "#0EB584", bg: "#EFFFFA", border: "#95E1CB", label: "On track",  icon: "circle-check" },
+  amber: { color: "#F49D07", bg: "#FFFAF0", border: "#FBD593", label: "At risk",   icon: "alert-triangle" },
+  red:   { color: "#FB563B", bg: "#FDF3F3", border: "#FCB4A9", label: "Off track", icon: "circle-x" },
+  na:    { color: "#A7A7A7", bg: "#F7F6F6", border: "#D1D1D1", label: "No data",   icon: "minus" },
 };
 const CHAIN_LEVELS = [
   { key: "activity",             label: "Activities",             icon: "zap" },
@@ -26,7 +26,7 @@ const CHAIN_LEVELS = [
 
 /* ── Sous-composants ─────────────────────────────────────────────────────── */
 
-function KpiCard({ value, label, sub, color = "#1B5A8C" }) {
+function KpiCard({ value, label, sub, color = "#2B2B2B" }) {
   return (
     <div style={{
       flex: 1, minWidth: 140,
@@ -239,9 +239,9 @@ function LevelSection({ level, indicators }) {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{
             width: 34, height: 34, borderRadius: 9,
-            background: "color-mix(in srgb, #A4C53F 14%, transparent)",
+            background: "color-mix(in srgb, #0EB584 14%, transparent)",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            color: "#7a9420",
+            color: "#09815F",
           }}>
             <Icon name={level.icon} size={18} />
           </span>
@@ -389,19 +389,19 @@ export default function Portfolio() {
           value={meta.projects_count ?? "—"}
           label="Active projects"
           sub="With workspace"
-          color="#1B5A8C"
+          color="#2B2B2B"
         />
         <KpiCard
           value={meta.indicators_count ?? "—"}
           label="Indicators tracked"
           sub="In results framework"
-          color="#6366f1"
+          color="#0089C5"
         />
         <KpiCard
           value={withData}
           label="With approved data"
           sub={`${total - withData} pending`}
-          color="#A4C53F"
+          color="#0EB584"
         />
         <KpiCard
           value={withData ? `${healthPct}%` : "—"}
@@ -476,8 +476,8 @@ export default function Portfolio() {
             key={key}
             style={{
               height: 32, padding: "0 10px", fontSize: 12, fontWeight: 500,
-              border: filters[key] ? "1px solid #A4C53F" : "1px solid #e5e7eb",
-              borderRadius: 8, background: filters[key] ? "#f0f6dc" : "#f9fafb",
+              border: filters[key] ? "1px solid #0EB584" : "1px solid #e5e7eb",
+              borderRadius: 8, background: filters[key] ? "#EFFFFA" : "#f9fafb",
               color: filters[key] ? "#374151" : "#9ca3af",
               fontFamily: "inherit", cursor: "pointer", outline: "none",
             }}

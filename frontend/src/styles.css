@@ -1,54 +1,60 @@
 /* ============================================================
    ARBM-MIS — Design system
-   Identite visuelle LLF (vert lime signature, encre noire)
+   LLF visual identity, mapped from the official template spec
+   (.dev-notes/style/design.md): charcoal + Growth Green, six-color
+   accent palette with fixed sector/status mappings, Inter only,
+   flat cards, no shadows. Token names (--lime…) predate the remap.
    ============================================================ */
 :root {
-  /* Brand LLF */
-  --lime:        #A4C53F;
-  --lime-dark:   #6B8E1F;
-  --lime-darker: #4F6B14;
-  --lime-soft:   #E9F0D0;
-  --lime-pale:   #F5F8E8;
+  /* Brand LLF — Growth Green #0EB584 (L0); dark shades derived for
+     hover/contrast, the spec's tonal scale has no dark step */
+  --lime:        #0EB584;
+  --lime-dark:   #0C9A71;
+  --lime-darker: #09815F;
+  --lime-soft:   #C2F0E2; /* green L4 */
+  --lime-pale:   #EFFFFA; /* green L5 */
 
-  /* Inks */
-  --ink:         #0A0A0A;
-  --ink-soft:    #2C2C28;
-  --muted:       #7A7A75;
-  --subtle:      #ADADA8;
+  /* Inks — charcoal scale, never pure black */
+  --ink:         #2B2B2B;
+  --ink-soft:    #545454;
+  --muted:       #7E7E7E;
+  --subtle:      #A7A7A7;
 
   /* Surfaces */
-  --paper:       #FAFAF7;
-  --surface:     #FFFFFF;
-  --rule:        #E8E8E5;
-  --rule-soft:   #F2F2EF;
-  --sidebar:     #0F1A1E;
+  --paper:       #FFFFFF; /* bg.light */
+  --surface:     #FAFAFA; /* card.fill */
+  --surface-2:   #F7F6F6; /* bg.panel */
+  --rule:        #EFEFEF; /* card.border */
+  --rule-soft:   #F7F6F6;
+  --sidebar:     #2B2B2B; /* bg.dark */
 
-  /* Secteurs (couleurs identitaires LLF) */
-  --sec-health:    #E84A5F;
-  --sec-health-bg: #FCE6EA;
-  --sec-agri:      #A4C53F;
-  --sec-agri-bg:   #E9F0D0;
-  --sec-infra:     #3F6CC5;
-  --sec-infra-bg:  #DCE6F6;
-  --sec-women:     #C97FB0;
-  --sec-women-bg:  #F4E2EE;
-  --sec-climate:   #5BB39F;
-  --sec-climate-bg:#D4ECE5;
+  /* Sectors (fixed LLF mapping, L0 / L4 tints) */
+  --sec-health:    #FB563B;
+  --sec-health-bg: #FDD4CE;
+  --sec-agri:      #0EB584;
+  --sec-agri-bg:   #C2F0E2;
+  --sec-infra:     #F49D07;
+  --sec-infra-bg:  #FDE7C1;
+  --sec-women:     #7E46B8;
+  --sec-women-bg:  #DFCEF1;
+  --sec-climate:   #0089C5;
+  --sec-climate-bg:#AFDFF3;
 
-  /* Status */
-  --green:       #1F8C3B;
-  --green-soft:  #DCFCE7;
-  --orange:      #F4A100;
-  --orange-soft: #FEF3C7;
-  --violet:      #7B68C7;
-  --violet-soft: #E5DEF7;
-  --rose:        #C2421A;
-  --rose-soft:   #FFE4E6;
-  --blue:        #1E40AF;
-  --blue-soft:   #DBEAFE;
+  /* Status — Good green, Mixed blue, Attention yellow, Problematic coral */
+  --green:       #0EB584;
+  --green-soft:  #C2F0E2;
+  --orange:      #F49D07;
+  --orange-soft: #FDE7C1;
+  --violet:      #7E46B8;
+  --violet-soft: #DFCEF1;
+  --rose:        #FB563B;
+  --rose-soft:   #FDD4CE;
+  --blue:        #0089C5;
+  --blue-soft:   #AFDFF3;
+  --navy:        #0089C5; /* hyperlink color per spec */
 
-  /* Type */
-  --font-display: 'Sora', system-ui, sans-serif;
+  /* Type — single typeface Inter (mono kept as a web affordance) */
+  --font-display: 'Inter', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
@@ -56,11 +62,12 @@
   --s-0: 4px; --s-1: 8px; --s-2: 12px; --s-3: 16px;
   --s-4: 24px; --s-5: 32px; --s-6: 48px; --s-7: 64px;
 
-  --r-1: 4px; --r-2: 8px; --r-3: 12px; --r-4: 16px;
+  --r-1: 4px; --r-2: 8px; --r-3: 8px; --r-4: 12px;
 
-  --shadow-1: 0 1px 2px rgba(10, 10, 10, 0.04);
-  --shadow-2: 0 4px 14px rgba(10, 10, 10, 0.06);
-  --shadow-3: 0 16px 40px rgba(10, 10, 10, 0.12);
+  /* No drop shadows anywhere (design.md §4.2) */
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -131,7 +138,7 @@ input, select, textarea { font: inherit; color: inherit; }
 /* Sidebar */
 .sidebar {
   background: var(--sidebar);
-  color: #D6D6D2;
+  color: #D1D1D1;
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -357,9 +364,9 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .view-title {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 300; /* titles are Inter Light (design.md §3.3) */
   font-size: 30px;
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
   color: var(--ink);
   margin: 0 0 var(--s-1);
   line-height: 1.15;
@@ -533,7 +540,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .badge-lime { background: var(--lime-soft); color: var(--lime-darker); }
 .badge-orange { background: var(--orange-soft); color: var(--orange); }
 .badge-violet { background: var(--violet-soft); color: var(--violet); }
-.badge-red { background: #fee2e2; color: #b91c1c; }
+.badge-red { background: var(--rose-soft); color: var(--rose); }
 
 /* Avatar compact (initiales) */
 .avatar-sm {
@@ -811,8 +818,8 @@ input, select, textarea { font: inherit; color: inherit; }
   background: var(--rule-soft);
 }
 .login-error {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: #FDF3F3;
+  color: #FB563B;
   border-radius: var(--r-2);
   padding: 8px 12px;
   font-size: 13px;
@@ -1265,9 +1272,9 @@ input, select, textarea { font: inherit; color: inherit; }
   background: var(--paper);
 }
 .btn-square.danger:hover {
-  color: #B3261E;
-  border-color: #B3261E;
-  background: #FDF3F2;
+  color: #FB563B;
+  border-color: #FB563B;
+  background: #FDF3F3;
 }
 .btn-square:disabled {
   opacity: 0.35;
@@ -1324,9 +1331,9 @@ input, select, textarea { font: inherit; color: inherit; }
   margin-bottom: var(--s-3);
 }
 .notice-warn {
-  background: #FFF9E6;
-  border-color: #F0D98C;
-  color: #6B5A16;
+  background: #FFFAF0;
+  border-color: #FDE7C1;
+  color: #2B2B2B;
 }
 .notice-info {
   background: var(--paper);
@@ -1336,11 +1343,11 @@ input, select, textarea { font: inherit; color: inherit; }
 .notice svg { flex-shrink: 0; margin-top: 1px; }
 
 .btn-danger {
-  background: #B3261E;
+  background: #FB563B;
   color: white;
-  border: 1px solid #B3261E;
+  border: 1px solid #FB563B;
 }
-.btn-danger:hover { background: #8C1D18; border-color: #8C1D18; }
+.btn-danger:hover { background: #E04328; border-color: #E04328; }
 .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Champ logo */

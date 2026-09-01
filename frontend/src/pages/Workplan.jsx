@@ -23,19 +23,21 @@ function stripHtml(html) {
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
+// LLF status mapping (design.md §2.4): good = green, mixed = blue,
+// attention = yellow, problematic = coral; tints from the tonal scales.
 const STATUS_COLORS = {
-  not_started: { bg: "#f1f5f9", text: "#64748b", border: "#e2e8f0", label: "Not Started" },
-  in_progress:  { bg: "#eff6ff", text: "#2563eb", border: "#bfdbfe", label: "In Progress" },
-  on_hold:      { bg: "#fefce8", text: "#ca8a04", border: "#fde68a", label: "On Hold" },
-  completed:    { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0", label: "Completed" },
-  cancelled:    { bg: "#fef2f2", text: "#dc2626", border: "#fecaca", label: "Cancelled" },
+  not_started: { bg: "#F7F6F6", text: "#7E7E7E", border: "#D1D1D1", label: "Not Started" },
+  in_progress:  { bg: "#DBF4FF", text: "#0089C5", border: "#83C9E8", label: "In Progress" },
+  on_hold:      { bg: "#FFFAF0", text: "#F49D07", border: "#FBD593", label: "On Hold" },
+  completed:    { bg: "#EFFFFA", text: "#0EB584", border: "#95E1CB", label: "Completed" },
+  cancelled:    { bg: "#FDF3F3", text: "#FB563B", border: "#FCB4A9", label: "Cancelled" },
 };
 
 const MILESTONE_STATUS_COLORS = {
-  pending:    { bg: "#f1f5f9", text: "#64748b" },
-  achieved:   { bg: "#f0fdf4", text: "#16a34a" },
-  missed:     { bg: "#fef2f2", text: "#dc2626" },
-  forecasted: { bg: "#eff6ff", text: "#2563eb" },
+  pending:    { bg: "#F7F6F6", text: "#7E7E7E" },
+  achieved:   { bg: "#EFFFFA", text: "#0EB584" },
+  missed:     { bg: "#FDF3F3", text: "#FB563B" },
+  forecasted: { bg: "#DBF4FF", text: "#0089C5" },
 };
 
 const DELAY_CATEGORIES = [
@@ -82,13 +84,13 @@ function StatusBadge({ status }) {
 function ProgressBar({ value, status }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ flex: 1, height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ flex: 1, height: 6, background: "#EFEFEF", borderRadius: 3, overflow: "hidden" }}>
         <div style={{
           width: `${value}%`, height: "100%", borderRadius: 3, transition: "width .3s ease",
-          background: status === "completed" ? "#16a34a" : status === "on_hold" ? "#ca8a04" : status === "cancelled" ? "#dc2626" : "#2563eb",
+          background: status === "completed" ? "#0EB584" : status === "on_hold" ? "#F49D07" : status === "cancelled" ? "#FB563B" : "#0089C5",
         }} />
       </div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", minWidth: 28 }}>{value}%</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#7E7E7E", minWidth: 28 }}>{value}%</span>
     </div>
   );
 }
@@ -474,9 +476,9 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
               style={{
                 flex: 1, padding: "8px 4px", borderRadius: 8, border: "2px solid",
                 cursor: "pointer", fontSize: 12, fontWeight: 600,
-                borderColor: form.status === opt.value ? "#A4C53F" : "#e2e8f0",
-                background: form.status === opt.value ? "#f7ffe6" : "#fff",
-                color: form.status === opt.value ? "#4a7c0a" : "#64748b",
+                borderColor: form.status === opt.value ? "#0EB584" : "#e2e8f0",
+                background: form.status === opt.value ? "#EFFFFA" : "#fff",
+                color: form.status === opt.value ? "#09815F" : "#64748b",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
               }}>
               <span style={{ fontSize: 16 }}>{opt.icon}</span>
@@ -686,8 +688,8 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
           <button key={t.key} onClick={() => setActiveSection(t.key)} style={{
             padding: "10px 16px", border: "none", background: "none", cursor: "pointer",
             fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
-            color: activeSection === t.key ? "#A4C53F" : "#64748b",
-            borderBottom: activeSection === t.key ? "2px solid #A4C53F" : "2px solid transparent",
+            color: activeSection === t.key ? "#0EB584" : "#64748b",
+            borderBottom: activeSection === t.key ? "2px solid #0EB584" : "2px solid transparent",
           }}>
             <Icon name={t.icon} size={12} />{t.label}
           </button>
@@ -934,7 +936,7 @@ function ComponentBlock({ projectId, component, outputNodes, users, onActivityCl
 
   return (
     <div style={{ marginBottom: 12, border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#1B5A8C", cursor: "pointer" }}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#2B2B2B", cursor: "pointer" }}
         onClick={() => setExpanded(e => !e)}>
         <Icon name={expanded ? "chevron-down" : "chevron-right"} size={14} style={{ color: "rgba(255,255,255,.6)" }} />
         <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.7)", fontFamily: "monospace" }}>{component.code}</span>
@@ -1042,7 +1044,7 @@ export default function Workplan({ projectId, canEdit = true }) {
           <SummaryCard icon="clock"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
           <SummaryCard icon="circle-check"  label="Completed"   value={summary.completed}          accent="#16a34a" />
           <SummaryCard icon="alert-triangle" label="Overdue"    value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
-          <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="#A4C53F" />
+          <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="#0EB584" />
           <SummaryCard icon="zap"           label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
             accent={summary.latest_spi >= 1 ? "#16a34a" : summary.latest_spi != null ? "#dc2626" : "#64748b"} />
         </div>
@@ -1119,7 +1121,7 @@ export default function Workplan({ projectId, canEdit = true }) {
           <button onClick={() => setViewMode("list")} style={{
             padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 6,
-            background: viewMode === "list" ? "#1B5A8C" : "#fff",
+            background: viewMode === "list" ? "#2B2B2B" : "#fff",
             color: viewMode === "list" ? "#fff" : "#64748b",
           }}>
             <Icon name="list" size={13} /> List
@@ -1127,7 +1129,7 @@ export default function Workplan({ projectId, canEdit = true }) {
           <button onClick={() => setViewMode("gantt")} style={{
             padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 6,
-            background: viewMode === "gantt" ? "#1B5A8C" : "#fff",
+            background: viewMode === "gantt" ? "#2B2B2B" : "#fff",
             color: viewMode === "gantt" ? "#fff" : "#64748b",
             borderLeft: "1px solid #e2e8f0",
           }}>
