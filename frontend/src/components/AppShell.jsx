@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
 import i18n from "../i18n/index.js";
 import NotificationBell from "./NotificationBell";
-import { PROJECT_TABS, computeTabLocks } from "../pages/ProjectDetail.jsx";
+import { PROJECT_PILLARS, PROJECT_TABS, computeTabLocks } from "../pages/ProjectDetail.jsx";
 import { apiFetch } from "../api";
 
 // Views that belong to the PROJECT scope: opening them swaps the whole
@@ -261,29 +261,33 @@ export default function AppShell({
         )}
       </div>
       <nav className="nav">
-        <div className="nav-label">{t("nav.project_sections")}</div>
-        {PROJECT_TABS.map(({ key, label, icon }) => {
-          const lock = locks[key] || { locked: false };
-          const isActive = activeSection === key;
-          return (
-            <button
-              key={key}
-              className={`nav-item${isActive ? " active" : ""}${lock.locked ? " locked" : ""}`}
-              onClick={() => {
-                if (lock.locked) return;
-                onProjectTab(key);
-                closeSidebar();
-              }}
-              title={lock.locked ? lock.reason : ""}
-              disabled={lock.locked}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon name={icon} size={14} />
-              <span>{label}</span>
-              {lock.locked && <Icon name="lock" size={11} />}
-            </button>
-          );
-        })}
+        {PROJECT_PILLARS.map((pillar) => (
+          <div key={pillar.key}>
+            <div className="nav-label">{pillar.label}</div>
+            {PROJECT_TABS.filter((tb) => tb.pillar === pillar.key).map(({ key, label, icon }) => {
+              const lock = locks[key] || { locked: false };
+              const isActive = activeSection === key;
+              return (
+                <button
+                  key={key}
+                  className={`nav-item${isActive ? " active" : ""}${lock.locked ? " locked" : ""}`}
+                  onClick={() => {
+                    if (lock.locked) return;
+                    onProjectTab(key);
+                    closeSidebar();
+                  }}
+                  title={lock.locked ? lock.reason : ""}
+                  disabled={lock.locked}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon name={icon} size={14} />
+                  <span>{label}</span>
+                  {lock.locked && <Icon name="lock" size={11} />}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </>
   );
