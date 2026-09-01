@@ -126,20 +126,28 @@ function Dt({ term, children }) {
 }
 
 // Project-scope sections — consumed both by this page and by the AppShell's
-// project sidebar (sidebar B), which renders them with their lock state.
-// Module level so the shell never duplicates the rules.
+// project sidebar (sidebar B), which renders them with their lock state,
+// grouped under four pillars. Module level so the shell never duplicates
+// the rules.
+export const PROJECT_PILLARS = [
+  { key: "identity", label: "Identity & lifecycle" },
+  { key: "results",  label: "What it aims to achieve" },
+  { key: "delivery", label: "What gets done" },
+  { key: "control",  label: "Money & control" },
+];
+
 export const PROJECT_TABS = [
-  { key: "overview",   label: "Overview",         icon: "info-circle" },
-  { key: "lifecycle",  label: "Lifecycle",        icon: "zap"         },
-  { key: "financial",  label: "Financial",        icon: "database"    },
-  { key: "toc",        label: "Theory of Change", icon: "globe"       },
-  { key: "logframe",   label: "Logframe",         icon: "bar-chart-2" },
-  { key: "results",    label: "Results",          icon: "trending-up" },
-  { key: "workplan",   label: "Workplan",         icon: "layout"      },
-  { key: "geographic", label: "Geographic Scope", icon: "map-pin"     },
-  { key: "partners",   label: "Partners",         icon: "users"       },
-  { key: "reporting",  label: "Reporting",        icon: "calendar"    },
-  { key: "documents",  label: "Documents",        icon: "folder"      },
+  { key: "overview",   label: "Overview",         icon: "info-circle", pillar: "identity" },
+  { key: "lifecycle",  label: "Lifecycle",        icon: "zap",         pillar: "identity" },
+  { key: "toc",        label: "Theory of Change", icon: "globe",       pillar: "results"  },
+  { key: "logframe",   label: "Logframe",         icon: "bar-chart-2", pillar: "results"  },
+  { key: "results",    label: "Results",          icon: "trending-up", pillar: "results"  },
+  { key: "workplan",   label: "Workplan",         icon: "layout",      pillar: "delivery" },
+  { key: "geographic", label: "Geographic Scope", icon: "map-pin",     pillar: "delivery" },
+  { key: "partners",   label: "Partners",         icon: "users",       pillar: "delivery" },
+  { key: "financial",  label: "Financial",        icon: "database",    pillar: "control"  },
+  { key: "reporting",  label: "Reporting",        icon: "calendar",    pillar: "control"  },
+  { key: "documents",  label: "Documents",        icon: "folder",      pillar: "control"  },
 ];
 
 // Stage order for comparisons (SF-4 lifecycle)
@@ -581,148 +589,28 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       {GLOBAL_BANNER}
 
       {activeTab === "overview" && (<>
-      {/* ── Bandeau de complétion ── */}
+      {/* ── Setup progress, one line — the sections themselves live in the
+           project sidebar, so the old per-section grid is gone ── */}
       {(() => {
-        const tocNodes    = toc?.nodes?.length || 0;
-        const envSources  = envelope?.financing_sources?.length || 0;
-        const hasReporting = !!project.reporting_frequency;
-        const hasClassif  = !!project.primary_sdg && !!project.gender_marker;
-
-        const hasPad   = !!project.pad_reference_url;
-        const hasDates = !!project.start_date && !!project.end_date;
-
-        const items = [
-          {
-            key: "toc",
-            icon: "globe",
-            label: "Theory of Change",
-            done: tocNodes > 0,
-            detail: tocNodes > 0 ? `${tocNodes} node${tocNodes > 1 ? "s" : ""}` : "Not started",
-            action: () => onTabChange("toc"),
-            actionLabel: tocNodes > 0 ? "Open" : "Start",
-          },
-          {
-            key: "logframe",
-            icon: "bar-chart",
-            label: "Logical Framework",
-            done: logframeRows.length > 0,
-            detail: logframeRows.length > 0 ? `${logframeRows.length} indicator${logframeRows.length > 1 ? "s" : ""}` : "No indicators",
-            action: () => onTabChange("logframe"),
-            actionLabel: logframeRows.length > 0 ? "Open" : "Start",
-          },
-          {
-            key: "envelope",
-            icon: "wallet",
-            label: "Financial Envelope",
-            done: envSources > 0,
-            detail: envSources > 0 ? `${envSources} source${envSources > 1 ? "s" : ""} · ${fmtNum(envelope?.total_amount_usd || 0)} USD` : "No sources",
-            action: null,
-          },
-          {
-            key: "partners",
-            icon: "users",
-            label: "Implementing Partners",
-            done: partners.length > 0,
-            detail: partners.length > 0 ? `${partners.length} partner${partners.length > 1 ? "s" : ""}` : "None assigned",
-            action: null,
-          },
-          {
-            key: "classif",
-            icon: "layers",
-            label: "Classification",
-            done: hasClassif,
-            detail: hasClassif ? "SDG & gender marker set" : "Incomplete",
-            action: null,
-          },
-          {
-            key: "reporting",
-            icon: "trending-up",
-            label: "Reporting",
-            done: hasReporting,
-            detail: hasReporting ? project.reporting_frequency_display : "Not configured",
-            action: null,
-          },
-          {
-            key: "pad",
-            icon: "file-text",
-            label: "PAD Document",
-            done: hasPad,
-            detail: hasPad ? project.pad_reference_name : "Not uploaded",
-            action: null,
-          },
-          {
-            key: "dates",
-            icon: "calendar",
-            label: "Project Dates",
-            done: hasDates,
-            detail: hasDates
-              ? `${new Date(project.start_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} → ${new Date(project.end_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`
-              : "Start / end dates missing",
-            action: null,
-          },
+        const checks = [
+          (toc?.nodes?.length || 0) > 0,                        // Theory of Change
+          logframeRows.length > 0,                              // Logframe
+          (envelope?.financing_sources?.length || 0) > 0,       // Financial envelope
+          partners.length > 0,                                  // Partners
+          !!project.primary_sdg && !!project.gender_marker,     // Classification
+          !!project.reporting_frequency,                        // Reporting
+          !!project.pad_reference_url,                          // PAD document
+          !!(project.start_date && project.end_date),           // Dates
         ];
-
-        const doneCount = items.filter((i) => i.done).length;
-        const pct = Math.round((doneCount / items.length) * 100);
-
+        const done = checks.filter(Boolean).length;
+        const pct = Math.round((done / checks.length) * 100);
         return (
-          <div style={{
-            background: "var(--paper)",
-            border: "1px solid var(--rule)",
-            borderRadius: "var(--r-3)",
-            padding: "var(--s-3) var(--s-4)",
-            marginBottom: "var(--s-4)",
-          }}>
-            {/* Header barre */}
-            <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
-                Project setup — {doneCount}/{items.length} sections completed
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: pct === 100 ? "var(--lime-dark, var(--lime))" : "var(--text-muted)" }}>
-                {pct}%
-              </span>
+          <div className="row" style={{ gap: 10, alignItems: "center", marginBottom: "var(--s-4)", fontSize: 12, color: "var(--text-muted)" }}>
+            <span style={{ fontWeight: 600 }}>Project setup — {done}/{checks.length} sections completed</span>
+            <div style={{ flex: 1, maxWidth: 220, height: 4, background: "var(--rule)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: "var(--lime, #A4C53F)", borderRadius: 2, transition: "width 0.4s ease" }} />
             </div>
-            {/* Barre de progression */}
-            <div style={{ height: 4, background: "var(--rule)", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
-              <div style={{
-                height: "100%", width: `${pct}%`,
-                background: "var(--lime, #A4C53F)",
-                borderRadius: 2, transition: "width 0.4s ease",
-              }} />
-            </div>
-            {/* Grille des sections */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-              {items.map((item) => (
-                <div key={item.key} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "8px 10px",
-                  background: item.done ? "color-mix(in srgb, var(--lime) 8%, var(--surface))" : "var(--surface)",
-                  border: `1px solid ${item.done ? "color-mix(in srgb, var(--lime) 30%, transparent)" : "var(--rule)"}`,
-                  borderRadius: "var(--r-2)",
-                }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: item.done ? "var(--lime, #A4C53F)" : "var(--rule)",
-                    color: item.done ? "#fff" : "var(--text-muted)",
-                  }}>
-                    {item.done
-                      ? <Icon name="check" size={13} />
-                      : <Icon name={item.icon} size={13} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>{item.label}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.detail}</div>
-                  </div>
-                  {item.action && (
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", flexShrink: 0 }}
-                      onClick={item.action}>
-                      {item.actionLabel}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <span style={{ fontWeight: 700, color: pct === 100 ? "var(--lime-dark, var(--lime))" : "var(--text-muted)" }}>{pct}%</span>
           </div>
         );
       })()}
