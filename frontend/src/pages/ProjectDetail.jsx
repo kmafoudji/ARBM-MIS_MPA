@@ -168,6 +168,78 @@ export const PROJECT_TABS = [
 // two-scope merge: computeTabLocks below needs it too.)
 const DEV_UNLOCK_ALL = true;
 
+// Same spirit as DEV_UNLOCK_ALL: the backend only demands a second
+// approver at the gates when RBAC_ENFORCED is on (services.transition_stage),
+// and it is off in both development environments. The form still made the
+// field mandatory, which blocked walking a project through its stages for
+// testing. Set to false to restore the client-side requirement.
+const DEV_SKIP_DUAL_APPROVAL = true;
+
+// Ordered checklist of the 13 nominal stages: reached stages carry the
+// date of the (latest) transition into them and a document marker; the
+// rest are greyed out. Exception states are reported separately.
+function LifecyclePhaseList({ project, transitions, stageChoices }) {
+  const labelOf = (code) =>
+    stageChoices?.find((s) => s.value === code)?.label || code;
+  const byStage = {};
+  (transitions || []).forEach((t) => {
+    // transitions arrive newest first, so the first hit is the latest
+    if (!byStage[t.to_stage]) byStage[t.to_stage] = t;
+  });
+  const current = project.lifecycle_stage;
+  const currentIdx = stageIdx(current);
+  const inException = currentIdx === -1;
+  const fmtDate = (t) =>
+    t.transition_date
+      ? new Date(t.transition_date + "T00:00:00").toLocaleDateString("fr-FR")
+      : new Date(t.transitioned_at).toLocaleDateString("fr-FR");
+
+  return (
+    <div style={{ marginBottom: "var(--s-4)" }}>
+      <div className="text-sm" style={{ fontWeight: 600, marginBottom: "var(--s-2)" }}>
+        Stages
+      </div>
+      <ol className="phase-list">
+        {STAGE_ORDER.map((code, i) => {
+          const t = byStage[code];
+          const isInitial = i === 0 && !t;
+          // The initial stage is reached by definition; a later stage counts
+          // as reached once a transition into it exists.
+          const reached = !!t || isInitial;
+          const isCurrent = code === current;
+          return (
+            <li
+              key={code}
+              className={`phase-item${reached ? " phase-done" : " phase-pending"}${isCurrent ? " phase-current" : ""}`}
+            >
+              <span className="phase-marker">
+                <Icon name={reached ? "circle-check" : "clock"} size={14} />
+              </span>
+              <span className="phase-label">
+                {i + 1}. {labelOf(code)}
+                {isCurrent && <span className="badge badge-lime" style={{ marginLeft: 6 }}>current</span>}
+              </span>
+              <span className="phase-date text-mono">
+                {t ? fmtDate(t) : isInitial ? (project.created_at ? new Date(project.created_at).toLocaleDateString("fr-FR") : "") : "—"}
+              </span>
+              <span className="phase-doc" title={t?.document_reference ? `Document: ${t.document_reference}` : "No document reference"}>
+                {t?.document_reference ? <Icon name="file-text" size={13} /> : null}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {inException && (
+        <div className="text-sm" style={{ color: "var(--danger, #dc2626)", marginTop: "var(--s-2)" }}>
+          <Icon name="alert-triangle" size={13} style={{ marginRight: 4 }} />
+          Project is in exception state: <strong>{labelOf(current)}</strong>
+          {byStage[current] && <> (since {fmtDate(byStage[current])})</>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Stage order for comparisons (SF-4 lifecycle)
 const STAGE_ORDER = [
   "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
@@ -284,7 +356,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   const { data: refCountries } = useQuery({ queryKey: ["ref-countries"], queryFn: () => apiFetch("/api/reference/countries/") });
   const GATE_STAGES_SET = ["trc_endorsed", "ic_approved", "bed_approved"];
   const isGate = GATE_STAGES_SET.includes(tForm.to_stage);
-  const needsDualAuth = isGate;
+  const needsDualAuth = isGate && !DEV_SKIP_DUAL_APPROVAL;
   const needsJustification = true; // toujours requis
 
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
@@ -1298,6 +1370,11 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                       ⚠️ Gate transition — second approver required
                     </div>
                   )}
+                  {isGate && DEV_SKIP_DUAL_APPROVAL && (
+                    <div style={{ fontSize:11, color:"var(--muted)", marginBottom:4 }}>
+                      Gate transition — second approver optional while testing
+                    </div>
+                  )}
                   <select
                     id="dual"
                     className="field-select"
@@ -1361,6 +1438,13 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             </form>
           )}
 
+          {transitions && (
+            <LifecyclePhaseList project={project} transitions={transitions} stageChoices={stageChoices} />
+          )}
+
+          <div className="text-sm" style={{ fontWeight: 600, marginBottom: "var(--s-2)" }}>
+            Audit trail
+          </div>
           {transitions?.length === 0 && (
             <p className="text-muted text-sm" style={{ margin: 0 }}>
               No transition recorded — the project is at its initial stage.
@@ -1414,7 +1498,8 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                         )}
                       </div>
                       <div className="timeline-meta">
-                        {new Date(t.transitioned_at).toLocaleString("fr-FR")} · {t.transitioned_by_email}
+                        {t.transition_date && <>Effective {new Date(t.transition_date + "T00:00:00").toLocaleDateString("fr-FR")} · </>}
+                        recorded {new Date(t.transitioned_at).toLocaleString("fr-FR")} · {t.transitioned_by_email}
                         {t.dual_authorized_by_email && (
                           <> · co-approuvé par {t.dual_authorized_by_email}</>
                         )}
