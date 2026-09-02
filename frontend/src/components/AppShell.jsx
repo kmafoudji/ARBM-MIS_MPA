@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BrandMark,
@@ -147,6 +147,62 @@ function HubScopeSelector({ scope }) {
               {h.name}
             </button>
           ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
+// ── User menu ───────────────────────────────────────────────────────────────
+// Identity and sign-out live in the topbar, as an avatar that opens a small
+// menu, so the sidebar keeps its full height for navigation.
+function UserMenu({ user }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e) { if (!ref.current?.contains(e.target)) setOpen(false); }
+    function onKey(e) { if (e.key === "Escape") setOpen(false); }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const role = user?.roles?.length
+    ? user.roles.join(" · ")
+    : user?.is_superuser
+    ? "Superuser"
+    : "No role assigned";
+
+  return (
+    <span className="usermenu" ref={ref}>
+      <button
+        className={`user-avatar usermenu-btn${open ? " on" : ""}`}
+        onClick={() => setOpen((o) => !o)}
+        title={user?.name || user?.email}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t("auth.account")}
+      >
+        {initials(user)}
+      </button>
+      {open && (
+        <div className="usermenu-drop" role="menu">
+          <div className="user-card">
+            <div className="user-avatar">{initials(user)}</div>
+            <div className="user-meta">
+              <div className="user-name">{user?.name || user?.email}</div>
+              <div className="user-role" title={user?.roles?.join(", ")}>{role}</div>
+            </div>
+          </div>
+          <a className="user-signout" href="/auth/logout/" role="menuitem">
+            <Icon name="logout" size={14} /> {t("auth.sign_out")}
+          </a>
         </div>
       )}
     </span>
@@ -329,25 +385,6 @@ export default function AppShell({
         </div>
 
         {inProject ? projectSidebar : portfolioSidebar}
-
-        <div className="sidebar-footer">
-          <div className="user-card">
-            <div className="user-avatar">{initials(user)}</div>
-            <div className="user-meta">
-              <div className="user-name">{user?.name || user?.email}</div>
-              <div className="user-role" title={user?.roles?.join(", ")}>
-                {user?.roles?.length
-                  ? user.roles.join(" · ")
-                  : user?.is_superuser
-                  ? "Superuser"
-                  : "No role assigned"}
-              </div>
-            </div>
-          </div>
-          <a className="user-signout" href="/auth/logout/">
-            <Icon name="logout" size={14} /> {t("auth.sign_out")}
-          </a>
-        </div>
       </aside>
 
       <div className="main">
@@ -402,6 +439,7 @@ export default function AppShell({
             </div>
             <span className="api-pill">{API_PATHS[view]}</span>
             <span className="env-tag">POC</span>
+            <UserMenu user={user} />
           </div>
         </div>
         {children}
