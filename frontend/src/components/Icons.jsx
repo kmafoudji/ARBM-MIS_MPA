@@ -76,7 +76,7 @@ export const LogoFull = ({ dark = false, height = 40 }) => (
   <img
     src={dark ? "/logos/llf/llf-logo-white.png" : "/logos/llf/llf-logo-charcoal.png"}
     alt="Lives and Livelihoods Fund"
-    style={{ display: "block", height, width: "auto" }}
+    style={{ display: "block", height, width: "auto", maxWidth: "100%", objectFit: "contain", alignSelf: "flex-start", flexShrink: 0 }}
   />
 );
 
