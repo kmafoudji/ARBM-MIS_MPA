@@ -13,7 +13,6 @@ import {
 } from "./Icons.jsx";
 import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
-import PartnerBand from "./PartnerBand.jsx";
 import i18n from "../i18n/index.js";
 import NotificationBell from "./NotificationBell";
 import { PROJECT_PILLARS, PROJECT_TABS, computeTabLocks } from "../pages/ProjectDetail.jsx";
@@ -334,7 +333,6 @@ export default function AppShell({
         {inProject ? projectSidebar : portfolioSidebar}
 
         <div className="sidebar-footer">
-          <PartnerBand compact />
           <div className="user-card">
             <div className="user-avatar">{initials(user)}</div>
             <div className="user-meta">
