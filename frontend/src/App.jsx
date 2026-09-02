@@ -173,6 +173,7 @@ export default function App() {
           projectId={selectedProjectId}
           activeTab={projectTab}
           onTabChange={setProjectTab}
+          onDeleted={() => { setSelectedProjectId(null); setNav("projects"); }}
           onOpenPIRS={(rowId) => { setSelectedRowId(rowId); setNav("pirs"); }}
           canEdit={canEditReference}
         />

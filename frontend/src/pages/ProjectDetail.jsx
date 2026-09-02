@@ -304,7 +304,7 @@ export function computeTabLocks(project) {
   };
 }
 
-export default function ProjectDetail({ projectId, activeTab = "overview", onTabChange = () => {}, onOpenPIRS, canEdit = false }) {
+export default function ProjectDetail({ projectId, activeTab = "overview", onTabChange = () => {}, onDeleted, onOpenPIRS, canEdit = false }) {
   const queryClient = useQueryClient();
   const dialog = useDialog();
   const [toast, setToast] = useState(null);
@@ -497,12 +497,14 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   const deleteProjectMutation = useMutation({
     mutationFn: () => apiFetch(`/api/projects/${projectId}/`, { method: "DELETE" }),
     onSuccess: () => {
+      // Leave the page first: removing the per-project queries while this
+      // component is still mounted would refetch them and render a 404.
+      onDeleted?.();
       queryClient.removeQueries({ queryKey: ["project", projectId] });
       queryClient.removeQueries({ queryKey: ["project-transitions", projectId] });
       queryClient.removeQueries({ queryKey: ["workspace", projectId] });
       queryClient.removeQueries({ queryKey: ["toc", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      onBack?.();
     },
   });
 
