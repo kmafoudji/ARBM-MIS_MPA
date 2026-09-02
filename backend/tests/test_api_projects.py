@@ -161,3 +161,36 @@ class TestStageTransitionAPI:
         }
         resp = client.post(f"/api/projects/{project.id}/transitions/", payload, format="json")
         assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestProjectDelete:
+
+    def test_delete_removes_project_and_children(self, auth_client):
+        client, user = auth_client
+        project = ProjectFactory()
+        from apps.project.models import Project, ProjectCountry
+        assert ProjectCountry.objects.filter(project=project).exists()
+        resp = client.delete(f"/api/projects/{project.pk}/")
+        assert resp.status_code == 204
+        assert not Project.objects.filter(pk=project.pk).exists()
+        assert not ProjectCountry.objects.filter(project_id=project.pk).exists()
+
+    def test_delete_removes_pad_file(self, auth_client, tmp_path, settings):
+        from django.core.files.base import ContentFile
+        settings.MEDIA_ROOT = str(tmp_path)
+        client, user = auth_client
+        project = ProjectFactory()
+        project.pad_reference_file.save("pad/test.pdf", ContentFile(b"%PDF-1.4"), save=True)
+        storage, name = project.pad_reference_file.storage, project.pad_reference_file.name
+        assert storage.exists(name)
+        resp = client.delete(f"/api/projects/{project.pk}/")
+        assert resp.status_code == 204
+        assert not storage.exists(name)
+
+    def test_delete_unauthenticated_is_refused(self, client):
+        project = ProjectFactory()
+        resp = client.delete(f"/api/projects/{project.pk}/")
+        assert resp.status_code in (401, 403)
+        from apps.project.models import Project
+        assert Project.objects.filter(pk=project.pk).exists()

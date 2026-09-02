@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
@@ -48,6 +49,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 "project_countries__country", "contributing_sectors", "contributing_sdgs"
             )
         )
+
+    def perform_destroy(self, instance):
+        # Suppression physique et irreversible : toutes les tables liees au
+        # projet (pays, transitions, cadre logique, resultats, workplan...)
+        # sont en on_delete=CASCADE. Le fichier PAD n'est pas couvert par la
+        # cascade (FileField), on le retire du stockage explicitement.
+        with transaction.atomic():
+            if instance.pad_reference_file:
+                instance.pad_reference_file.delete(save=False)
+            instance.delete()
 
     def get_serializer_class(self):
         if self.action == "create":
