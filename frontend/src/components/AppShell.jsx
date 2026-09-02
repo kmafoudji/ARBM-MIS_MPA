@@ -12,6 +12,7 @@ import {
 } from "./Icons.jsx";
 import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
+import PartnerBand from "./PartnerBand.jsx";
 import i18n from "../i18n/index.js";
 import NotificationBell from "./NotificationBell";
 
@@ -139,9 +140,9 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
 
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="brand">
-          <LogoFull dark={true} />
+          <LogoFull dark={true} height={44} />
           <div className="brand-sub-wrap">
-            <div className="brand-sub">{t("app.console")}</div>
+            <div className="brand-sub">{t("app.title")} · {t("app.console")}</div>
           </div>
         </div>
 
@@ -168,6 +169,7 @@ export default function AppShell({ view, onNavigate, user, counts = {}, children
         </nav>
 
         <div className="sidebar-footer">
+          <PartnerBand compact />
           <div className="user-card">
             <div className="user-avatar">{initials(user)}</div>
             <div className="user-meta">

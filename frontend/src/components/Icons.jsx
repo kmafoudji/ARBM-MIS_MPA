@@ -71,22 +71,13 @@ export const BrandMark = ({ size = 32 }) => (
   </svg>
 );
 
-/* Logo complet : losange + texte ARBM-MIS */
-export const LogoFull = ({ dark = false }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-    <svg width="32" height="32" viewBox="0 0 38 38" aria-hidden="true">
-      <polygon points="19,2 36,19 19,36 2,19" fill={dark ? "rgba(255,255,255,0.12)" : "#111111"}/>
-      <polygon points="19,7 31,19 19,31 7,19" fill="#A4C53F"/>
-    </svg>
-    <span style={{
-      fontFamily: "var(--font-display, 'Sora', sans-serif)",
-      fontWeight: 700,
-      fontSize: 18,
-      letterSpacing: "-0.02em",
-      color: dark ? "#ffffff" : "#111111",
-      lineHeight: 1,
-    }}>ARBM-MIS</span>
-  </div>
+/* Logo complet : logo officiel LLF (blanc sur fond sombre, charcoal sur clair) */
+export const LogoFull = ({ dark = false, height = 40 }) => (
+  <img
+    src={dark ? "/logos/llf/llf-logo-white.png" : "/logos/llf/llf-logo-charcoal.png"}
+    alt="Lives and Livelihoods Fund"
+    style={{ display: "block", height, width: "auto" }}
+  />
 );
 
 export const MicrosoftLogo = () => (

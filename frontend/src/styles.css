@@ -211,6 +211,37 @@ input, select, textarea { font: inherit; color: inherit; }
 .nav-item.active .nav-badge { background: rgba(15,26,30,0.15); color: var(--lime-darker); }
 
 .sidebar-footer { padding: var(--s-3); border-top: 1px solid rgba(255,255,255,0.08); }
+
+/* Bandeau partenaires — logos des donateurs sur fond blanc (gabarit LLF) */
+.partner-band {
+  background: #FFFFFF;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: var(--s-2) var(--s-3);
+}
+.partner-band-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: var(--s-1);
+}
+.partner-band-logos {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--s-2);
+  align-items: center;
+}
+.partner-band-logos img {
+  width: 100%;
+  max-height: 34px;
+  object-fit: contain;
+  display: block;
+}
+.partner-band.compact { margin-bottom: var(--s-2); padding: var(--s-1) var(--s-2); }
+.partner-band.compact .partner-band-label { font-size: 9px; margin-bottom: 6px; }
+.partner-band.compact .partner-band-logos { grid-template-columns: repeat(3, 1fr); gap: 6px 10px; }
+.partner-band.compact .partner-band-logos img { max-height: 22px; }
+.login-card .partner-band { margin-top: var(--s-4); border: none; border-top: 1px solid var(--rule); border-radius: 0; padding: var(--s-3) 0 0; }
 .user-card {
   background: rgba(255,255,255,0.05);
   border-radius: var(--r-2);
