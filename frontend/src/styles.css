@@ -154,6 +154,8 @@ input, select, textarea { font: inherit; color: inherit; }
   font-weight: 500;
 }
 /* legacy — conservé pour compatibilité */
+/* Nom du produit (aRBM-MIS) : casse d'origine, pas de capitales */
+.brand-product { text-transform: none; letter-spacing: 0.02em; }
 .brand-mark { display: none; }
 .brand-text-wrap { display: none; }
 .brand-name { display: none; }
