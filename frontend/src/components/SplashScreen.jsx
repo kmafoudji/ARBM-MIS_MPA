@@ -20,7 +20,7 @@ export default function SplashScreen({ exiting = false }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "#111",
+        background: "#2B2B2B",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -58,7 +58,7 @@ export default function SplashScreen({ exiting = false }) {
           animation: arbm-logo-in 0.7s cubic-bezier(0.16,1,0.3,1) both;
         }
         .arbm-splash-name {
-          font-family: 'Sora', system-ui, sans-serif;
+          font-family: 'Inter', system-ui, sans-serif;
           font-size: 24px;
           font-weight: 700;
           color: #fff;
@@ -67,7 +67,7 @@ export default function SplashScreen({ exiting = false }) {
           animation: arbm-fade-up 0.55s 0.35s cubic-bezier(0.16,1,0.3,1) both;
         }
         .arbm-splash-fund {
-          font-family: 'Sora', system-ui, sans-serif;
+          font-family: 'Inter', system-ui, sans-serif;
           font-size: 11px;
           font-weight: 600;
           color: #A4C53F;
@@ -77,7 +77,7 @@ export default function SplashScreen({ exiting = false }) {
           animation: arbm-fade-up 0.55s 0.55s cubic-bezier(0.16,1,0.3,1) both;
         }
         .arbm-splash-tagline {
-          font-family: 'Sora', system-ui, sans-serif;
+          font-family: 'Inter', system-ui, sans-serif;
           font-size: 12px;
           color: rgba(255,255,255,0.3);
           margin-top: 36px;
@@ -96,7 +96,7 @@ export default function SplashScreen({ exiting = false }) {
           background: rgba(255,255,255,0.18);
         }
         .arbm-splash-dot.active {
-          background: #A4C53F;
+          background: #0EB584;
           animation: arbm-dot-pulse 1.4s 1.1s ease-in-out infinite;
         }
         .arbm-splash-bar-track {
@@ -109,7 +109,7 @@ export default function SplashScreen({ exiting = false }) {
         }
         .arbm-splash-bar {
           height: 100%;
-          background: #A4C53F;
+          background: #0EB584;
           border-radius: 0 2px 2px 0;
           width: 0%;
           animation: arbm-bar-fill 2.8s 0.2s cubic-bezier(0.4,0,0.2,1) forwards;
@@ -117,16 +117,12 @@ export default function SplashScreen({ exiting = false }) {
       `}</style>
 
       {/* Logo */}
-      <svg
+      <img
         className="arbm-splash-logo"
-        width="68"
-        height="68"
-        viewBox="0 0 38 38"
-        aria-label="ARBM-MIS logo"
-      >
-        <polygon points="19,2 36,19 19,36 2,19" fill="#1a1a1a" />
-        <polygon points="19,7 31,19 19,31 7,19" fill="#A4C53F" />
-      </svg>
+        src="/logos/llf/llf-logo-white.png"
+        alt="Lives and Livelihoods Fund"
+        style={{ height: 72, width: "auto" }}
+      />
 
       {/* Nom */}
       <div className="arbm-splash-name">ARBM-MIS</div>
