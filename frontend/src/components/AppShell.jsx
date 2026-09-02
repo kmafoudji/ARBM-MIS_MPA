@@ -327,7 +327,7 @@ export default function AppShell({
         <div className="brand">
           <LogoFull dark={true} width="100%" />
           <div className="brand-sub-wrap">
-            <div className="brand-sub">{t("app.title")} · {t("app.console")}</div>
+            <div className="brand-sub"><span className="brand-product">{t("app.title")}</span> · {t("app.console")}</div>
           </div>
         </div>
 
