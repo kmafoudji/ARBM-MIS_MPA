@@ -311,6 +311,40 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
     },
   });
 
+  const deleteProjectMutation = useMutation({
+    mutationFn: () => apiFetch(`/api/projects/${projectId}/`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ["project", projectId] });
+      queryClient.removeQueries({ queryKey: ["project-transitions", projectId] });
+      queryClient.removeQueries({ queryKey: ["workspace", projectId] });
+      queryClient.removeQueries({ queryKey: ["toc", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      onBack?.();
+    },
+  });
+
+  // Double confirmation: a warning dialog, then the project code typed back.
+  async function handleDeleteProject() {
+    const code = project?.code || String(projectId);
+    const ok = await dialog.confirm(
+      `This permanently deletes project ${code} and everything attached to it: countries, stage transitions, ` +
+      `theory of change, logframe, results, workplan, reporting periods, partners and the PAD file. ` +
+      `This action cannot be undone.`,
+      { title: `Delete project ${code}?`, confirmLabel: "Continue", danger: true },
+    );
+    if (!ok) return;
+    const typed = await dialog.prompt(
+      `Type the project code (${code}) to confirm the deletion.`,
+      { title: "Confirm deletion", confirmLabel: "Delete project", danger: true },
+    );
+    if (typed === null || typed === undefined) return;
+    if (String(typed).trim() !== code) {
+      await dialog.alert("The code does not match. Nothing was deleted.", { title: "Deletion cancelled" });
+      return;
+    }
+    deleteProjectMutation.mutate();
+  }
+
   function handlePadFileChange(e) {
     const file = e.target.files?.[0];
     if (file) padUploadMutation.mutate(file);
@@ -1169,6 +1203,37 @@ export default function ProjectDetail({ projectId, onBack, onOpenToC, onOpenLogf
         </div>
       </div>
 
+      {canEdit && (
+        <div className="card mb-3" style={{ borderColor: "var(--danger, #dc2626)" }}>
+          <div className="card-header">
+            <div>
+              <h2 className="card-title" style={{ color: "var(--danger, #dc2626)" }}>
+                <Icon name="trash" size={15} style={{ marginRight: 6 }} />Danger zone
+              </h2>
+              <div className="card-sub">Irreversible actions on this project</div>
+            </div>
+            <button
+              className="btn btn-sm"
+              style={{ color: "var(--danger, #dc2626)", borderColor: "var(--danger, #dc2626)" }}
+              disabled={deleteProjectMutation.isPending}
+              onClick={handleDeleteProject}
+            >
+              <Icon name="trash" size={13} /> {deleteProjectMutation.isPending ? "Deleting..." : "Delete project"}
+            </button>
+          </div>
+          <div className="card-body">
+            <p className="text-sm" style={{ margin: 0, color: "#6b7280" }}>
+              Deleting the project removes all of its data (lifecycle, logframe, results, workplan, documents).
+              You will be asked to confirm twice, the second time by typing the project code.
+            </p>
+            {deleteProjectMutation.isError && (
+              <div className="text-sm" style={{ color: "var(--danger, #dc2626)", marginTop: "var(--s-2)" }}>
+                {deleteProjectMutation.error?.detail || String(deleteProjectMutation.error)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       </>)}
 
