@@ -203,9 +203,10 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
         {STAGE_ORDER.map((code, i) => {
           const t = byStage[code];
           const isInitial = i === 0 && !t;
-          // The initial stage is reached by definition; a later stage counts
-          // as reached once a transition into it exists.
-          const reached = !!t || isInitial;
+          // Every stage up to the current one has been passed, whether or
+          // not a transition into it was recorded (projects can be loaded
+          // mid-lifecycle); a stage beyond it counts only with a transition.
+          const reached = !!t || (!inException && i <= currentIdx);
           const isCurrent = code === current;
           return (
             <li
@@ -357,7 +358,12 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   const GATE_STAGES_SET = ["trc_endorsed", "ic_approved", "bed_approved"];
   const isGate = GATE_STAGES_SET.includes(tForm.to_stage);
   const needsDualAuth = isGate && !DEV_SKIP_DUAL_APPROVAL;
-  const needsJustification = true; // toujours requis
+  const toIdx = stageIdx(tForm.to_stage);
+  const fromIdx = stageIdx(project?.lifecycle_stage);
+  const isBackward = toIdx !== -1 && fromIdx !== -1 && toIdx < fromIdx;
+  // POL-1.09: the backend demands a justification on rollbacks only, and
+  // only while RBAC_ENFORCED is on (same switch as the second approver).
+  const needsJustification = isBackward && !DEV_SKIP_DUAL_APPROVAL;
 
   const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
@@ -1397,7 +1403,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
               <div className="field">
                 <label className="field-label" htmlFor="justif">
-                  Justification <span className="req">*</span>
+                  Justification {needsJustification && <span className="req">*</span>}
                 </label>
                 <textarea
                   id="justif"

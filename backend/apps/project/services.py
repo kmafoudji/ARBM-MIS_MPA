@@ -147,7 +147,10 @@ def transition_stage(
     from django.conf import settings
     rbac_enforced = getattr(settings, "RBAC_ENFORCED", False)
 
-    if is_backward and not justification:
+    # La justification obligatoire en retour arriere (POL-1.09) suit le meme
+    # interrupteur que l'autorisation double : desactivee tant que
+    # RBAC_ENFORCED est faux, pour permettre les tests du cycle de vie.
+    if rbac_enforced and is_backward and not justification:
         raise ValidationError(
             "Retour arriere : une justification est obligatoire (POL-1.09)."
         )
