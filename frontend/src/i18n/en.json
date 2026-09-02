@@ -16,6 +16,8 @@
     "hub_scope": "Portfolio scope",
     "hub_fixed_hint": "Your scope covers a single hub",
     "back_to": "Back to",
+    "more_details": "More details",
+    "less_details": "Less details",
     "project_sections": "Project",
     "scope_portfolio": "PORTFOLIO",
     "scope_project": "PROJECT"

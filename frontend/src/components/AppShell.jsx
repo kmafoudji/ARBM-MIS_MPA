@@ -224,6 +224,8 @@ export default function AppShell({
   const { t } = useTranslation();
   const [lang, setLang] = useState(i18n.language || "en");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Project context card: collapsed by default so the sections get the room.
+  const [ctxOpen, setCtxOpen] = useState(false);
 
   const scope = user?.scope; // absent on an older backend: no selector, no gating
   const inProject = PROJECT_VIEWS.has(view) && !!projectId;
@@ -293,27 +295,40 @@ export default function AppShell({
             ← {t("nav.back_to")} {CRUMBS[returnTo]?.label || CRUMBS.projects.label}
           </button>
         )}
-        <div className="ctx-code text-mono">{project?.code || "…"}</div>
-        <div className="ctx-name">{project?.name || ""}</div>
-        <div className="ctx-meta">
-          {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : ""}
-          {project?.hub_name ? ` · ${project.hub_name}` : ""}
-        </div>
-        {project?.lifecycle_stage_display && (
-          <div className="ctx-stage">{project.lifecycle_stage_display}</div>
-        )}
-        {siblings.length > 0 && (
-          <div className="ctx-siblings">
-            {siblings.map((p) => (
-              <button
-                key={p.id}
-                title={p.name}
-                onClick={() => { onNavigate("project-detail", { projectId: p.id }); closeSidebar(); }}
-              >
-                {p.code || p.acronym || `#${p.id}`}
-              </button>
-            ))}
+        <button
+          className={`ctx-toggle${ctxOpen ? " on" : ""}`}
+          onClick={() => setCtxOpen((o) => !o)}
+          aria-expanded={ctxOpen}
+        >
+          <span className="ctx-code text-mono">{project?.code || "…"}</span>
+          <span className="ctx-toggle-label">
+            {ctxOpen ? t("nav.less_details") : t("nav.more_details")} <span aria-hidden="true">{ctxOpen ? "▴" : "▾"}</span>
+          </span>
+        </button>
+        {ctxOpen && (
+          <>
+          <div className="ctx-name">{project?.name || ""}</div>
+          <div className="ctx-meta">
+            {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : ""}
+            {project?.hub_name ? ` · ${project.hub_name}` : ""}
           </div>
+          {project?.lifecycle_stage_display && (
+            <div className="ctx-stage">{project.lifecycle_stage_display}</div>
+          )}
+          {siblings.length > 0 && (
+            <div className="ctx-siblings">
+              {siblings.map((p) => (
+                <button
+                  key={p.id}
+                  title={p.name}
+                  onClick={() => { onNavigate("project-detail", { projectId: p.id }); closeSidebar(); }}
+                >
+                  {p.code || p.acronym || `#${p.id}`}
+                </button>
+              ))}
+            </div>
+          )}
+          </>
         )}
       </div>
       <nav className="nav">
