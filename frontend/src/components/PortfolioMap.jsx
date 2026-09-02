@@ -32,6 +32,19 @@ const STYLE = {
       paint: { "fill-color": "#EDEDEA" } },
     { id: "land-border", type: "line", source: "ne-countries",
       paint: { "line-color": "#FFFFFF", "line-width": 1.2 } },
+    { id: "country-labels", type: "symbol", source: "ne-countries",
+      layout: {
+        "symbol-placement": "point",
+        "text-field": ["get", "NAME"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 2, 9, 5, 13],
+        "text-padding": 4,
+      },
+      paint: {
+        "text-color": "#7E7E7E",
+        "text-halo-color": "#FFFFFF",
+        "text-halo-width": 1.2,
+      } },
   ],
 };
 
