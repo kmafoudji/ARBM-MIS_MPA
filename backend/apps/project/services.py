@@ -118,6 +118,7 @@ def transition_stage(
     justification="",
     dual_authorized_by=None,
     document_reference="",
+    transition_date=None,
 ):
     """
     Fait transiter `project` vers `to_stage`. Leve ValidationError si la
@@ -169,6 +170,7 @@ def transition_stage(
         from_stage=from_stage,
         to_stage=to_stage,
         transitioned_by=actor,
+        transition_date=transition_date,
         justification=justification,
         document_reference=document_reference,
         dual_authorized_by=dual_authorized_by,

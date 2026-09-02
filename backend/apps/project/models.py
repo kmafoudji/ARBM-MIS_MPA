@@ -335,6 +335,10 @@ class ProjectStageTransition(models.Model):
         AppUser, on_delete=models.SET_NULL, null=True, related_name="stage_transitions_made"
     )
     transitioned_at = models.DateTimeField(auto_now_add=True)
+    transition_date = models.DateField(
+        null=True, blank=True,
+        help_text="Date effective du passage d'etape (peut differer de la date de saisie).",
+    )
     justification = models.TextField(
         blank=True, help_text="Obligatoire pour tout retour arriere (POL-1.09)."
     )

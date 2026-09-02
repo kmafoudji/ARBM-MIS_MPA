@@ -332,8 +332,8 @@ class ProjectStageTransitionSerializer(serializers.ModelSerializer):
         model = ProjectStageTransition
         fields = [
             "id", "from_stage", "from_stage_display", "to_stage", "to_stage_display",
-            "transitioned_by_email", "transitioned_at", "justification",
-            "document_reference", "dual_authorized_by_email",
+            "transitioned_by_email", "transitioned_at", "transition_date",
+            "justification", "document_reference", "dual_authorized_by_email",
         ]
         read_only_fields = fields
 
@@ -342,6 +342,7 @@ class StageTransitionRequestSerializer(serializers.Serializer):
     """Payload pour POST /api/projects/{id}/transitions/ (SF-4)."""
 
     to_stage = serializers.ChoiceField(choices=LIFECYCLE_STAGE_CHOICES)
+    transition_date = serializers.DateField(required=False, allow_null=True, default=None)
     justification = serializers.CharField(required=False, allow_blank=True, default="")
     document_reference = serializers.CharField(required=False, allow_blank=True, default="")
     dual_authorized_by = serializers.PrimaryKeyRelatedField(

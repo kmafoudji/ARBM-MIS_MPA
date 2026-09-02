@@ -140,6 +140,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 justification=data.get("justification", ""),
                 dual_authorized_by=data.get("dual_authorized_by"),
                 document_reference=data.get("document_reference", ""),
+                transition_date=data.get("transition_date"),
             )
         except ValidationError as exc:
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
@@ -749,10 +750,13 @@ class ProjectStageTransitionDetailView(APIView):
     def patch(self, request, pk, t_pk):
         from apps.project.serializers import ProjectStageTransitionSerializer
         project, transition = self._get_last_transition(pk, t_pk)
-        allowed = {"justification", "document_reference"}
+        allowed = {"justification", "document_reference", "transition_date"}
         for field in allowed:
             if field in request.data:
-                setattr(transition, field, request.data[field])
+                value = request.data[field]
+                if field == "transition_date" and not value:
+                    value = None
+                setattr(transition, field, value)
         transition.save(update_fields=list(allowed & set(request.data.keys())))
         return Response(ProjectStageTransitionSerializer(transition).data)
 
