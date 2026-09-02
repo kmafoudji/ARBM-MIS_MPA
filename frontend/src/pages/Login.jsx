@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { MicrosoftLogo, LogoFull } from "../components/Icons.jsx";
-import PartnerBand from "../components/PartnerBand.jsx";
 import { apiFetch } from "../api";
 
 export default function Login() {
@@ -141,7 +140,6 @@ export default function Login() {
           Access restricted to MillenniumPromise staff and authorized LLF2 partners.
           SSO authentication is managed by Microsoft Entra ID.
         </p>
-        <PartnerBand />
       </div>
       <div className="login-side">
         ARBM-MIS · POC ·{" "}
