@@ -251,14 +251,8 @@ input, select, textarea { font: inherit; color: inherit; }
 .partner-band.compact .partner-band-logos { grid-template-columns: repeat(3, 1fr); gap: 6px 10px; }
 .partner-band.compact .partner-band-logos img { max-height: 22px; }
 .login-card .partner-band { margin-top: var(--s-4); border: none; border-top: 1px solid var(--rule); border-radius: 0; padding: var(--s-3) 0 0; }
-.user-card {
-  background: rgba(255,255,255,0.05);
-  border-radius: var(--r-2);
-  padding: var(--s-2);
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-}
+/* User menu — avatar in the topbar that opens identity + sign-out */
+.usermenu { position: relative; flex-shrink: 0; }
 .user-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
@@ -272,29 +266,60 @@ input, select, textarea { font: inherit; color: inherit; }
   flex-shrink: 0;
   font-family: var(--font-display);
 }
+.usermenu-btn {
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.usermenu-btn:hover, .usermenu-btn.on { border-color: var(--ink); }
+.usermenu-drop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.14);
+  padding: 6px;
+  z-index: 60;
+}
+.user-card {
+  background: var(--paper);
+  border-radius: var(--r-2);
+  padding: var(--s-2);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
 .user-meta { flex: 1; min-width: 0; }
 .user-name {
   font-weight: 500;
   font-size: 13px;
-  color: white;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .user-role {
   font-size: 11px;
-  color: rgba(255,255,255,0.55);
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .user-signout {
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  margin-top: var(--s-1);
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  border-radius: 7px;
+  padding: 8px;
+  margin-top: 4px;
 }
-.user-signout:hover { color: var(--lime); }
+.user-signout:hover { background: var(--paper); color: var(--ink); }
 
 /* Main + topbar */
 .main { display: flex; flex-direction: column; min-width: 0; }

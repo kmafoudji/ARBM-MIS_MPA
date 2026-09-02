@@ -78,6 +78,7 @@
   "auth": {
     "sign_in": "Sign in with Microsoft",
     "sign_out": "Sign out",
+    "account": "Account",
     "checking": "Checking session..."
   },
   "app": {
