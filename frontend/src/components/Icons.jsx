@@ -72,11 +72,15 @@ export const BrandMark = ({ size = 32 }) => (
 );
 
 /* Logo complet : logo officiel LLF (blanc sur fond sombre, charcoal sur clair) */
-export const LogoFull = ({ dark = false, height = 40 }) => (
+/* `width` donne : le logo remplit la largeur, la hauteur suit (ratio conserve) ;
+   sinon la hauteur est fixe et la largeur suit. */
+export const LogoFull = ({ dark = false, height = 40, width }) => (
   <img
     src={dark ? "/logos/llf/llf-logo-white.png" : "/logos/llf/llf-logo-charcoal.png"}
     alt="Lives and Livelihoods Fund"
-    style={{ display: "block", height, width: "auto", maxWidth: "100%", objectFit: "contain", alignSelf: "flex-start", flexShrink: 0 }}
+    style={width
+      ? { display: "block", width, height: "auto", maxWidth: "100%" }
+      : { display: "block", height, width: "auto", maxWidth: "100%", objectFit: "contain", alignSelf: "flex-start", flexShrink: 0 }}
   />
 );
 

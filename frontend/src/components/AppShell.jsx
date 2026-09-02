@@ -325,7 +325,7 @@ export default function AppShell({
 
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="brand">
-          <LogoFull dark={true} height={44} />
+          <LogoFull dark={true} width="100%" />
           <div className="brand-sub-wrap">
             <div className="brand-sub">{t("app.title")} · {t("app.console")}</div>
           </div>
