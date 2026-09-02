@@ -125,29 +125,36 @@ function Dt({ term, children }) {
   );
 }
 
-// Project-scope sections — consumed both by this page and by the AppShell's
-// project sidebar (sidebar B), which renders them with their lock state,
-// grouped under four pillars. Module level so the shell never duplicates
-// the rules.
+// Project navigation — consumed both by this page and by the AppShell's
+// project sidebar (sidebar B). Three levels: pillars group modules
+// (M1…M12, the reference model's numbering), modules own screens
+// (PROJECT_TABS). Overview and Settings sit outside the pillars, first and
+// last. A module with no screen yet is listed as "not yet available" so the
+// sidebar shows the whole architecture. Module level so the shell never
+// duplicates the rules.
 export const PROJECT_PILLARS = [
-  { key: "identity", label: "Identity & lifecycle" },
-  { key: "results",  label: "What it aims to achieve" },
-  { key: "delivery", label: "What gets done" },
-  { key: "control",  label: "Money & control" },
+  { key: "foundation", label: "Foundation & Configuration" },
+  { key: "field",      label: "Field Operations & Data Capture" },
+  { key: "finance",    label: "Financial Health & Risk Mitigation" },
+  { key: "memory",     label: "Reporting & Institutional Memory" },
 ];
 
-export const PROJECT_TABS = [
-  { key: "overview",   label: "Overview",         icon: "info-circle", pillar: "identity" },
-  { key: "lifecycle",  label: "Lifecycle",        icon: "zap",         pillar: "identity" },
-  { key: "toc",        label: "Theory of Change", icon: "globe",       pillar: "results"  },
-  { key: "logframe",   label: "Logframe",         icon: "bar-chart-2", pillar: "results"  },
-  { key: "results",    label: "Results",          icon: "trending-up", pillar: "results"  },
-  { key: "workplan",   label: "Workplan",         icon: "layout",      pillar: "delivery" },
-  { key: "geographic", label: "Geographic Scope", icon: "map-pin",     pillar: "delivery" },
-  { key: "partners",   label: "Partners",         icon: "users",       pillar: "delivery" },
-  { key: "financial",  label: "Financial",        icon: "database",    pillar: "control"  },
-  { key: "reporting",  label: "Reporting",        icon: "calendar",    pillar: "control"  },
-  { key: "documents",  label: "Documents",        icon: "folder",      pillar: "control"  },
+// pillar: null → standalone entry (Overview on top, Settings at the bottom).
+export const PROJECT_MODULES = [
+  { key: "overview", label: "Overview",                   icon: "info-circle",    pillar: null },
+  { key: "m1",       label: "M1 · Project Creation",      icon: "tag",            pillar: "foundation" },
+  { key: "m2",       label: "M2 · Results Framework",     icon: "globe",          pillar: "foundation" },
+  { key: "m3",       label: "M3 · Activity Tracking",     icon: "layout",         pillar: "field" },
+  { key: "m4",       label: "M4 · Deliverables & Evidence", icon: "package",      pillar: "field" },
+  { key: "m5",       label: "M5 · GIS & Spatial",         icon: "map-pin",        pillar: "field" },
+  { key: "m6",       label: "M6 · Beneficiary Delivery",  icon: "users",          pillar: "field" },
+  { key: "m9",       label: "M9 · Procurement",           icon: "clipboard",      pillar: "finance" },
+  { key: "m10",      label: "M10 · Financial Tracking",   icon: "wallet",         pillar: "finance" },
+  { key: "m11",      label: "M11 · Risk Management",      icon: "alert-triangle", pillar: "finance" },
+  { key: "m7",       label: "M7 · Data Quality",          icon: "check-circle",   pillar: "memory" },
+  { key: "m8",       label: "M8 · Document Repository",   icon: "folder",         pillar: "memory" },
+  { key: "m12",      label: "M12 · Dashboards",           icon: "bar-chart-2",    pillar: "memory" },
+  { key: "settings", label: "Settings",                   icon: "edit",           pillar: null },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -241,6 +248,26 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
   );
 }
 
+// Screens. `module` is the PROJECT_MODULES key they hang from; a module with
+// several screens renders them as horizontal tabs on the page.
+export const PROJECT_TABS = [
+  { key: "overview",   label: "Overview",         icon: "info-circle", module: "overview" },
+  { key: "lifecycle",  label: "Lifecycle",        icon: "zap",         module: "m1" },
+  { key: "financial",  label: "Financial",        icon: "database",    module: "m1" },
+  { key: "partners",   label: "Partners",         icon: "users",       module: "m1" },
+  { key: "reporting",  label: "Reporting",        icon: "calendar",    module: "m1" },
+  { key: "toc",        label: "Theory of Change", icon: "globe",       module: "m2" },
+  { key: "logframe",   label: "Logframe",         icon: "bar-chart-2", module: "m2" },
+  { key: "results",    label: "Results",          icon: "trending-up", module: "m2" },
+  { key: "workplan",   label: "Workplan",         icon: "layout",      module: "m3" },
+  { key: "geographic", label: "Geographic Scope", icon: "map-pin",     module: "m5" },
+  { key: "documents",  label: "Documents",        icon: "folder",      module: "m8" },
+  { key: "settings",   label: "Settings",         icon: "edit",        module: "settings" },
+];
+
+export const screensOf = (moduleKey) => PROJECT_TABS.filter((tb) => tb.module === moduleKey);
+export const moduleOf  = (tabKey) => PROJECT_TABS.find((tb) => tb.key === tabKey)?.module;
+
 // Stage order for comparisons (SF-4 lifecycle)
 const STAGE_ORDER = [
   "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
@@ -260,6 +287,7 @@ export function computeTabLocks(project) {
     overview:   { locked: false },
     lifecycle:  { locked: false },
     documents:  { locked: false },
+    settings:   { locked: false },
     financial:  {
       locked: !atLeast("pipeline_taskforce_review"),
       reason: "Available from Pipeline Taskforce Review stage",
@@ -708,7 +736,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
   // La barre d'onglets et l'en-tete projet (code, nom, retour) vivent
   // desormais dans la sidebar projet du AppShell (scope PROJECT).
-  const sectionLabel = PROJECT_TABS.find((tb) => tb.key === activeTab)?.label;
+  const activeModule = PROJECT_MODULES.find((m) => m.key === moduleOf(activeTab));
+  const moduleScreens = activeModule ? screensOf(activeModule.key) : [];
+  const sectionLabel = activeModule?.label || PROJECT_TABS.find((tb) => tb.key === activeTab)?.label;
 
   return (
     <div className="view">
@@ -719,6 +749,27 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         <div className="view-eyebrow text-mono">{project.code}</div>
         <h1 className="view-title">{sectionLabel}</h1>
       </div>
+
+      {moduleScreens.length > 1 && (
+        <div className="tabs">
+          {moduleScreens.map(({ key, label, icon }) => {
+            const lock = TAB_LOCKS[key] || { locked: false };
+            return (
+              <button
+                key={key}
+                className={`tab${activeTab === key ? " active" : ""}`}
+                onClick={() => onTabChange(key)}
+                title={lock.locked ? lock.reason : ""}
+                style={lock.locked ? { opacity: 0.5 } : undefined}
+              >
+                <Icon name={icon} size={13} style={{ marginRight: 6, verticalAlign: -2 }} />
+                {label}
+                {lock.locked && <Icon name="lock" size={11} style={{ marginLeft: 6, verticalAlign: -1 }} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {GLOBAL_BANNER}
 
@@ -1157,7 +1208,26 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         </div>
       </div>
 
-      {canEdit && (
+      </>)}
+
+
+      {activeTab === "settings" && (<>
+      <div className="card mb-3">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title"><Icon name="edit" size={15} style={{ marginRight: 6 }} />Project settings</h2>
+            <div className="card-sub">Administrative actions that are not part of day-to-day project work</div>
+          </div>
+        </div>
+        <div className="card-body">
+          <p className="text-sm" style={{ margin: 0, color: "#6b7280" }}>
+            Identity, classification and reporting configuration are edited from their own modules.
+            Irreversible actions live below.
+          </p>
+        </div>
+      </div>
+
+      {canEdit ? (
         <div className="card mb-3" style={{ borderColor: "var(--danger, #dc2626)" }}>
           <div className="card-header">
             <div>
@@ -1187,10 +1257,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             )}
           </div>
         </div>
+      ) : (
+        <div className="text-sm" style={{ color: "#6b7280" }}>You do not have permission to change this project's settings.</div>
       )}
-
       </>)}
-
 
       {activeTab === "financial" && (<>
       {TAB_LOCKS["financial"]?.locked

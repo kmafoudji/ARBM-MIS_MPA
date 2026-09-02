@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
 import i18n from "../i18n/index.js";
 import NotificationBell from "./NotificationBell";
-import { PROJECT_PILLARS, PROJECT_TABS, computeTabLocks } from "../pages/ProjectDetail.jsx";
+import { PROJECT_PILLARS, PROJECT_MODULES, screensOf, moduleOf, computeTabLocks } from "../pages/ProjectDetail.jsx";
 import { apiFetch } from "../api";
 
 // Views that belong to the PROJECT scope: opening them swaps the whole
@@ -332,33 +332,52 @@ export default function AppShell({
         )}
       </div>
       <nav className="nav">
-        {PROJECT_PILLARS.map((pillar) => (
-          <div key={pillar.key}>
-            <div className="nav-label">{pillar.label}</div>
-            {PROJECT_TABS.filter((tb) => tb.pillar === pillar.key).map(({ key, label, icon }) => {
-              const lock = locks[key] || { locked: false };
-              const isActive = activeSection === key;
-              return (
-                <button
-                  key={key}
-                  className={`nav-item${isActive ? " active" : ""}${lock.locked ? " locked" : ""}`}
-                  onClick={() => {
-                    if (lock.locked) return;
-                    onProjectTab(key);
-                    closeSidebar();
-                  }}
-                  title={lock.locked ? lock.reason : ""}
-                  disabled={lock.locked}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <Icon name={icon} size={14} />
-                  <span>{label}</span>
-                  {lock.locked && <Icon name="lock" size={11} />}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {/* One button per module. A module opens its first screen (the
+            first unlocked one when some are stage-locked); a module with no
+            screen yet is shown disabled as "not yet available". */}
+        {(() => {
+          const activeModule = moduleOf(activeSection);
+          const renderModule = ({ key, label, icon }) => {
+            const screens = screensOf(key);
+            const available = screens.length > 0;
+            const target = screens.find((sc) => !(locks[sc.key] || {}).locked) || screens[0];
+            const isActive = activeModule === key;
+            return (
+              <button
+                key={key}
+                className={`nav-item${isActive ? " active" : ""}${available ? "" : " locked"}`}
+                onClick={() => {
+                  if (!available) return;
+                  onProjectTab(target.key);
+                  closeSidebar();
+                }}
+                title={available ? "" : t("nav.not_yet_available")}
+                disabled={!available}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon name={icon} size={14} />
+                <span>{label}</span>
+                {!available && <Icon name="lock" size={11} />}
+              </button>
+            );
+          };
+          const standalone = (m) => m.pillar === null;
+          const [top, bottom] = [PROJECT_MODULES[0], PROJECT_MODULES[PROJECT_MODULES.length - 1]];
+          return (
+            <>
+              <div>{renderModule(top)}</div>
+              {PROJECT_PILLARS.map((pillar) => (
+                <div key={pillar.key}>
+                  <div className="nav-label">{pillar.label}</div>
+                  {PROJECT_MODULES.filter((m) => m.pillar === pillar.key).map(renderModule)}
+                </div>
+              ))}
+              <div style={{ marginTop: "var(--s-3)", paddingTop: "var(--s-2)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                {PROJECT_MODULES.filter(standalone).filter((m) => m !== top).map(renderModule)}
+              </div>
+            </>
+          );
+        })()}
       </nav>
     </>
   );
