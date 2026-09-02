@@ -133,6 +133,7 @@ export default function App() {
         <ProjectDetail
           projectId={selectedProjectId}
           onBack={() => setNav("projects")}
+          onDeleted={() => { setSelectedProjectId(null); setNav("projects"); }}
           onOpenToC={() => setNav("project-toc")}
           onOpenLogframe={() => setNav("project-logframe")}
           onOpenPIRS={(rowId) => { setSelectedRowId(rowId); setNav("pirs"); }}
