@@ -718,6 +718,17 @@ class ReportingPeriod(models.Model):
         ordering = ["period_number"]
         unique_together = [("project", "period_number")]
 
+    @property
+    def is_late(self):
+        """
+        Vrai si la période a été soumise après sa date limite (due_date).
+        Dérivé de submitted_at : aucun statut supplémentaire n'est stocké,
+        « Submitted (late) » reste un submitted/approved ordinaire.
+        """
+        if self.status not in ("submitted", "approved") or not self.submitted_at:
+            return False
+        return self.submitted_at.date() > self.due_date
+
     def __str__(self):
         return f"{self.project.code} — {self.label or f'P{self.period_number}'}"
 

@@ -176,14 +176,15 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
                       {late && <Icon name="alert-circle" size={12} style={{ marginLeft: 4, color: "#dc2626" }} />}
                     </td>
                     <td>
-                      <span className={STATUS_BADGE[late ? "overdue" : p.status] || "badge"}>
-                        {late && p.status !== "submitted" && p.status !== "approved" ? "Overdue" : p.status_display}
+                      <span className={STATUS_BADGE[late ? "overdue" : p.status] || "badge"}
+                        title={p.is_late && p.submitted_at ? `Submitted on ${fmtDate(p.submitted_at)}, after the due date` : undefined}>
+                        {late ? "Overdue" : p.is_late ? `${p.status_display} (late)` : p.status_display}
                       </span>
                     </td>
                     {canEdit && (
                       <td>
                         <div className="row" style={{ gap: 4 }}>
-                          {p.status === "upcoming" || p.status === "open" ? (
+                          {p.status === "upcoming" || p.status === "open" || p.status === "overdue" ? (
                             <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }}
                               onClick={() => patchMutation.mutate({ pId: p.id, status: "submitted" })}>
                               Mark submitted

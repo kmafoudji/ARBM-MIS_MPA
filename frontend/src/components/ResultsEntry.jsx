@@ -471,7 +471,8 @@ export default function ResultsEntry({ projectId, canEdit }) {
                 <div style={{ fontWeight: 400, fontSize: 10, color: "#999", marginTop: 2 }}>
                   {p.status === "open"     ? "🟢 Open"
                   : p.status === "overdue" ? "⚠️ Overdue"
-                  : p.status === "approved"? "✅ Approved"
+                  : p.status === "submitted" ? (p.is_late ? "📤 Submitted (late)" : "📤 Submitted")
+                  : p.status === "approved"? (p.is_late ? "✅ Approved (late)" : "✅ Approved")
                   : p.status === "upcoming"? "🔒 Upcoming"
                   : ""}
                 </div>
