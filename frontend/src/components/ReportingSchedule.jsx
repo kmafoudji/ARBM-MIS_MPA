@@ -158,6 +158,7 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
                 <th style={{ textAlign: "left" }}>Start</th>
                 <th style={{ textAlign: "left" }}>End</th>
                 <th style={{ textAlign: "left" }}>Due date</th>
+                <th style={{ textAlign: "left" }}>Submitted</th>
                 <th style={{ textAlign: "left" }}>Status</th>
                 {canEdit && <th style={{ width: 120 }}></th>}
               </tr>
@@ -174,6 +175,9 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
                     <td className="text-sm" style={{ color: late ? "#dc2626" : undefined }}>
                       {fmtDate(p.due_date)}
                       {late && <Icon name="alert-circle" size={12} style={{ marginLeft: 4, color: "#dc2626" }} />}
+                    </td>
+                    <td className="text-sm" style={{ color: p.is_late ? "#dc2626" : undefined }}>
+                      {fmtDate(p.submitted_at)}
                     </td>
                     <td>
                       <span className={STATUS_BADGE[late ? "overdue" : p.status] || "badge"}
