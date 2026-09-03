@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -627,6 +628,8 @@ class ReportingPeriodView(APIView):
                 "due_date":      str(p.due_date),
                 "status":        p.status,
                 "status_display": p.get_status_display(),
+                "submitted_at":  p.submitted_at.isoformat() if p.submitted_at else None,
+                "is_late":       p.is_late,
             }
             for p in periods
         ]
@@ -666,10 +669,22 @@ class ReportingPeriodDetailView(APIView):
         for field in allowed:
             if field in request.data:
                 setattr(period, field, request.data[field] or None)
+        # Horodater la transition si l'appelant ne fournit pas la date :
+        # submitted_at sert ensuite à dériver is_late (soumission tardive).
+        now = timezone.now()
+        if period.status == "submitted" and not period.submitted_at:
+            period.submitted_at = now
+        if period.status == "approved":
+            if not period.submitted_at:
+                period.submitted_at = now
+            if not period.approved_at:
+                period.approved_at = now
         period.save()
         return Response({
             "id": period.id, "status": period.status,
             "status_display": period.get_status_display(),
+            "submitted_at": period.submitted_at.isoformat() if period.submitted_at else None,
+            "is_late": period.is_late,
         })
 
 

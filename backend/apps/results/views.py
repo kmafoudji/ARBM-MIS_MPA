@@ -755,6 +755,7 @@ class ResultsSummaryView(APIView):
                         "period_label": p.label,
                         "period_end":   str(p.end_date),
                         "period_status": p.status,
+                        "period_is_late": p.is_late,
                         "data": {
                             "id":               rd.id           if rd else None,
                             "actual_value":     fmt_decimal(rd.actual_value) if rd else None,
@@ -781,7 +782,7 @@ class ResultsSummaryView(APIView):
                 "project_id":   pk,
                 "project_code": project.code,
                 "rows":         result,
-                "periods":      [{"id": p.id, "label": p.label, "end_date": str(p.end_date), "status": p.status} for p in periods],
+                "periods":      [{"id": p.id, "label": p.label, "end_date": str(p.end_date), "status": p.status, "is_late": p.is_late} for p in periods],
             })
         except Exception as exc:
             import traceback
