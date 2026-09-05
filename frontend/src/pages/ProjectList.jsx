@@ -230,7 +230,7 @@ function ProjectCard({ project, onClick }) {
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
 export default function ProjectList({ onCreateClick, onProjectClick }) {
-  const [viewMode,    setViewMode]    = useState("list");
+  const [viewMode,    setViewMode]    = useState("cards");
   const [search,      setSearch]      = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [sectorFilter,setSectorFilter]= useState("");
