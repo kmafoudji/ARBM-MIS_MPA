@@ -134,11 +134,8 @@ class TestBedApprovedPrerequisites:
         sdg = SdgFactory(number=3)
         project = ProjectFactory(
             lifecycle_stage="appraisal",
-            gender_marker="1",
-            implementation_modality="direct",
-            geographic_typology="rural",
-            fragility_status="stable",
-            risk_rating="low",
+            we_category="WE001",
+            risk_rating="tbd",
             start_date=date(2026, 1, 1),
             end_date=date(2028, 12, 31),
         )

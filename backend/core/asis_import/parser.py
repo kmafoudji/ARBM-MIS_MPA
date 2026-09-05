@@ -652,16 +652,9 @@ def _parse_project(context):
 
     enum_columns = [
         ("lifecycle_stage", vocab.LIFECYCLE_STAGES),
-        ("gender_marker", vocab.GENDER_MARKERS),
-        ("rio_marker_mitigation", vocab.RIO_MARKERS),
-        ("rio_marker_adaptation", vocab.RIO_MARKERS),
-        ("rio_marker_biodiversity", vocab.RIO_MARKERS),
-        ("rio_marker_desertification", vocab.RIO_MARKERS),
-        ("rio_marker_water", vocab.RIO_MARKERS),
-        ("implementation_modality", vocab.IMPLEMENTATION_MODALITIES),
-        ("fragility_status", vocab.FRAGILITY_STATUSES),
+        ("we_category", vocab.WE_CATEGORIES),
         ("risk_rating", vocab.RISK_RATINGS),
-        ("geographic_typology", vocab.GEOGRAPHIC_TYPOLOGIES),
+        ("climate_marker", vocab.CLIMATE_MARKERS),
         ("reporting_frequency", vocab.REPORTING_FREQUENCIES),
     ]
     for column, allowed in enum_columns:

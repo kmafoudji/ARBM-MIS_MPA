@@ -32,7 +32,7 @@ class ProjectStageTransitionInline(admin.TabularInline):
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ("code", "name", "primary_sector", "lifecycle_stage", "created_by")
-    list_filter = ("lifecycle_stage", "primary_sector", "fragility_status", "risk_rating")
+    list_filter = ("lifecycle_stage", "primary_sector", "we_category", "risk_rating")
     search_fields = ("code", "name", "official_reference_number")
     inlines = [ProjectCountryInline, ProjectSectorInline, ProjectSdgInline, ProjectStageTransitionInline]
     fieldsets = (
@@ -45,12 +45,8 @@ class ProjectAdmin(admin.ModelAdmin):
         }),
         ("Classification (SF-2)", {
             "fields": (
-                "primary_sector", "gender_marker",
-                "rio_marker_mitigation", "rio_marker_adaptation",
-                "rio_marker_biodiversity", "rio_marker_desertification",
-                "cross_cutting_themes", "implementation_modality",
+                "primary_sector", "we_category", "risk_rating", "climate_marker",
                 "beneficiary_target_direct", "beneficiary_target_indirect",
-                "geographic_typology", "fragility_status", "risk_rating",
             )
         }),
         ("Portefeuille", {
@@ -64,7 +60,7 @@ class ProjectAdmin(admin.ModelAdmin):
         }),
     )
     readonly_fields = ("created_at", "updated_at")
-    filter_horizontal = ("donors", "cross_cutting_themes")
+    filter_horizontal = ("donors",)
 
 
 @admin.register(ProjectStageTransition)

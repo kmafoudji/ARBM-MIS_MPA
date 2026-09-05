@@ -313,7 +313,7 @@ function LevelSection({ level, indicators }) {
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
 export default function Portfolio() {
-  const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "", country: "", donor: "", fragility: "", rag: "" });
+  const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "", country: "", donor: "", rag: "" });
 
   // Quand le hub change, réinitialiser le pays
   function setFilter(key, value) {
@@ -335,7 +335,6 @@ export default function Portfolio() {
   if (filters.chain_level) params.set("chain_level", filters.chain_level);
   if (filters.country)     params.set("country",     filters.country);
   if (filters.donor)       params.set("donor",       filters.donor);
-  if (filters.fragility)   params.set("fragility",   filters.fragility);
   if (filters.rag)         params.set("rag",         filters.rag);
 
   const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery({
@@ -460,11 +459,6 @@ export default function Portfolio() {
           { key: "sector",    label: "Sector",    options: sectors.map(s => ({ value: String(s.id), label: s.name })) },
           { key: "donor",     label: "Donor",     options: donors.map(d => ({ value: String(d.id), label: d.short_name || d.name })) },
           { key: "chain_level", label: "Level",   options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })) },
-          { key: "fragility", label: "Fragility", options: [
-            { value: "stable",    label: "Stable" },
-            { value: "pre_fcv",   label: "Pre-FCV" },
-            { value: "fcv",       label: "FCV" },
-          ]},
           { key: "rag", label: "Status", options: [
             { value: "green", label: "🟢 On track" },
             { value: "amber", label: "🟡 At risk" },
@@ -491,7 +485,7 @@ export default function Portfolio() {
 
         {Object.values(filters).some(Boolean) && (
           <button
-            onClick={() => setFilters({ hub: "", sector: "", chain_level: "", country: "", donor: "", fragility: "", rag: "" })}
+            onClick={() => setFilters({ hub: "", sector: "", chain_level: "", country: "", donor: "", rag: "" })}
             style={{
               height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
               border: "1px solid #fca5a5", borderRadius: 8,

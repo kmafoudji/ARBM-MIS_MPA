@@ -40,8 +40,8 @@ SHEETS_WITH_NOTE = {
 HEADERS = {
     "01_project": [
         "official_reference_number", "name", "acronym", "lead_country_iso3", "hub_code",
-        "primary_sector", "sdgs", "gender_marker",
-        "geographic_typology", "risk_rating", "budget_amount", "currency",
+        "primary_sector", "sdgs", "we_category",
+        "climate_marker", "risk_rating", "budget_amount", "currency",
         "reporting_frequency", "next_reporting_due", "lifecycle_stage",
         "start_date", "end_date",
     ],
@@ -84,7 +84,7 @@ def base_rows(country_iso3, hub_code, sector_code):
     return {
         "01_project": [[
             "REF001", PROJECT_NAME, "TP", country_iso3, hub_code, sector_code,
-            "1; 2; 5", "", "rural", "moderate", 1000, "USD", "quarterly",
+            "1; 2; 5", "", "", "tbd", 1000, "USD", "quarterly",
             "2025-03-31", "implementing", "2025-01-01", "2026-12-31",
         ]],
         "02a_envelope": [["REF001", "Envelope note"]],
@@ -359,7 +359,7 @@ def test_blank_cell_never_clears_a_stored_value(auth_client, rows):
     workbook.seek(0)
     post(auth_client, workbook, mode="commit",
          expected_sha256=validation.data["file_sha256"])
-    assert Project.objects.get(official_reference_number="REF001").risk_rating == "moderate"
+    assert Project.objects.get(official_reference_number="REF001").risk_rating == "tbd"
 
     rows["01_project"][0][9] = ""  # risk_rating left empty
     workbook = build_workbook(rows)
@@ -371,7 +371,7 @@ def test_blank_cell_never_clears_a_stored_value(auth_client, rows):
     workbook.seek(0)
     post(auth_client, workbook, mode="commit",
          expected_sha256=validation.data["file_sha256"])
-    assert Project.objects.get(official_reference_number="REF001").risk_rating == "moderate"
+    assert Project.objects.get(official_reference_number="REF001").risk_rating == "tbd"
 
 
 @pytest.mark.django_db

@@ -145,7 +145,7 @@ primary key exactly as it was.
 
 Errors (block the commit), each carrying sheet and row:
 
-- enum values that are not model literals — `lifecycle_stage`, `fragility_status`, `geographic_typology`, `rio_marker_*`, financing `source` / `instrument`, activity `status`, milestone `status`, indicator `direction`, `chain_level`, `reporting_frequency`
+- enum values that are not model literals — `lifecycle_stage`, `we_category`, `risk_rating`, `climate_marker` (the classification columns since the 5 September 2026 rework; `gender_marker`, `fragility_status`, `geographic_typology`, `rio_marker_*` no longer exist), financing `source` / `instrument`, activity `status`, milestone `status`, indicator `direction`, `chain_level`, `reporting_frequency`
 - reference rows that do not exist — hub code, country ISO3, sector key, GADM area
 - unresolved internal references — an activity naming a sub-component absent from `09_components`, a logframe row naming an indicator absent from `07`
 - financing rows that do not reconcile to `budget_amount` (VAL015)
