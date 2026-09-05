@@ -12,6 +12,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0004](0004-language-new-code-english.md) | New code is English; existing French files stay French per file |
 | [0005](0005-migrations-must-apply-from-scratch.md) | Migrations must apply from an empty database, and CI proves it |
 | [0006](0006-flat-sdg-set-sectors-keep-a-primary.md) | Projects carry one flat set of SDGs; sectors keep a primary |
+| [0007](0007-sector-taxonomy-pillar-then-sector.md) | The sector taxonomy has two levels: a project sits in a sector, under a pillar |
 
 ## Pending
 
