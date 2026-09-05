@@ -571,7 +571,7 @@ export default function Logframe({ projectId, onBack, onOpenPIRS, embedded = fal
 
       {!embedded && (
       <div className="view-header">
-        <div className="view-eyebrow text-mono">{project?.code}</div>
+        <div className="view-eyebrow text-mono">{project?.official_reference_number}</div>
         <h1 className="view-title">Indicator Summary</h1>
         <div className="row mt-2">
           <span className="badge">{(rows || []).length} indicator{rows?.length !== 1 ? "s" : ""}</span>

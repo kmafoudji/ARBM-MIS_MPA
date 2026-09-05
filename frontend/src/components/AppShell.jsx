@@ -300,7 +300,7 @@ export default function AppShell({
           onClick={() => setCtxOpen((o) => !o)}
           aria-expanded={ctxOpen}
         >
-          <span className="ctx-code text-mono">{project?.code || "…"}</span>
+          <span className="ctx-code text-mono">{project?.official_reference_number || "…"}</span>
           <span className="ctx-toggle-label">
             {ctxOpen ? t("nav.less_details") : t("nav.more_details")} <span aria-hidden="true">{ctxOpen ? "▴" : "▾"}</span>
           </span>
@@ -323,7 +323,7 @@ export default function AppShell({
                   title={p.name}
                   onClick={() => { onNavigate("project-detail", { projectId: p.id }); closeSidebar(); }}
                 >
-                  {p.code || p.acronym || `#${p.id}`}
+                  {p.official_reference_number || p.name}
                 </button>
               ))}
             </div>

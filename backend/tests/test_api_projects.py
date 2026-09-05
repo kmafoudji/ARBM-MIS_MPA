@@ -32,6 +32,7 @@ class TestProjectCreate:
         country = CountryFactory()
         payload = {
             "name": "Test Project SF-1",
+            "official_reference_number": "Test Project SF-1-REF",
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
@@ -47,6 +48,7 @@ class TestProjectCreate:
         country = CountryFactory()
         payload = {
             "name": "Stage Test",
+            "official_reference_number": "Stage Test-REF",
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
@@ -64,6 +66,7 @@ class TestProjectCreate:
         country = CountryFactory()
         payload = {
             "name": "Creator Test",
+            "official_reference_number": "Creator Test-REF",
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,

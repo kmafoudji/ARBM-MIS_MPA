@@ -142,7 +142,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href     = url;
-      a.download = `PIRS_${project.code}_${indicator.code}.docx`;
+      a.download = `PIRS_${project.official_reference_number}_${indicator.code}.docx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -167,7 +167,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
               {indicator.name}
             </h1>
             <p className="view-lead" style={{ marginTop: 4 }}>
-              {project.name} · {project.code} · Generated {genDate}
+              {project.name} · {project.official_reference_number} · Generated {genDate}
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "flex-start", marginTop: 4 }}>
@@ -190,9 +190,8 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       {/* ── A. Project ──────────────────────────────────────────────── */}
       <SectionHeader title="A. Project Identification" icon="folder" />
       <InfoBlock rows={[
-        ["Project Code",  project.code],
+        ["Official Reference", project.official_reference_number],
         ["Project Name",  project.name],
-        ["Acronym",       project.acronym],
         ["Sector",        project.sector],
         ["Hub",           project.hub],
         ["Country",       project.country],
@@ -332,7 +331,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", textAlign: "center", fontSize: 11, color: "#9ca3af" }}>
-        PIRS · {indicator.code} · {project.code} · v{indicator.version} · {genDate} · aRBM-MIS · IsDB LLF2
+        PIRS · {indicator.code} · {project.official_reference_number} · v{indicator.version} · {genDate} · aRBM-MIS · IsDB LLF2
       </div>
     </div>
   );

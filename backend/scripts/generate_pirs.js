@@ -119,9 +119,8 @@ async function generatePIRS(data) {
   // ── Section A : Identification ──────────────────────────────────────────────
   children.push(section("A. Project Identification"));
   children.push(infoTable([
-    ["Project Code",    project.code || "—"],
+    ["Official Reference", project.official_reference_number || "—"],
     ["Project Name",    project.name || "—"],
-    ["Acronym",         project.acronym || "—"],
     ["Sector",          project.sector || "—"],
     ["Hub",             project.hub || "—"],
     ["Country",         project.country || "—"],
@@ -286,7 +285,7 @@ async function generatePIRS(data) {
 
   // ── Footer ────────────────────────────────────────────────────────────────
   children.push(new Paragraph({
-    children: [new TextRun({ text: `PIRS · ${indicator.code} · ${project.code} · v${indicator.version} · Generated ${genDate} · CONFIDENTIAL`, color: GRAY, size: 14, italics: true })],
+    children: [new TextRun({ text: `PIRS · ${indicator.code} · ${project.official_reference_number} · v${indicator.version} · Generated ${genDate} · CONFIDENTIAL`, color: GRAY, size: 14, italics: true })],
     alignment: AlignmentType.CENTER,
     spacing:   { before: 400 },
     border:    { top: { style: BorderStyle.SINGLE, size: 1, color: "E5E7EB" } },
@@ -295,7 +294,7 @@ async function generatePIRS(data) {
   // ── Document ──────────────────────────────────────────────────────────────
   const doc = new Document({
     creator:     "ARBM-MES · MillenniumPromise",
-    title:       `PIRS · ${indicator.code} · ${project.code}`,
+    title:       `PIRS · ${indicator.code} · ${project.official_reference_number}`,
     description: `Performance Indicator Reference Sheet — ${indicator.name}`,
     sections: [{
       properties: {

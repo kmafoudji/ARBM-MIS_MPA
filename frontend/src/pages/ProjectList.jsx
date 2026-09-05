@@ -107,7 +107,7 @@ function ProjectCard({ project, onClick }) {
       onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.borderTopColor = sg.color; }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <span style={{ fontFamily: "monospace", fontSize: 11, color: "#9ca3af" }}>{project.code}</span>
+        <span style={{ fontFamily: "monospace", fontSize: 11, color: "#9ca3af" }}>{project.official_reference_number}</span>
         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sg.bg, color: sg.color }}>
           {project.lifecycle_stage_display}
         </span>
@@ -166,7 +166,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
   // Filtrage
   const filtered = useMemo(() => data.filter(p => {
     const q = search.toLowerCase();
-    if (q && !p.name.toLowerCase().includes(q) && !p.code?.toLowerCase().includes(q) && !(p.acronym||"").toLowerCase().includes(q)) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !(p.official_reference_number||"").toLowerCase().includes(q)) return false;
     if (stageFilter) {
       const sg = stageGroup(p.lifecycle_stage);
       if (sg.key !== stageFilter) return false;
@@ -227,7 +227,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
         <Icon name="filter" size={13} style={{ color: "#9ca3af", flexShrink: 0 }} />
 
         {/* Recherche */}
-        <input type="text" placeholder="Search by name, code, acronym…"
+        <input type="text" placeholder="Search by name or reference…"
           value={search} onChange={e => setSearch(e.target.value)}
           style={{
             height: 32, padding: "0 10px", fontSize: 12,
@@ -333,7 +333,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
           <table className="table table-hover">
             <thead>
               <tr>
-                <th>Code</th>
+                <th>Reference</th>
                 <th>Project</th>
                 <th>Countries</th>
                 <th>Hub</th>
@@ -345,10 +345,10 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
             <tbody>
               {filtered.map(p => (
                 <tr key={p.id} onClick={() => onProjectClick(p.id)}>
-                  <td className="text-mono text-xs">{p.code || "—"}</td>
+                  <td className="text-mono text-xs">{p.official_reference_number || "—"}</td>
                   <td style={{ fontWeight: 500 }}>
                     {p.name}
-                    {p.acronym && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>({p.acronym})</span>}
+                    
                   </td>
                   <td>
                     <span className="row" style={{ gap: 7 }}>

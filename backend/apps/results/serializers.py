@@ -340,7 +340,7 @@ class TheoryOfChangeSerializer(serializers.ModelSerializer):
     nodes        = ToCNodeSerializer(many=True, read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     project_name = serializers.CharField(source="project.name", read_only=True)
-    project_code = serializers.CharField(source="project.code", read_only=True)
+    project_code = serializers.CharField(source="project.official_reference_number", read_only=True)
 
     class Meta:
         model  = TheoryOfChange

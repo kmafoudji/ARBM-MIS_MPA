@@ -23,6 +23,7 @@ class TestProjectCode:
         sector = SectorFactory()
         payload = {
             "name": "PAAFS",
+            "official_reference_number": "PAAFS-REF",
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
@@ -34,18 +35,19 @@ class TestProjectCode:
         assert project.code.startswith("SEN-")
 
     def test_duplicate_name_allowed(self, auth_client):
-        """Deux projets peuvent avoir le même nom (unicité sur le code, pas le nom)."""
+        """Deux projets peuvent avoir le même nom (unicité sur la référence, pas le nom)."""
         client, user = auth_client
         country = CountryFactory()
         sector = SectorFactory()
         payload = {
             "name": "Same Name Project",
+            "official_reference_number": "Same Name Project-REF",
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
         }
         r1 = client.post("/api/projects/", payload, format="json")
-        r2 = client.post("/api/projects/", payload, format="json")
+        r2 = client.post("/api/projects/", {**payload, "official_reference_number": "REF-2"}, format="json")
         assert r1.status_code == 201
         assert r2.status_code == 201
         assert r1.data["id"] != r2.data["id"]

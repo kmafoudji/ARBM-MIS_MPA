@@ -781,7 +781,7 @@ class ResultsSummaryView(APIView):
 
             return Response({
                 "project_id":   pk,
-                "project_code": project.code,
+                "project_code": project.official_reference_number,
                 "rows":         result,
                 "periods":      [{"id": p.id, "label": p.label, "end_date": str(p.end_date), "status": p.status, "is_late": p.is_late} for p in periods],
             })
@@ -1140,7 +1140,7 @@ class PortfolioAggregationView(APIView):
 
                 breakdown.append({
                     "project_id":   proj.id,
-                    "project_code": proj.code,
+                    "project_code": proj.official_reference_number,
                     "project_name": proj.name[:60],
                     "hub":          hub_name,
                     "sector":       proj.primary_sector.name if proj.primary_sector else None,
@@ -1321,8 +1321,8 @@ class PIRSDataView(APIView):
             "project": {
                 "id":             project.id,
                 "code":           project.code,
+                "official_reference_number": project.official_reference_number,
                 "name":           project.name,
-                "acronym":        project.acronym or "",
                 "sector":         project.primary_sector.name if project.primary_sector else None,
                 "hub":            hub_name,
                 "country":        lead_country.country.name if lead_country else None,
@@ -1581,7 +1581,7 @@ class PIRSDataView(APIView):
             tr1 = tp.add_run("PERFORMANCE INDICATOR REFERENCE SHEET  ")
             tr1.bold = True; tr1.font.size = Pt(10)
             tr1.font.color.rgb = NAVY_RGB
-            tp.add_run(f"\n{ind.get('code')} · {proj.get('code')} · LLF2 / IsDB").font.size = Pt(7.5)
+            tp.add_run(f"\n{ind.get('code')} · {proj.get('official_reference_number')} · LLF2 / IsDB").font.size = Pt(7.5)
             # Cellule 3 : date
             date_cell = htable.rows[0].cells[2]
             date_cell.width = Cm(4)
@@ -1637,15 +1637,14 @@ class PIRSDataView(APIView):
         sub_p.paragraph_format.space_after = Pt(12)
         pPr2 = sub_p._p.get_or_add_pPr()
         shd2 = OxmlElement("w:shd"); shd2.set(qn("w:val"),"clear"); shd2.set(qn("w:color"),"auto"); shd2.set(qn("w:fill"), LIGHT_HEX); pPr2.append(shd2)
-        s1 = sub_p.add_run(f"  {proj.get('name')} · {proj.get('code')} · {proj.get('sector','—')} · {proj.get('hub','—')}  ")
+        s1 = sub_p.add_run(f"  {proj.get('name')} · {proj.get('official_reference_number')} · {proj.get('sector','—')} · {proj.get('hub','—')}  ")
         s1.font.size = Pt(9.5); s1.font.color.rgb = NAVY_RGB
 
         # ── A. Identification ──────────────────────────────────────────
         add_section_heading(doc, "A", "Project Identification")
         add_info_table(doc, [
-            ("Project Code",    proj.get("code")),
+            ("Official Reference", proj.get("official_reference_number")),
             ("Project Name",    proj.get("name")),
-            ("Acronym",         proj.get("acronym")),
             ("Sector",          proj.get("sector")),
             ("Hub",             proj.get("hub")),
             ("Country",         proj.get("country")),
@@ -1778,7 +1777,7 @@ class PIRSDataView(APIView):
         buf.seek(0)
         content = buf.read()
 
-        filename = f"PIRS_{proj.get('code')}_{ind.get('code')}.docx"
+        filename = f"PIRS_{proj.get('official_reference_number')}_{ind.get('code')}.docx"
         response = HttpResponse(
             content,
             content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1820,7 +1819,7 @@ class DQScoreView(APIView):
         return Response({
             "indicator_code":  row.indicator.code,
             "indicator_name":  row.indicator.name,
-            "project_code":    row.project.code,
+            "project_code":    row.project.official_reference_number,
             "period":          period.label if period else "All periods",
             "scores": {
                 "completeness": str(scores["completeness"]),
@@ -1897,7 +1896,7 @@ class DQPortfolioView(APIView):
                     hub_name = lead.country.hub.name
 
             results.append({
-                "project_code":    row.project.code,
+                "project_code":    row.project.official_reference_number,
                 "project_name":    row.project.name[:50],
                 "indicator_code":  row.indicator.code,
                 "indicator_name":  row.indicator.name[:60],
