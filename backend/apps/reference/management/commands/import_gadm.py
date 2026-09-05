@@ -5,11 +5,20 @@ Source : GADM v4.1 — https://geodata.ucdavis.edu/gadm/gadm4.1/json/
 Format : GeoJSON par pays, un fichier par niveau.
 
 Idempotent : utilise gadm_uid comme clé d'upsert.
-La géométrie est optionnelle (--no-geom pour aller vite en dev).
+La géométrie est optionnelle (--geom pour l'importer).
+
+Un pays qui échoue au téléchargement n'interrompt pas les autres, mais la
+commande sort en erreur si au moins un échec subsiste en fin de run : un import
+partiel ne doit pas être indiscernable d'un import complet pour un script ou un
+job de CI. Les 404 attendus (GADM_GAPS_EXPECTED) ne sont pas des échecs.
+
+Note : --geom ne change pas le volume téléchargé (~31 Mo pour les 57 pays aux
+deux niveaux), seulement ce qui est stocké. Le coût de --geom est le parsing
+GEOS et l'écriture PostGIS, pas le réseau.
 
 Usage :
     python manage.py import_gadm                    # Admin 1 + 2, sans géométrie
-    python manage.py import_gadm --geom             # avec géométrie (lent, ~2 Go)
+    python manage.py import_gadm --geom             # avec géométrie (plus lent)
     python manage.py import_gadm --countries SEN NGA # sous-ensemble de pays
     python manage.py import_gadm --level 1           # Admin 1 seulement
 """
@@ -22,28 +31,57 @@ from django.db import transaction
 
 GADM_BASE = "https://geodata.ucdavis.edu/gadm/gadm4.1/json"
 
-# Pays du portefeuille LLF2
+# Pays du portefeuille LLF2 — doit refléter reference.Country (57 pays).
+# À resynchroniser à chaque évolution du portefeuille, sinon on télécharge des
+# pays absents de la base et on ignore ceux qui viennent d'être ajoutés :
+#   python manage.py shell -c "from apps.reference.models import Country; \
+#     print(sorted(Country.objects.filter(is_active=True).values_list('iso3', flat=True)))"
 PORTFOLIO_ISO3 = [
-    "BDI","BEN","BFA","BGD","CIV","CMR","DJI","EGY",
-    "GIN","GMB","GNB","IDN","MAR","MDV","MLI","MOZ",
-    "MRT","NER","NGA","PAK","RWA","SDN","SEN","SLE",
-    "SSD","TCD","TGO","TJK","UGA","YEM",
+    "AFG","ALB","ARE","AZE","BEN","BFA","BGD","BHR",
+    "BRN","CIV","CMR","COM","DJI","DZA","EGY","GAB",
+    "GIN","GMB","GNB","GUY","IDN","IRN","IRQ","JOR",
+    "KAZ","KGZ","KWT","LBN","LBY","MAR","MDV","MLI",
+    "MOZ","MRT","MYS","NER","NGA","OMN","PAK","PSE",
+    "QAT","SAU","SDN","SEN","SLE","SOM","SUR","SYR",
+    "TCD","TGO","TJK","TKM","TUN","TUR","UGA","UZB",
+    "YEM",
 ]
+
+# Pays sans découpage GADM v4.1 disponible, vérifié le 2026-08-07.
+# Le 404 est géré proprement, ces entrées documentent juste l'attendu.
+GADM_GAPS_EXPECTED = {
+    "MDV": "aucun niveau",           # ni Admin 1 ni Admin 2
+    "BHR": "pas d'Admin 2",
+    "COM": "pas d'Admin 2",
+    "KWT": "pas d'Admin 2",
+    "LBY": "pas d'Admin 2",
+    "QAT": "pas d'Admin 2",
+}
 
 
 def fetch_geojson(url, stdout):
-    """Télécharge un GeoJSON depuis l'URL GADM."""
+    """Télécharge un GeoJSON depuis l'URL GADM.
+
+    Retourne un tuple (statut, données) :
+        ("ok", dict)      téléchargement et parsing réussis
+        ("absent", None)  404 : le pays n'a pas ce niveau administratif
+        ("echec", str)    erreur réseau/serveur, message d'explication
+
+    Aucun cas ne lève d'exception : sur 57 pays × 2 niveaux, un timeout isolé
+    ne doit pas faire perdre l'import des autres pays. Les échecs sont
+    récapitulés en fin de run et le rattrapage se fait avec --countries.
+    """
     stdout.write(f"  ↓ {url}")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "ARBM-MES/1.0"})
         with urllib.request.urlopen(req, timeout=120) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+            return "ok", json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            return None
-        raise CommandError(f"HTTP {e.code} sur {url}")
+            return "absent", None
+        return "echec", f"HTTP {e.code}"
     except Exception as e:
-        raise CommandError(f"Erreur téléchargement {url} : {e}")
+        return "echec", f"{type(e).__name__} : {e}"
 
 
 def geom_from_feature(feature):
@@ -67,7 +105,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--countries", nargs="+", default=None,
-            help="Codes ISO3 à importer (défaut : les 30 pays du portefeuille).",
+            help="Codes ISO3 à importer (défaut : les 57 pays du portefeuille).",
         )
         parser.add_argument(
             "--level", type=int, choices=[1, 2], default=None,
@@ -93,9 +131,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 f"Pays non trouvés en base (seed_reference_data d'abord ?) : {', '.join(sorted(missing))}"
             ))
+        if not country_map:
+            raise CommandError(
+                "Aucun des pays demandés n'existe en base : rien à importer. "
+                "Charger reference.Country avant de lancer import_gadm."
+            )
 
         total_created = 0
         total_updated = 0
+        absent = []
+        failures = []
 
         for iso3 in iso3_list:
             country = country_map.get(iso3)
@@ -108,11 +153,23 @@ class Command(BaseCommand):
             for level in levels:
                 # URL GADM : gadm41_SEN_1.json
                 url = f"{GADM_BASE}/gadm41_{iso3}_{level}.json"
-                geojson = fetch_geojson(url, self.stdout)
-                if not geojson:
-                    self.stdout.write(self.style.WARNING(f"    L{level} : fichier absent (pays sans Admin {level} ?)"))
+                status, payload = fetch_geojson(url, self.stdout)
+                if status == "absent":
+                    note = GADM_GAPS_EXPECTED.get(iso3, "")
+                    suffix = f" — attendu ({note})" if note else " — inattendu, à vérifier"
+                    self.stdout.write(self.style.WARNING(
+                        f"    L{level} : absent de GADM{suffix}"
+                    ))
+                    absent.append(f"{iso3} L{level}")
+                    continue
+                if status == "echec":
+                    self.stdout.write(self.style.ERROR(
+                        f"    L{level} : échec du téléchargement ({payload}) — ignoré"
+                    ))
+                    failures.append(f"{iso3} L{level} ({payload})")
                     continue
 
+                geojson = payload
                 features = geojson.get("features", [])
                 self.stdout.write(f"    L{level} : {len(features)} zones")
 
@@ -179,10 +236,31 @@ class Command(BaseCommand):
                 total_updated += updated
 
         self.stdout.write(f"\n{'═' * 50}")
-        self.stdout.write(self.style.SUCCESS(
-            f"Import terminé : {total_created} zones créées, {total_updated} mises à jour."
-        ))
+        # Un import partiel n'est pas un succès : le style suit le résultat réel,
+        # sinon 114 échecs s'affichent en vert sous « Import terminé ».
+        recap = f"Import terminé : {total_created} zones créées, {total_updated} mises à jour."
+        self.stdout.write(
+            self.style.WARNING(recap) if failures else self.style.SUCCESS(recap)
+        )
+        if absent:
+            self.stdout.write(self.style.WARNING(
+                f"Absents de GADM ({len(absent)}) : {', '.join(absent)}"
+            ))
         if not import_geom:
             self.stdout.write(self.style.WARNING(
                 "Géométries non importées. Relancer avec --geom pour les cartes."
             ))
+        if failures:
+            self.stdout.write(self.style.ERROR(
+                f"Échecs de téléchargement ({len(failures)}) : {', '.join(failures)}"
+            ))
+            # Le récapitulatif est écrit avant de lever : l'instruction de
+            # rattrapage doit rester lisible même quand la commande sort en
+            # erreur. Les absences attendues (404 documentés dans
+            # GADM_GAPS_EXPECTED) ne comptent pas comme des échecs et ne font
+            # donc pas sortir la commande en erreur.
+            raise CommandError(
+                f"Import incomplet : {len(failures)} téléchargement(s) en échec. "
+                "Rattrapage : relancer avec --countries sur les pays concernés "
+                "(l'import est idempotent via gadm_uid)."
+            )
