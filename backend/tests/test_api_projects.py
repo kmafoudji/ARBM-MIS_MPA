@@ -113,6 +113,24 @@ class TestProjectClassification:
         assert project.risk_rating == "tbd"
         assert list(project.sdgs.values_list("number", flat=True)) == [3]
 
+    def test_patch_rejects_pillar_as_primary_sector(self, auth_client):
+        """ADR 0007: a project is classified in a sector, never in a pillar."""
+        client, user = auth_client
+        project = ProjectFactory()
+        pillar = SectorFactory(name="Resilience")
+        leaf = SectorFactory(name="Water & Sanitation", parent=pillar)
+        resp = client.patch(f"/api/projects/{project.id}/", {"primary_sector": pillar.id}, format="json")
+        assert resp.status_code == 400
+        assert "pillar" in str(resp.data["primary_sector"])
+        resp = client.patch(
+            f"/api/projects/{project.id}/", {"contributing_sector_ids": [pillar.id]}, format="json"
+        )
+        assert resp.status_code == 400
+        resp = client.patch(f"/api/projects/{project.id}/", {"primary_sector": leaf.id}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["pillar_name"] == "Resilience"
+        assert resp.data["pillar_id"] == pillar.id
+
     def test_patch_rejects_unknown_we_category(self, auth_client):
         client, user = auth_client
         project = ProjectFactory()

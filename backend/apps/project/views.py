@@ -45,7 +45,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return (
             Project.objects.in_scope(self.request)
-            .select_related("primary_sector", "created_by")
+            .select_related("primary_sector__parent", "created_by")
             .prefetch_related(
                 "project_countries__country", "contributing_sectors", "sdgs",
                 "stage_transitions",
@@ -933,7 +933,7 @@ class ProjectMapPointsView(APIView):
         from django.db import connection
 
         projects = Project.objects.in_scope(request).select_related(
-            "primary_sector"
+            "primary_sector__parent"
         ).prefetch_related("project_countries__country")
 
         meta = {}
@@ -950,6 +950,7 @@ class ProjectMapPointsView(APIView):
                 # `or None` : une couleur vide casserait le coalesce MapLibre
                 "primary_sector_name":  (p.primary_sector.name or None) if p.primary_sector_id else None,
                 "primary_sector_color": (p.primary_sector.color or None) if p.primary_sector_id else None,
+                "pillar_name":          p.primary_sector.pillar.name if p.primary_sector_id else None,
                 "lead_country_name":    lead.name if lead else None,
             }
 

@@ -1001,7 +1001,10 @@ class PortfolioAggregationView(APIView):
         if hub_id:
             projects = projects.filter(hub_q((hub_id,))).distinct()
         if sector_id:
-            projects = projects.filter(primary_sector_id=sector_id)
+            # Un pilier (ADR 0007) englobe ses secteurs.
+            projects = projects.filter(
+                Q(primary_sector_id=sector_id) | Q(primary_sector__parent_id=sector_id)
+            )
         if country_id:
             projects = projects.filter(
                 project_countries__country_id=country_id

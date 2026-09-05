@@ -248,8 +248,11 @@ class Sector(models.Model):
         help_text="LLF2 numbering (010, 011, ..., 032). Drives the display order; "
         "the number itself is not shown in the name.",
     )
+    # Two levels (ADR 0007): a pillar has no parent; a sector has a pillar as
+    # parent. PROTECT: a pillar with sectors cannot be deleted by accident
+    # (soft-delete is the rule anyway, POL-1.07).
     parent = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="children"
     )
     icon = models.CharField(
         max_length=20, choices=ICON_CHOICES, default="generic",
@@ -274,6 +277,16 @@ class Sector(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_pillar(self):
+        """True for a first-level entry that groups sectors (ADR 0007)."""
+        return self.parent_id is None and self.children.exists()
+
+    @property
+    def pillar(self):
+        """The first-level entry this sector belongs to (itself when top-level)."""
+        return self.parent if self.parent_id else self
 
 
 class Sdg(models.Model):

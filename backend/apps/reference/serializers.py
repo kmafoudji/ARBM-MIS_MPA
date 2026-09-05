@@ -131,15 +131,30 @@ class CrossCuttingThemeSerializer(serializers.ModelSerializer):
         fields = ["id", "code", "name"]
 
 class SectorSerializer(serializers.ModelSerializer):
+    """Two-level taxonomy (ADR 0007): `parent` null = pillar, otherwise sector.
+
+    `is_pillar` and `pillar_name` let the frontend group and label without
+    walking the list itself.
+    """
+
     parent_name = serializers.CharField(source="parent.name", read_only=True)
+    is_pillar = serializers.SerializerMethodField()
+    pillar_name = serializers.SerializerMethodField()
     usage_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Sector
         fields = [
-            "id", "code", "name", "sequence", "parent", "parent_name", "icon", "color",
+            "id", "code", "name", "sequence", "parent", "parent_name",
+            "is_pillar", "pillar_name", "icon", "color",
             "is_active", "usage_count",
         ]
+
+    def get_is_pillar(self, obj):
+        return obj.parent_id is None
+
+    def get_pillar_name(self, obj):
+        return obj.parent.name if obj.parent_id else obj.name
 
     def get_usage_count(self, obj):
         # Primaire ET contributif : les deux comptent comme un usage.
