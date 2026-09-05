@@ -181,22 +181,29 @@ AGENCIES = [
     ("care-intl",      "CARE International",                        "ngo",           None),
 ]
 
-# 3 piliers LLF2 + 2 themes transversaux
-# (code, nom, icone, couleur) — couleurs reprises de la demo Sentinelle.
+# LLF2 sector taxonomy: three pillars and their sub-sectors, numbered as in
+# the LLF2 results framework. Codes are the short LLF2 codes; the numbering
+# lives in the name so the UI sorts naturally. The former slug sectors
+# (health, agriculture, infrastructure, gender, climate, general_agriculture,
+# sewerage_solid_waste, basic_infrastructure) were deleted from the maintained
+# database on 5 September 2026 and are not seeded any more.
+# (code, name, icon, color)
 SECTORS = [
-    ("health", "Primary health care", "health", "#E84A5F"),
-    ("agriculture", "Agriculture", "agriculture", "#A4C53F"),
-    ("infrastructure", "Basic infrastructure", "infrastructure", "#3F6CC5"),
-    ("gender", "Gender (cross-cutting)", "gender", "#C97FB0"),
-    ("climate", "Climate (cross-cutting)", "climate", "#5BB39F"),
+    ("INFRA", "010 Productivity Enabled Infrastructure", "infrastructure", "#0089c5"),
+    ("SOC", "020 Human Capital Development", "generic", "#E84A5F"),
+    ("RES", "030 Resilience", "generic", "#A4C53F"),
 ]
 
-# Sous-secteurs confirmes dans les specifications anterieures. Liste NON
-# exhaustive — seuls deux exemples ont ete formellement observes ; a
-# completer via l'admin une fois la liste officielle LLF2 disponible.
+# (code, name, parent_code, icon, color)
 SUB_SECTORS = [
-    ("general_agriculture", "General Agriculture", "agriculture", "agriculture", "#A4C53F"),
-    ("sewerage_solid_waste", "Sewerage & Solid Waste Management", "infrastructure", "water", "#3F6CC5"),
+    ("TRA", "011 Transport", "INFRA", "generic", "#0089c5"),
+    ("ENER", "012 Energy", "INFRA", "generic", "#0089c5"),
+    ("DIG", "013 Digital Infrastructure", "INFRA", "generic", "#0089c5"),
+    ("RUR", "014 Rural Development", "INFRA", "generic", "#0089c5"),
+    ("EDU", "021 Education", "SOC", "education", "#E84A5F"),
+    ("HEALTH", "022 Health", "SOC", "health", "#E84A5F"),
+    ("AGRICU", "031 Agriculture & Food Security", "RES", "agriculture", "#A4C53F"),
+    ("WASH", "032 Water & Sanitation", "RES", "water", "#A4C53F"),
 ]
 
 # (numero, nom, couleur officielle ONU)
@@ -363,7 +370,7 @@ class Command(BaseCommand):
                 sector.icon, sector.color = icon, color
                 sector.save(update_fields=["icon", "color"])
         self.stdout.write(
-            self.style.SUCCESS(f"Sous-secteurs : {len(SUB_SECTORS)} OK (liste non exhaustive)")
+            self.style.SUCCESS(f"Sous-secteurs : {len(SUB_SECTORS)} OK")
         )
 
         for number, name, color in SDGS:
