@@ -29,7 +29,5 @@ Questions with no decision yet. Each becomes a numbered file when decided.
   rows; what suspended projects show.
 - Project deletion is physical and open to every writer — soft delete and the
   role allowed to delete.
-- The sector taxonomy: is the LLF2 numbering in the maintained database the
-  adopted taxonomy (then the seed follows) or a draft.
 - Frontend routing on Azure Container Apps; the production images.
 - The remaining ARBM-MES → ARBM-MIS rename in identifiers and cloud resources.

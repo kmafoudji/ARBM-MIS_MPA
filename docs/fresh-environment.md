@@ -45,7 +45,7 @@ Order matters: indicators resolve their sector by name, GADM areas attach to
 countries.
 
 ```bash
-dc exec -T backend python manage.py seed_reference_data   # currencies, 10 hubs, 57 countries, sectors — idempotent
+dc exec -T backend python manage.py seed_reference_data   # currencies, 10 hubs, 57 countries, 11 LLF2 sectors — idempotent
 dc exec -T backend python manage.py seed_sdg_targets      # the 169 SDG targets — idempotent
 dc exec -T backend python manage.py seed_indicators --dry-run
 dc exec -T backend python manage.py seed_indicators       # Agriculture catalogue: Crop (A001.*) and FAP (poultry, fisheries, aquaculture)
@@ -82,15 +82,15 @@ migration reproduces. A fresh environment comes up without it.
 
 | What | Where it lives | Effect on a fresh environment |
 |---|---|---|
-| **Sector taxonomy in LLF2 numbering.** The `sector` table was recoded by hand: parents `INFRA`, `SOC`, `RES` and children `TRA`, `ENER`, `DIG`, `HEALTH`, `EDU`, `AGRICU`, `WASH`, `RUR`, plus `basic_infrastructure`. `seed_reference_data` still ships slug codes (`health`, `agriculture`, `infrastructure`, `gender`, `climate`, …). | database only | Every AS-IS workbook written against the LLF2 codes fails on `primary_sector` and on its indicator rows until the seed is aligned or the rows are recoded by hand. Indicators still attach to "Agriculture" by substring match. |
 | A placeholder activity renamed for one imported project (SLE-0001, the milestone holder). | database only | Cosmetic; the imported name comes back on a re-import. |
 | `TheoryOfChange.status` moved from `locked` to `active` on imported projects. | database only | Imported projects come up with a locked Theory of Change until edited. |
 | Scope rows deleted by hand for one project (ALB-0001) that the API had accepted outside the project's countries. | database only | Nothing missing; the API still accepts such rows until validated server-side. |
 | Loaded projects (the AS-IS workbooks). | database + the workbooks | Re-import through Bulk Import. |
 
-Aligning the sector seed with the taxonomy actually in use is the one item
-here that changes what a fresh environment can do; it is tracked in the
-maintainer's backlog.
+The sector seed ships the LLF2 taxonomy (three pillars, eight sub-sectors)
+since 5 September 2026, so a fresh environment resolves the AS-IS workbooks'
+sector codes. The workbooks written against the earlier slug codes
+(`agriculture`, `basic_infrastructure`) fail on `primary_sector` until recoded.
 
 ## Path B — restore a dump
 
