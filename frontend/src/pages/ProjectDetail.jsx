@@ -13,6 +13,7 @@ import Workplan from "../pages/Workplan.jsx";
 import Toast from "../components/Toast";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
+import MultiSelect from "../components/MultiSelect";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
 const STAGE_BADGE = {
@@ -849,12 +850,11 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                 </div>
                 <div className="field">
                   <label className="field-label">Countries <span className="req">*</span></label>
-                  <select className="field-select field-multi" multiple
+                  <MultiSelect id="countries" placeholder="Search countries..."
+                    options={refCountries?.map(c => ({ value: String(c.id), label: c.name, iso2: c.iso2 })) ?? []}
                     value={bForm.countryIds}
-                    onChange={e => setBForm({...bForm, countryIds: Array.from(e.target.selectedOptions).map(o => o.value)})}>
-                    {refCountries?.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                  </select>
-                  <span className="field-help">Ctrl/Cmd + click for multi-country.</span>
+                    onChange={ids => setBForm({...bForm, countryIds: ids,
+                      leadCountryId: ids.includes(bForm.leadCountryId) ? bForm.leadCountryId : (ids[0] || "")})} />
                 </div>
                 {bForm.countryIds.length > 1 && (
                   <div className="field">
