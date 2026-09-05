@@ -72,7 +72,7 @@ class ImplementingAgencyViewSet(ReferenceViewSet):
 
 
 class SectorViewSet(ReferenceViewSet):
-    queryset = Sector.objects.all().order_by("name")
+    queryset = Sector.objects.all()  # Meta.ordering: sequence, name
     serializer_class = SectorSerializer
 
 
