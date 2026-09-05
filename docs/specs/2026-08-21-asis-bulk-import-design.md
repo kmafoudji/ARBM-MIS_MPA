@@ -2,7 +2,7 @@
 
 **aRBM-MIS · 21 Aug 2026 · design spec for `feature/asis-bulk-import`**
 
-On the server this file belongs at `docs/superpowers/specs/2026-08-21-asis-bulk-import-design.md` and should be the first commit on the feature branch.
+On the server this file belongs at `docs/specs/2026-08-21-asis-bulk-import-design.md` and should be the first commit on the feature branch.
 
 ---
 

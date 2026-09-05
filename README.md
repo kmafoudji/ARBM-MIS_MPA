@@ -1,82 +1,87 @@
-# ARBM-MIS (Adaptive Results-Based Management/Monitoring and Evaluation System)
+# aRBM-MIS (Adaptive Results-Based Management / Monitoring and Evaluation System)
 
-Adaptive Results-Based Management/Monitoring and Evaluation System pour le
-portefeuille LLF2 (Islamic Development Bank — Lives and Livelihoods Fund 2).
+Adaptive Results-Based Management / Monitoring and Evaluation System for the
+LLF2 portfolio (Islamic Development Bank — Lives and Livelihoods Fund 2).
 
-## Stack technique
+## Stack
 
-- **Backend** : Django 5 + Django REST Framework, PostgreSQL/PostGIS, Redis, Celery
-- **Frontend** : React 18 + TanStack Query/Router, Vite
-- **Authentification** : Microsoft Entra ID (OAuth2/OIDC via MSAL), tenant MillenniumPromise
-- **Infra** : Docker Compose (local) → Azure Container Apps (production)
+- **Backend**: Django 5 + Django REST Framework, PostgreSQL/PostGIS, Redis, Celery
+- **Frontend**: React 18 + TanStack Query/Router, Vite
+- **Authentication**: Microsoft Entra ID (OAuth2/OIDC via MSAL), MillenniumPromise tenant
+- **Infrastructure**: Docker Compose (development) → Azure Container Apps (production, pending)
 
-## Démarrer en local (Ubuntu, Docker)
+## Running locally (Ubuntu, Docker)
 
-1. Copier le fichier d'environnement :
+1. Create the environment file:
    ```bash
    cp .env.example .env
    ```
-   Remplir au minimum `DJANGO_SECRET_KEY`. Les variables `ENTRA_*` peuvent
-   rester vides pour l'instant — le backend démarre sans elles (l'auth
-   Entra ID renverra juste une erreur explicite tant qu'elles ne sont pas
-   configurées).
+   Fill in at least `DJANGO_SECRET_KEY`. The `ENTRA_*` variables may stay
+   empty for now — the backend starts without them and Entra ID sign-in
+   returns an explicit error until they are set.
 
-2. Lancer les services :
+2. Create the local compose override and Vite config described in
+   [docs/development-environment.md](docs/development-environment.md#untracked-local-files),
+   then start the services:
    ```bash
-   docker compose -f infra/docker-compose.yml up --build
+   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d --build
    ```
+   On a machine that is not exposed to a network, the tracked file alone
+   (`docker compose -f infra/docker-compose.yml up --build`) publishes the
+   ports on `localhost` and is enough.
 
-3. Vérifier que tout tourne :
-   - Backend (health check) : http://localhost:8000/health/
-   - Frontend : http://localhost:5173
+3. Check that everything is up:
+   - Backend health check: http://localhost:8000/health/
+   - Frontend: http://localhost:5173
 
-4. Appliquer les migrations Django (dans un second terminal, une fois les
-   conteneurs lancés) :
+4. Apply the migrations, then follow
+   [docs/fresh-environment.md](docs/fresh-environment.md) to seed accounts,
+   reference data, indicators and administrative areas:
    ```bash
    docker compose -f infra/docker-compose.yml exec backend python manage.py migrate
    ```
 
-## Structure du repo
+## Repository layout
 
 ```
-backend/            Django + DRF
-  config/            Réglages du projet (settings, urls, wsgi/asgi)
-  apps/authentication/  Auth Entra ID (MSAL, login/callback)
-  core/              Endpoints techniques (health check)
+backend/             Django + DRF
+  config/            Project settings, urls, wsgi/asgi
+  apps/              identity (RBAC, Entra ID), reference, project, results, workplan, …
+  core/              Technical endpoints (health check), AS-IS bulk import
+  tests/             pytest suite
 frontend/            React + TanStack + Vite
 infra/               Docker Compose
-.github/workflows/   CI (vérifie backend + frontend à chaque push)
-docs/                Documentation projet
+.github/workflows/   CI (backend check, frontend build, migrations from scratch + tests)
+docs/                Documentation — start at docs/README.md
 ```
 
-## Module 1 — Configuration & Contrôle d'accès (RBAC)
+## Module 1 — Configuration and access control (RBAC)
 
-Domaines posés : `identity` (RBAC, SSO/MFA, dérogations R26), `reference`
-(référentiels), `project` (squelette). Le modèle utilisateur Django par
-défaut a été remplacé par `identity.AppUser` — **cela nécessite de
-réinitialiser la base de données locale** si vous aviez déjà lancé les
-migrations avec l'ancien modèle :
+Domains in place: `identity` (RBAC, SSO/MFA, R26 exemptions), `reference`
+(reference data), `project` (skeleton). The default Django user model is
+replaced by `identity.AppUser`. A database created with the default model
+before that change cannot be migrated forward; it has to be recreated, which
+**destroys every row in the local database volume**:
 
 ```bash
-docker compose -f infra/docker-compose.yml down -v   # supprime le volume Postgres
+docker compose -f infra/docker-compose.yml down -v   # deletes the Postgres volume and all its data
 docker compose -f infra/docker-compose.yml up --build
 docker compose -f infra/docker-compose.yml exec backend python manage.py migrate
 docker compose -f infra/docker-compose.yml exec backend python manage.py createsuperuser
 ```
 
-Vous pourrez ensuite explorer les modèles via `http://<votre-ip>:8000/admin/`.
+The models can then be explored at `http://<your-ip>:8000/admin/`.
 
-## Workflow de développement
+## Development workflow
 
-1. Le code est développé et poussé sur `main` (ou une branche de feature).
-2. Récupération en local (`git pull`) pour test sur machine Ubuntu via
-   Docker Compose.
-3. Une fois validé, provisioning et déploiement sur Azure (voir
-   `docs/azure-infrastructure.md`, à venir).
+One branch per change in its own worktree, Conventional Commits, `--no-ff`
+merge into `main` from the deploy checkout, push. `main` is what the
+development environment serves. Details: [docs/workflow.md](docs/workflow.md);
+what CI verifies: [docs/testing-and-ci.md](docs/testing-and-ci.md); decisions
+in force: [docs/decisions/](docs/decisions/README.md).
 
-## Configuration Entra ID
+## Entra ID configuration
 
-Voir `.env.example` pour la liste des variables requises. L'App
-Registration doit être créée dans le tenant Entra ID de MillenniumPromise
-avec une redirect URI `http://localhost:8000/auth/callback` en
-développement.
+See `.env.example` for the required variables. The App Registration is
+created in the MillenniumPromise Entra ID tenant with the redirect URI
+`http://localhost:8000/auth/callback` for development.
