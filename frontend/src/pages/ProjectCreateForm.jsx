@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
+import Select from "../components/Select";
+import { INVESTMENT_CYCLE_CHOICES } from "../choices";
 
 /* ── Constantes ─────────────────────────────────────────────────────────── */
 const STEPS_OLD = [];
@@ -48,10 +50,6 @@ const GEO_CHOICES = [
   { value: "remote",              label: "Remote"              },
   { value: "mixed_multi_district",label: "Mixed / multi-district" },
 ];
-const INVESTMENT_CYCLE_CHOICES = [
-  { value: "LLF1", label: "LLF1" },
-  { value: "LLF2", label: "LLF2" },
-];
 const FREQ_CHOICES = [
   { value: "quarterly",   label: "Quarterly"   },
   { value: "semi_annual", label: "Semi-annual" },
@@ -59,16 +57,15 @@ const FREQ_CHOICES = [
 ];
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
+// onChange receives the value itself (Select), not an event.
 function FieldSelect({ id, label, required, value, onChange, choices, placeholder }) {
   return (
     <div className="field">
       <label className="field-label" htmlFor={id}>
         {label} {required && <span className="req">*</span>}
       </label>
-      <select id={id} className="field-select" value={value} onChange={onChange} required={required}>
-        <option value="">{placeholder || "Select…"}</option>
-        {choices.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-      </select>
+      <Select id={id} options={choices} value={value} onChange={onChange}
+        required={required} placeholder={placeholder} />
     </div>
   );
 }
@@ -279,7 +276,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
             <div style={{ maxWidth: 260 }}>
               <FieldSelect id="investmentCycle" label="Investment cycle" value={f.investment_cycle}
-                onChange={(e) => set("investment_cycle", e.target.value)} choices={INVESTMENT_CYCLE_CHOICES} />
+                onChange={(v) => set("investment_cycle", v)} choices={INVESTMENT_CYCLE_CHOICES} />
             </div>
 
             <div className="grid grid-2">
@@ -347,19 +344,19 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               </div>
 
               <FieldSelect id="genderMarker" label="Gender Marker" value={f.gender_marker}
-                onChange={(e) => set("gender_marker", e.target.value)} choices={GENDER_MARKER_CHOICES} />
+                onChange={(v) => set("gender_marker", v)} choices={GENDER_MARKER_CHOICES} />
 
               <FieldSelect id="modality" label="Implementation Modality" value={f.implementation_modality}
-                onChange={(e) => set("implementation_modality", e.target.value)} choices={MODALITY_CHOICES} />
+                onChange={(v) => set("implementation_modality", v)} choices={MODALITY_CHOICES} />
 
               <FieldSelect id="geoTypo" label="Geographic Typology" value={f.geographic_typology}
-                onChange={(e) => set("geographic_typology", e.target.value)} choices={GEO_CHOICES} />
+                onChange={(v) => set("geographic_typology", v)} choices={GEO_CHOICES} />
 
               <FieldSelect id="fragility" label="Fragility Status" value={f.fragility_status}
-                onChange={(e) => set("fragility_status", e.target.value)} choices={FRAGILITY_CHOICES} />
+                onChange={(v) => set("fragility_status", v)} choices={FRAGILITY_CHOICES} />
 
               <FieldSelect id="risk" label="Risk Rating" value={f.risk_rating}
-                onChange={(e) => set("risk_rating", e.target.value)} choices={RISK_CHOICES} />
+                onChange={(v) => set("risk_rating", v)} choices={RISK_CHOICES} />
 
               <div className="field">
                 <label className="field-label" htmlFor="themes">Cross-Cutting Themes</label>
@@ -380,7 +377,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   ["rio_marker_water",           "Water"],
                 ].map(([key, label]) => (
                   <FieldSelect key={key} id={key} label={label} value={f[key]}
-                    onChange={(e) => set(key, e.target.value)} choices={RIO_CHOICES} />
+                    onChange={(v) => set(key, v)} choices={RIO_CHOICES} />
                 ))}
               </div>
             </div>
