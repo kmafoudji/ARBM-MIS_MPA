@@ -274,8 +274,9 @@ export default function Overview({ user, onProjectClick }) {
           }
         </div>
 
-        {/* Couverture géographique */}
-        <div className="card card-flush">
+        {/* Couverture géographique — flex column so the map fills the card
+            and the row's two cards end up the same height. */}
+        <div className="card card-flush" style={{ display: "flex", flexDirection: "column" }}>
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="map-pin" size={14} style={{ marginRight: 6 }} />Geographic Coverage</h2>
@@ -283,27 +284,24 @@ export default function Overview({ user, onProjectClick }) {
             </div>
             <span className="badge badge-lime">{coveredCountries.size} countries</span>
           </div>
-          <div className="card-body">
-            {projects?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <PortfolioMap projects={projects} onProjectClick={onProjectClick} compact />
+          <div className="card-body" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+            {projects?.length > 0
+              ? <PortfolioMap projects={projects} onProjectClick={onProjectClick} compact />
+              : <p className="text-muted text-sm" style={{ flex: 1 }}>No country data yet.</p>}
+            {countryEntries.length > 0 && (
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", whiteSpace: "nowrap", paddingBottom: 2 }}>
+                {countryEntries.map(([country, count]) => (
+                  <span key={country} style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
+                    background: "var(--surface-2)", borderRadius: 99,
+                    padding: "3px 10px", fontSize: 12,
+                  }}>
+                    <span style={{ fontWeight: 500 }}>{country}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-soft)" }}>{count}</span>
+                  </span>
+                ))}
               </div>
             )}
-            {countryEntries.length === 0
-              ? <p className="text-muted text-sm">No country data yet.</p>
-              : <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {countryEntries.map(([country, count]) => (
-                    <div key={country} style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      background: "var(--surface-2)", borderRadius: 8,
-                      padding: "6px 12px", fontSize: 13,
-                    }}>
-                      <span style={{ fontWeight: 500 }}>{country}</span>
-                      <span className="badge" style={{ fontSize: 10 }}>{count}</span>
-                    </div>
-                  ))}
-                </div>
-            }
           </div>
         </div>
       </div>
