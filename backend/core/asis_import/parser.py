@@ -556,11 +556,32 @@ def parse(file_obj):
 # ---------------------------------------------------------------------------
 
 
+# Every column _parse_project reads. A header outside this list is ignored
+# by the parser, so it gets a warning: a column the model dropped (the 2026
+# classification rework retired gender_marker, rio_marker_*, ...) would
+# otherwise lose its values without anyone noticing.
+PROJECT_COLUMNS = frozenset({
+    "official_reference_number", "name", "acronym", "lead_country_iso3",
+    "hub_code", "primary_sector", "sdgs", "primary_sdg", "contributing_sdgs",
+    "lifecycle_stage", "we_category", "risk_rating", "climate_marker",
+    "reporting_frequency", "beneficiary_target_direct", "beneficiary_target_indirect",
+    "budget_amount", "currency", "next_reporting_due", "start_date", "end_date",
+})
+
+
 def _parse_project(context):
     sheet = context.reader.read(SHEET_PROJECT)
     if sheet is None or not sheet.rows:
         context.error(SHEET_PROJECT, None, "Empty sheet: there is no project to import.")
         return
+
+    unknown = sorted(h for h in sheet.headers if h and h not in PROJECT_COLUMNS)
+    if unknown:
+        context.warn(
+            SHEET_PROJECT, sheet.header_row,
+            "Columns not read by the import (their values are ignored): "
+            + ", ".join(unknown) + ".",
+        )
 
     if len(sheet.rows) > 1:
         context.warn(
