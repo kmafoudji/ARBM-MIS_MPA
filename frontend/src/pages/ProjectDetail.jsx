@@ -503,11 +503,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     });
   }
 
-  function handleMultiSelect(field, e) {
-    const selected = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
-    setCForm({ ...cForm, [field]: selected });
-  }
-
   const contributingSectorChoices = (sectors || []).filter(
     (s) => String(s.id) !== String(cForm.primary_sector)
   );
@@ -944,17 +939,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
                   <div className="field">
                     <label className="field-label" htmlFor="cContribSectors">Contributing Sectors</label>
-                    <select
-                      id="cContribSectors"
-                      className="field-select field-multi"
-                      multiple
-                      value={cForm.contributing_sector_ids.map(String)}
-                      onChange={(e) => handleMultiSelect("contributing_sector_ids", e)}
-                    >
-                      {contributingSectorChoices.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                    <MultiSelect id="cContribSectors" placeholder="Search sectors..."
+                      options={contributingSectorChoices.map((s) => ({ value: s.id, label: s.name }))}
+                      value={cForm.contributing_sector_ids}
+                      onChange={(v) => setCForm({ ...cForm, contributing_sector_ids: v })} />
                   </div>
 
                   <div className="field">
@@ -974,17 +962,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
                   <div className="field">
                     <label className="field-label" htmlFor="cContribSdgs">Contributing SDGs</label>
-                    <select
-                      id="cContribSdgs"
-                      className="field-select field-multi"
-                      multiple
-                      value={cForm.contributing_sdg_ids.map(String)}
-                      onChange={(e) => handleMultiSelect("contributing_sdg_ids", e)}
-                    >
-                      {contributingSdgChoices.map((s) => (
-                        <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>
-                      ))}
-                    </select>
+                    <MultiSelect id="cContribSdgs" placeholder="Search SDGs..."
+                      options={contributingSdgChoices.map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
+                      value={cForm.contributing_sdg_ids}
+                      onChange={(v) => setCForm({ ...cForm, contributing_sdg_ids: v })} />
                   </div>
 
                   <div className="field">
@@ -1064,17 +1045,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
                   <div className="field">
                     <label className="field-label" htmlFor="themes">Cross-Cutting Themes</label>
-                    <select
-                      id="themes"
-                      className="field-select field-multi"
-                      multiple
-                      value={cForm.cross_cutting_theme_ids.map(String)}
-                      onChange={(e) => handleMultiSelect("cross_cutting_theme_ids", e)}
-                    >
-                      {classificationChoices?.cross_cutting_themes.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                    <MultiSelect id="themes" placeholder="Search themes..."
+                      options={(classificationChoices?.cross_cutting_themes || []).map((c) => ({ value: c.value, label: c.label }))}
+                      value={cForm.cross_cutting_theme_ids}
+                      onChange={(v) => setCForm({ ...cForm, cross_cutting_theme_ids: v })} />
                   </div>
 
                   {/* Rio Markers */}

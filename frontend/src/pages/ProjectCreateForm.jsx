@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
+import MultiSelect from "../components/MultiSelect";
 
 /* ── Constantes ─────────────────────────────────────────────────────────── */
 const STEPS_OLD = [];
@@ -148,14 +149,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   /* ── Helpers champ ── */
   const set = (k, v) => setF((f) => ({ ...f, [k]: v }));
   function handleChange(e) { set(e.target.name, e.target.value); }
-  function handleMulti(field, e) {
-    const vals = Array.from(e.target.selectedOptions).map((o) => Number(o.value));
-    if (field === "countryIds") {
-      const leadOk = vals.includes(Number(f.leadCountryId));
-      setF((prev) => ({ ...prev, countryIds: vals, leadCountryId: leadOk ? prev.leadCountryId : vals[0] || "" }));
-    } else {
-      set(field, vals);
-    }
+  function setCountryIds(vals) {
+    const leadOk = vals.includes(Number(f.leadCountryId));
+    setF((prev) => ({ ...prev, countryIds: vals, leadCountryId: leadOk ? prev.leadCountryId : vals[0] || "" }));
   }
 
   const selectedCountries         = (countries || []).filter((c) => f.countryIds.includes(c.id));
@@ -279,11 +275,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
             <div className="grid grid-2">
               <div className="field">
                 <label className="field-label" htmlFor="countries">Countries <span className="req">*</span></label>
-                <select id="countries" className="field-select field-multi" multiple
-                  value={f.countryIds.map(String)} onChange={(e) => handleMulti("countryIds", e)}>
-                  {countries?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <span className="field-help">Ctrl/Cmd + click for multi-country.</span>
+                <MultiSelect id="countries" placeholder="Search countries..."
+                  options={(countries || []).map((c) => ({ value: c.id, label: c.name, iso2: c.iso2 }))}
+                  value={f.countryIds} onChange={setCountryIds} />
               </div>
 
               {selectedCountries.length > 1 && (
@@ -330,18 +324,16 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
             <div className="grid grid-2">
               <div className="field">
                 <label className="field-label" htmlFor="contribSectors">Contributing sectors</label>
-                <select id="contribSectors" className="field-select field-multi" multiple
-                  value={f.contributingSectorIds.map(String)} onChange={(e) => handleMulti("contributingSectorIds", e)}>
-                  {contributingSectorChoices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <MultiSelect id="contribSectors" placeholder="Search sectors..."
+                  options={contributingSectorChoices.map((s) => ({ value: s.id, label: s.name }))}
+                  value={f.contributingSectorIds} onChange={(v) => set("contributingSectorIds", v)} />
               </div>
 
               <div className="field">
                 <label className="field-label" htmlFor="contribSdgs">Contributing SDGs</label>
-                <select id="contribSdgs" className="field-select field-multi" multiple
-                  value={f.contributingSdgIds.map(String)} onChange={(e) => handleMulti("contributingSdgIds", e)}>
-                  {contributingSdgChoices.map((s) => <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>)}
-                </select>
+                <MultiSelect id="contribSdgs" placeholder="Search SDGs..."
+                  options={contributingSdgChoices.map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
+                  value={f.contributingSdgIds} onChange={(v) => set("contributingSdgIds", v)} />
               </div>
 
               <FieldSelect id="genderMarker" label="Gender Marker" value={f.gender_marker}
@@ -361,11 +353,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
               <div className="field">
                 <label className="field-label" htmlFor="themes">Cross-Cutting Themes</label>
-                <select id="themes" className="field-select field-multi" multiple
-                  value={f.cross_cutting_theme_ids.map(String)}
-                  onChange={(e) => set("cross_cutting_theme_ids", Array.from(e.target.selectedOptions).map((o) => Number(o.value)))}>
-                  {(themes || []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
+                <MultiSelect id="themes" placeholder="Search themes..."
+                  options={(themes || []).map((t) => ({ value: t.id, label: t.name }))}
+                  value={f.cross_cutting_theme_ids} onChange={(v) => set("cross_cutting_theme_ids", v)} />
               </div>
             </div>
 
