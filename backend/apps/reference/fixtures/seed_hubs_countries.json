@@ -1,0 +1,796 @@
+[
+  {
+    "model": "reference.regionalhub",
+    "pk": 1,
+    "fields": {
+      "code": "HUB_SN",
+      "name": "Dakar Hub",
+      "city": "Dakar",
+      "color": "#A4C53F",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 2,
+    "fields": {
+      "code": "HUB_NG",
+      "name": "Abuja Hub",
+      "city": "Abuja",
+      "color": "#3F6CC5",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 3,
+    "fields": {
+      "code": "HUB_MA",
+      "name": "Rabat Hub",
+      "city": "Rabat",
+      "color": "#C97FB0",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 4,
+    "fields": {
+      "code": "HUB_EG",
+      "name": "Cairo Hub",
+      "city": "Cairo",
+      "color": "#D98F3C",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 5,
+    "fields": {
+      "code": "HUB_UG",
+      "name": "Kampala Hub",
+      "city": "Kampala",
+      "color": "#5BB39F",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 6,
+    "fields": {
+      "code": "HUB_TR",
+      "name": "Ankara Hub",
+      "city": "Ankara",
+      "color": "#C25B4E",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 7,
+    "fields": {
+      "code": "HUB_KZ",
+      "name": "Almaty Hub",
+      "city": "Almaty",
+      "color": "#8393B5",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 8,
+    "fields": {
+      "code": "HUB_BD",
+      "name": "Dhaka Hub",
+      "city": "Dhaka",
+      "color": "#7B68C7",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 9,
+    "fields": {
+      "code": "HUB_ID",
+      "name": "Jakarta Hub",
+      "city": "Jakarta",
+      "color": "#6BA84F",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.regionalhub",
+    "pk": 10,
+    "fields": {
+      "code": "HUB_SA",
+      "name": "Jeddah HQ",
+      "city": "Jeddah",
+      "color": "#B08D57",
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 1,
+    "fields": {
+      "iso2": "SN",
+      "iso3": "SEN",
+      "name": "Senegal",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 2,
+    "fields": {
+      "iso2": "GM",
+      "iso3": "GMB",
+      "name": "The Gambia",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 3,
+    "fields": {
+      "iso2": "GW",
+      "iso3": "GNB",
+      "name": "Guinea-Bissau",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 4,
+    "fields": {
+      "iso2": "GN",
+      "iso3": "GIN",
+      "name": "Guinea",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 5,
+    "fields": {
+      "iso2": "ML",
+      "iso3": "MLI",
+      "name": "Mali",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 6,
+    "fields": {
+      "iso2": "CI",
+      "iso3": "CIV",
+      "name": "Côte d'Ivoire",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 7,
+    "fields": {
+      "iso2": "TG",
+      "iso3": "TGO",
+      "name": "Togo",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 8,
+    "fields": {
+      "iso2": "BJ",
+      "iso3": "BEN",
+      "name": "Benin",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 9,
+    "fields": {
+      "iso2": "BF",
+      "iso3": "BFA",
+      "name": "Burkina Faso",
+      "hub": 1,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 10,
+    "fields": {
+      "iso2": "NG",
+      "iso3": "NGA",
+      "name": "Nigeria",
+      "hub": 2,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 11,
+    "fields": {
+      "iso2": "NE",
+      "iso3": "NER",
+      "name": "Niger",
+      "hub": 2,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 12,
+    "fields": {
+      "iso2": "TD",
+      "iso3": "TCD",
+      "name": "Chad",
+      "hub": 2,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 13,
+    "fields": {
+      "iso2": "CM",
+      "iso3": "CMR",
+      "name": "Cameroon",
+      "hub": 2,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 14,
+    "fields": {
+      "iso2": "GA",
+      "iso3": "GAB",
+      "name": "Gabon",
+      "hub": 2,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 15,
+    "fields": {
+      "iso2": "SL",
+      "iso3": "SLE",
+      "name": "Sierra Leone",
+      "hub": 2,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 16,
+    "fields": {
+      "iso2": "MA",
+      "iso3": "MAR",
+      "name": "Morocco",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 17,
+    "fields": {
+      "iso2": "MR",
+      "iso3": "MRT",
+      "name": "Mauritania",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 18,
+    "fields": {
+      "iso2": "DZ",
+      "iso3": "DZA",
+      "name": "Algeria",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 19,
+    "fields": {
+      "iso2": "TN",
+      "iso3": "TUN",
+      "name": "Tunisia",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 20,
+    "fields": {
+      "iso2": "LY",
+      "iso3": "LBY",
+      "name": "Libya",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 21,
+    "fields": {
+      "iso2": "SR",
+      "iso3": "SUR",
+      "name": "Suriname",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 22,
+    "fields": {
+      "iso2": "GY",
+      "iso3": "GUY",
+      "name": "Guyana",
+      "hub": 3,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 23,
+    "fields": {
+      "iso2": "EG",
+      "iso3": "EGY",
+      "name": "Egypt",
+      "hub": 4,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 24,
+    "fields": {
+      "iso2": "SD",
+      "iso3": "SDN",
+      "name": "Sudan",
+      "hub": 4,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 25,
+    "fields": {
+      "iso2": "UG",
+      "iso3": "UGA",
+      "name": "Uganda",
+      "hub": 5,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 26,
+    "fields": {
+      "iso2": "MZ",
+      "iso3": "MOZ",
+      "name": "Mozambique",
+      "hub": 5,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 27,
+    "fields": {
+      "iso2": "DJ",
+      "iso3": "DJI",
+      "name": "Djibouti",
+      "hub": 5,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 28,
+    "fields": {
+      "iso2": "KM",
+      "iso3": "COM",
+      "name": "Comoros",
+      "hub": 5,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 29,
+    "fields": {
+      "iso2": "SO",
+      "iso3": "SOM",
+      "name": "Somalia",
+      "hub": 5,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 30,
+    "fields": {
+      "iso2": "TR",
+      "iso3": "TUR",
+      "name": "Türkiye",
+      "hub": 6,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 31,
+    "fields": {
+      "iso2": "IR",
+      "iso3": "IRN",
+      "name": "Iran",
+      "hub": 6,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 32,
+    "fields": {
+      "iso2": "PK",
+      "iso3": "PAK",
+      "name": "Pakistan",
+      "hub": 6,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 33,
+    "fields": {
+      "iso2": "AF",
+      "iso3": "AFG",
+      "name": "Afghanistan",
+      "hub": 6,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 34,
+    "fields": {
+      "iso2": "AL",
+      "iso3": "ALB",
+      "name": "Albania",
+      "hub": 6,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 35,
+    "fields": {
+      "iso2": "AZ",
+      "iso3": "AZE",
+      "name": "Azerbaijan",
+      "hub": 6,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 36,
+    "fields": {
+      "iso2": "KZ",
+      "iso3": "KAZ",
+      "name": "Kazakhstan",
+      "hub": 7,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 37,
+    "fields": {
+      "iso2": "TM",
+      "iso3": "TKM",
+      "name": "Turkmenistan",
+      "hub": 7,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 38,
+    "fields": {
+      "iso2": "UZ",
+      "iso3": "UZB",
+      "name": "Uzbekistan",
+      "hub": 7,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 39,
+    "fields": {
+      "iso2": "TJ",
+      "iso3": "TJK",
+      "name": "Tajikistan",
+      "hub": 7,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 40,
+    "fields": {
+      "iso2": "KG",
+      "iso3": "KGZ",
+      "name": "Kyrgyz Republic",
+      "hub": 7,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 41,
+    "fields": {
+      "iso2": "BD",
+      "iso3": "BGD",
+      "name": "Bangladesh",
+      "hub": 8,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 42,
+    "fields": {
+      "iso2": "MV",
+      "iso3": "MDV",
+      "name": "Maldives",
+      "hub": 8,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 43,
+    "fields": {
+      "iso2": "ID",
+      "iso3": "IDN",
+      "name": "Indonesia",
+      "hub": 9,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 44,
+    "fields": {
+      "iso2": "MY",
+      "iso3": "MYS",
+      "name": "Malaysia",
+      "hub": 9,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 45,
+    "fields": {
+      "iso2": "BN",
+      "iso3": "BRN",
+      "name": "Brunei Darussalam",
+      "hub": 9,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 46,
+    "fields": {
+      "iso2": "SA",
+      "iso3": "SAU",
+      "name": "Saudi Arabia",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 47,
+    "fields": {
+      "iso2": "BH",
+      "iso3": "BHR",
+      "name": "Bahrain",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 48,
+    "fields": {
+      "iso2": "KW",
+      "iso3": "KWT",
+      "name": "Kuwait",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 49,
+    "fields": {
+      "iso2": "QA",
+      "iso3": "QAT",
+      "name": "Qatar",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 50,
+    "fields": {
+      "iso2": "AE",
+      "iso3": "ARE",
+      "name": "United Arab Emirates",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 51,
+    "fields": {
+      "iso2": "OM",
+      "iso3": "OMN",
+      "name": "Oman",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 52,
+    "fields": {
+      "iso2": "YE",
+      "iso3": "YEM",
+      "name": "Yemen",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 53,
+    "fields": {
+      "iso2": "LB",
+      "iso3": "LBN",
+      "name": "Lebanon",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 54,
+    "fields": {
+      "iso2": "PS",
+      "iso3": "PSE",
+      "name": "Palestine",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 55,
+    "fields": {
+      "iso2": "JO",
+      "iso3": "JOR",
+      "name": "Jordan",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 56,
+    "fields": {
+      "iso2": "IQ",
+      "iso3": "IRQ",
+      "name": "Iraq",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "reference.country",
+    "pk": 57,
+    "fields": {
+      "iso2": "SY",
+      "iso3": "SYR",
+      "name": "Syria",
+      "hub": 10,
+      "is_fragile": false,
+      "is_active": true
+    }
+  }
+]

@@ -3,15 +3,19 @@ Peuple les donnees de reference du portefeuille LLF2 : devises, hubs
 regionaux, pays, donateurs, agences d'implementation, secteurs, ODD,
 marqueurs OECD-DAC, themes transversaux.
 
-Source : demo statique Sentinelle (sentinelle-admin.html), qui portait les
-donnees de portefeuille les plus completes disponibles, croisee avec les
+Sources : les hubs et les pays viennent du referentiel de portefeuille
+(seed_hub_country), soit 10 hubs et 57 pays ; le reste vient de la demo
+statique Sentinelle (sentinelle-admin.html), croisee avec les
 specifications fonctionnelles anterieures.
 
+Ces memes 10 hubs et 57 pays sont aussi publies en fixture serialisee dans
+fixtures/seed_hubs_countries.json. Les deux chemins doivent produire le
+meme etat : toute modification de HUBS ou COUNTRIES doit etre repercutee
+sur la fixture, et inversement.
+
 LIMITES CONNUES (a lever avec les donnees officielles LLF2) :
-  - 5 hubs sur 8. Le portefeuille compte 8 hubs (Abuja, Almaty, Ankara,
-    Dakar, Dhaka, Jakarta, Kampala, Rabat) ; seuls 5 sont documentes avec
-    leur composition pays. Almaty, Ankara et Jakarta sont absents faute de
-    savoir quels pays leur rattacher.
+  - Le libelle de region du referentiel (West Africa, North East Africa...)
+    n'est pas repris : RegionalHub n'a pas de champ ou le stocker.
   - Les drapeaux ne sont pas stockes : ils sont derives du code ISO2
     (voir reference.models.iso2_to_flag).
 
@@ -43,50 +47,94 @@ CURRENCIES = [
 
 # (code, nom, ville, couleur)
 HUBS = [
-    ("dakar", "Senegal Hub", "Dakar", "#A4C53F"),
-    ("abuja", "Nigeria Hub", "Abuja", "#3F6CC5"),
-    ("kampala", "East Africa Hub", "Kampala", "#5BB39F"),
-    ("rabat", "Maghreb Hub", "Rabat", "#C97FB0"),
-    ("dhaka", "Asia Hub", "Dhaka", "#7B68C7"),
+    ("HUB_SN", "Dakar Hub", "Dakar", "#A4C53F"),
+    ("HUB_NG", "Abuja Hub", "Abuja", "#3F6CC5"),
+    ("HUB_MA", "Rabat Hub", "Rabat", "#C97FB0"),
+    ("HUB_EG", "Cairo Hub", "Cairo", "#D98F3C"),
+    ("HUB_UG", "Kampala Hub", "Kampala", "#5BB39F"),
+    ("HUB_TR", "Ankara Hub", "Ankara", "#C25B4E"),
+    ("HUB_KZ", "Almaty Hub", "Almaty", "#8393B5"),
+    ("HUB_BD", "Dhaka Hub", "Dhaka", "#7B68C7"),
+    ("HUB_ID", "Jakarta Hub", "Jakarta", "#6BA84F"),
+    ("HUB_SA", "Jeddah HQ", "Jeddah", "#B08D57"),
 ]
+
+# Codes portes par une version anterieure du seed, avant l'alignement sur le
+# referentiel. get_or_create travaille sur le code : sans ce menage, une base
+# deja semee garderait les anciens hubs en doublon des nouveaux, la contrainte
+# d'unicite portant sur le nom et non sur le code. Desactives, jamais
+# supprimes (POL-1.07).
+LEGACY_HUB_CODES = ["dakar", "abuja", "kampala", "rabat", "dhaka"]
 
 # (iso2, iso3, nom, code_hub)
 COUNTRIES = [
-    # Hub Senegal (Dakar)
-    ("SN", "SEN", "Senegal", "dakar"),
-    ("GM", "GMB", "Gambia", "dakar"),
-    ("CI", "CIV", "Cote d'Ivoire", "dakar"),
-    ("GN", "GIN", "Guinea", "dakar"),
-    ("ML", "MLI", "Mali", "dakar"),
-    ("SL", "SLE", "Sierra Leone", "dakar"),
-    ("GW", "GNB", "Guinea-Bissau", "dakar"),
-    # Hub Nigeria (Abuja)
-    ("NG", "NGA", "Nigeria", "abuja"),
-    ("BJ", "BEN", "Benin", "abuja"),
-    ("TG", "TGO", "Togo", "abuja"),
-    ("NE", "NER", "Niger", "abuja"),
-    ("TD", "TCD", "Chad", "abuja"),
-    ("CM", "CMR", "Cameroon", "abuja"),
-    ("BF", "BFA", "Burkina Faso", "abuja"),
-    # Hub Afrique de l'Est (Kampala)
-    ("UG", "UGA", "Uganda", "kampala"),
-    ("RW", "RWA", "Rwanda", "kampala"),
-    ("BI", "BDI", "Burundi", "kampala"),
-    ("MZ", "MOZ", "Mozambique", "kampala"),
-    ("SD", "SDN", "Sudan", "kampala"),
-    ("SS", "SSD", "South Sudan", "kampala"),
-    # Hub Maghreb (Rabat)
-    ("MA", "MAR", "Morocco", "rabat"),
-    ("MR", "MRT", "Mauritania", "rabat"),
-    ("EG", "EGY", "Egypt", "rabat"),
-    ("YE", "YEM", "Yemen", "rabat"),
-    ("DJ", "DJI", "Djibouti", "rabat"),
-    # Hub Asie (Dhaka)
-    ("BD", "BGD", "Bangladesh", "dhaka"),
-    ("PK", "PAK", "Pakistan", "dhaka"),
-    ("ID", "IDN", "Indonesia", "dhaka"),
-    ("TJ", "TJK", "Tajikistan", "dhaka"),
-    ("MV", "MDV", "Maldives", "dhaka"),
+    # Hub Dakar (HUB_SN)
+    ("SN", "SEN", "Senegal", "HUB_SN"),
+    ("GM", "GMB", "The Gambia", "HUB_SN"),
+    ("GW", "GNB", "Guinea-Bissau", "HUB_SN"),
+    ("GN", "GIN", "Guinea", "HUB_SN"),
+    ("ML", "MLI", "Mali", "HUB_SN"),
+    ("CI", "CIV", "Côte d'Ivoire", "HUB_SN"),
+    ("TG", "TGO", "Togo", "HUB_SN"),
+    ("BJ", "BEN", "Benin", "HUB_SN"),
+    ("BF", "BFA", "Burkina Faso", "HUB_SN"),
+    # Hub Abuja (HUB_NG)
+    ("NG", "NGA", "Nigeria", "HUB_NG"),
+    ("NE", "NER", "Niger", "HUB_NG"),
+    ("TD", "TCD", "Chad", "HUB_NG"),
+    ("CM", "CMR", "Cameroon", "HUB_NG"),
+    ("GA", "GAB", "Gabon", "HUB_NG"),
+    ("SL", "SLE", "Sierra Leone", "HUB_NG"),
+    # Hub Rabat (HUB_MA)
+    ("MA", "MAR", "Morocco", "HUB_MA"),
+    ("MR", "MRT", "Mauritania", "HUB_MA"),
+    ("DZ", "DZA", "Algeria", "HUB_MA"),
+    ("TN", "TUN", "Tunisia", "HUB_MA"),
+    ("LY", "LBY", "Libya", "HUB_MA"),
+    ("SR", "SUR", "Suriname", "HUB_MA"),
+    ("GY", "GUY", "Guyana", "HUB_MA"),
+    # Hub Cairo (HUB_EG)
+    ("EG", "EGY", "Egypt", "HUB_EG"),
+    ("SD", "SDN", "Sudan", "HUB_EG"),
+    # Hub Kampala (HUB_UG)
+    ("UG", "UGA", "Uganda", "HUB_UG"),
+    ("MZ", "MOZ", "Mozambique", "HUB_UG"),
+    ("DJ", "DJI", "Djibouti", "HUB_UG"),
+    ("KM", "COM", "Comoros", "HUB_UG"),
+    ("SO", "SOM", "Somalia", "HUB_UG"),
+    # Hub Ankara (HUB_TR)
+    ("TR", "TUR", "Türkiye", "HUB_TR"),
+    ("IR", "IRN", "Iran", "HUB_TR"),
+    ("PK", "PAK", "Pakistan", "HUB_TR"),
+    ("AF", "AFG", "Afghanistan", "HUB_TR"),
+    ("AL", "ALB", "Albania", "HUB_TR"),
+    ("AZ", "AZE", "Azerbaijan", "HUB_TR"),
+    # Hub Almaty (HUB_KZ)
+    ("KZ", "KAZ", "Kazakhstan", "HUB_KZ"),
+    ("TM", "TKM", "Turkmenistan", "HUB_KZ"),
+    ("UZ", "UZB", "Uzbekistan", "HUB_KZ"),
+    ("TJ", "TJK", "Tajikistan", "HUB_KZ"),
+    ("KG", "KGZ", "Kyrgyz Republic", "HUB_KZ"),
+    # Hub Dhaka (HUB_BD)
+    ("BD", "BGD", "Bangladesh", "HUB_BD"),
+    ("MV", "MDV", "Maldives", "HUB_BD"),
+    # Hub Jakarta (HUB_ID)
+    ("ID", "IDN", "Indonesia", "HUB_ID"),
+    ("MY", "MYS", "Malaysia", "HUB_ID"),
+    ("BN", "BRN", "Brunei Darussalam", "HUB_ID"),
+    # Hub Jeddah (HUB_SA)
+    ("SA", "SAU", "Saudi Arabia", "HUB_SA"),
+    ("BH", "BHR", "Bahrain", "HUB_SA"),
+    ("KW", "KWT", "Kuwait", "HUB_SA"),
+    ("QA", "QAT", "Qatar", "HUB_SA"),
+    ("AE", "ARE", "United Arab Emirates", "HUB_SA"),
+    ("OM", "OMN", "Oman", "HUB_SA"),
+    ("YE", "YEM", "Yemen", "HUB_SA"),
+    ("LB", "LBN", "Lebanon", "HUB_SA"),
+    ("PS", "PSE", "Palestine", "HUB_SA"),
+    ("JO", "JOR", "Jordan", "HUB_SA"),
+    ("IQ", "IRQ", "Iraq", "HUB_SA"),
+    ("SY", "SYR", "Syria", "HUB_SA"),
 ]
 
 # (code, sigle, nom, type, iso2 d'origine, couleur, chemin du logo)
@@ -218,7 +266,19 @@ class Command(BaseCommand):
                 hub.name, hub.city, hub.color = name, city, color
                 hub.save(update_fields=["name", "city", "color"])
             hubs[code] = hub
-        self.stdout.write(self.style.SUCCESS(f"Hubs regionaux : {len(hubs)} OK (sur 8 au portefeuille)"))
+        self.stdout.write(self.style.SUCCESS(f"Hubs regionaux : {len(hubs)} OK"))
+
+        # Les pays sont rattaches aux nouveaux hubs par le bloc suivant ; ne
+        # restent ici que les enveloppes vides de l'ancienne nomenclature.
+        legacy = list(RegionalHub.objects.filter(code__in=LEGACY_HUB_CODES, is_active=True))
+        if legacy:
+            RegionalHub.objects.filter(pk__in=[h.pk for h in legacy]).update(is_active=False)
+            self.stdout.write(
+                self.style.WARNING(
+                    "Hubs de l'ancienne nomenclature desactives : "
+                    + ", ".join(sorted(h.code for h in legacy))
+                )
+            )
 
         countries = {}
         for iso2, iso3, name, hub_code in COUNTRIES:
@@ -232,6 +292,21 @@ class Command(BaseCommand):
                 country.save(update_fields=["hub"])
             countries[iso2] = country
         self.stdout.write(self.style.SUCCESS(f"Pays : {len(countries)} OK"))
+
+        # Un pays sorti du referentiel n'est pas touche : l'ecarter du
+        # portefeuille est une decision de gestion, pas un effet de bord du
+        # seed. On se contente de le signaler.
+        outside = (
+            Country.objects.exclude(iso3__in=[iso3 for _, iso3, _, _ in COUNTRIES])
+            .order_by("iso3")
+            .values_list("iso3", flat=True)
+        )
+        if outside:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Pays en base hors referentiel, laisses inchanges : {', '.join(outside)}"
+                )
+            )
 
         for code, short_name, name, donor_type, origin, color, logo in DONORS:
             donor, created = Donor.objects.get_or_create(
@@ -310,10 +385,10 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.WARNING(
-                "\nLimites connues : 5 hubs sur les 8 du portefeuille sont charges "
-                "(Almaty, Ankara et Jakarta manquent — composition pays inconnue). "
-                "Les sous-secteurs ne sont pas exhaustifs. A completer via "
-                "l'ecran Donnees de base une fois les donnees officielles LLF2 "
-                "disponibles."
+                "\nLimites connues : le libelle de region du referentiel "
+                "(West Africa, North East Africa...) n'est pas repris, faute de "
+                "champ ou le stocker. Les sous-secteurs ne sont pas exhaustifs. "
+                "A completer via l'ecran Donnees de base une fois les donnees "
+                "officielles LLF2 disponibles."
             )
         )
