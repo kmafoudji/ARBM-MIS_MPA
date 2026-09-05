@@ -101,7 +101,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     lead_country_id = serializers.PrimaryKeyRelatedField(
         queryset=Country.objects.all(), write_only=True
     )
-    contributing_sdg_ids = serializers.PrimaryKeyRelatedField(
+    sdg_ids = serializers.PrimaryKeyRelatedField(
         queryset=Sdg.objects.all(), many=True, write_only=True, required=False
     )
     contributing_sector_ids = serializers.PrimaryKeyRelatedField(
@@ -119,7 +119,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
             "investment_cycle",
             "country_ids", "lead_country_id",
             "primary_sector", "contributing_sector_ids",
-            "budget_amount", "primary_sdg", "contributing_sdg_ids",
+            "budget_amount", "sdg_ids",
         ]
         read_only_fields = ["id"]
 
@@ -129,7 +129,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         country_ids = [c.id for c in validated_data.pop("country_ids")]
         lead_country_id = validated_data.pop("lead_country_id").id
-        contributing_sdg_ids = [s.number for s in validated_data.pop("contributing_sdg_ids", [])]
+        sdg_ids = [s.number for s in validated_data.pop("sdg_ids", [])]
         contributing_sector_ids = [s.id for s in validated_data.pop("contributing_sector_ids", [])]
         validated_data["lifecycle_stage"] = "concept_note"
         request = self.context.get("request")
@@ -138,8 +138,8 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 
         project = Project.objects.create(**validated_data)
         set_project_countries(project, country_ids, lead_country_id)
-        if contributing_sdg_ids:
-            set_project_sdgs(project, contributing_sdg_ids)
+        if sdg_ids:
+            set_project_sdgs(project, sdg_ids)
         if contributing_sector_ids:
             set_project_sectors(project, contributing_sector_ids)
         return project
@@ -154,9 +154,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     primary_sector_icon = serializers.CharField(source="primary_sector.icon", read_only=True)
     primary_sector_color = serializers.CharField(source="primary_sector.color", read_only=True)
     contributing_sectors_detail = serializers.SerializerMethodField()
-    primary_sdg_name = serializers.CharField(source="primary_sdg.name", read_only=True)
-    primary_sdg_color = serializers.CharField(source="primary_sdg.color", read_only=True)
-    contributing_sdgs_detail = serializers.SerializerMethodField()
+    sdgs_detail = serializers.SerializerMethodField()
     lifecycle_stage_display = serializers.CharField(
         source="get_lifecycle_stage_display", read_only=True
     )
@@ -201,8 +199,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "hub_name", "hub_color",
             "primary_sector", "primary_sector_name", "primary_sector_icon", "primary_sector_color",
             "contributing_sectors_detail",
-            "primary_sdg", "primary_sdg_name", "primary_sdg_color",
-            "contributing_sdgs_detail",
+            "sdgs_detail",
             "gender_marker", "gender_marker_display",
             "implementation_modality", "implementation_modality_display",
             "geographic_typology", "geographic_typology_display",
@@ -258,10 +255,10 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             for s in obj.contributing_sectors.all()
         ]
 
-    def get_contributing_sdgs_detail(self, obj):
+    def get_sdgs_detail(self, obj):
         return [
             {"number": s.number, "name": s.name, "color": s.color}
-            for s in obj.contributing_sdgs.all()
+            for s in obj.sdgs.all()
         ]
 
     def get_cross_cutting_theme_ids(self, obj):
@@ -279,12 +276,13 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
 class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
     """
-    SF-2 — ecriture de la classification strategique complete : secteur et
-    ODD (primaire + contributifs) en plus des 5 champs a choix unique.
-    Les contributifs passent par set_project_sectors()/set_project_sdgs()
-    (meme validation qu'a la creation : le primaire ne peut pas doubler en
-    contributif) — PAS par l'assignation M2M par defaut de DRF, qui ne sait
-    pas appliquer cette regle. cross_cutting_themes, seul M2M ici sans
+    SF-2 — ecriture de la classification strategique complete : secteurs
+    (primaire + contributifs), ODD (un seul ensemble, ADR 0006) et les 5
+    champs a choix unique. Secteurs contributifs et ODD passent par
+    set_project_sectors()/set_project_sdgs() (meme validation qu'a la
+    creation : le secteur primaire ne peut pas doubler en contributif) — PAS
+    par l'assignation M2M par defaut de DRF, qui ne sait pas appliquer cette
+    regle. cross_cutting_themes, seul M2M ici sans
     through model, reste sur l'assignation standard.
     """
 
@@ -295,7 +293,7 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
     contributing_sector_ids = serializers.PrimaryKeyRelatedField(
         queryset=Sector.objects.all(), many=True, required=False, write_only=True
     )
-    contributing_sdg_ids = serializers.PrimaryKeyRelatedField(
+    sdg_ids = serializers.PrimaryKeyRelatedField(
         queryset=Sdg.objects.all(), many=True, required=False, write_only=True
     )
 
@@ -304,7 +302,7 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
         fields = [
             "name", "acronym", "budget_amount",
             "primary_sector", "contributing_sector_ids",
-            "primary_sdg", "contributing_sdg_ids",
+            "sdg_ids",
             "gender_marker", "implementation_modality", "geographic_typology",
             "fragility_status", "risk_rating", "cross_cutting_theme_ids",
             "rio_marker_mitigation", "rio_marker_adaptation",
@@ -313,17 +311,17 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         contributing_sector_ids = validated_data.pop("contributing_sector_ids", None)
-        contributing_sdg_ids = validated_data.pop("contributing_sdg_ids", None)
+        sdg_ids = validated_data.pop("sdg_ids", None)
 
-        # super().update() sauve d'abord primary_sector/primary_sdg : les
-        # services ci-dessous, qui verifient le primaire pour rejeter un
-        # doublon en contributif, doivent voir la valeur a jour.
+        # super().update() sauve d'abord primary_sector : set_project_sectors()
+        # verifie le primaire pour rejeter un doublon en contributif et doit
+        # voir la valeur a jour.
         instance = super().update(instance, validated_data)
 
         if contributing_sector_ids is not None:
             set_project_sectors(instance, [s.id for s in contributing_sector_ids])
-        if contributing_sdg_ids is not None:
-            set_project_sdgs(instance, [s.number for s in contributing_sdg_ids])
+        if sdg_ids is not None:
+            set_project_sdgs(instance, [s.number for s in sdg_ids])
         return instance
 
 

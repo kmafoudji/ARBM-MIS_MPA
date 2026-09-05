@@ -45,7 +45,7 @@ class ProjectAdmin(admin.ModelAdmin):
         }),
         ("Classification (SF-2)", {
             "fields": (
-                "primary_sector", "primary_sdg", "gender_marker",
+                "primary_sector", "gender_marker",
                 "rio_marker_mitigation", "rio_marker_adaptation",
                 "rio_marker_biodiversity", "rio_marker_desertification",
                 "cross_cutting_themes", "implementation_modality",

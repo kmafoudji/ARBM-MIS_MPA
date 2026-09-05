@@ -132,10 +132,10 @@ def _apply_project(context):
             project=project, country_id=lead_country_id, defaults={"is_lead": True},
         )
 
-    for number in payload.get("contributing_sdgs", []):
+    for number in payload.get("sdgs", []):
         sdg = Sdg.objects.filter(number=number).first()
         if sdg is not None:
-            project.contributing_sdgs.add(sdg)
+            project.sdgs.add(sdg)
 
     if not project.code:
         project.code = generate_project_code(project)

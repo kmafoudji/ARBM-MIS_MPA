@@ -160,13 +160,10 @@ class Project(models.Model):
     )
 
     # --- SF-2 : Alignement strategique & classification ---
-    primary_sdg = models.ForeignKey(
-        Sdg, on_delete=models.PROTECT, null=True, blank=True, related_name="projects_as_primary",
-        help_text="ODD primaire (1 seul, obligatoire).",
-    )
-    contributing_sdgs = models.ManyToManyField(
+    sdgs = models.ManyToManyField(
         Sdg, through="ProjectSdg", related_name="projects", blank=True,
-        help_text="ODD contributifs (0 ou plus).",
+        help_text="ODD du projet, sans distinction primaire/contributif "
+        "(au moins 1 exige a BED Approved, POL-1.10 ; cf. ADR 0006).",
     )
     gender_marker = models.CharField(
         max_length=1, choices=GENDER_MARKER_CHOICES, null=True, blank=True,
@@ -299,15 +296,15 @@ class ProjectCountry(models.Model):
 
 
 class ProjectSdg(models.Model):
-    """Table de jonction N..N project <-> sdg (ODD contributifs)."""
+    """Table de jonction N..N project <-> sdg (ODD du projet)."""
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     sdg = models.ForeignKey(
         Sdg,
         on_delete=models.PROTECT,
         help_text="PROTECT et non CASCADE : supprimer un ODD effacerait "
-        "silencieusement la classification des projets qui le portent en "
-        "contributif. Cf. POL-1.07 (pas de suppression definitive).",
+        "silencieusement la classification des projets qui le portent. "
+        "Cf. POL-1.07 (pas de suppression definitive).",
     )
 
     class Meta:

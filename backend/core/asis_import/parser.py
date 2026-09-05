@@ -638,17 +638,6 @@ def _parse_project(context):
         else:
             desired["primary_sector"] = sector
 
-    primary_sdg = _read_int(context, SHEET_PROJECT, row_number, values, "primary_sdg")
-    if primary_sdg is not None:
-        sdg = Sdg.objects.filter(number=primary_sdg).first()
-        if sdg is None:
-            context.error(
-                SHEET_PROJECT, row_number, f"Unknown primary SDG: {primary_sdg}.",
-                column="primary_sdg",
-            )
-        else:
-            desired["primary_sdg"] = sdg
-
     currency_code = as_text(values.get("currency")).upper()
     if currency_code:
         currency = Currency.objects.filter(code=currency_code).first()
@@ -729,33 +718,44 @@ def _parse_project(context):
 
     context.project_fields = desired
 
-    # -- countries and contributing SDGs ----------------------------------
+    # -- countries and SDGs -----------------------------------------------
 
-    contributing = []
-    for token in as_text(values.get("contributing_sdgs")).replace(",", ";").split(";"):
-        token = token.strip()
-        if not token:
-            continue
-        try:
-            number = int(Decimal(token))
-        except (InvalidOperation, ValueError):
-            context.error(
-                SHEET_PROJECT, row_number,
-                f"Unreadable contributing SDG: {token!r}.", column="contributing_sdgs",
-            )
-            continue
-        if not Sdg.objects.filter(number=number).exists():
-            context.error(
-                SHEET_PROJECT, row_number, f"Unknown contributing SDG: {number}.",
-                column="contributing_sdgs",
-            )
-            continue
-        contributing.append(number)
+    # One flat set of SDGs (ADR 0006). The column is ``sdgs``; the legacy
+    # ``primary_sdg`` and ``contributing_sdgs`` columns of the v0.x workbooks
+    # are still read and folded into the same set.
+    sdgs = []
+    for column in ("sdgs", "primary_sdg", "contributing_sdgs"):
+        for token in as_text(values.get(column)).replace(",", ";").split(";"):
+            token = token.strip()
+            if not token:
+                continue
+            try:
+                number = int(Decimal(token))
+            except (InvalidOperation, ValueError):
+                context.error(
+                    SHEET_PROJECT, row_number,
+                    f"Unreadable SDG: {token!r}.", column=column,
+                )
+                continue
+            if not Sdg.objects.filter(number=number).exists():
+                context.error(
+                    SHEET_PROJECT, row_number, f"Unknown SDG: {number}.", column=column,
+                )
+                continue
+            if number not in sdgs:
+                sdgs.append(number)
+    if as_text(values.get("primary_sdg")) or as_text(values.get("contributing_sdgs")):
+        context.warn(
+            SHEET_PROJECT, row_number,
+            "Columns primary_sdg/contributing_sdgs are legacy: use a single "
+            "sdgs column. Values were merged into the project's SDG set.",
+            column="sdgs",
+        )
 
     payload = {
         "fields": desired,
         "lead_country_id": context.lead_country.pk if context.lead_country else None,
-        "contributing_sdgs": contributing,
+        "sdgs": sdgs,
     }
 
     if context.project is None:
@@ -766,7 +766,7 @@ def _parse_project(context):
         return
 
     diffs = diff_fields(context.project, desired)
-    diffs += _project_relation_diffs(context, contributing)
+    diffs += _project_relation_diffs(context, sdgs)
     action = ACTION_UPDATE if diffs else ACTION_UNCHANGED
     context.plan.add_change(
         SHEET_PROJECT, action, reference,
@@ -775,8 +775,8 @@ def _parse_project(context):
     )
 
 
-def _project_relation_diffs(context, contributing):
-    """Differences on the lead country and the contributing SDGs."""
+def _project_relation_diffs(context, sdgs):
+    """Differences on the lead country and the SDG set."""
     diffs = []
     if context.lead_country is not None:
         current = context.project.lead_country
@@ -786,13 +786,13 @@ def _project_relation_diffs(context, contributing):
                 from_value=current.iso3 if current else None,
                 to_value=context.lead_country.iso3,
             ))
-    if contributing:
-        current = sorted(context.project.contributing_sdgs.values_list("number", flat=True))
-        if current != sorted(contributing):
+    if sdgs:
+        current = sorted(context.project.sdgs.values_list("number", flat=True))
+        if current != sorted(sdgs):
             diffs.append(FieldDiff(
-                field="contributing_sdgs",
+                field="sdgs",
                 from_value=", ".join(str(n) for n in current) or None,
-                to_value=", ".join(str(n) for n in sorted(contributing)),
+                to_value=", ".join(str(n) for n in sorted(sdgs)),
             ))
     return diffs
 
