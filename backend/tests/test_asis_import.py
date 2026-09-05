@@ -776,3 +776,39 @@ def test_the_endpoint_requires_authentication(rows):
         ENDPOINT, {"file": build_workbook(rows), "mode": "validate"}, format="multipart"
     )
     assert response.status_code in (401, 403)
+
+
+@pytest.mark.django_db
+def test_unknown_project_column_is_reported(auth_client, rows):
+    """
+    A header the import does not read (for instance a column retired by the
+    classification rework) is a warning: its values are silently ignored
+    otherwise. Known headers raise no such warning.
+    """
+    workbook = build_workbook(rows)
+    validation = post(auth_client, workbook, mode="validate")
+    assert validation.status_code == 200, validation.data
+    assert not any("not read by the import" in w["message"] for w in validation.data["warnings"]), \
+        messages(validation.data["warnings"])
+
+    old_rows = {name: [list(r) for r in rs] for name, rs in rows.items()}
+    old_headers = {name: list(cols) for name, cols in HEADERS.items()}
+    old_headers["01_project"] = old_headers["01_project"] + ["gender_marker", "fragility_status"]
+    old_rows["01_project"][0] += ["1", "fcv"]
+
+    original = dict(HEADERS)
+    HEADERS.update(old_headers)
+    try:
+        workbook = build_workbook(old_rows)
+    finally:
+        HEADERS.clear()
+        HEADERS.update(original)
+
+    validation = post(auth_client, workbook, mode="validate")
+    assert validation.status_code == 200, validation.data
+    warning = next(
+        (w for w in validation.data["warnings"] if "not read by the import" in w["message"]), None
+    )
+    assert warning is not None, messages(validation.data["warnings"])
+    assert warning["sheet"] == "01_project"
+    assert "fragility_status" in warning["message"] and "gender_marker" in warning["message"]
