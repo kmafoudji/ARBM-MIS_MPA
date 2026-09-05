@@ -87,9 +87,10 @@ migration reproduces. A fresh environment comes up without it.
 | Scope rows deleted by hand for one project (ALB-0001) that the API had accepted outside the project's countries. | database only | Nothing missing; the API still accepts such rows until validated server-side. |
 | Loaded projects (the AS-IS workbooks). | database + the workbooks | Re-import through Bulk Import. |
 
-The sector seed ships the LLF2 taxonomy (three pillars, eight sub-sectors)
+The sector seed ships the LLF2 taxonomy (three pillars, eight sectors under
+them, [decisions/0007](decisions/0007-sector-taxonomy-pillar-then-sector.md))
 since 5 September 2026, so a fresh environment resolves the AS-IS workbooks'
-sector codes. The workbooks written against the earlier slug codes
+sector codes. A project must name a sector, not a pillar. The workbooks written against the earlier slug codes
 (`agriculture`, `basic_infrastructure`) fail on `primary_sector` until recoded.
 
 ## Path B — restore a dump

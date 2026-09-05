@@ -72,8 +72,31 @@ class ImplementingAgencyViewSet(ReferenceViewSet):
 
 
 class SectorViewSet(ReferenceViewSet):
-    queryset = Sector.objects.all()  # Meta.ordering: sequence, name
+    """
+    Taxonomie a deux niveaux (ADR 0007). Filtres optionnels :
+    `?level=pillar` (sans parent) / `?level=sector` (avec parent),
+    `?parent=<id>` (les secteurs d'un pilier), `?is_active=true|false`.
+    Sans filtre : tout, y compris les desactives (l'admin en a besoin).
+    """
+
+    queryset = Sector.objects.select_related("parent")  # Meta.ordering: sequence, name
     serializer_class = SectorSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        params = self.request.query_params
+        level = params.get("level")
+        if level == "pillar":
+            qs = qs.filter(parent__isnull=True)
+        elif level == "sector":
+            qs = qs.filter(parent__isnull=False)
+        parent = params.get("parent")
+        if parent:
+            qs = qs.filter(parent_id=parent)
+        is_active = params.get("is_active")
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() in ("1", "true", "yes"))
+        return qs
 
 
 class CurrencyViewSet(ReferenceViewSet):

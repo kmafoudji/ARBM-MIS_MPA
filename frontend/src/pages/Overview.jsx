@@ -96,16 +96,23 @@ export default function Overview({ user, onProjectClick }) {
   const activeHubs = new Set();
   projects?.forEach(p => { if (p.hub_name) activeHubs.add(p.hub_name); });
 
-  /* ── Par secteur ── */
-  const bySector = {};
+  /* ── Par pilier, puis par secteur (ADR 0007) ── */
+  const byPillar = {};
   projects?.forEach(p => {
     if (!p.primary_sector_name) return;
-    if (!bySector[p.primary_sector_name]) bySector[p.primary_sector_name] = { budget: 0, count: 0 };
-    bySector[p.primary_sector_name].budget += Number(p.budget_amount || 0);
-    bySector[p.primary_sector_name].count  += 1;
+    const pillar = p.pillar_name || p.primary_sector_name;
+    const pillarEntry = byPillar[pillar] || (byPillar[pillar] = { budget: 0, count: 0, sectors: {} });
+    const sectorEntry = pillarEntry.sectors[p.primary_sector_name]
+      || (pillarEntry.sectors[p.primary_sector_name] = { budget: 0, count: 0 });
+    const budget = Number(p.budget_amount || 0);
+    pillarEntry.budget += budget; pillarEntry.count += 1;
+    sectorEntry.budget += budget; sectorEntry.count += 1;
   });
-  const sectorEntries = Object.entries(bySector).sort((a, b) => b[1].budget - a[1].budget);
-  const maxSector = Math.max(1, ...sectorEntries.map(([, v]) => v.budget));
+  const pillarEntries = Object.entries(byPillar)
+    .sort((a, b) => b[1].budget - a[1].budget)
+    .map(([pillar, v]) => [pillar, { ...v, sectors: Object.entries(v.sectors).sort((a, b) => b[1].budget - a[1].budget) }]);
+  const sectorCount = pillarEntries.reduce((n, [, v]) => n + v.sectors.length, 0);
+  const maxPillar = Math.max(1, ...pillarEntries.map(([, v]) => v.budget));
 
   /* ── Par phase ── */
   const byPhase = {};
@@ -176,23 +183,32 @@ export default function Overview({ user, onProjectClick }) {
               <h2 className="card-title"><Icon name="bar-chart" size={14} style={{ marginRight: 6 }} />Portfolio by Sector</h2>
               <div className="card-sub">Financial commitment · USD</div>
             </div>
-            <span className="badge badge-lime">{sectorEntries.length} sector{sectorEntries.length !== 1 ? "s" : ""}</span>
+            <span className="badge badge-lime">{pillarEntries.length} pillar{pillarEntries.length !== 1 ? "s" : ""} · {sectorCount} sector{sectorCount !== 1 ? "s" : ""}</span>
           </div>
           <div className="card-body">
-            {sectorEntries.length === 0 && <p className="text-muted text-sm">No budget data yet.</p>}
-            {sectorEntries.map(([sector, { budget, count }], i) => (
-              <div key={sector} style={{ marginBottom: 14 }}>
+            {pillarEntries.length === 0 && <p className="text-muted text-sm">No budget data yet.</p>}
+            {pillarEntries.map(([pillar, { budget, count, sectors }], i) => (
+              <div key={pillar} style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: SECTOR_COLOR[i % SECTOR_COLOR.length], flexShrink: 0 }} />
-                    {sector}
+                    {pillar}
                   </span>
                   <span style={{ display: "flex", gap: 12, fontSize: 12 }}>
                     <span className="badge">{count} project{count !== 1 ? "s" : ""}</span>
                     <span className="text-mono" style={{ fontWeight: 600, color: "var(--lime-darker)" }}>{fmt(budget)} USD</span>
                   </span>
                 </div>
-                <Bar pct={(budget / maxSector) * 100} color={SECTOR_COLOR[i % SECTOR_COLOR.length]} />
+                <Bar pct={(budget / maxPillar) * 100} color={SECTOR_COLOR[i % SECTOR_COLOR.length]} />
+                {sectors.map(([sector, sv]) => (
+                  <div key={sector} style={{ display: "flex", justifyContent: "space-between", marginTop: 6, paddingLeft: 18, fontSize: 12 }}>
+                    <span className="text-muted">{sector}</span>
+                    <span style={{ display: "flex", gap: 12 }}>
+                      <span className="text-muted">{sv.count} project{sv.count !== 1 ? "s" : ""}</span>
+                      <span className="text-mono">{fmt(sv.budget)} USD</span>
+                    </span>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

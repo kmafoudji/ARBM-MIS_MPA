@@ -311,6 +311,16 @@ function LevelSection({ level, indicators }) {
   );
 }
 
+/** Pillars with their sectors nested, for a native <select> with <optgroup>. */
+function sectorFilterOptions(sectors) {
+  const pillars = sectors.filter(s => s.parent === null || s.parent === undefined);
+  return pillars.map(p => ({
+    value: String(p.id),
+    label: p.name,
+    children: sectors.filter(s => s.parent === p.id).map(s => ({ value: String(s.id), label: s.name })),
+  }));
+}
+
 /* ── Page principale ─────────────────────────────────────────────────────── */
 export default function Portfolio() {
   const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "", country: "", donor: "", rag: "" });
@@ -456,7 +466,9 @@ export default function Portfolio() {
         {[
           { key: "hub",       label: "Hub",       options: hubs.map(h => ({ value: String(h.id), label: h.name })) },
           { key: "country",   label: filters.hub ? "Country (Hub)" : "Country", options: filteredCountries.map(c => ({ value: String(c.id), label: c.name })) },
-          { key: "sector",    label: "Sector",    options: sectors.map(s => ({ value: String(s.id), label: s.name })) },
+          // ADR 0007: the backend expands a pillar to its sectors, so the
+          // pillar is itself an option ("All <pillar>") above its sectors.
+          { key: "sector",    label: "Sector",    options: sectorFilterOptions(sectors) },
           { key: "donor",     label: "Donor",     options: donors.map(d => ({ value: String(d.id), label: d.short_name || d.name })) },
           { key: "chain_level", label: "Level",   options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })) },
           { key: "rag", label: "Status", options: [
@@ -479,7 +491,14 @@ export default function Portfolio() {
             onChange={e => setFilter(key, e.target.value)}
           >
             <option value="">All {label}s</option>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {options.map(o => o.children ? (
+              <optgroup key={o.value} label={o.label}>
+                <option value={o.value}>All {o.label}</option>
+                {o.children.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </optgroup>
+            ) : (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
           </select>
         ))}
 

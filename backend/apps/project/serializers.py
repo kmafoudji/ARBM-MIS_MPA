@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.identity.models import AppUser
@@ -9,7 +10,12 @@ from .models import (
     ProjectImplementingPartner,
     ProjectStageTransition,
 )
-from .services import set_project_countries, set_project_sdgs, set_project_sectors
+from .services import (
+    set_project_countries,
+    set_project_sdgs,
+    set_project_sectors,
+    validate_sector_is_not_pillar,
+)
 
 
 def validate_official_reference_number(value, exclude_pk=None):
@@ -27,6 +33,20 @@ def validate_official_reference_number(value, exclude_pk=None):
     return value
 
 
+def _pillar_of(project):
+    """Pilier du secteur primaire (ADR 0007) ; suppose primary_sector charge."""
+    return project.primary_sector.pillar
+
+
+def validate_primary_sector_value(value):
+    """ADR 0007 : le secteur primaire est un secteur, pas un pilier."""
+    try:
+        validate_sector_is_not_pillar(value)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError(exc.messages)
+    return value
+
+
 class ProjectListSerializer(serializers.ModelSerializer):
     lead_country_name = serializers.SerializerMethodField()
     lead_country_iso2 = serializers.SerializerMethodField()
@@ -34,6 +54,8 @@ class ProjectListSerializer(serializers.ModelSerializer):
     primary_sector_name = serializers.CharField(source="primary_sector.name", read_only=True)
     primary_sector_icon = serializers.CharField(source="primary_sector.icon", read_only=True)
     primary_sector_color = serializers.CharField(source="primary_sector.color", read_only=True)
+    pillar_id = serializers.SerializerMethodField()
+    pillar_name = serializers.SerializerMethodField()
     contributing_sector_count = serializers.SerializerMethodField()
     lifecycle_stage_display = serializers.CharField(
         source="get_lifecycle_stage_display", read_only=True
@@ -74,11 +96,18 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "investment_cycle",
             "lead_country_name", "lead_country_iso2", "country_names",
             "primary_sector", "primary_sector_name", "primary_sector_icon",
-            "primary_sector_color", "contributing_sector_count",
+            "primary_sector_color", "pillar_id", "pillar_name",
+            "contributing_sector_count",
             "lifecycle_stage", "lifecycle_stage_display",
             "budget_amount", "envelope_total", "created_at",
             "hub_name", "stage_entered_on",
         ]
+
+    def get_pillar_id(self, obj):
+        return _pillar_of(obj).id if obj.primary_sector_id else None
+
+    def get_pillar_name(self, obj):
+        return _pillar_of(obj).name if obj.primary_sector_id else None
 
     def get_hub_name(self, obj):
         if obj.hub_id:
@@ -142,6 +171,9 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     def validate_official_reference_number(self, value):
         return validate_official_reference_number(value)
 
+    def validate_primary_sector(self, value):
+        return validate_primary_sector_value(value)
+
     def create(self, validated_data):
         country_ids = [c.id for c in validated_data.pop("country_ids")]
         lead_country_id = validated_data.pop("lead_country_id").id
@@ -169,6 +201,8 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     primary_sector_name = serializers.CharField(source="primary_sector.name", read_only=True)
     primary_sector_icon = serializers.CharField(source="primary_sector.icon", read_only=True)
     primary_sector_color = serializers.CharField(source="primary_sector.color", read_only=True)
+    pillar_id = serializers.SerializerMethodField()
+    pillar_name = serializers.SerializerMethodField()
     contributing_sectors_detail = serializers.SerializerMethodField()
     sdgs_detail = serializers.SerializerMethodField()
     lifecycle_stage_display = serializers.CharField(
@@ -189,6 +223,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     has_workspace   = serializers.SerializerMethodField()
     toc_node_count  = serializers.SerializerMethodField()
 
+    def get_pillar_id(self, obj):
+        return _pillar_of(obj).id if obj.primary_sector_id else None
+
+    def get_pillar_name(self, obj):
+        return _pillar_of(obj).name if obj.primary_sector_id else None
+
     def get_has_workspace(self, obj):
         return hasattr(obj, "workspace") and obj.workspace is not None
 
@@ -206,6 +246,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "lead_country_name", "countries_detail",
             "hub_name", "hub_color",
             "primary_sector", "primary_sector_name", "primary_sector_icon", "primary_sector_color",
+            "pillar_id", "pillar_name",
             "contributing_sectors_detail",
             "sdgs_detail",
             "we_category", "we_category_display",
@@ -297,6 +338,9 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
             "sdg_ids",
             "we_category", "risk_rating", "climate_marker",
         ]
+
+    def validate_primary_sector(self, value):
+        return validate_primary_sector_value(value)
 
     def update(self, instance, validated_data):
         contributing_sector_ids = validated_data.pop("contributing_sector_ids", None)

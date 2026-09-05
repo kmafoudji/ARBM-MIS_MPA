@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
+import { sectorOptions } from "../utils.js";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
 import Select from "../components/Select";
@@ -122,7 +123,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   }
 
   const selectedCountries         = (countries || []).filter((c) => f.countryIds.includes(c.id));
-  const contributingSectorChoices = (sectors   || []).filter((s) => String(s.id)     !== String(f.primarySector));
+  // ADR 0007: only sectors are selectable, grouped under their pillar.
+  const primarySectorOptions      = sectorOptions(sectors, { stringIds: true });
+  const contributingSectorChoices = sectorOptions(sectors, { exclude: (s) => String(s.id) === String(f.primarySector) });
 
   /* ── Validation par étape ── */
   function validate(s) {
@@ -256,7 +259,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <div className="field">
                 <label className="field-label" htmlFor="primarySector">Primary sector</label>
                 <Select id="primarySector" name="primarySector" placeholder="Select…"
-                  options={(sectors || []).map((s) => ({ value: String(s.id), label: s.name }))}
+                  options={primarySectorOptions}
                   value={f.primarySector} onChange={(v) => set("primarySector", v)} />
               </div>
 
@@ -286,7 +289,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <div className="field">
                 <label className="field-label" htmlFor="contribSectors">Contributing sectors</label>
                 <MultiSelect id="contribSectors" placeholder="Search sectors..."
-                  options={contributingSectorChoices.map((s) => ({ value: s.id, label: s.name }))}
+                  options={contributingSectorChoices}
                   value={f.contributingSectorIds} onChange={(v) => set("contributingSectorIds", v)} />
               </div>
 

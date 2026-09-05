@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Flag from "./Flag";
 import Icon from "./Icon";
 
@@ -11,7 +11,9 @@ import Icon from "./Icon";
  * <form> keeps `required` validation and `name` submission for free.
  *
  * Props:
- *   options      [{ value, label, iso2?, disabled? }] — iso2 renders a Flag
+ *   options      [{ value, label, iso2?, disabled?, group? }] — iso2 renders a
+ *                Flag; a `group` label renders a non-selectable heading before
+ *                the first option of each run of equal groups
  *   value        selected value ("" / null / undefined = nothing selected);
  *                compared with String(), returned as the original option value
  *   onChange     (value) => void — "" when cleared
@@ -55,7 +57,7 @@ export default function Select({
   }, [open]);
 
   useEffect(() => {
-    const el = listRef.current?.children[active];
+    const el = listRef.current?.querySelector(`[data-index="${active}"]`);
     if (el?.scrollIntoView) el.scrollIntoView({ block: "nearest" });
   }, [active]);
 
@@ -191,10 +193,13 @@ export default function Select({
         <ul className="multiselect-menu select-menu" role="listbox" id={listId} ref={listRef}>
           {filtered.length === 0 && <li className="multiselect-empty">No matches</li>}
           {filtered.map((o, i) => {
+            const heading = o.group && (i === 0 || filtered[i - 1].group !== o.group) ? o.group : null;
             const isSel = selected ? String(o.value) === String(selected.value) : false;
             return (
+              <Fragment key={String(o.value)}>
+              {heading && <li className="multiselect-group" role="presentation">{heading}</li>}
               <li
-                key={String(o.value)}
+                data-index={i}
                 role="option"
                 aria-selected={isSel}
                 aria-disabled={o.disabled || undefined}
@@ -207,6 +212,7 @@ export default function Select({
                 {o.iso2 !== undefined && <Flag iso2={o.iso2} size={16} title={o.label} />}
                 <span className="multiselect-option-label">{o.label}</span>
               </li>
+              </Fragment>
             );
           })}
         </ul>

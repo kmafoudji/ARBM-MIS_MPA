@@ -58,7 +58,9 @@ class IndicatorListView(APIView):
         qs = Indicator.objects.filter(is_active=True).select_related("sector")
         sector = request.query_params.get("sector")
         if sector:
-            qs = qs.filter(sector_id=sector)
+            # Un pilier (ADR 0007) englobe ses secteurs.
+            from django.db.models import Q
+            qs = qs.filter(Q(sector_id=sector) | Q(sector__parent_id=sector))
         indicator_type = request.query_params.get("type")
         if indicator_type:
             qs = qs.filter(indicator_type=indicator_type)
@@ -1001,7 +1003,10 @@ class PortfolioAggregationView(APIView):
         if hub_id:
             projects = projects.filter(hub_q((hub_id,))).distinct()
         if sector_id:
-            projects = projects.filter(primary_sector_id=sector_id)
+            # Un pilier (ADR 0007) englobe ses secteurs.
+            projects = projects.filter(
+                Q(primary_sector_id=sector_id) | Q(primary_sector__parent_id=sector_id)
+            )
         if country_id:
             projects = projects.filter(
                 project_countries__country_id=country_id

@@ -189,7 +189,7 @@ AGENCIES = [
 # database on 5 September 2026 and are not seeded any more.
 # (code, sequence, name, icon, color)
 SECTORS = [
-    ("INFRA", 10, "Productivity Enabled Infrastructure", "infrastructure", "#0089c5"),
+    ("INFRA", 10, "Productivity Enabling Infrastructure", "infrastructure", "#0089c5"),
     ("SOC", 20, "Human Capital Development", "generic", "#E84A5F"),
     ("RES", 30, "Resilience", "generic", "#A4C53F"),
 ]

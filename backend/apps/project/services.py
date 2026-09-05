@@ -15,6 +15,8 @@ Regles appliquees (SFD Module 1) :
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
+from apps.reference.models import Sector
+
 from .models import (
     GATE_STAGES,
     LIFECYCLE_ORDER,
@@ -41,19 +43,37 @@ def set_project_sdgs(project, sdg_numbers):
     return project
 
 
+def validate_sector_is_not_pillar(sector):
+    """
+    ADR 0007 : un projet se classe dans un secteur, jamais dans un pilier
+    (premier niveau qui regroupe des secteurs). Le pilier se deduit du
+    parent. Un secteur de premier niveau sans enfants reste accepte : la
+    regle porte sur le regroupement, pas sur la profondeur.
+    """
+    if sector is None:
+        return
+    if sector.parent_id is None and sector.children.exists():
+        raise ValidationError(
+            f"'{sector.name}' is a pillar; choose one of its sectors."
+        )
+
+
 @transaction.atomic
 def set_project_sectors(project, contributing_sector_ids):
     """
     Remplace l'ensemble des secteurs contributifs d'un projet. Contrairement
     aux ODD (ADR 0006), les secteurs gardent un primaire : le portefeuille,
     les rapports et l'admin agregent dessus. Le secteur primaire ne doit
-    pas apparaitre aussi comme contributif.
+    pas apparaitre aussi comme contributif, et aucun des deux ne peut etre
+    un pilier (ADR 0007).
     """
     contributing_sector_ids = list(dict.fromkeys(contributing_sector_ids))
     if project.primary_sector_id and project.primary_sector_id in contributing_sector_ids:
         raise ValidationError(
             "Le secteur primaire ne peut pas aussi etre selectionne comme secteur contributif."
         )
+    for sector in Sector.objects.filter(id__in=contributing_sector_ids):
+        validate_sector_is_not_pillar(sector)
     ProjectSector.objects.filter(project=project).delete()
     ProjectSector.objects.bulk_create(
         [ProjectSector(project=project, sector_id=sid) for sid in contributing_sector_ids]

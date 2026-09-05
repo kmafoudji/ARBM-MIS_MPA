@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import Select from "../components/Select";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
+import { groupSectorOptions } from "../utils.js";
 
 // Référentiel LLF2 / OCDE DAC — dimensions et catégories standard
 const PRESET_DIMENSIONS = [
@@ -716,7 +717,12 @@ export default function IndicatorCatalogue() {
               <select className="field-select" value={sectorFilter}
                 onChange={(e) => { setSectorFilter(e.target.value); resetPage(); }}>
                 <option value="">All</option>
-                {sectors?.filter(s => !s.parent).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {groupSectorOptions(sectors).map(([pillar, children]) => (
+                  <optgroup key={pillar.id} label={pillar.name}>
+                    <option value={pillar.id}>All {pillar.name}</option>
+                    {children.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <div className="field" style={{ marginBottom: 0, flex: "1 1 120px" }}>

@@ -4,7 +4,7 @@ import { apiFetch } from "../api";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import Select from "../components/Select";
-import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
+import { fmtNum, fmtPct, fmtCurrency, groupSectorOptions } from "../utils.js";
 import DQScoreWidget from "../components/DQScoreWidget";
 
 const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
@@ -396,7 +396,12 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
             <label className="field-label">Sector</label>
             <select className="field-select" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
               <option value="">All</option>
-              {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {groupSectorOptions(sectors).map(([pillar, children]) => (
+                <optgroup key={pillar.id} label={pillar.name}>
+                  <option value={pillar.id}>All {pillar.name}</option>
+                  {children.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </optgroup>
+              ))}
             </select>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
