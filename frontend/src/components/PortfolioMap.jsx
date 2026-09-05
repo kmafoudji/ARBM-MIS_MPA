@@ -102,6 +102,11 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
       map.addControl(new maplibregl.FullscreenControl(), "top-left");
     }
+    // In compact mode the container is sized by flex layout, which may
+    // settle after the map measured itself: follow the container's size.
+    const ro = compact && typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => map.resize()) : null;
+    ro?.observe(mapRef.current);
     map.on("load", () => {
       if (map.isStyleLoaded()) {
         setMapReady(true);
@@ -142,6 +147,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     return () => {
       popupRef.current?.remove();
       popupRef.current = null;
+      ro?.disconnect();
       map.remove();
       mapInst.current = null;
       setMapReady(false);
@@ -190,7 +196,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
   return (
     <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
-      border: "1px solid #e5e7eb" }}>
+      border: "1px solid #e5e7eb",
+      // compact: fill whatever height the parent flex column gives us
+      ...(compact ? { flex: 1, minHeight: 320, display: "flex" } : {}) }}>
 
       {/* Style overrides for native MapLibre controls */}
       <style>{`
@@ -245,7 +253,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         </div>
       )}
 
-      <div ref={mapRef} style={{ height: compact ? 300 : 520, width: "100%" }} />
+      <div ref={mapRef} style={compact ? { flex: 1, width: "100%" } : { height: 520, width: "100%" }} />
 
       {/* Attribution */}
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
