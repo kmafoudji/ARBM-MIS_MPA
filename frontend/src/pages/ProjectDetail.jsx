@@ -349,7 +349,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     dual_authorized_by: "",
   });
   const [showBasicForm, setShowBasicForm] = useState(false);
-  const [bForm, setBForm] = useState({ name: "", official_reference_number: "", countryIds: [], leadCountryId: "" });
+  const [bForm, setBForm] = useState({ name: "", official_reference_number: "", investment_cycle: "", countryIds: [], leadCountryId: "" });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
     primary_sector: "",
@@ -437,6 +437,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     setBForm({
       name: project.name || "",
       official_reference_number: project.official_reference_number || "",
+      investment_cycle: project.investment_cycle || "",
       countryIds: project.countries_detail?.map(c => String(c.id)) || [],
       leadCountryId: String(project.countries_detail?.find(c => c.is_lead)?.id || ""),
     });
@@ -829,6 +830,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               <form onSubmit={e => { e.preventDefault(); basicMutation.mutate({
                 name: bForm.name,
                 official_reference_number: bForm.official_reference_number.trim(),
+                investment_cycle: bForm.investment_cycle || null,
                 country_ids: bForm.countryIds.map(Number),
                 lead_country_id: Number(bForm.leadCountryId || bForm.countryIds[0]),
               }); }}>
@@ -842,6 +844,15 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                   <input className="field-input" value={bForm.official_reference_number} required maxLength={50}
                     placeholder="e.g. SLE1013"
                     onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Investment cycle</label>
+                  <select className="field-select" value={bForm.investment_cycle}
+                    onChange={e => setBForm({...bForm, investment_cycle: e.target.value})}>
+                    <option value="">Select…</option>
+                    <option value="LLF1">LLF1</option>
+                    <option value="LLF2">LLF2</option>
+                  </select>
                 </div>
                 <div className="field">
                   <label className="field-label">Countries <span className="req">*</span></label>
@@ -879,6 +890,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               <Dt term="Official Reference">
                 <span className="text-mono">{project.official_reference_number || "—"}</span>
               </Dt>
+              <Dt term="Investment Cycle">{project.investment_cycle || "—"}</Dt>
               <Dt term="Lead Country">
                 {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : "—"}
               </Dt>

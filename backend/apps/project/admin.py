@@ -38,7 +38,8 @@ class ProjectAdmin(admin.ModelAdmin):
     fieldsets = (
         ("Identite de base (SF-1 Etape 1)", {
             "fields": (
-                "name", "code", "official_reference_number", "pad_reference_file",
+                "name", "code", "official_reference_number", "investment_cycle",
+                "pad_reference_file",
                 "lifecycle_stage",
             )
         }),

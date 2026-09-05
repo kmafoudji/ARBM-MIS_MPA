@@ -55,6 +55,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             "id", "code", "name", "acronym", "official_reference_number",
+            "investment_cycle",
             "lead_country_name", "lead_country_iso2", "country_names",
             "primary_sector", "primary_sector_name", "primary_sector_icon",
             "primary_sector_color", "contributing_sector_count",
@@ -115,6 +116,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             "id", "name", "acronym", "official_reference_number",
+            "investment_cycle",
             "country_ids", "lead_country_id",
             "primary_sector", "contributing_sector_ids",
             "budget_amount", "primary_sdg", "contributing_sdg_ids",
@@ -194,7 +196,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             "id", "code", "name", "acronym", "official_reference_number",
-            "lifecycle_stage", "lifecycle_stage_display",
+            "investment_cycle", "lifecycle_stage", "lifecycle_stage_display",
             "lead_country_name", "countries_detail",
             "hub_name", "hub_color",
             "primary_sector", "primary_sector_name", "primary_sector_icon", "primary_sector_color",

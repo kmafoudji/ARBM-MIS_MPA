@@ -109,6 +109,11 @@ FRAGILITY_STATUS_CHOICES = [
     ("stable", "Stable"),
 ]
 
+INVESTMENT_CYCLE_CHOICES = [
+    ("LLF1", "LLF1"),
+    ("LLF2", "LLF2"),
+]
+
 RISK_RATING_CHOICES = [
     ("low", "Low"),
     ("moderate", "Moderate"),
@@ -133,6 +138,10 @@ class Project(models.Model):
     official_reference_number = models.CharField(
         max_length=50, unique=True, null=True, blank=True,
         help_text="Numero de reference officiel. Unicite controlee (rejet du doublon).",
+    )
+    investment_cycle = models.CharField(
+        max_length=10, choices=INVESTMENT_CYCLE_CHOICES, null=True, blank=True,
+        help_text="LLF investment cycle the project belongs to (LLF1 or LLF2).",
     )
     pad_reference_file = models.FileField(
         upload_to="pad/", null=True, blank=True,
