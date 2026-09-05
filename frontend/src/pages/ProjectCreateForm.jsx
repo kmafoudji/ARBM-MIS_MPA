@@ -48,6 +48,10 @@ const GEO_CHOICES = [
   { value: "remote",              label: "Remote"              },
   { value: "mixed_multi_district",label: "Mixed / multi-district" },
 ];
+const INVESTMENT_CYCLE_CHOICES = [
+  { value: "LLF1", label: "LLF1" },
+  { value: "LLF2", label: "LLF2" },
+];
 const FREQ_CHOICES = [
   { value: "quarterly",   label: "Quarterly"   },
   { value: "semi_annual", label: "Semi-annual" },
@@ -125,7 +129,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   const [f, setF] = useState({
     // Step 1
     primary_sdg: "",
-    name: "", official_reference_number: "", countryIds: [], leadCountryId: "", primarySector: "",
+    name: "", official_reference_number: "", investment_cycle: "", countryIds: [], leadCountryId: "", primarySector: "",
     contributingSectorIds: [], lifecycle_stage: "concept_note",
     // Step 2
     primary_sdg: "", contributingSdgIds: [],
@@ -194,6 +198,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       const payload = {
         name: f.name,
         official_reference_number: f.official_reference_number.trim(),
+        investment_cycle: f.investment_cycle || null,
         country_ids: f.countryIds,
         lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
         primary_sector: f.primarySector ? Number(f.primarySector) : null,
@@ -270,6 +275,11 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                 value={f.official_reference_number} onChange={handleChange}
                 placeholder="e.g. SLE1013" maxLength={50} />
               <span className="field-help">The identifier used everywhere in the system. Must be unique.</span>
+            </div>
+
+            <div style={{ maxWidth: 260 }}>
+              <FieldSelect id="investmentCycle" label="Investment cycle" value={f.investment_cycle}
+                onChange={(e) => set("investment_cycle", e.target.value)} choices={INVESTMENT_CYCLE_CHOICES} />
             </div>
 
             <div className="grid grid-2">
@@ -399,6 +409,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <div className="dl">
                 <div><div className="dl-term">Project name</div><div className="dl-desc" style={{ fontWeight: 600 }}>{f.name}</div></div>
                 <div><div className="dl-term">Official reference</div><div className="dl-desc text-mono">{f.official_reference_number}</div></div>
+                <div><div className="dl-term">Investment cycle</div><div className="dl-desc">{f.investment_cycle || "—"}</div></div>
                 <div><div className="dl-term">Countries</div>
                   <div className="dl-desc">{selectedCountries.map(c => c.name).join(", ") || "—"}</div></div>
                 {selectedCountries.length > 1 && (

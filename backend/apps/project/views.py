@@ -483,6 +483,14 @@ class ProjectBasicUpdateView(APIView):
                 )
             except DRFValidationError as exc:
                 return Response({"official_reference_number": exc.detail}, status=400)
+        if "investment_cycle" in data:
+            from apps.project.models import INVESTMENT_CYCLE_CHOICES
+            cycle = data["investment_cycle"] or None
+            if cycle is not None and cycle not in dict(INVESTMENT_CYCLE_CHOICES):
+                return Response(
+                    {"investment_cycle": [f'"{cycle}" is not a valid choice.']}, status=400
+                )
+            project.investment_cycle = cycle
         if "budget_amount" in data:
             project.budget_amount = data["budget_amount"] or None
         if "primary_sector" in data and data["primary_sector"]:

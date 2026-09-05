@@ -7,6 +7,7 @@ users see.
 """
 import pytest
 from rest_framework.test import APIClient
+from apps.project.models import Project
 from tests.factories import ProjectFactory, UserFactory, CountryFactory, SectorFactory
 
 
@@ -118,3 +119,44 @@ class TestExposure:
         project = ProjectFactory(official_reference_number="BEN1015")
         alert = WorkplanAlert(project=project)
         assert WorkplanAlertSerializer(alert).data["project_code"] == "BEN1015"
+
+
+@pytest.mark.django_db
+class TestInvestmentCycle:
+
+    def test_create_with_cycle(self, auth_client):
+        client, _ = auth_client
+        resp = client.post("/api/projects/", _payload(investment_cycle="LLF2"), format="json")
+        assert resp.status_code == 201, resp.data
+        assert Project.objects.get(pk=resp.data["id"]).investment_cycle == "LLF2"
+
+    def test_create_rejects_unknown_cycle(self, auth_client):
+        client, _ = auth_client
+        resp = client.post("/api/projects/", _payload(investment_cycle="LLF3"), format="json")
+        assert resp.status_code == 400
+        assert "investment_cycle" in resp.data
+
+    def test_cycle_is_optional(self, auth_client):
+        client, _ = auth_client
+        resp = client.post("/api/projects/", _payload(), format="json")
+        assert resp.status_code == 201, resp.data
+        assert Project.objects.get(pk=resp.data["id"]).investment_cycle is None
+
+    def test_basic_update_sets_and_clears_cycle(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(official_reference_number="CIV1008")
+        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": "LLF1"}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["investment_cycle"] == "LLF1"
+        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": ""}, format="json")
+        assert resp.status_code == 200
+        project.refresh_from_db()
+        assert project.investment_cycle is None
+
+    def test_basic_update_rejects_unknown_cycle(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(official_reference_number="CIV1008")
+        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": "LLF9"}, format="json")
+        assert resp.status_code == 400
+        project.refresh_from_db()
+        assert project.investment_cycle is None
