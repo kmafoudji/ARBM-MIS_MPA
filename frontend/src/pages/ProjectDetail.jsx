@@ -268,6 +268,91 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
   );
 }
 
+// Compact headline of the lifecycle position: "N · Stage · phase → next gate",
+// a 13-segment bar (gates in green, separator before implementation) and a
+// legend. Exception states show the bar dimmed.
+const GATE_STAGES = new Set(["trc_endorsed", "ic_approved", "bed_approved"]);
+const SIGNATURE_INDEX = 8; // index of "effective" in STAGE_ORDER
+
+function LifecycleProgress({ project, transitions, stageChoices }) {
+  const labelOf = (code) =>
+    stageChoices?.find((s) => s.value === code)?.label || code;
+  const current = project.lifecycle_stage;
+  const idx = stageIdx(current);
+  const inException = idx === -1;
+  const phase = inException ? null : idx >= SIGNATURE_INDEX ? "implementation" : "origination";
+  const nextGate = inException ? null : STAGE_ORDER.slice(idx + 1).find((c) => GATE_STAGES.has(c));
+  const latest = (transitions || []).find((t) => t.to_stage === current);
+  const enteredOn = latest
+    ? (latest.transition_date || latest.transitioned_at.slice(0, 10))
+    : idx === 0 && project.created_at ? project.created_at.slice(0, 10) : null;
+  const days = enteredOn
+    ? Math.max(0, Math.floor((Date.now() - new Date(enteredOn + "T00:00:00").getTime()) / 86_400_000))
+    : null;
+  const daysColor = days == null || idx === STAGE_ORDER.length - 1 ? "var(--ink)"
+    : days >= 90 ? "#dc2626" : days >= 30 ? "#d97706" : "var(--ink)";
+
+  return (
+    <div
+      style={{
+        background: "var(--paper)", border: "1px solid var(--rule)",
+        borderRadius: "var(--r-3)", padding: "var(--s-3) var(--s-4)",
+        marginBottom: "var(--s-4)",
+      }}
+    >
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3 }}>
+          {inException ? (
+            <span style={{ color: "#dc2626" }}>{labelOf(current)}</span>
+          ) : (
+            <>
+              <span style={{ color: GATE_STAGES.has(current) ? "#16a34a" : "#d97706" }}>
+                {idx + 1} · {labelOf(current)}
+              </span>
+              <span style={{ color: "var(--ink-soft)", fontWeight: 500 }}> · {phase}</span>
+              {nextGate && (
+                <span> → next gate: {stageIdx(nextGate) + 1} · {labelOf(nextGate)}</span>
+              )}
+              {!nextGate && current === "closed" && <span> · closed</span>}
+            </>
+          )}
+        </div>
+        <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+          <div className="text-mono" style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-soft)", textTransform: "uppercase" }}>
+            Lifecycle · {STAGE_ORDER.length} stages
+          </div>
+          {days != null && (
+            <div style={{ fontSize: 13 }}>
+              <strong style={{ color: daysColor, fontSize: 16 }}>{days}</strong>{" "}
+              <span style={{ color: "var(--ink-soft)" }}>days in stage</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 4, margin: "12px 0 8px", opacity: inException ? 0.35 : 1 }}>
+        {STAGE_ORDER.map((code, i) => {
+          const done = i <= idx;
+          const color = !done ? "var(--rule, #e5e7eb)" : i === idx ? "#d97706" : GATE_STAGES.has(code) ? "#16a34a" : "#1B5A8C";
+          return (
+            <span key={code} style={{ display: "contents" }}>
+              {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 16, background: "var(--rule, #d1d5db)", margin: "0 4px" }} />}
+              <span title={`${i + 1} · ${labelOf(code)}`} style={{ flex: 1, height: 8, borderRadius: 99, background: color }} />
+            </span>
+          );
+        })}
+      </div>
+
+      <div className="text-mono" style={{ display: "flex", gap: 20, fontSize: 10, letterSpacing: 1, color: "var(--ink-soft)", textTransform: "uppercase" }}>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "#1B5A8C", marginRight: 6, verticalAlign: "middle" }} />Origination 1–{SIGNATURE_INDEX}</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "#16a34a", marginRight: 6, verticalAlign: "middle" }} />Gate</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "#d97706", marginRight: 6, verticalAlign: "middle" }} />Current</span>
+        <span>Implementation {SIGNATURE_INDEX + 1}–{STAGE_ORDER.length}</span>
+      </div>
+    </div>
+  );
+}
+
 // Screens. `module` is the PROJECT_MODULES key they hang from; a module with
 // several screens renders them as horizontal tabs on the page.
 export const PROJECT_TABS = [
@@ -1321,6 +1406,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         </div>
 
         <div className="card-body">
+          <LifecycleProgress project={project} transitions={transitions} stageChoices={stageChoices} />
           <div
             style={{
               background: "var(--paper)",
