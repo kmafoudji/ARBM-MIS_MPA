@@ -154,7 +154,7 @@ export default function App() {
       onProjectTab={(tab) => { setProjectTab(tab); setNav("project-detail"); }}
       returnTo={returnTo}
     >
-      {nav === "overview" && <Overview user={user} />}
+      {nav === "overview" && <Overview user={user} onProjectClick={(id) => openProject(id)} />}
 
       {nav === "projects" && (
         <ProjectList

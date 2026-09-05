@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import PortfolioMap from "../components/PortfolioMap.jsx";
 import { useTranslation } from "react-i18next";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
@@ -71,7 +72,7 @@ function StagePill({ stage }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════ */
-export default function Overview({ user }) {
+export default function Overview({ user, onProjectClick }) {
   const { t } = useTranslation();
 
   const { data: projects  } = useQuery({ queryKey: ["projects"],   queryFn: () => apiFetch("/api/projects/") });
@@ -283,6 +284,11 @@ export default function Overview({ user }) {
             <span className="badge badge-lime">{coveredCountries.size} countries</span>
           </div>
           <div className="card-body">
+            {projects?.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <PortfolioMap projects={projects} onProjectClick={onProjectClick} compact />
+              </div>
+            )}
             {countryEntries.length === 0
               ? <p className="text-muted text-sm">No country data yet.</p>
               : <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
