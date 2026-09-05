@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Modal from "./Modal.jsx";
+import Select from "./Select";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
@@ -326,31 +327,36 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
       }
     >
       <div className="field">
-        <label className="field-label">Financing Source <span className="req">*</span></label>
-        <select className="field-select" value={form.source} onChange={(e) => set("source", e.target.value)}>
-          <option value="">— Select —</option>
-          {(env.source_choices || []).map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <label className="field-label" htmlFor="fe-source">Financing Source <span className="req">*</span></label>
+        <Select
+          id="fe-source"
+          options={(env.source_choices || []).map((c) => ({ value: c.value, label: c.label }))}
+          value={form.source}
+          onChange={(v) => set("source", v)}
+          placeholder="— Select —"
+        />
       </div>
 
       <div className="field">
-        <label className="field-label">Instrument Type <span className="req">*</span></label>
-        <select className="field-select" value={form.instrument} onChange={(e) => set("instrument", e.target.value)}>
-          <option value="">— Select —</option>
-          {(env.instrument_choices || []).map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <label className="field-label" htmlFor="fe-instrument">Instrument Type <span className="req">*</span></label>
+        <Select
+          id="fe-instrument"
+          options={(env.instrument_choices || []).map((c) => ({ value: c.value, label: c.label }))}
+          value={form.instrument}
+          onChange={(v) => set("instrument", v)}
+          placeholder="— Select —"
+        />
       </div>
 
       <div className="field">
-        <label className="field-label">Associated Donor</label>
-        <select className="field-select" value={form.donor} onChange={(e) => set("donor", e.target.value)}>
-          <option value="">— None (optional) —</option>
-          {donors.map((d) => <option key={d.id} value={d.id}>{d.short_name} — {d.name}</option>)}
-        </select>
+        <label className="field-label" htmlFor="fe-donor">Associated Donor</label>
+        <Select
+          id="fe-donor"
+          options={donors.map((d) => ({ value: String(d.id), label: `${d.short_name} — ${d.name}` }))}
+          value={form.donor}
+          onChange={(v) => set("donor", v)}
+          placeholder="— None (optional) —"
+        />
         <span className="field-help">Optional for IsDB Ordinary Capital lines.</span>
       </div>
 
@@ -361,10 +367,14 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
             onChange={(e) => set("amount", e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label className="field-label">Currency</label>
-          <select className="field-select" value={form.currency} onChange={(e) => set("currency", e.target.value)}>
-            {currencies.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
-          </select>
+          <label className="field-label" htmlFor="fe-currency">Currency</label>
+          <Select
+            id="fe-currency"
+            options={currencies.map((c) => ({ value: c.code, label: c.code }))}
+            value={form.currency}
+            onChange={(v) => set("currency", v)}
+            required
+          />
         </div>
       </div>
 

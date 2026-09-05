@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
+import Select from "./Select";
 
 function AgencyLogo({ url, name }) {
   if (url) {
@@ -331,38 +332,29 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                 <label className="field-label" htmlFor="partnerAgency">
                   Agency <span className="req">*</span>
                 </label>
-                <select
+                <Select
                   id="partnerAgency"
-                  className="field-select"
+                  options={availableAgencies.map((a) => ({
+                    value: String(a.id),
+                    label: a.name + (a.country_name ? ` — ${a.country_name}` : ""),
+                  }))}
                   value={form.agency}
-                  onChange={(e) => setForm({ ...form, agency: e.target.value })}
+                  onChange={(v) => setForm({ ...form, agency: v })}
                   required
-                >
-                  <option value="">Select…</option>
-                  {availableAgencies.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                      {a.country_name ? ` — ${a.country_name}` : ""}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="field">
                 <label className="field-label" htmlFor="partnerRole">
                   Role <span className="req">*</span>
                 </label>
-                <select
+                <Select
                   id="partnerRole"
-                  className="field-select"
+                  options={ROLE_CHOICES.map((r) => ({ value: r.value, label: r.label }))}
                   value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  onChange={(v) => setForm({ ...form, role: v })}
                   required
-                >
-                  {ROLE_CHOICES.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="field">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
+import Select from "../components/Select";
 import RichText, { stripHtml } from "../components/RichText";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import RichTextEditor from "../components/RichTextEditor";
@@ -49,6 +50,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
 
   // Modes d'attach
   const [showAttach, setShowAttach]   = useState(false);
+  const [attachId, setAttachId]       = useState("");
   const [search, setSearch]           = useState("");
 
   // Édition inline baseline
@@ -109,7 +111,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["toc", projectId] });
       qc.invalidateQueries({ queryKey: ["logframe", projectId] });
-      setShowAttach(false); setSearch("");
+      setShowAttach(false); setSearch(""); setAttachId("");
       onSaved();
     },
   });
@@ -207,17 +209,18 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
           <input className="field-input" placeholder="Search by code or keyword…"
             value={search} onChange={e => setSearch(e.target.value)}
             style={{ marginBottom:8 }} />
-          <select className="field-select" style={{ marginBottom:10 }}
-            onChange={e => e.target.value && attachMutation.mutate(e.target.value)}
-            defaultValue="">
-            <option value="">{indLoading ? "Loading…" : "Select an indicator…"}</option>
-            {(indicators || []).map(ind => (
-              <option key={ind.id} value={ind.id}>
-                {ind.code} — {ind.name}
-                {ind.reporting_frequency ? ` [${ind.reporting_frequency}]` : ""}
-              </option>
-            ))}
-          </select>
+          <div style={{ marginBottom:10 }}>
+            <Select
+              options={(indicators || []).map(ind => ({
+                value: String(ind.id),
+                label: `${ind.code} — ${ind.name}${ind.reporting_frequency ? ` [${ind.reporting_frequency}]` : ""}`,
+              }))}
+              value={attachId}
+              onChange={v => { setAttachId(v); if (v) attachMutation.mutate(v); }}
+              placeholder={indLoading ? "Loading…" : "Select an indicator…"}
+              disabled={attachMutation.isPending}
+            />
+          </div>
           {attachMutation.isPending && <span className="spinner" style={{ width:14, height:14 }} />}
           {attachMutation.isError && (
             <div className="field-error">{JSON.stringify(attachMutation.error?.detail)}</div>
@@ -253,14 +256,13 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
                   </span>
                 )}
               </label>
-              <select className="field-select" value={currentFreq}
-                onChange={e => !readOnly && freqMutation.mutate(e.target.value)}
-                disabled={readOnly || freqMutation.isPending}>
-                <option value="">Select…</option>
-                {FREQ_CHOICES.map(f => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
+              <Select
+                options={FREQ_CHOICES}
+                value={currentFreq}
+                onChange={v => !readOnly && freqMutation.mutate(v)}
+                placeholder="Select…"
+                disabled={readOnly || freqMutation.isPending}
+              />
               {node.catalogue_frequency && (
                 <div style={{ fontSize:10, color:"#9ca3af", marginTop:3 }}>
                   Catalogue default: <strong>{node.catalogue_frequency}</strong>
@@ -687,14 +689,18 @@ function LevelSection({ level, nodes, parentOptions, projectId, onChanged, readO
             }}>
               {level.parentKey && (
                 <div className="field">
-                  <label className="field-label">Parent node <span className="req">*</span></label>
-                  <select className="field-select" value={form.parent}
-                    onChange={(e) => setForm({ ...form, parent: e.target.value })} required>
-                    <option value="">Select</option>
-                    {parentOptions.map((p) => (
-                      <option key={p.id} value={p.id}>{p.code} — {stripHtml(p.statement)}</option>
-                    ))}
-                  </select>
+                  <label className="field-label" htmlFor="toc-node-parent">Parent node <span className="req">*</span></label>
+                  <Select
+                    id="toc-node-parent"
+                    options={parentOptions.map((p) => ({
+                      value: String(p.id),
+                      label: `${p.code} — ${stripHtml(p.statement)}`,
+                    }))}
+                    value={form.parent}
+                    onChange={(v) => setForm({ ...form, parent: v })}
+                    placeholder="Select"
+                    required
+                  />
                   {parentOptions.length === 0 && (
                     <span className="field-help">No node at a higher level yet — create one first.</span>
                   )}
@@ -861,12 +867,17 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false, ca
             {editingFrame ? (
               <form onSubmit={(e) => { e.preventDefault(); frameMutation.mutate(frameForm); }}>
                 <div className="field">
-                  <label className="field-label">Status</label>
-                  <select className="field-select" value={frameForm.status}
-                    onChange={(e) => setFrameForm({ ...frameForm, status: e.target.value })}>
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                  </select>
+                  <label className="field-label" htmlFor="toc-frame-status">Status</label>
+                  <Select
+                    id="toc-frame-status"
+                    options={[
+                      { value: "draft", label: "Draft" },
+                      { value: "active", label: "Active" },
+                    ]}
+                    value={frameForm.status}
+                    onChange={(v) => setFrameForm({ ...frameForm, status: v })}
+                    required
+                  />
                 </div>
                 <div className="field">
                   <label className="field-label">Problem Statement</label>

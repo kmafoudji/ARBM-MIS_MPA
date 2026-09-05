@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
+import Select from "../components/Select";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 
 // Référentiel LLF2 / OCDE DAC — dimensions et catégories standard
@@ -122,17 +123,19 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
 
           {/* Sélection de la dimension */}
           <div className="field" style={{ marginBottom: 12 }}>
-            <label className="field-label">Dimension *</label>
-            <select className="field-select" value={form.preset}
-              onChange={e => selectPreset(e.target.value)}>
-              <option value="">Select a dimension…</option>
-              {PRESET_DIMENSIONS
-                .filter(p => !existingNames.has(p.name))
-                .map(p => (
-                  <option key={p.name} value={p.name}>{p.name}</option>
-                ))}
-              <option value="__custom__">+ Custom dimension…</option>
-            </select>
+            <label className="field-label" htmlFor="dim-preset">Dimension *</label>
+            <Select
+              id="dim-preset"
+              options={[
+                ...PRESET_DIMENSIONS
+                  .filter(p => !existingNames.has(p.name))
+                  .map(p => ({ value: p.name, label: p.name })),
+                { value: "__custom__", label: "+ Custom dimension…" },
+              ]}
+              value={form.preset}
+              onChange={v => selectPreset(v)}
+              placeholder="Select a dimension…"
+            />
           </div>
 
           {/* Nom custom */}
@@ -267,15 +270,15 @@ function ComboField({ label, choices, value, onChange, textarea }) {
   return (
     <div className="field">
       <label className="field-label">{label}</label>
-      <select className="field-select"
+      <Select
+        options={choices.map((c) => ({ value: c, label: c }))}
         value={selectVal}
-        onChange={(e) => {
-          if (e.target.value === "Other") onChange("");
-          else onChange(e.target.value);
-        }}>
-        <option value="">Select...</option>
-        {choices.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
+        onChange={(v) => {
+          if (v === "Other") onChange("");
+          else onChange(v);
+        }}
+        placeholder="Select..."
+      />
       {(selectVal === "Other" || isOther) && (
         <input
           className="field-input"
@@ -488,58 +491,81 @@ function IndicatorRow({ ind, isLast, canEdit }) {
                     onChange={(e) => setForm({ ...form, code: e.target.value })} />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Type</label>
-                  <select className="field-select" value={form.indicator_type}
-                    onChange={(e) => setForm({ ...form, indicator_type: e.target.value })}>
-                    <option value="output">Output</option>
-                    <option value="outcome">Outcome</option>
-                    <option value="impact">Impact</option>
-                  </select>
+                  <label className="field-label" htmlFor="ind-type">Type</label>
+                  <Select
+                    id="ind-type"
+                    options={[
+                      { value: "output", label: "Output" },
+                      { value: "outcome", label: "Outcome" },
+                      { value: "impact", label: "Impact" },
+                    ]}
+                    value={form.indicator_type}
+                    onChange={(v) => setForm({ ...form, indicator_type: v })}
+                    required
+                  />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Direction</label>
-                  <select className="field-select" value={form.direction}
-                    onChange={(e) => setForm({ ...form, direction: e.target.value })}>
-                    <option value="increase">Upward (+)</option>
-                    <option value="decrease">Downward (-)</option>
-                    <option value="neutral">Neutral</option>
-                  </select>
+                  <label className="field-label" htmlFor="ind-direction">Direction</label>
+                  <Select
+                    id="ind-direction"
+                    options={[
+                      { value: "increase", label: "Upward (+)" },
+                      { value: "decrease", label: "Downward (-)" },
+                      { value: "neutral", label: "Neutral" },
+                    ]}
+                    value={form.direction}
+                    onChange={(v) => setForm({ ...form, direction: v })}
+                    required
+                  />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Reporting Frequency</label>
-                  <select className="field-select" value={form.reporting_frequency || ""}
-                    onChange={(e) => setForm({ ...form, reporting_frequency: e.target.value })}>
-                    <option value="">Not specified</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="semi_annual">Semi-annual</option>
-                    <option value="annual">Annual</option>
-                    <option value="end_of_project">End of project</option>
-                  </select>
+                  <label className="field-label" htmlFor="ind-frequency">Reporting Frequency</label>
+                  <Select
+                    id="ind-frequency"
+                    options={[
+                      { value: "monthly", label: "Monthly" },
+                      { value: "quarterly", label: "Quarterly" },
+                      { value: "semi_annual", label: "Semi-annual" },
+                      { value: "annual", label: "Annual" },
+                      { value: "end_of_project", label: "End of project" },
+                    ]}
+                    value={form.reporting_frequency || ""}
+                    onChange={(v) => setForm({ ...form, reporting_frequency: v })}
+                    placeholder="Not specified"
+                  />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Aggregation rule</label>
-                  <select className="field-select" value={form.aggregation_rule || "sum"}
-                    onChange={(e) => setForm({ ...form, aggregation_rule: e.target.value })}>
-                    <option value="sum">Sum</option>
-                    <option value="average">Average</option>
-                    <option value="weighted_average">Weighted average</option>
-                    <option value="ratio">Ratio</option>
-                    <option value="last_value">Last value</option>
-                    <option value="maximum">Maximum</option>
-                  </select>
+                  <label className="field-label" htmlFor="ind-aggregation">Aggregation rule</label>
+                  <Select
+                    id="ind-aggregation"
+                    options={[
+                      { value: "sum", label: "Sum" },
+                      { value: "average", label: "Average" },
+                      { value: "weighted_average", label: "Weighted average" },
+                      { value: "ratio", label: "Ratio" },
+                      { value: "last_value", label: "Last value" },
+                      { value: "maximum", label: "Maximum" },
+                    ]}
+                    value={form.aggregation_rule || "sum"}
+                    onChange={(v) => setForm({ ...form, aggregation_rule: v })}
+                    required
+                  />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Chain level</label>
-                  <select className="field-select" value={form.chain_level || ""}
-                    onChange={(e) => setForm({ ...form, chain_level: e.target.value })}>
-                    <option value="">Not specified</option>
-                    <option value="activity">Activity</option>
-                    <option value="output">Output</option>
-                    <option value="immediate_outcome">Immediate outcome</option>
-                    <option value="intermediate_outcome">Intermediate outcome</option>
-                    <option value="ultimate_outcome">Ultimate outcome</option>
-                  </select>
+                  <label className="field-label" htmlFor="ind-chain-level">Chain level</label>
+                  <Select
+                    id="ind-chain-level"
+                    options={[
+                      { value: "activity", label: "Activity" },
+                      { value: "output", label: "Output" },
+                      { value: "immediate_outcome", label: "Immediate outcome" },
+                      { value: "intermediate_outcome", label: "Intermediate outcome" },
+                      { value: "ultimate_outcome", label: "Ultimate outcome" },
+                    ]}
+                    value={form.chain_level || ""}
+                    onChange={(v) => setForm({ ...form, chain_level: v })}
+                    placeholder="Not specified"
+                  />
                 </div>
               </div>
 

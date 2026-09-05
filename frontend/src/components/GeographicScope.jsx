@@ -9,6 +9,7 @@ import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
 import MultiSelect from "./MultiSelect.jsx";
+import Select from "./Select";
 import ProjectMap from "./ProjectMap.jsx";
 
 export default function GeographicScope({ projectId, countries, canEdit }) {  const qc = useQueryClient();
@@ -169,25 +170,25 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
 
       {projectCountryIso3s.length > 1 && (
         <div className="field">
-          <label className="field-label">Country</label>
-          <select className="field-select" value={selectedIso3}
-            onChange={(e) => { setSelectedIso3(e.target.value); setSelAdmin1(""); setSelAdmin2([]); }}>
-            {(countries || []).map((c) => (
-              <option key={c.iso3} value={c.iso3}>{c.flag} {c.name}</option>
-            ))}
-          </select>
+          <label className="field-label" htmlFor="geo-country">Country</label>
+          <Select
+            id="geo-country"
+            options={(countries || []).map((c) => ({ value: c.iso3, label: c.name, iso2: c.iso2 }))}
+            value={selectedIso3}
+            onChange={(v) => { setSelectedIso3(v); setSelAdmin1(""); setSelAdmin2([]); }}
+            required
+          />
         </div>
       )}
 
       <div className="field">
-        <label className="field-label">Region / State (Admin 1) <span className="req">*</span></label>
-        <select className="field-select" value={selAdmin1}
-          onChange={(e) => { setSelAdmin1(e.target.value); setSelAdmin2([]); }}>
-          <option value="">Select…</option>
-          {admin1Options.map((a) => (
-            <option key={a.id} value={String(a.id)}>{a.name}</option>
-          ))}
-        </select>
+        <label className="field-label" htmlFor="geo-admin1">Region / State (Admin 1) <span className="req">*</span></label>
+        <Select
+          id="geo-admin1"
+          options={admin1Options.map((a) => ({ value: String(a.id), label: a.name }))}
+          value={selAdmin1}
+          onChange={(v) => { setSelAdmin1(v); setSelAdmin2([]); }}
+        />
       </div>
 
       {selAdmin1 && hasAdmin2 && (

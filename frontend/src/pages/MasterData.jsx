@@ -6,6 +6,7 @@ import DataTable from "../components/DataTable.jsx";
 import Flag from "../components/Flag.jsx";
 import SectorIcon from "../components/SectorIcon.jsx";
 import LogoField from "../components/LogoField.jsx";
+import Select from "../components/Select";
 import {
   IconEdit,
   IconPlus,
@@ -628,17 +629,23 @@ export default function MasterData({ canEdit }) {
                   ) : f.type === "icon-select" ? (
                     <div className="row" style={{ gap: 10 }}>
                       <SectorIcon name={value || "generic"} color={editing.color} />
-                      <select id={`f-${f.name}`} className="field-select" value={value ?? ""}
-                        onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })}>
-                        {(options || []).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
+                      <Select
+                        id={`f-${f.name}`}
+                        options={(options || []).map(([v, l]) => ({ value: String(v), label: l }))}
+                        value={value ?? ""}
+                        onChange={(v) => setEditing({ ...editing, [f.name]: v })}
+                        required
+                      />
                     </div>
                   ) : f.type === "select" ? (
-                    <select id={`f-${f.name}`} className="field-select" value={value ?? ""} required={f.required}
-                      onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })}>
-                      <option value="">— None —</option>
-                      {(options || []).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
+                    <Select
+                      id={`f-${f.name}`}
+                      options={(options || []).map(([v, l]) => ({ value: String(v), label: l }))}
+                      value={value ?? ""}
+                      onChange={(v) => setEditing({ ...editing, [f.name]: v })}
+                      placeholder="— None —"
+                      required={f.required}
+                    />
                   ) : f.type === "color" ? (
                     <div className="row" style={{ gap: 8 }}>
                       <input id={`f-${f.name}`} type="color" value={value || "#A4C53F"}
