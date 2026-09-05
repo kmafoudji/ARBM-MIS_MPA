@@ -6,7 +6,8 @@ LLF2 portfolio (Islamic Development Bank — Lives and Livelihoods Fund 2).
 ## Stack
 
 - **Backend**: Django 5 + Django REST Framework, PostgreSQL/PostGIS, Redis, Celery
-- **Frontend**: React 18 + TanStack Query/Router, Vite
+- **Frontend**: React 18 + TanStack Query, Vite — navigation is component
+  state; there is no URL router yet
 - **Authentication**: Microsoft Entra ID (OAuth2/OIDC via MSAL), MillenniumPromise tenant
 - **Infrastructure**: Docker Compose (development) → Azure Container Apps (production, pending)
 
@@ -49,7 +50,7 @@ backend/             Django + DRF
   apps/              identity (RBAC, Entra ID), reference, project, results, workplan, …
   core/              Technical endpoints (health check), AS-IS bulk import
   tests/             pytest suite
-frontend/            React + TanStack + Vite
+frontend/            React + TanStack Query + Vite
 infra/               Docker Compose
 .github/workflows/   CI (backend check, frontend build, migrations from scratch + tests)
 docs/                Documentation — start at docs/README.md
