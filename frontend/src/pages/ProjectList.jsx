@@ -244,7 +244,19 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
   });
 
   // Options dynamiques
-  const sectors = useMemo(() => [...new Map(data.map(p => [p.primary_sector_name, p.primary_sector_name])).values()].filter(Boolean).sort(), [data]);
+  // Pillar → sectors, from the projects themselves (ADR 0007). A filter value
+  // is "pillar:<name>" or "sector:<name>".
+  const sectorGroups = useMemo(() => {
+    const groups = new Map();
+    data.forEach(p => {
+      if (!p.primary_sector_name) return;
+      const pillar = p.pillar_name || p.primary_sector_name;
+      if (!groups.has(pillar)) groups.set(pillar, new Set());
+      if (p.pillar_name && p.pillar_name !== p.primary_sector_name) groups.get(pillar).add(p.primary_sector_name);
+    });
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
+      .map(([pillar, set]) => [pillar, [...set].sort()]);
+  }, [data]);
   const hubs    = useMemo(() => [...new Set(data.map(p => p.hub_name).filter(Boolean))].sort(), [data]);
 
   // Filtrage
@@ -255,7 +267,11 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
       const sg = stageGroup(p.lifecycle_stage);
       if (sg.key !== stageFilter) return false;
     }
-    if (sectorFilter && p.primary_sector_name !== sectorFilter) return false;
+    if (sectorFilter) {
+      const [kind, name] = [sectorFilter.slice(0, sectorFilter.indexOf(":")), sectorFilter.slice(sectorFilter.indexOf(":") + 1)];
+      const value = kind === "pillar" ? (p.pillar_name || p.primary_sector_name) : p.primary_sector_name;
+      if (value !== name) return false;
+    }
     if (hubFilter    && p.hub_name !== hubFilter)               return false;
     return true;
   }), [data, search, stageFilter, sectorFilter, hubFilter]);
@@ -330,10 +346,15 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
         </select>
 
         {/* Sector */}
-        {sectors.length > 0 && (
+        {sectorGroups.length > 0 && (
           <select style={selectStyle(sectorFilter)} value={sectorFilter} onChange={e => setSectorFilter(e.target.value)}>
             <option value="">All sectors</option>
-            {sectors.map(s => <option key={s} value={s}>{s}</option>)}
+            {sectorGroups.map(([pillar, sectors]) => (
+              <optgroup key={pillar} label={pillar}>
+                <option value={`pillar:${pillar}`}>All {pillar}</option>
+                {sectors.map(s => <option key={s} value={`sector:${s}`}>{s}</option>)}
+              </optgroup>
+            ))}
           </select>
         )}
 
@@ -447,7 +468,12 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
                   <td>
                     <span className="row" style={{ gap: 7 }}>
                       <SectorIcon name={p.primary_sector_icon} color={p.primary_sector_color} size={22} />
-                      {p.primary_sector_name}
+                      <span>
+                        {p.primary_sector_name}
+                        {p.pillar_name && p.pillar_name !== p.primary_sector_name && (
+                          <div className="text-muted text-xs">{p.pillar_name}</div>
+                        )}
+                      </span>
                       {p.contributing_sector_count > 0 && (
                         <span className="text-muted text-xs">+{p.contributing_sector_count}</span>
                       )}

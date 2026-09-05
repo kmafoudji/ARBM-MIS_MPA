@@ -76,3 +76,47 @@ export function parseNum(val) {
   const n = typeof val === "number" ? val : parseFloat(val);
   return isNaN(n) ? null : n;
 }
+
+/**
+ * sectorOptions — Options de Select/MultiSelect pour la taxonomie LLF2 a deux
+ * niveaux (ADR 0007) : seuls les secteurs (avec parent) sont selectionnables,
+ * groupes sous leur pilier. Les piliers eux-memes ne sont jamais proposes :
+ * le backend refuse un pilier comme secteur d'un projet.
+ *
+ * @param {Array}  sectors        Reponse brute de /api/reference/sectors/
+ * @param {object} opts
+ * @param {function} opts.exclude  (sector) => bool, secteurs a retirer
+ * @param {boolean}  opts.stringIds valeurs en String (Select) ou nombre (MultiSelect)
+ */
+export function sectorOptions(sectors, { exclude, stringIds = false, activeOnly = true } = {}) {
+  return (sectors || [])
+    .filter((s) => s.parent !== null && s.parent !== undefined)
+    .filter((s) => !activeOnly || s.is_active !== false)
+    .filter((s) => !exclude || !exclude(s))
+    .map((s) => ({
+      value: stringIds ? String(s.id) : s.id,
+      label: s.name,
+      group: s.pillar_name || s.parent_name || "",
+    }));
+}
+
+/**
+ * pillarOptions — Les piliers (premier niveau) pour un filtre "par pilier".
+ */
+export function pillarOptions(sectors, { stringIds = false } = {}) {
+  return (sectors || [])
+    .filter((s) => s.parent === null || s.parent === undefined)
+    .map((s) => ({ value: stringIds ? String(s.id) : s.id, label: s.name }));
+}
+
+/**
+ * groupSectorOptions — [[pillar, [sectors]]] pour un <select> natif avec
+ * <optgroup> : le pilier est lui-meme une option ("All <pillar>"), le
+ * backend l'etend a ses secteurs.
+ */
+export function groupSectorOptions(sectors) {
+  const list = sectors || [];
+  return list
+    .filter((s) => s.parent === null || s.parent === undefined)
+    .map((p) => [p, list.filter((s) => s.parent === p.id)]);
+}

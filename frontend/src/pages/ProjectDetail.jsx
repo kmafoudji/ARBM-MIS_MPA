@@ -16,7 +16,7 @@ import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
 import Select from "../components/Select";
 import { INVESTMENT_CYCLE_CHOICES } from "../choices";
-import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
+import { fmtNum, fmtPct, fmtCurrency, sectorOptions } from "../utils.js";
 
 const REPORTING_FREQUENCY_CHOICES = [
   { value: "monthly",     label: "Monthly" },
@@ -571,9 +571,11 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     });
   }
 
-  const contributingSectorChoices = (sectors || []).filter(
-    (s) => String(s.id) !== String(cForm.primary_sector)
-  );
+  // ADR 0007: only sectors are selectable, grouped under their pillar.
+  const primarySectorOptions = sectorOptions(sectors, { stringIds: true });
+  const contributingSectorChoices = sectorOptions(sectors, {
+    exclude: (s) => String(s.id) === String(cForm.primary_sector),
+  });
 
   const padUploadMutation = useMutation({
     mutationFn: (file) => {
@@ -999,7 +1001,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     <Select
                       id="cPrimarySector"
                       placeholder="Select"
-                      options={(sectors || []).map((s) => ({ value: String(s.id), label: s.name }))}
+                      options={primarySectorOptions}
                       value={cForm.primary_sector}
                       onChange={(v) => setCForm({ ...cForm, primary_sector: v })}
                     />
@@ -1008,7 +1010,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                   <div className="field">
                     <label className="field-label" htmlFor="cContribSectors">Contributing Sectors</label>
                     <MultiSelect id="cContribSectors" placeholder="Search sectors..."
-                      options={contributingSectorChoices.map((s) => ({ value: s.id, label: s.name }))}
+                      options={contributingSectorChoices}
                       value={cForm.contributing_sector_ids}
                       onChange={(v) => setCForm({ ...cForm, contributing_sector_ids: v })} />
                   </div>
@@ -1073,6 +1075,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             ) : (
               <>
               <div className="dl">
+                <Dt term="Pillar">{project.pillar_name || "—"}</Dt>
                 <Dt term="Primary Sector">
                   {project.primary_sector_name ? (
                     <span className="row" style={{ gap: 8, alignItems: "center" }}>

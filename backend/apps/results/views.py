@@ -58,7 +58,9 @@ class IndicatorListView(APIView):
         qs = Indicator.objects.filter(is_active=True).select_related("sector")
         sector = request.query_params.get("sector")
         if sector:
-            qs = qs.filter(sector_id=sector)
+            # Un pilier (ADR 0007) englobe ses secteurs.
+            from django.db.models import Q
+            qs = qs.filter(Q(sector_id=sector) | Q(sector__parent_id=sector))
         indicator_type = request.query_params.get("type")
         if indicator_type:
             qs = qs.filter(indicator_type=indicator_type)
