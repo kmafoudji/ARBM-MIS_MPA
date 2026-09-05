@@ -116,6 +116,7 @@ class ProjectFactory(DjangoModelFactory):
         skip_postgeneration_save = True
 
     name            = factory.Sequence(lambda n: f"Test Project {n}")
+    official_reference_number = factory.Sequence(lambda n: f"TST{n:04d}")
     lifecycle_stage = "concept_note"
     primary_sector  = factory.SubFactory(SectorFactory)
     created_by      = factory.SubFactory(UserFactory)

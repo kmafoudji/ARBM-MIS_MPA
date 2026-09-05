@@ -348,7 +348,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     dual_authorized_by: "",
   });
   const [showBasicForm, setShowBasicForm] = useState(false);
-  const [bForm, setBForm] = useState({ name: "", acronym: "", official_reference_number: "", countryIds: [], leadCountryId: "" });
+  const [bForm, setBForm] = useState({ name: "", official_reference_number: "", countryIds: [], leadCountryId: "" });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
     primary_sector: "",
@@ -435,7 +435,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   function openBasicForm() {
     setBForm({
       name: project.name || "",
-      acronym: project.acronym || "",
       official_reference_number: project.official_reference_number || "",
       countryIds: project.countries_detail?.map(c => String(c.id)) || [],
       leadCountryId: String(project.countries_detail?.find(c => c.is_lead)?.id || ""),
@@ -451,6 +450,13 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setShowBasicForm(false);
       setToast({ type: "success", message: "Basic identity updated." });
+    },
+    onError: (e) => {
+      const d = e?.detail;
+      const msg = d && typeof d === "object" && d.official_reference_number
+        ? `Official reference number: ${[].concat(d.official_reference_number).join(" ")}`
+        : (d?.detail || e?.message || "Update failed.");
+      setToast({ type: "error", message: msg });
     },
   });
 
@@ -542,7 +548,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
   // Double confirmation: a warning dialog, then the project code typed back.
   async function handleDeleteProject() {
-    const code = project?.code || String(projectId);
+    const code = project?.official_reference_number || project?.name || String(projectId);
     const ok = await dialog.confirm(
       `This permanently deletes project ${code} and everything attached to it: countries, stage transitions, ` +
       `theory of change, logframe, results, workplan, reporting periods, partners and the PAD file. ` +
@@ -551,12 +557,12 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     );
     if (!ok) return;
     const typed = await dialog.prompt(
-      `Type the project code (${code}) to confirm the deletion.`,
+      `Type the project reference (${code}) to confirm the deletion.`,
       { title: "Confirm deletion", confirmLabel: "Delete project", danger: true },
     );
     if (typed === null || typed === undefined) return;
     if (String(typed).trim() !== code) {
-      await dialog.alert("The code does not match. Nothing was deleted.", { title: "Deletion cancelled" });
+      await dialog.alert("The reference does not match. Nothing was deleted.", { title: "Deletion cancelled" });
       return;
     }
     deleteProjectMutation.mutate();
@@ -750,7 +756,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       <DialogModal {...dialog.dialogProps} />
 
       <div className="view-header">
-        <div className="view-eyebrow text-mono">{project.code}</div>
+        <div className="view-eyebrow text-mono">{project.official_reference_number}</div>
         <h1 className="view-title">{sectionLabel}</h1>
       </div>
 
@@ -826,8 +832,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             {showBasicForm ? (
               <form onSubmit={e => { e.preventDefault(); basicMutation.mutate({
                 name: bForm.name,
-                acronym: bForm.acronym || "",
-                official_reference_number: bForm.official_reference_number || "",
+                official_reference_number: bForm.official_reference_number.trim(),
                 country_ids: bForm.countryIds.map(Number),
                 lead_country_id: Number(bForm.leadCountryId || bForm.countryIds[0]),
               }); }}>
@@ -837,14 +842,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     onChange={e => setBForm({...bForm, name: e.target.value})} required />
                 </div>
                 <div className="field">
-                  <label className="field-label">Acronym</label>
-                  <input className="field-input" value={bForm.acronym} maxLength={20}
-                    onChange={e => setBForm({...bForm, acronym: e.target.value})} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Official reference number</label>
-                  <input className="field-input" value={bForm.official_reference_number}
-                    placeholder="ex. P-SN-AAG-001"
+                  <label className="field-label">Official reference number <span className="req">*</span></label>
+                  <input className="field-input" value={bForm.official_reference_number} required maxLength={50}
+                    placeholder="e.g. SLE1013"
                     onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
                 </div>
                 <div className="field">
@@ -881,10 +881,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               </form>
             ) : (
             <div className="dl">
-              <Dt term="Internal Code">
-                <span className="text-mono">{project.code}</span>
+              <Dt term="Official Reference">
+                <span className="text-mono">{project.official_reference_number || "—"}</span>
               </Dt>
-              <Dt term="Official Reference">{project.official_reference_number || "—"}</Dt>
               <Dt term="Lead Country">
                 {leadCountry ? `${leadCountry.flag} ${leadCountry.name}` : "—"}
               </Dt>

@@ -476,7 +476,13 @@ class ProjectBasicUpdateView(APIView):
         if "acronym" in data:
             project.acronym = data["acronym"]
         if "official_reference_number" in data:
-            project.official_reference_number = data["official_reference_number"] or ""
+            from apps.project.serializers import validate_official_reference_number
+            try:
+                project.official_reference_number = validate_official_reference_number(
+                    data["official_reference_number"], exclude_pk=project.pk
+                )
+            except DRFValidationError as exc:
+                return Response({"official_reference_number": exc.detail}, status=400)
         if "budget_amount" in data:
             project.budget_amount = data["budget_amount"] or None
         if "primary_sector" in data and data["primary_sector"]:
@@ -936,6 +942,7 @@ class ProjectMapPointsView(APIView):
                 "code":                    p.code,
                 "name":                    p.name,
                 "acronym":                 p.acronym,
+                "official_reference_number": p.official_reference_number,
                 "lifecycle_stage":         p.lifecycle_stage,
                 "lifecycle_stage_display": p.get_lifecycle_stage_display(),
                 # `or None` : une couleur vide casserait le coalesce MapLibre

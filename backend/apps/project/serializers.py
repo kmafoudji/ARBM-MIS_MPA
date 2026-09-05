@@ -12,6 +12,21 @@ from .models import (
 from .services import set_project_countries, set_project_sdgs, set_project_sectors
 
 
+def validate_official_reference_number(value, exclude_pk=None):
+    """Nettoie et verifie l'unicite du numero de reference officiel."""
+    value = (value or "").strip()
+    if not value:
+        raise serializers.ValidationError("This field is required.")
+    qs = Project.objects.filter(official_reference_number=value)
+    if exclude_pk is not None:
+        qs = qs.exclude(pk=exclude_pk)
+    if qs.exists():
+        raise serializers.ValidationError(
+            "A project with this official reference number already exists."
+        )
+    return value
+
+
 class ProjectListSerializer(serializers.ModelSerializer):
     lead_country_name = serializers.SerializerMethodField()
     lead_country_iso2 = serializers.SerializerMethodField()
@@ -39,7 +54,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            "id", "code", "name", "acronym",
+            "id", "code", "name", "acronym", "official_reference_number",
             "lead_country_name", "lead_country_iso2", "country_names",
             "primary_sector", "primary_sector_name", "primary_sector_icon",
             "primary_sector_color", "contributing_sector_count",
@@ -91,15 +106,23 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     contributing_sector_ids = serializers.PrimaryKeyRelatedField(
         queryset=Sector.objects.all(), many=True, write_only=True, required=False
     )
+    # Identifiant visible par les utilisateurs : obligatoire et unique.
+    official_reference_number = serializers.CharField(
+        max_length=50, required=True, allow_blank=False, trim_whitespace=True
+    )
 
     class Meta:
         model = Project
         fields = [
-            "id", "name", "acronym", "country_ids", "lead_country_id",
+            "id", "name", "acronym", "official_reference_number",
+            "country_ids", "lead_country_id",
             "primary_sector", "contributing_sector_ids",
             "budget_amount", "primary_sdg", "contributing_sdg_ids",
         ]
         read_only_fields = ["id"]
+
+    def validate_official_reference_number(self, value):
+        return validate_official_reference_number(value)
 
     def create(self, validated_data):
         country_ids = [c.id for c in validated_data.pop("country_ids")]

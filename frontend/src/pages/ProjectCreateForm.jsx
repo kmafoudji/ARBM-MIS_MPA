@@ -124,7 +124,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   const [f, setF] = useState({
     // Step 1
     primary_sdg: "",
-    name: "", acronym: "", countryIds: [], leadCountryId: "", primarySector: "",
+    name: "", official_reference_number: "", countryIds: [], leadCountryId: "", primarySector: "",
     contributingSectorIds: [], lifecycle_stage: "concept_note",
     // Step 2
     primary_sdg: "", contributingSdgIds: [],
@@ -166,6 +166,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   function validate(s) {
     if (s === 1) {
       if (!f.name.trim())       return "Project name is required.";
+      if (!f.official_reference_number.trim()) return "Official reference number is required.";
       if (!f.countryIds.length) return "At least one country is required.";
     }
     return null;
@@ -196,7 +197,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       // 1. Créer le projet
       const payload = {
         name: f.name,
-        acronym: f.acronym || "",
+        official_reference_number: f.official_reference_number.trim(),
         country_ids: f.countryIds,
         lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
         primary_sector: f.primarySector ? Number(f.primarySector) : null,
@@ -225,7 +226,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       qc.invalidateQueries({ queryKey: ["projects"] });
       onCreated(pid);
     } catch (e) {
-      const detail = e?.detail || e?.message || "Save failed.";
+      let detail = e?.detail || e?.message || "Save failed.";
+      if (detail && typeof detail === "object" && detail.official_reference_number) {
+        detail = `Official reference number: ${[].concat(detail.official_reference_number).join(" ")}`;
+      }
       setError(typeof detail === "string" ? detail : JSON.stringify(detail));
     } finally {
       savingRef.current = false;
@@ -264,11 +268,12 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                 placeholder="e.g. Livestock & Livelihood Development" />
             </div>
 
-            <div className="field" style={{ maxWidth: 220 }}>
-              <label className="field-label" htmlFor="acronym">Acronym</label>
-              <input id="acronym" className="field-input" name="acronym" value={f.acronym} onChange={handleChange}
-                placeholder="e.g. PAAFS" maxLength={20} />
-              <span className="field-help">Short identifier — optional.</span>
+            <div className="field" style={{ maxWidth: 260 }}>
+              <label className="field-label" htmlFor="official_reference_number">Official reference number <span className="req">*</span></label>
+              <input id="official_reference_number" className="field-input" name="official_reference_number"
+                value={f.official_reference_number} onChange={handleChange}
+                placeholder="e.g. SLE1013" maxLength={50} />
+              <span className="field-help">The identifier used everywhere in the system. Must be unique.</span>
             </div>
 
             <div className="grid grid-2">
@@ -403,7 +408,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               </div>
               <div className="dl">
                 <div><div className="dl-term">Project name</div><div className="dl-desc" style={{ fontWeight: 600 }}>{f.name}</div></div>
-                {f.acronym && <div><div className="dl-term">Acronym</div><div className="dl-desc">{f.acronym}</div></div>}
+                <div><div className="dl-term">Official reference</div><div className="dl-desc text-mono">{f.official_reference_number}</div></div>
                 <div><div className="dl-term">Countries</div>
                   <div className="dl-desc">{selectedCountries.map(c => c.name).join(", ") || "—"}</div></div>
                 {selectedCountries.length > 1 && (

@@ -116,7 +116,7 @@ export default function PortfolioMap({ projects = [], onProjectClick }) {
       title.textContent = p.name || "—";
       title.style.cssText = "font-size:13px;font-weight:600;color:#2B2B2B;margin-bottom:2px";
       const sub = document.createElement("div");
-      sub.textContent = [p.code, p.lead_country_name].filter(v => v && v !== "null").join(" · ");
+      sub.textContent = [p.official_reference_number, p.lead_country_name].filter(v => v && v !== "null").join(" · ");
       sub.style.cssText = "font-size:11px;color:#9ca3af;margin-bottom:8px";
       const btn = document.createElement("button");
       btn.textContent = "Open project →";
