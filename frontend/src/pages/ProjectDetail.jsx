@@ -158,7 +158,7 @@ export const PROJECT_MODULES = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
-// DEV-ONLY UNLOCK — integration environment only, NEVER merge into `main`
+// DEV-ONLY UNLOCK — driven by the VITE_DEV_UNLOCK_ALL environment variable
 // ═══════════════════════════════════════════════════════════════════════
 // Five of the six projects in the shared database sit at `effective` or
 // beyond, which freezes Basic Identity, Classification, Financial,
@@ -170,17 +170,21 @@ export const PROJECT_MODULES = [
 //
 // This switch lifts both. It is a testing affordance, not a decision: the
 // stage rules encode real policy (configuration freezes after the approval
-// gates) and the Logframe gate is the subject of Issue I-10. Revert this
-// block before either question is answered. (Module level since the
-// two-scope merge: computeTabLocks below needs it too.)
-const DEV_UNLOCK_ALL = true;
+// gates) and the Logframe gate is the subject of Issue I-10. It is OFF
+// unless the frontend process is started with VITE_DEV_UNLOCK_ALL=true —
+// on the integration server that is set in the untracked
+// infra/docker-compose.dev.yml, so the committed default is the real
+// behaviour. (Module level since the two-scope merge: computeTabLocks
+// below needs it too.)
+const DEV_UNLOCK_ALL = import.meta.env.VITE_DEV_UNLOCK_ALL === "true";
 
-// Same spirit as DEV_UNLOCK_ALL: the backend only demands a second
-// approver at the gates when RBAC_ENFORCED is on (services.transition_stage),
-// and it is off in both development environments. The form still made the
-// field mandatory, which blocked walking a project through its stages for
-// testing. Set to false to restore the client-side requirement.
-const DEV_SKIP_DUAL_APPROVAL = true;
+// Same spirit as DEV_UNLOCK_ALL, and driven by the same variable: the
+// backend only demands a second approver at the gates when RBAC_ENFORCED is
+// on (services.transition_stage), and it is off in development. The form
+// still made the field mandatory, which blocked walking a project through
+// its stages for testing. Without the variable the client-side requirement
+// stands.
+const DEV_SKIP_DUAL_APPROVAL = DEV_UNLOCK_ALL;
 
 // Ordered checklist of the 13 nominal stages: reached stages carry the
 // date of the (latest) transition into them and a document marker; the
