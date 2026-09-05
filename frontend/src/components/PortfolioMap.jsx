@@ -65,7 +65,9 @@ function getBbox(features) {
   return [[minLng - 2, minLat - 2], [maxLng + 2, maxLat + 2]];
 }
 
-export default function PortfolioMap({ projects = [], onProjectClick }) {
+// `compact` renders a shorter, quieter map for dashboards: no fullscreen or
+// scale control and no scroll-wheel zoom, so the page keeps scrolling.
+export default function PortfolioMap({ projects = [], onProjectClick, compact = false }) {
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
   const popupRef = useRef(null);
@@ -94,8 +96,12 @@ export default function PortfolioMap({ projects = [], onProjectClick }) {
     });
     mapInst.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
-    map.addControl(new maplibregl.FullscreenControl(), "top-left");
+    if (compact) {
+      map.scrollZoom.disable();
+    } else {
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
+      map.addControl(new maplibregl.FullscreenControl(), "top-left");
+    }
     map.on("load", () => {
       if (map.isStyleLoaded()) {
         setMapReady(true);
@@ -239,7 +245,7 @@ export default function PortfolioMap({ projects = [], onProjectClick }) {
         </div>
       )}
 
-      <div ref={mapRef} style={{ height: 520, width: "100%" }} />
+      <div ref={mapRef} style={{ height: compact ? 300 : 520, width: "100%" }} />
 
       {/* Attribution */}
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
