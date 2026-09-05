@@ -364,9 +364,9 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
           {/* Toggle view mode */}
           <div style={{ display: "flex", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
             {[
-              { mode: "list", icon: "align-center" },
               { mode: "cards", icon: "grid" },
               { mode: "map", icon: "map-pin" },
+              { mode: "list", icon: "align-center" },
             ].map(({ mode, icon }) => (
               <button key={mode} onClick={() => setViewMode(mode)}
                 style={{
