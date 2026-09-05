@@ -137,7 +137,7 @@ class SectorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sector
         fields = [
-            "id", "code", "name", "parent", "parent_name", "icon", "color",
+            "id", "code", "name", "sequence", "parent", "parent_name", "icon", "color",
             "is_active", "usage_count",
         ]
 

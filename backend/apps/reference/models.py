@@ -243,6 +243,11 @@ class Sector(models.Model):
 
     code = models.SlugField(max_length=30, unique=True)
     name = models.CharField(max_length=150)
+    sequence = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="LLF2 numbering (010, 011, ..., 032). Drives the display order; "
+        "the number itself is not shown in the name.",
+    )
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
@@ -265,6 +270,7 @@ class Sector(models.Model):
 
     class Meta:
         db_table = "sector"
+        ordering = ["sequence", "name"]
 
     def __str__(self):
         return self.name

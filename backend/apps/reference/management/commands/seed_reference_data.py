@@ -183,27 +183,27 @@ AGENCIES = [
 
 # LLF2 sector taxonomy: three pillars and their sub-sectors, numbered as in
 # the LLF2 results framework. Codes are the short LLF2 codes; the numbering
-# lives in the name so the UI sorts naturally. The former slug sectors
+# is the `sequence` field, which drives the order without appearing in the name. The former slug sectors
 # (health, agriculture, infrastructure, gender, climate, general_agriculture,
 # sewerage_solid_waste, basic_infrastructure) were deleted from the maintained
 # database on 5 September 2026 and are not seeded any more.
-# (code, name, icon, color)
+# (code, sequence, name, icon, color)
 SECTORS = [
-    ("INFRA", "010 Productivity Enabled Infrastructure", "infrastructure", "#0089c5"),
-    ("SOC", "020 Human Capital Development", "generic", "#E84A5F"),
-    ("RES", "030 Resilience", "generic", "#A4C53F"),
+    ("INFRA", 10, "Productivity Enabled Infrastructure", "infrastructure", "#0089c5"),
+    ("SOC", 20, "Human Capital Development", "generic", "#E84A5F"),
+    ("RES", 30, "Resilience", "generic", "#A4C53F"),
 ]
 
-# (code, name, parent_code, icon, color)
+# (code, sequence, name, parent_code, icon, color)
 SUB_SECTORS = [
-    ("TRA", "011 Transport", "INFRA", "generic", "#0089c5"),
-    ("ENER", "012 Energy", "INFRA", "generic", "#0089c5"),
-    ("DIG", "013 Digital Infrastructure", "INFRA", "generic", "#0089c5"),
-    ("RUR", "014 Rural Development", "INFRA", "generic", "#0089c5"),
-    ("EDU", "021 Education", "SOC", "education", "#E84A5F"),
-    ("HEALTH", "022 Health", "SOC", "health", "#E84A5F"),
-    ("AGRICU", "031 Agriculture & Food Security", "RES", "agriculture", "#A4C53F"),
-    ("WASH", "032 Water & Sanitation", "RES", "water", "#A4C53F"),
+    ("TRA", 11, "Transport", "INFRA", "generic", "#0089c5"),
+    ("ENER", 12, "Energy", "INFRA", "generic", "#0089c5"),
+    ("DIG", 13, "Digital Infrastructure", "INFRA", "generic", "#0089c5"),
+    ("RUR", 14, "Rural Development", "INFRA", "generic", "#0089c5"),
+    ("EDU", 21, "Education", "SOC", "education", "#E84A5F"),
+    ("HEALTH", 22, "Health", "SOC", "health", "#E84A5F"),
+    ("AGRICU", 31, "Agriculture & Food Security", "RES", "agriculture", "#A4C53F"),
+    ("WASH", 32, "Water & Sanitation", "RES", "water", "#A4C53F"),
 ]
 
 # (numero, nom, couleur officielle ONU)
@@ -351,9 +351,10 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Agences d'implementation : {len(AGENCIES)} OK"))
 
-        for code, name, icon, color in SECTORS:
+        for code, sequence, name, icon, color in SECTORS:
             sector, _ = Sector.objects.update_or_create(
-                code=code, defaults={"name": name, "parent": None, "icon": icon, "color": color}
+                code=code,
+                defaults={"name": name, "sequence": sequence, "parent": None, "icon": icon, "color": color},
             )
             # Complete les secteurs seedes avant l'ajout des champs icone/couleur.
             if not sector.color:
@@ -361,10 +362,11 @@ class Command(BaseCommand):
                 sector.save(update_fields=["icon", "color"])
         self.stdout.write(self.style.SUCCESS(f"Secteurs : {len(SECTORS)} OK"))
 
-        for code, name, parent_code, icon, color in SUB_SECTORS:
+        for code, sequence, name, parent_code, icon, color in SUB_SECTORS:
             parent = Sector.objects.filter(code=parent_code).first()
             sector, _ = Sector.objects.update_or_create(
-                code=code, defaults={"name": name, "parent": parent, "icon": icon, "color": color}
+                code=code,
+                defaults={"name": name, "sequence": sequence, "parent": parent, "icon": icon, "color": color},
             )
             if not sector.color:
                 sector.icon, sector.color = icon, color
