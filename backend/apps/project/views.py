@@ -47,7 +47,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             Project.objects.in_scope(self.request)
             .select_related("primary_sector", "created_by")
             .prefetch_related(
-                "project_countries__country", "contributing_sectors", "sdgs"
+                "project_countries__country", "contributing_sectors", "sdgs",
+                "stage_transitions",
             )
         )
 

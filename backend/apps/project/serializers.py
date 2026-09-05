@@ -40,6 +40,22 @@ class ProjectListSerializer(serializers.ModelSerializer):
     )
     hub_name = serializers.SerializerMethodField()
     envelope_total = serializers.SerializerMethodField()
+    stage_entered_on = serializers.SerializerMethodField()
+
+    def get_stage_entered_on(self, obj):
+        """Date of entry into the current stage (last transition to it),
+        falling back to the creation date when no transition is recorded.
+        Relies on ``stage_transitions`` being prefetched by the view."""
+        entered = None
+        for t in obj.stage_transitions.all():
+            if t.to_stage != obj.lifecycle_stage:
+                continue
+            when = t.transition_date or t.transitioned_at.date()
+            if entered is None or when > entered:
+                entered = when
+        if entered is None and obj.created_at:
+            entered = obj.created_at.date()
+        return entered.isoformat() if entered else None
 
     def get_envelope_total(self, obj):
         """Total de l'enveloppe financière (sum des sources) — priorité sur budget_amount."""
@@ -61,7 +77,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "primary_sector_color", "contributing_sector_count",
             "lifecycle_stage", "lifecycle_stage_display",
             "budget_amount", "envelope_total", "created_at",
-            "hub_name",
+            "hub_name", "stage_entered_on",
         ]
 
     def get_hub_name(self, obj):
