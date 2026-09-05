@@ -8,6 +8,7 @@ import { apiFetch } from "../api";
 import { IconEdit, IconPlus, IconDeactivate } from "./ActionIcons.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
+import MultiSelect from "./MultiSelect.jsx";
 import ProjectMap from "./ProjectMap.jsx";
 
 export default function GeographicScope({ projectId, countries, canEdit }) {  const qc = useQueryClient();
@@ -192,17 +193,13 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
       {selAdmin1 && hasAdmin2 && (
         <div className="field">
           <label className="field-label">District / Department (Admin 2)</label>
-          <select className="field-select field-multi" multiple
-            value={selAdmin2}
-            onChange={(e) => setSelAdmin2(Array.from(e.target.selectedOptions).map((o) => o.value))}>
-            {admin2Options.map((a) => (
-              <option key={a.id} value={String(a.id)}>{a.name}</option>
-            ))}
-          </select>
+          <MultiSelect placeholder="Search districts..."
+            options={admin2Options.map((a) => ({ value: String(a.id), label: a.name }))}
+            value={selAdmin2} onChange={setSelAdmin2} />
           <span className="field-help">
             {editScope
               ? "Select a district, or leave empty to keep the whole region."
-              : "Ctrl/Cmd + click for multiple. Leave empty to add the entire region."}
+              : "Select one or more districts, or leave empty to add the entire region."}
           </span>
         </div>
       )}
