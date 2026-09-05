@@ -2,7 +2,7 @@
 
 **Branch `feature/asis-bulk-import` · worktree `.claude/worktrees/asis-bulk-import` · 21 Aug 2026**
 
-Implements `docs/superpowers/specs/2026-08-21-asis-bulk-import-design.md`. Read the spec
+Implements `docs/specs/2026-08-21-asis-bulk-import-design.md`. Read the spec
 first; this plan only records *how* it gets built, what the two workbooks actually
 contain, and where the spec meets reality and has to bend.
 
@@ -22,7 +22,7 @@ Tracked files, all of them new except four:
 | `frontend/src/App.jsx` | **modified** — import + one `nav` branch |
 | `frontend/src/components/AppShell.jsx` | **modified** — nav entry + breadcrumb |
 | `frontend/src/i18n/{en,fr}.json` | **modified** — nav + page strings |
-| `docs/superpowers/plans/…` (this file), `docs/superpowers/specs/…` (committed) | new |
+| `docs/specs/…` (this file), `docs/specs/…` (committed) | new |
 
 **Deployment impact:** `openpyxl` is not in the running backend image (verified —
 `ModuleNotFoundError`). Merging this requires a backend image rebuild, or the endpoint
