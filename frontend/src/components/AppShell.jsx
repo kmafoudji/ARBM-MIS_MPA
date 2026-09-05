@@ -259,10 +259,6 @@ export default function AppShell({
       items: [{ key: "overview", label: t("nav.dashboard"), Icon: IconDashboard }],
     },
     {
-      label: t("masterdata.title"),
-      items: [{ key: "masterdata", label: t("masterdata.title"), Icon: IconMasterData }],
-    },
-    {
       label: t("nav.portfolio"),
       items: [
         { key: "projects", label: t("nav.projects"), Icon: IconProjects, badgeKey: "projects" },
@@ -271,6 +267,10 @@ export default function AppShell({
         { key: "portfolio", label: t("nav.portfolio_results"), Icon: IconPortfolio },
         { key: "dq-portfolio", label: t("nav.data_quality"), Icon: IconCatalogue },
       ],
+    },
+    {
+      label: t("masterdata.title"),
+      items: [{ key: "masterdata", label: t("masterdata.title"), Icon: IconMasterData }],
     },
     {
       label: t("nav.system"),
