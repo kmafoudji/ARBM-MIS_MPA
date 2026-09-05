@@ -287,19 +287,18 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               {selectedCountries.length > 1 && (
                 <div className="field">
                   <label className="field-label" htmlFor="lead">Lead country <span className="req">*</span></label>
-                  <select id="lead" className="field-select" name="leadCountryId" value={f.leadCountryId} onChange={handleChange}>
-                    {selectedCountries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <Select id="lead" name="leadCountryId" required placeholder="Select lead country…"
+                    options={selectedCountries.map((c) => ({ value: String(c.id), label: c.name, iso2: c.iso2 }))}
+                    value={f.leadCountryId} onChange={(v) => set("leadCountryId", v)} />
                   <span className="field-help">Used for display and project code only.</span>
                 </div>
               )}
 
               <div className="field">
                 <label className="field-label" htmlFor="primarySector">Primary sector</label>
-                <select id="primarySector" className="field-select" name="primarySector" value={f.primarySector} onChange={handleChange}>
-                  <option value="">Select…</option>
-                  {sectors?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <Select id="primarySector" name="primarySector" placeholder="Select…"
+                  options={(sectors || []).map((s) => ({ value: String(s.id), label: s.name }))}
+                  value={f.primarySector} onChange={(v) => set("primarySector", v)} />
               </div>
 
               <div className="field">

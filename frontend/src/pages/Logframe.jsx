@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
+import Select from "../components/Select";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 import DQScoreWidget from "../components/DQScoreWidget";
 
@@ -440,43 +441,31 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
               background: line.indicatorId ? "var(--lime-pale)" : "transparent",
             }}>
               {/* Select indicateur */}
-              <select
-                className="field-select"
-                style={{ margin: 0 }}
+              <Select
+                options={(indicators || []).map((ind) => {
+                  const used = usedIds.has(String(ind.id)) && String(ind.id) !== line.indicatorId;
+                  return {
+                    value: String(ind.id),
+                    label: `${ind.code} — ${ind.name.slice(0, 60)}${ind.name.length > 60 ? "..." : ""}${used ? " (deja ajoute)" : ""}`,
+                    disabled: used,
+                  };
+                })}
                 value={line.indicatorId}
-                onChange={(e) => {
-                  const ind = indicators?.find((i) => String(i.id) === e.target.value);
+                onChange={(v) => {
+                  const ind = indicators?.find((i) => String(i.id) === v);
                   if (ind) selectIndicator(idx, ind);
                   else setLine(idx, { indicatorId: "", indicatorLabel: "", chainLevel: "" });
                 }}
-              >
-                <option value="">
-                  {isLoading ? "Loading..." : "Select an indicator..."}
-                </option>
-                {indicators?.map((ind) => (
-                  <option
-                    key={ind.id}
-                    value={ind.id}
-                    disabled={usedIds.has(String(ind.id)) && String(ind.id) !== line.indicatorId}
-                  >
-                    {ind.code} — {ind.name.slice(0, 60)}{ind.name.length > 60 ? "..." : ""}
-                    {usedIds.has(String(ind.id)) && String(ind.id) !== line.indicatorId ? " (deja ajoute)" : ""}
-                  </option>
-                ))}
-              </select>
+                placeholder={isLoading ? "Loading..." : "Select an indicator..."}
+              />
 
               {/* Select niveau */}
-              <select
-                className="field-select"
-                style={{ margin: 0 }}
+              <Select
+                options={choices?.chain_levels || []}
                 value={line.chainLevel}
-                onChange={(e) => setLine(idx, { chainLevel: e.target.value })}
-              >
-                <option value="">Level...</option>
-                {choices?.chain_levels?.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
+                onChange={(v) => setLine(idx, { chainLevel: v })}
+                placeholder="Level..."
+              />
 
               {/* Bouton supprimer la ligne */}
               <button

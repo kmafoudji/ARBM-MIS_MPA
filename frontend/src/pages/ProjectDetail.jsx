@@ -18,6 +18,18 @@ import Select from "../components/Select";
 import { INVESTMENT_CYCLE_CHOICES } from "../choices";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
+const RIO_MARKER_CHOICES = [
+  { value: "not_targeted", label: "Not targeted" },
+  { value: "significant",  label: "Significant" },
+  { value: "principal",    label: "Principal" },
+];
+
+const REPORTING_FREQUENCY_CHOICES = [
+  { value: "quarterly",   label: "Quarterly" },
+  { value: "semi_annual", label: "Semi-annual" },
+  { value: "annual",      label: "Annual" },
+];
+
 const STAGE_BADGE = {
   concept_note: "badge",
   pipeline_taskforce_review: "badge",
@@ -857,13 +869,12 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                 </div>
                 {bForm.countryIds.length > 1 && (
                   <div className="field">
-                    <label className="field-label">Lead country <span className="req">*</span></label>
-                    <select className="field-select" value={bForm.leadCountryId}
-                      onChange={e => setBForm({...bForm, leadCountryId: e.target.value})}>
-                      {refCountries?.filter(c => bForm.countryIds.includes(String(c.id))).map(c =>
-                        <option key={c.id} value={String(c.id)}>{c.name}</option>
-                      )}
-                    </select>
+                    <label className="field-label" htmlFor="bLeadCountry">Lead country <span className="req">*</span></label>
+                    <Select id="bLeadCountry" required placeholder="Select lead country…"
+                      options={(refCountries || []).filter(c => bForm.countryIds.includes(String(c.id)))
+                        .map(c => ({ value: String(c.id), label: c.name, iso2: c.iso2 }))}
+                      value={bForm.leadCountryId}
+                      onChange={v => setBForm({...bForm, leadCountryId: v})} />
                   </div>
                 )}
                 {basicMutation.isError && (
@@ -929,17 +940,13 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                 <div className="grid grid-2">
                   <div className="field">
                     <label className="field-label" htmlFor="cPrimarySector">Primary Sector</label>
-                    <select
+                    <Select
                       id="cPrimarySector"
-                      className="field-select"
+                      placeholder="Select"
+                      options={(sectors || []).map((s) => ({ value: String(s.id), label: s.name }))}
                       value={cForm.primary_sector}
-                      onChange={(e) => setCForm({ ...cForm, primary_sector: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {sectors?.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setCForm({ ...cForm, primary_sector: v })}
+                    />
                   </div>
 
                   <div className="field">
@@ -960,77 +967,57 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
                   <div className="field">
                     <label className="field-label" htmlFor="genderMarker">Gender Marker</label>
-                    <select
+                    <Select
                       id="genderMarker"
-                      className="field-select"
+                      placeholder="Select"
+                      options={classificationChoices?.gender_marker || []}
                       value={cForm.gender_marker}
-                      onChange={(e) => setCForm({ ...cForm, gender_marker: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {classificationChoices?.gender_marker.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setCForm({ ...cForm, gender_marker: v })}
+                    />
                   </div>
 
                   <div className="field">
                     <label className="field-label" htmlFor="modality">Implementation Modality</label>
-                    <select
+                    <Select
                       id="modality"
-                      className="field-select"
+                      placeholder="Select"
+                      options={classificationChoices?.implementation_modality || []}
                       value={cForm.implementation_modality}
-                      onChange={(e) => setCForm({ ...cForm, implementation_modality: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {classificationChoices?.implementation_modality.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setCForm({ ...cForm, implementation_modality: v })}
+                    />
                   </div>
 
                   <div className="field">
                     <label className="field-label" htmlFor="typology">Geographic Typology</label>
-                    <select
+                    <Select
                       id="typology"
-                      className="field-select"
+                      placeholder="Select"
+                      options={classificationChoices?.geographic_typology || []}
                       value={cForm.geographic_typology}
-                      onChange={(e) => setCForm({ ...cForm, geographic_typology: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {classificationChoices?.geographic_typology.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setCForm({ ...cForm, geographic_typology: v })}
+                    />
                   </div>
 
                   <div className="field">
                     <label className="field-label" htmlFor="fragility">Fragility Status</label>
-                    <select
+                    <Select
                       id="fragility"
-                      className="field-select"
+                      placeholder="Select"
+                      options={classificationChoices?.fragility_status || []}
                       value={cForm.fragility_status}
-                      onChange={(e) => setCForm({ ...cForm, fragility_status: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {classificationChoices?.fragility_status.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setCForm({ ...cForm, fragility_status: v })}
+                    />
                   </div>
 
                   <div className="field">
                     <label className="field-label" htmlFor="risk">Risk Rating</label>
-                    <select
+                    <Select
                       id="risk"
-                      className="field-select"
+                      placeholder="Select"
+                      options={classificationChoices?.risk_rating || []}
                       value={cForm.risk_rating}
-                      onChange={(e) => setCForm({ ...cForm, risk_rating: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {classificationChoices?.risk_rating.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setCForm({ ...cForm, risk_rating: v })}
+                    />
                   </div>
 
                   <div className="field">
@@ -1055,13 +1042,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                       ["rio_marker_water",           "Water"],
                     ].map(([key, label]) => (
                       <div key={key} className="field">
-                        <label className="field-label">{label}</label>
-                        <select className="field-select" value={cForm[key]}
-                          onChange={(e) => setCForm({ ...cForm, [key]: e.target.value })}>
-                          <option value="not_targeted">Not targeted</option>
-                          <option value="significant">Significant</option>
-                          <option value="principal">Principal</option>
-                        </select>
+                        <label className="field-label" htmlFor={key}>{label}</label>
+                        <Select id={key} required options={RIO_MARKER_CHOICES} value={cForm[key]}
+                          onChange={(v) => setCForm({ ...cForm, [key]: v })} />
                       </div>
                     ))}
                   </div>
@@ -1428,20 +1411,14 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                   <label className="field-label" htmlFor="toStage">
                     New stage <span className="req">*</span>
                   </label>
-                  <select
+                  <Select
                     id="toStage"
-                    className="field-select"
+                    placeholder="Select"
+                    options={otherStages}
                     value={tForm.to_stage}
-                    onChange={(e) => setTForm({ ...tForm, to_stage: e.target.value })}
+                    onChange={(v) => setTForm({ ...tForm, to_stage: v })}
                     required
-                  >
-                    <option value="">Select</option>
-                    {otherStages.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="field">
@@ -1472,20 +1449,14 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                       Gate transition — second approver optional while testing
                     </div>
                   )}
-                  <select
+                  <Select
                     id="dual"
-                    className="field-select"
+                    placeholder="None"
+                    options={(users || []).map((u) => ({ value: String(u.id), label: u.email }))}
                     value={tForm.dual_authorized_by}
                     required={needsDualAuth}
-                    onChange={(e) => setTForm({ ...tForm, dual_authorized_by: e.target.value })}
-                  >
-                    <option value="">None</option>
-                    {users?.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.email}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setTForm({ ...tForm, dual_authorized_by: v })}
+                  />
                   <span className="field-help">
                     Required at the TRC / IC / BED gates and for any rollback.
                   </span>
@@ -1715,17 +1686,13 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               <div className="grid grid-2">
                 <div className="field">
                   <label className="field-label" htmlFor="reportingFreq">Frequency</label>
-                  <select
+                  <Select
                     id="reportingFreq"
-                    className="field-select"
+                    placeholder="Select"
+                    options={REPORTING_FREQUENCY_CHOICES}
                     value={rForm.reporting_frequency}
-                    onChange={(e) => setRForm({ ...rForm, reporting_frequency: e.target.value })}
-                  >
-                    <option value="">Select</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="semi_annual">Semi-annual</option>
-                    <option value="annual">Annual</option>
-                  </select>
+                    onChange={(v) => setRForm({ ...rForm, reporting_frequency: v })}
+                  />
                 </div>
                 <div className="field">
                   <label className="field-label" htmlFor="nextDue">First Deadline <span className="req">*</span></label>

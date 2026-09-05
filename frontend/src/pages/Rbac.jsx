@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
+import Select from "../components/Select";
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 function initials(u) {
@@ -278,18 +279,30 @@ function TabUsers({ currentUser }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="field-row">
-              <label className="field-label">Type</label>
-              <select className="field-select" value={form.user_type} onChange={(e) => set("user_type", e.target.value)}>
-                <option value="internal">Internal</option>
-                <option value="external">External</option>
-              </select>
+              <label className="field-label" htmlFor="invite-user-type">Type</label>
+              <Select
+                id="invite-user-type"
+                options={[
+                  { value: "internal", label: "Internal" },
+                  { value: "external", label: "External" },
+                ]}
+                value={form.user_type}
+                onChange={(v) => set("user_type", v)}
+                required
+              />
             </div>
             <div className="field-row">
-              <label className="field-label">Auth method</label>
-              <select className="field-select" value={form.auth_method} onChange={(e) => set("auth_method", e.target.value)}>
-                <option value="sso">SSO (Entra ID)</option>
-                <option value="password">Local password</option>
-              </select>
+              <label className="field-label" htmlFor="invite-auth-method">Auth method</label>
+              <Select
+                id="invite-auth-method"
+                options={[
+                  { value: "sso", label: "SSO (Entra ID)" },
+                  { value: "password", label: "Local password" },
+                ]}
+                value={form.auth_method}
+                onChange={(v) => set("auth_method", v)}
+                required
+              />
             </div>
           </div>
           <div className="notice notice-info" style={{ marginTop: 8 }}>
@@ -599,29 +612,38 @@ function TabAssignments({ currentUser }) {
         <Modal title="Assign role" onClose={() => setShowAdd(false)}>
           {error && <div className="notice notice-error" style={{ marginBottom: 12, fontSize: 12 }}>{error}</div>}
           <div className="field-row">
-            <label className="field-label">User <span className="req">*</span></label>
-            <select className="field-select" value={form.user} onChange={(e) => set("user", e.target.value)}>
-              <option value="">— Select a user —</option>
-              {users.filter((u) => u.is_active).map((u) => (
-                <option key={u.id} value={u.id}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
-              ))}
-            </select>
+            <label className="field-label" htmlFor="assign-user">User <span className="req">*</span></label>
+            <Select
+              id="assign-user"
+              options={users.filter((u) => u.is_active).map((u) => ({
+                value: String(u.id),
+                label: u.full_name ? `${u.full_name} (${u.email})` : u.email,
+              }))}
+              value={form.user}
+              onChange={(v) => set("user", v)}
+              placeholder="— Select a user —"
+            />
           </div>
           <div className="field-row">
-            <label className="field-label">Role <span className="req">*</span></label>
-            <select className="field-select" value={form.role} onChange={(e) => set("role", e.target.value)}>
-              <option value="">— Select a role —</option>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.label}</option>
-              ))}
-            </select>
+            <label className="field-label" htmlFor="assign-role">Role <span className="req">*</span></label>
+            <Select
+              id="assign-role"
+              options={roles.map((r) => ({ value: String(r.id), label: r.label }))}
+              value={form.role}
+              onChange={(v) => set("role", v)}
+              placeholder="— Select a role —"
+            />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: needsScopeId ? "1fr 1fr" : "1fr", gap: 12 }}>
             <div className="field-row">
-              <label className="field-label">Scope</label>
-              <select className="field-select" value={form.scope_type} onChange={(e) => set("scope_type", e.target.value)}>
-                {SCOPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <label className="field-label" htmlFor="assign-scope-type">Scope</label>
+              <Select
+                id="assign-scope-type"
+                options={SCOPE_OPTIONS}
+                value={form.scope_type}
+                onChange={(v) => set("scope_type", v)}
+                required
+              />
             </div>
             {needsScopeId && (
               <div className="field-row">

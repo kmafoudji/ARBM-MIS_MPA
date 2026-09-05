@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon";
+import Select from "./Select";
 
 const TYPE_ICONS = {
   photo: "image", pdf: "file-text", survey: "clipboard",
@@ -183,13 +184,14 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
                 value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
-              <label className="field-label">Type</label>
-              <select className="field-select" value={form.evidence_type}
-                onChange={e => setForm(f => ({ ...f, evidence_type: e.target.value }))}>
-                {[["pdf","PDF Document"],["photo","Photo / Image"],["survey","Survey"],["report","Report"],["video","Video"],["other","Other"]].map(([v,l]) => (
-                  <option key={v} value={v}>{l}</option>
-                ))}
-              </select>
+              <label className="field-label" htmlFor="ev-type">Type</label>
+              <Select
+                id="ev-type"
+                options={[["pdf","PDF Document"],["photo","Photo / Image"],["survey","Survey"],["report","Report"],["video","Video"],["other","Other"]].map(([value, label]) => ({ value, label }))}
+                value={form.evidence_type}
+                onChange={v => setForm(f => ({ ...f, evidence_type: v }))}
+                required
+              />
             </div>
           </div>
           <div className="field" style={{ marginBottom: 10 }}>
