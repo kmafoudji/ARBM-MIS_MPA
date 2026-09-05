@@ -15,9 +15,8 @@ def make_effective_project():
     """
     from datetime import date
     sdg = SdgFactory(number=2)
-    return ProjectFactory(
+    project = ProjectFactory(
         lifecycle_stage="effective",  # forcé directement en base
-        primary_sdg=sdg,
         gender_marker="1",
         implementation_modality="direct",
         geographic_typology="rural",
@@ -26,6 +25,8 @@ def make_effective_project():
         start_date=date(2026, 1, 1),
         end_date=date(2029, 12, 31),
     )
+    project.sdgs.add(sdg)
+    return project
 
 
 @pytest.mark.django_db
@@ -108,7 +109,6 @@ class TestGenerateWorkspace:
         sdg = SdgFactory(number=4)
         project = ProjectFactory(
             lifecycle_stage="effective",
-            primary_sdg=sdg,
             gender_marker="1",
             implementation_modality="direct",
             geographic_typology="rural",
@@ -119,5 +119,6 @@ class TestGenerateWorkspace:
             reporting_frequency="quarterly",
             next_reporting_due=date(2026, 4, 1),
         )
+        project.sdgs.add(sdg)
         generate_workspace(project, actor)
         assert ReportingPeriod.objects.filter(project=project).count() == 0

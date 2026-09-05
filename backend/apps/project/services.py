@@ -28,19 +28,15 @@ from .models import (
 
 
 @transaction.atomic
-def set_project_sdgs(project, contributing_sdg_numbers):
+def set_project_sdgs(project, sdg_numbers):
     """
-    Remplace l'ensemble des ODD contributifs d'un projet (SF-2). L'ODD
-    primaire ne doit pas apparaitre aussi comme contributif.
+    Remplace l'ensemble des ODD d'un projet (SF-2). Il n'y a plus d'ODD
+    primaire : un seul ensemble, sans ordre (ADR 0006).
     """
-    contributing_sdg_numbers = list(dict.fromkeys(contributing_sdg_numbers))
-    if project.primary_sdg_id and project.primary_sdg_id in contributing_sdg_numbers:
-        raise ValidationError(
-            "L'ODD primaire ne peut pas aussi etre selectionne comme ODD contributif."
-        )
+    sdg_numbers = list(dict.fromkeys(sdg_numbers))
     ProjectSdg.objects.filter(project=project).delete()
     ProjectSdg.objects.bulk_create(
-        [ProjectSdg(project=project, sdg_id=n) for n in contributing_sdg_numbers]
+        [ProjectSdg(project=project, sdg_id=n) for n in sdg_numbers]
     )
     return project
 
@@ -48,8 +44,9 @@ def set_project_sdgs(project, contributing_sdg_numbers):
 @transaction.atomic
 def set_project_sectors(project, contributing_sector_ids):
     """
-    Remplace l'ensemble des secteurs contributifs d'un projet, sur le
-    meme modele que les ODD contributifs. Le secteur primaire ne doit
+    Remplace l'ensemble des secteurs contributifs d'un projet. Contrairement
+    aux ODD (ADR 0006), les secteurs gardent un primaire : le portefeuille,
+    les rapports et l'admin agregent dessus. Le secteur primaire ne doit
     pas apparaitre aussi comme contributif.
     """
     contributing_sector_ids = list(dict.fromkeys(contributing_sector_ids))
@@ -203,8 +200,8 @@ def _check_bed_approved_prerequisites_complete(project):
       precoce (ex. Pipeline Taskforce Approved).
     """
     missing = []
-    if not project.primary_sdg_id:
-        missing.append("ODD primaire")
+    if not project.sdgs.exists():
+        missing.append("ODD (au moins un)")
     if not project.gender_marker:
         missing.append("Marqueur Genre")
     if not project.implementation_modality:

@@ -125,11 +125,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   /* ── Form state (toutes étapes) ── */
   const [f, setF] = useState({
     // Step 1
-    primary_sdg: "",
     name: "", official_reference_number: "", investment_cycle: "", countryIds: [], leadCountryId: "", primarySector: "",
     contributingSectorIds: [], lifecycle_stage: "concept_note",
     // Step 2
-    primary_sdg: "", contributingSdgIds: [],
+    sdgIds: [],
     gender_marker: "", implementation_modality: "", geographic_typology: "",
     fragility_status: "", risk_rating: "", cross_cutting_theme_ids: [],
     rio_marker_mitigation: "not_targeted", rio_marker_adaptation: "not_targeted",
@@ -157,7 +156,6 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
   const selectedCountries         = (countries || []).filter((c) => f.countryIds.includes(c.id));
   const contributingSectorChoices = (sectors   || []).filter((s) => String(s.id)     !== String(f.primarySector));
-  const contributingSdgChoices    = (sdgs      || []).filter((s) => String(s.number) !== String(f.primary_sdg));
 
   /* ── Validation par étape ── */
   function validate(s) {
@@ -200,8 +198,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
         lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
         primary_sector: f.primarySector ? Number(f.primarySector) : null,
         contributing_sector_ids: f.contributingSectorIds,
-        primary_sdg: f.primary_sdg ? Number(f.primary_sdg) : null,
-        contributing_sdg_ids: f.contributingSdgIds,
+        sdg_ids: f.sdgIds,
       };
       const proj = await apiFetch("/api/projects/", { method: "POST", body: JSON.stringify(payload) });
       const pid = proj.id;
@@ -306,11 +303,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               </div>
 
               <div className="field">
-                <label className="field-label" htmlFor="primarySdg">Primary SDG</label>
-                <select id="primarySdg" className="field-select" name="primary_sdg" value={f.primary_sdg} onChange={handleChange}>
-                  <option value="">Select…</option>
-                  {sdgs?.map((s) => <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>)}
-                </select>
+                <label className="field-label" htmlFor="sdgs">SDGs</label>
+                <MultiSelect id="sdgs" placeholder="Search SDGs..."
+                  options={(sdgs || []).map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
+                  value={f.sdgIds} onChange={(v) => set("sdgIds", v)} />
               </div>
             </div>
           </div>
@@ -323,7 +319,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="layers" size={15} style={{ marginRight: 6 }} />Strategic Alignment</h2>
-              <div className="card-sub">SDGs, classification SF-2 — required at BED Approved gate</div>
+              <div className="card-sub">Classification SF-2 — required at BED Approved gate</div>
             </div>
             <span className="badge">Optional now</span>
           </div>
@@ -334,13 +330,6 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                 <MultiSelect id="contribSectors" placeholder="Search sectors..."
                   options={contributingSectorChoices.map((s) => ({ value: s.id, label: s.name }))}
                   value={f.contributingSectorIds} onChange={(v) => set("contributingSectorIds", v)} />
-              </div>
-
-              <div className="field">
-                <label className="field-label" htmlFor="contribSdgs">Contributing SDGs</label>
-                <MultiSelect id="contribSdgs" placeholder="Search SDGs..."
-                  options={contributingSdgChoices.map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
-                  value={f.contributingSdgIds} onChange={(v) => set("contributingSdgIds", v)} />
               </div>
 
               <FieldSelect id="genderMarker" label="Gender Marker" value={f.gender_marker}
@@ -419,12 +408,8 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   <div><div className="dl-term">Contributing sectors</div>
                     <div className="dl-desc">{sectors?.filter(s => f.contributingSectorIds.map(String).includes(String(s.id))).map(s => s.name).join(", ")}</div></div>
                 )}
-                <div><div className="dl-term">Primary SDG</div>
-                  <div className="dl-desc">{f.primary_sdg ? `SDG ${f.primary_sdg} — ${sdgs?.find(s => String(s.number) === String(f.primary_sdg))?.name}` : "—"}</div></div>
-                {f.contributingSdgIds.length > 0 && (
-                  <div><div className="dl-term">Contributing SDGs</div>
-                    <div className="dl-desc">{f.contributingSdgIds.map(n => `SDG ${n}`).join(", ")}</div></div>
-                )}
+                <div><div className="dl-term">SDGs</div>
+                  <div className="dl-desc">{f.sdgIds.length > 0 ? f.sdgIds.map(n => `SDG ${n}`).join(", ") : "—"}</div></div>
               </div>
             </div>
 

@@ -99,7 +99,7 @@ class TestProjectClassification:
         project = ProjectFactory()
         sdg = SdgFactory(number=3)
         payload = {
-            "primary_sdg": sdg.number,
+            "sdg_ids": [sdg.number],
             "gender_marker": "1",
             "implementation_modality": "direct",
             "geographic_typology": "rural",
@@ -111,18 +111,21 @@ class TestProjectClassification:
         project.refresh_from_db()
         assert project.gender_marker == "1"
         assert project.fragility_status == "stable"
+        assert list(project.sdgs.values_list("number", flat=True)) == [3]
 
-    def test_primary_sdg_cannot_be_contributing(self, auth_client):
+    def test_patch_replaces_the_sdg_set(self, auth_client):
+        """ADR 0006: one flat set, no primary; a PATCH replaces it wholesale."""
         client, user = auth_client
         from tests.factories import SdgFactory
+        from apps.project.services import set_project_sdgs
         project = ProjectFactory()
-        sdg = SdgFactory(number=5)
-        payload = {
-            "primary_sdg": sdg.number,
-            "contributing_sdg_ids": [sdg.number],
-        }
-        resp = client.patch(f"/api/projects/{project.id}/", payload, format="json")
-        assert resp.status_code == 400
+        for n in (5, 6, 7):
+            SdgFactory(number=n)
+        set_project_sdgs(project, [5, 6])
+        resp = client.patch(f"/api/projects/{project.id}/", {"sdg_ids": [6, 7]}, format="json")
+        assert resp.status_code == 200
+        assert sorted(project.sdgs.values_list("number", flat=True)) == [6, 7]
+        assert sorted(s["number"] for s in resp.data["sdgs_detail"]) == [6, 7]
 
 
 @pytest.mark.django_db

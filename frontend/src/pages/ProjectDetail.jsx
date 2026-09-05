@@ -356,8 +356,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   const [cForm, setCForm] = useState({
     primary_sector: "",
     contributing_sector_ids: [],
-    primary_sdg: "",
-    contributing_sdg_ids: [],
+    sdg_ids: [],
     gender_marker: "",
     implementation_modality: "",
     geographic_typology: "",
@@ -468,8 +467,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     setCForm({
       primary_sector: project.primary_sector || "",
       contributing_sector_ids: project.contributing_sectors_detail?.map((s) => s.id) || [],
-      primary_sdg: project.primary_sdg || "",
-      contributing_sdg_ids: project.contributing_sdgs_detail?.map((s) => s.number) || [],
+      sdg_ids: project.sdgs_detail?.map((s) => s.number) || [],
       gender_marker: project.gender_marker || "",
       implementation_modality: project.implementation_modality || "",
       geographic_typology: project.geographic_typology || "",
@@ -490,8 +488,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     classificationMutation.mutate({
       primary_sector: cForm.primary_sector ? Number(cForm.primary_sector) : null,
       contributing_sector_ids: cForm.contributing_sector_ids,
-      primary_sdg: cForm.primary_sdg ? Number(cForm.primary_sdg) : null,
-      contributing_sdg_ids: cForm.contributing_sdg_ids,
+      sdg_ids: cForm.sdg_ids,
       gender_marker: cForm.gender_marker || null,
       implementation_modality: cForm.implementation_modality || null,
       geographic_typology: cForm.geographic_typology || null,
@@ -508,9 +505,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
   const contributingSectorChoices = (sectors || []).filter(
     (s) => String(s.id) !== String(cForm.primary_sector)
-  );
-  const contributingSdgChoices = (sdgs || []).filter(
-    (s) => String(s.number) !== String(cForm.primary_sdg)
   );
 
   const padUploadMutation = useMutation({
@@ -791,7 +785,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           logframeRows.length > 0,                              // Logframe
           (envelope?.financing_sources?.length || 0) > 0,       // Financial envelope
           partners.length > 0,                                  // Partners
-          !!project.primary_sdg && !!project.gender_marker,     // Classification
+          (project.sdgs_detail?.length || 0) > 0 && !!project.gender_marker, // Classification
           !!project.reporting_frequency,                        // Reporting
           !!project.pad_reference_url,                          // PAD document
           !!(project.start_date && project.end_date),           // Dates
@@ -957,26 +951,11 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="cPrimarySdg">Primary SDG</label>
-                    <select
-                      id="cPrimarySdg"
-                      className="field-select"
-                      value={cForm.primary_sdg}
-                      onChange={(e) => setCForm({ ...cForm, primary_sdg: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {sdgs?.map((s) => (
-                        <option key={s.number} value={s.number}>SDG {s.number} — {s.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label" htmlFor="cContribSdgs">Contributing SDGs</label>
-                    <MultiSelect id="cContribSdgs" placeholder="Search SDGs..."
-                      options={contributingSdgChoices.map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
-                      value={cForm.contributing_sdg_ids}
-                      onChange={(v) => setCForm({ ...cForm, contributing_sdg_ids: v })} />
+                    <label className="field-label" htmlFor="cSdgs">SDGs</label>
+                    <MultiSelect id="cSdgs" placeholder="Search SDGs..."
+                      options={(sdgs || []).map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
+                      value={cForm.sdg_ids}
+                      onChange={(v) => setCForm({ ...cForm, sdg_ids: v })} />
                   </div>
 
                   <div className="field">
@@ -1126,23 +1105,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     </div>
                   ) : "—"}
                 </Dt>
-                <Dt term="Primary SDG">
-                  {project.primary_sdg ? (
-                    <span className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <img
-                        className="sdg-icon"
-                        src={`/logos/sdg/${project.primary_sdg}.png`}
-                        alt={`SDG ${project.primary_sdg}`}
-                        style={{ width: 24, height: 24 }}
-                      />
-                      {`SDG ${project.primary_sdg} — ${project.primary_sdg_name}`}
-                    </span>
-                  ) : "—"}
-                </Dt>
-                <Dt term="Contributing SDGs">
-                  {project.contributing_sdgs_detail?.length ? (
+                <Dt term="SDGs">
+                  {project.sdgs_detail?.length ? (
                     <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
-                      {project.contributing_sdgs_detail.map((s) => (
+                      {project.sdgs_detail.map((s) => (
                         <span key={s.number} className="row" style={{ gap: 6, alignItems: "center" }}>
                           <img
                             className="sdg-icon"

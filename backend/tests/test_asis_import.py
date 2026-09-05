@@ -40,7 +40,7 @@ SHEETS_WITH_NOTE = {
 HEADERS = {
     "01_project": [
         "official_reference_number", "name", "acronym", "lead_country_iso3", "hub_code",
-        "primary_sector", "primary_sdg", "contributing_sdgs", "gender_marker",
+        "primary_sector", "sdgs", "gender_marker",
         "geographic_typology", "risk_rating", "budget_amount", "currency",
         "reporting_frequency", "next_reporting_due", "lifecycle_stage",
         "start_date", "end_date",
@@ -84,7 +84,7 @@ def base_rows(country_iso3, hub_code, sector_code):
     return {
         "01_project": [[
             "REF001", PROJECT_NAME, "TP", country_iso3, hub_code, sector_code,
-            1, "2; 5", "", "rural", "moderate", 1000, "USD", "quarterly",
+            "1; 2; 5", "", "rural", "moderate", 1000, "USD", "quarterly",
             "2025-03-31", "implementing", "2025-01-01", "2026-12-31",
         ]],
         "02a_envelope": [["REF001", "Envelope note"]],
@@ -226,7 +226,7 @@ def test_financing_must_reconcile_to_budget_amount(auth_client, rows):
 @pytest.mark.django_db
 def test_end_date_before_start_date_is_an_error(auth_client, rows):
     """VAL012."""
-    rows["01_project"][0][17] = "2024-01-01"  # end_date < start_date
+    rows["01_project"][0][16] = "2024-01-01"  # end_date < start_date
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 422
     assert "VAL012" in messages(response.data["errors"])
@@ -276,6 +276,7 @@ def test_commit_writes_then_revalidation_reports_unchanged(auth_client, rows):
     project = Project.objects.get(official_reference_number="REF001")
     assert project.pk == commit.data["project_id"]
     assert project.financial_envelope.total_amount_usd == 1000
+    assert sorted(project.sdgs.values_list("number", flat=True)) == [1, 2, 5]
     assert project.logframe_rows.count() == 1
     assert Activity.objects.filter(sub_component__component__project=project).count() == 1
 
@@ -288,6 +289,38 @@ def test_commit_writes_then_revalidation_reports_unchanged(auth_client, rows):
     # syncing them by content is what removed that exception.
     actions = {change["action"] for change in again.data["changes"]}
     assert actions == {"unchanged"}, again.data["changes"]
+
+
+@pytest.mark.django_db
+def test_legacy_sdg_columns_are_folded_into_the_set(auth_client, rows):
+    """ADR 0006: v0.x workbooks with primary_sdg + contributing_sdgs still load."""
+    from apps.project.models import Project
+
+    legacy_rows = dict(rows)
+    legacy_rows["01_project"] = [list(rows["01_project"][0])]
+    legacy_rows["01_project"][0][6] = ""  # the new `sdgs` column left empty
+    legacy_headers = {name: list(cols) for name, cols in HEADERS.items()}
+    legacy_headers["01_project"] = legacy_headers["01_project"] + ["primary_sdg", "contributing_sdgs"]
+    legacy_rows["01_project"][0] += [1, "2; 5"]
+
+    original = dict(HEADERS)
+    HEADERS.update(legacy_headers)
+    try:
+        workbook = build_workbook(legacy_rows)
+    finally:
+        HEADERS.clear()
+        HEADERS.update(original)
+
+    validation = post(auth_client, workbook, mode="validate")
+    assert validation.status_code == 200, validation.data
+    assert any("legacy" in w["message"] for w in validation.data["warnings"]), \
+        messages(validation.data["warnings"])
+    workbook.seek(0)
+    commit = post(auth_client, workbook, mode="commit",
+                  expected_sha256=validation.data["file_sha256"])
+    assert commit.status_code == 200, commit.data
+    project = Project.objects.get(official_reference_number="REF001")
+    assert sorted(project.sdgs.values_list("number", flat=True)) == [1, 2, 5]
 
 
 @pytest.mark.django_db
@@ -328,7 +361,7 @@ def test_blank_cell_never_clears_a_stored_value(auth_client, rows):
          expected_sha256=validation.data["file_sha256"])
     assert Project.objects.get(official_reference_number="REF001").risk_rating == "moderate"
 
-    rows["01_project"][0][10] = ""  # risk_rating left empty
+    rows["01_project"][0][9] = ""  # risk_rating left empty
     workbook = build_workbook(rows)
     validation = post(auth_client, workbook, mode="validate")
     assert validation.status_code == 200
@@ -404,7 +437,7 @@ def test_a_stage_at_or_past_effective_activates_the_workspace(auth_client, rows)
 @pytest.mark.django_db
 def test_a_stage_before_effective_activates_nothing(auth_client, rows):
     """Below Effective the workspace is not implied and must not be invented."""
-    rows["01_project"][0][15] = "appraisal"  # lifecycle_stage
+    rows["01_project"][0][14] = "appraisal"  # lifecycle_stage
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 200, response.data
     assert "workspace" not in response.data["summary"]

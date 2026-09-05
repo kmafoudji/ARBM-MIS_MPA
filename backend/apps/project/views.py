@@ -45,9 +45,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return (
             Project.objects.in_scope(self.request)
-            .select_related("primary_sector", "primary_sdg", "created_by")
+            .select_related("primary_sector", "created_by")
             .prefetch_related(
-                "project_countries__country", "contributing_sectors", "contributing_sdgs"
+                "project_countries__country", "contributing_sectors", "sdgs"
             )
         )
 
@@ -99,6 +99,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
             serializer.save()
         except ValidationError as exc:
             raise DRFValidationError({"detail": exc.messages})
+        # Re-read through the queryset: get_object() prefetched the M2M
+        # relations before the services rewrote them, and the stale cache
+        # would otherwise be serialised back.
+        instance = self.get_queryset().get(pk=instance.pk)
         return Response(ProjectDetailSerializer(instance).data)
 
     @action(detail=False, methods=["get"], url_path="stage-choices")

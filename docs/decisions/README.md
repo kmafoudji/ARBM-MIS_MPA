@@ -11,6 +11,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0003](0003-dev-unlock-env-flag.md) | Development-only UI unlocks are driven by `VITE_DEV_UNLOCK_ALL` |
 | [0004](0004-language-new-code-english.md) | New code is English; existing French files stay French per file |
 | [0005](0005-migrations-must-apply-from-scratch.md) | Migrations must apply from an empty database, and CI proves it |
+| [0006](0006-flat-sdg-set-sectors-keep-a-primary.md) | Projects carry one flat set of SDGs; sectors keep a primary |
 
 ## Pending
 

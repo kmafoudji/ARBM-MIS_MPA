@@ -134,7 +134,6 @@ class TestBedApprovedPrerequisites:
         sdg = SdgFactory(number=3)
         project = ProjectFactory(
             lifecycle_stage="appraisal",
-            primary_sdg=sdg,
             gender_marker="1",
             implementation_modality="direct",
             geographic_typology="rural",
@@ -143,6 +142,11 @@ class TestBedApprovedPrerequisites:
             start_date=date(2026, 1, 1),
             end_date=date(2028, 12, 31),
         )
+        # POL-1.10 reads "at least one SDG" since ADR 0006: without any, blocked.
+        with pytest.raises(ValidationError, match="ODD"):
+            transition_stage(project, "bed_approved", actor,
+                             dual_authorized_by=approver)
+        project.sdgs.add(sdg)
         result = transition_stage(project, "bed_approved", actor,
                                  dual_authorized_by=approver)
         assert result.lifecycle_stage == "bed_approved"

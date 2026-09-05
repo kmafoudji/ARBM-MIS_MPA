@@ -80,6 +80,8 @@ Every sheet has a note in row 1, headers in row 2, data from row 3. `00_README`,
 | Sheet | Target | Match strategy |
 |---|---|---|
 | `01_project` | `Project` + `project_country` / `project_sdg` / `project_sector` | `official_reference_number` |
+
+SDGs in `01_project` are one `sdgs` column (`;`-separated numbers) since ADR 0006. The `primary_sdg` and `contributing_sdgs` columns of the v0.x workbooks are still read, folded into the same set, and reported as a warning.
 | `02a_envelope` | `ProjectFinancialEnvelope` | one-to-one; create if absent |
 | `02_financing_source` | `FinancingSource` | **replace-all** (D-8) |
 | `03_donors` | `Donor` | create-or-match on `code` — **create if absent, never update an existing row**. These are global reference tables, not project data; a project file must not silently rewrite them |
