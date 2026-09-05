@@ -25,6 +25,7 @@ const RIO_MARKER_CHOICES = [
 ];
 
 const REPORTING_FREQUENCY_CHOICES = [
+  { value: "monthly",     label: "Monthly" },
   { value: "quarterly",   label: "Quarterly" },
   { value: "semi_annual", label: "Semi-annual" },
   { value: "annual",      label: "Annual" },
