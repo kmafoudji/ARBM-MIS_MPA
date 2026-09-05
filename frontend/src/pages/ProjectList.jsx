@@ -94,51 +94,135 @@ function KpiBar({ projects }) {
   );
 }
 
+/* Linear order of the 13 nominal stages (mirrors LIFECYCLE_ORDER in the
+   backend). Exception states (suspended / cancelled) are outside the order. */
+const LIFECYCLE_ORDER = [
+  "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
+  "preparation_identification", "trc_endorsed", "ic_approved", "appraisal",
+  "bed_approved", "effective", "implementing", "mid_term_review",
+  "substantially_complete", "closed",
+];
+const GATE_STAGES = new Set(["trc_endorsed", "ic_approved", "bed_approved"]);
+const SIGNATURE_INDEX = LIFECYCLE_ORDER.indexOf("effective");   // separator before implementation
+const GATE_LABEL = { trc_endorsed: "TRC", ic_approved: "IC", bed_approved: "BED" };
+const DAYS_WARN = 30, DAYS_STALLED = 90;
+
+function daysSince(iso) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso + "T00:00:00").getTime();
+  return Math.max(0, Math.floor(ms / 86_400_000));
+}
+
+function daysColor(days, terminal) {
+  if (days == null || terminal) return "#111";
+  if (days >= DAYS_STALLED) return "#dc2626";
+  if (days >= DAYS_WARN) return "#d97706";
+  return "#111";
+}
+
+function stageSummary(project) {
+  const idx = LIFECYCLE_ORDER.indexOf(project.lifecycle_stage);
+  if (idx < 0) return { idx, text: project.lifecycle_stage_display };
+  const num = idx + 1;
+  const name = project.lifecycle_stage_display;
+  const nextGate = LIFECYCLE_ORDER.slice(idx + 1).find(s => GATE_STAGES.has(s));
+  let detail;
+  if (project.lifecycle_stage === "closed") detail = "closed";
+  else if (idx >= SIGNATURE_INDEX) detail = "under implementation";
+  else if (GATE_STAGES.has(project.lifecycle_stage)) detail = "at gate";
+  else if (nextGate) detail = `next gate: ${GATE_LABEL[nextGate]}`;
+  return { idx, text: `${num} · ${name} — ${detail}` };
+}
+
+function StageBar({ idx, exception }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 3, opacity: exception ? 0.35 : 1 }}>
+      {LIFECYCLE_ORDER.map((s, i) => {
+        const done = i <= idx;
+        const color = !done ? "#e5e7eb" : GATE_STAGES.has(s) ? "#16a34a" : "#1B5A8C";
+        return (
+          <span key={s} style={{ display: "contents" }}>
+            {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 14, background: "#d1d5db", margin: "0 3px" }} />}
+            <span title={s} style={{ flex: 1, height: 7, borderRadius: 99, background: color, minWidth: 14 }} />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function ProjectCard({ project, onClick }) {
   const sg = stageGroup(project.lifecycle_stage);
+  const exception = sg.key === "suspended";
+  const { idx, text } = stageSummary(project);
+  const terminal = ["closed", "cancelled"].includes(project.lifecycle_stage);
+  const days = daysSince(project.stage_entered_on);
+  const stalled = !terminal && !exception && days != null && days >= DAYS_STALLED;
+  const budget = formatBudget(project.envelope_total || project.budget_amount);
+  const meta = [
+    project.primary_sector_name,
+    budget !== "—" ? `US$ ${budget}` : null,
+    project.country_names?.length > 1 ? `+${project.country_names.length - 1} countries` : null,
+  ].filter(Boolean);
+
   return (
     <div onClick={() => onClick(project.id)}
       style={{
         background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12,
-        padding: 16, cursor: "pointer", transition: "all .15s",
-        borderTop: `3px solid ${sg.color}`,
+        padding: "14px 20px", cursor: "pointer", transition: "all .15s",
+        borderLeft: `4px solid ${sg.color}`,
+        display: "grid", gridTemplateColumns: "minmax(260px, 1fr) minmax(280px, 1.1fr) 90px 130px",
+        gap: 24, alignItems: "center",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px #0001"; e.currentTarget.style.borderColor = sg.color; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.borderTopColor = sg.color; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px #0001"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <span style={{ fontFamily: "monospace", fontSize: 11, color: "#9ca3af" }}>{project.official_reference_number}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sg.bg, color: sg.color }}>
-          {project.lifecycle_stage_display}
-        </span>
+      {/* Identity */}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "monospace", fontSize: 11, color: sg.color, fontWeight: 700, letterSpacing: .5 }}>
+          <span>{project.official_reference_number || project.code}</span>
+          <span style={{ color: "#d1d5db" }}>·</span>
+          <Flag iso2={project.lead_country_iso2} size={12} />
+          <span style={{ textTransform: "uppercase" }}>{project.lead_country_name}</span>
+          {project.hub_name && <><span style={{ color: "#d1d5db" }}>·</span><span style={{ textTransform: "uppercase" }}>{project.hub_name}</span></>}
+        </div>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "#111", margin: "3px 0 4px", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+             title={project.name}>
+          {project.name}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6b7280" }}>
+          <SectorIcon name={project.primary_sector_icon} color={project.primary_sector_color} size={14} />
+          <span>{meta.join(" · ")}</span>
+        </div>
       </div>
-      <div style={{ fontWeight: 700, fontSize: 13, color: "#111", marginBottom: 8, lineHeight: 1.3 }}>
-        {project.name.length > 70 ? project.name.slice(0, 70) + "…" : project.name}
+
+      {/* Stage progress */}
+      <div style={{ minWidth: 0 }}>
+        <StageBar idx={idx} exception={exception} />
+        <div style={{ fontSize: 12, fontWeight: 600, color: exception ? sg.color : "#374151", marginTop: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {text}
+        </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 12, color: "#6b7280" }}>
-        <Flag iso2={project.lead_country_iso2} size={14} />
-        <span>{project.lead_country_name}</span>
-        {project.country_names?.length > 1 && (
-          <span style={{ fontSize: 10, background: "#f3f4f6", padding: "1px 6px", borderRadius: 99 }}>
-            +{project.country_names.length - 1}
+
+      {/* Days in stage */}
+      <div style={{ textAlign: "right" }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: daysColor(days, terminal || exception), lineHeight: 1.1 }}>
+          {days ?? "—"}
+        </div>
+        <div style={{ fontSize: 11, color: "#6b7280" }}>days in stage</div>
+      </div>
+
+      {/* Action */}
+      <div style={{ textAlign: "right" }}>
+        {stalled ? (
+          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: "#fee2e2", color: "#dc2626" }}>
+            ⚑ Stalled
+          </span>
+        ) : (
+          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: sg.bg, color: sg.color }}>
+            {project.lifecycle_stage_display}
           </span>
         )}
-        {project.hub_name && (
-          <>
-            <span style={{ color: "#d1d5db" }}>·</span>
-            <span style={{ fontSize: 11 }}>{project.hub_name}</span>
-          </>
-        )}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#374151" }}>
-          <SectorIcon name={project.primary_sector_icon} color={project.primary_sector_color} size={18} />
-          <span>{project.primary_sector_name}</span>
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#1B5A8C" }}>
-          {formatBudget(project.envelope_total || project.budget_amount)}
-          <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400, marginLeft: 3 }}>USD</span>
-        </div>
       </div>
     </div>
   );
@@ -386,7 +470,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
 
       {/* ── Cards ───────────────────────────────────────────────────── */}
       {!isLoading && filtered.length > 0 && viewMode === "cards" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           {filtered.map(p => (
             <ProjectCard key={p.id} project={p} onClick={onProjectClick} />
           ))}

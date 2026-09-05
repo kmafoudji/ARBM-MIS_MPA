@@ -142,6 +142,24 @@ class TestProjectList:
         resp = client.get("/api/projects/")
         assert resp.status_code in (401, 403)  # DRF/SessionAuth retourne 403
 
+    def test_list_stage_entered_on_falls_back_to_created_at(self, auth_client):
+        client, user = auth_client
+        project = ProjectFactory(lifecycle_stage="concept_note")
+        resp = client.get("/api/projects/")
+        row = next(r for r in resp.data if r["id"] == project.id)
+        assert row["stage_entered_on"] == project.created_at.date().isoformat()
+
+    def test_list_stage_entered_on_uses_last_transition(self, auth_client):
+        client, user = auth_client
+        project = ProjectFactory(lifecycle_stage="concept_note")
+        payload = {"to_stage": "pipeline_taskforce_review", "transition_date": "2026-07-01"}
+        resp = client.post(f"/api/projects/{project.id}/transitions/", payload, format="json")
+        assert resp.status_code in (200, 201)
+        resp = client.get("/api/projects/")
+        row = next(r for r in resp.data if r["id"] == project.id)
+        assert row["lifecycle_stage"] == "pipeline_taskforce_review"
+        assert row["stage_entered_on"] == "2026-07-01"
+
 
 @pytest.mark.django_db
 class TestStageTransitionAPI:
