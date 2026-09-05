@@ -14,6 +14,8 @@ import Toast from "../components/Toast";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
+import Select from "../components/Select";
+import { INVESTMENT_CYCLE_CHOICES } from "../choices";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
 const STAGE_BADGE = {
@@ -846,13 +848,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
                 </div>
                 <div className="field">
-                  <label className="field-label">Investment cycle</label>
-                  <select className="field-select" value={bForm.investment_cycle}
-                    onChange={e => setBForm({...bForm, investment_cycle: e.target.value})}>
-                    <option value="">Select…</option>
-                    <option value="LLF1">LLF1</option>
-                    <option value="LLF2">LLF2</option>
-                  </select>
+                  <label className="field-label" htmlFor="investmentCycle">Investment cycle</label>
+                  <Select id="investmentCycle" options={INVESTMENT_CYCLE_CHOICES}
+                    value={bForm.investment_cycle}
+                    onChange={v => setBForm({...bForm, investment_cycle: v})} />
                 </div>
                 <div className="field">
                   <label className="field-label">Countries <span className="req">*</span></label>
