@@ -236,6 +236,7 @@ class Project(models.Model):
     # RBAC/workflow (SF-3 / Module 7), pas d'un champ simple sur le projet —
     # laisse en question ouverte plutot que de deviner une structure.
     REPORTING_FREQUENCY_CHOICES = [
+        ("monthly", "Monthly"),
         ("quarterly", "Quarterly"),
         ("semi_annual", "Semi-annual"),
         ("annual", "Annual"),
@@ -714,7 +715,7 @@ class ReportingPeriod(models.Model):
     )
     label = models.CharField(
         max_length=50, blank=True,
-        help_text="Ex. 'Q1 2026', 'S2 2026', 'Annual 2026'."
+        help_text="Ex. 'M03 2026', 'Q1 2026', 'S2 2026', 'Annual 2026'."
     )
     submitted_at = models.DateTimeField(null=True, blank=True)
     approved_at  = models.DateTimeField(null=True, blank=True)

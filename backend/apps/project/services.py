@@ -343,18 +343,21 @@ from dateutil.relativedelta import relativedelta
 from datetime import timedelta
 
 GRACE_DAYS = {
-    "quarterly":   30,  # T+30 jours après fin de période
+    "monthly":     15,  # T+15 jours après fin de période
+    "quarterly":   30,
     "semi_annual": 45,
     "annual":      60,
 }
 
 PERIOD_MONTHS = {
+    "monthly":     1,
     "quarterly":   3,
     "semi_annual": 6,
     "annual":      12,
 }
 
 LABEL_FMT = {
+    "monthly":     lambda d: f"M{d.month:02d} {d.year}",
     "quarterly":   lambda d: f"Q{((d.month - 1) // 3) + 1} {d.year}",
     "semi_annual": lambda d: f"S{1 if d.month <= 6 else 2} {d.year}",
     "annual":      lambda d: f"Annual {d.year}",
@@ -366,7 +369,7 @@ def generate_reporting_periods(project):
     Génère les périodes de reporting pour un projet.
 
     Prérequis :
-      - reporting_frequency  : fréquence (quarterly / semi_annual / annual)
+      - reporting_frequency  : fréquence (monthly / quarterly / semi_annual / annual)
       - next_reporting_due   : date de la première échéance (fin P1)
       - end_date             : date de fin du projet (borne le schedule)
 

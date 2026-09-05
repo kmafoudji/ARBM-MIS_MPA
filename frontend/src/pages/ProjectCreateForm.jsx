@@ -51,6 +51,7 @@ const GEO_CHOICES = [
   { value: "mixed_multi_district",label: "Mixed / multi-district" },
 ];
 const FREQ_CHOICES = [
+  { value: "monthly",     label: "Monthly"     },
   { value: "quarterly",   label: "Quarterly"   },
   { value: "semi_annual", label: "Semi-annual" },
   { value: "annual",      label: "Annual"      },

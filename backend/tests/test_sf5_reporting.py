@@ -57,6 +57,23 @@ class TestGenerateReportingPeriods:
         assert periods.last().end_date <= date(2028, 3, 31)
         assert periods.first().end_date == date(2026, 4, 1)
 
+    def test_monthly_generates_one_period_per_month(self):
+        """One-year monthly project: 12 periods, labels M01..M12, T+15 grace."""
+        project = ProjectFactory(
+            reporting_frequency="monthly",
+            next_reporting_due=date(2026, 1, 31),
+            end_date=date(2026, 12, 31),
+        )
+        count, error = generate_reporting_periods(project)
+        assert error is None
+        assert count == 12
+        periods = ReportingPeriod.objects.filter(project=project).order_by("period_number")
+        assert periods.first().start_date == date(2026, 1, 1)
+        assert periods.first().end_date == date(2026, 1, 31)
+        assert periods.first().due_date == date(2026, 2, 15)
+        assert periods.first().label == "M01 2026"
+        assert periods.last().label == "M12 2026"
+
     def test_annual_generates_correct_count(self):
         """Projet 3 ans → 3 périodes annuelles."""
         project = ProjectFactory(
