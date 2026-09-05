@@ -100,18 +100,33 @@ class TestProjectClassification:
         sdg = SdgFactory(number=3)
         payload = {
             "sdg_ids": [sdg.number],
-            "gender_marker": "1",
-            "implementation_modality": "direct",
-            "geographic_typology": "rural",
-            "fragility_status": "stable",
-            "risk_rating": "low",
+            "we_category": "WE002",
+            "risk_rating": "tbd",
+            "climate_marker": "tbd",
         }
         resp = client.patch(f"/api/projects/{project.id}/", payload, format="json")
         assert resp.status_code == 200
+        assert resp.data["we_category_display"] == "WE002 — RWE"
+        assert resp.data["climate_marker_display"] == "To be defined"
         project.refresh_from_db()
-        assert project.gender_marker == "1"
-        assert project.fragility_status == "stable"
+        assert project.we_category == "WE002"
+        assert project.risk_rating == "tbd"
         assert list(project.sdgs.values_list("number", flat=True)) == [3]
+
+    def test_patch_rejects_unknown_we_category(self, auth_client):
+        client, user = auth_client
+        project = ProjectFactory()
+        resp = client.patch(f"/api/projects/{project.id}/", {"we_category": "1"}, format="json")
+        assert resp.status_code == 400
+
+    def test_patch_ignores_removed_classification_fields(self, auth_client):
+        client, user = auth_client
+        project = ProjectFactory()
+        payload = {"gender_marker": "1", "fragility_status": "stable", "geographic_typology": "rural"}
+        resp = client.patch(f"/api/projects/{project.id}/", payload, format="json")
+        assert resp.status_code == 200
+        for key in payload:
+            assert key not in resp.data
 
     def test_patch_replaces_the_sdg_set(self, auth_client):
         """ADR 0006: one flat set, no primary; a PATCH replaces it wholesale."""

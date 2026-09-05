@@ -114,26 +114,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="classification-choices")
     def classification_choices(self, request):
         """Vocabulaires SF-2, pour peupler les selects du formulaire de classification."""
-        from apps.reference.models import CrossCuttingTheme
         from .models import (
-            FRAGILITY_STATUS_CHOICES,
-            GENDER_MARKER_CHOICES,
-            GEOGRAPHIC_TYPOLOGY_CHOICES,
-            IMPLEMENTATION_MODALITY_CHOICES,
+            CLIMATE_MARKER_CHOICES,
             RISK_RATING_CHOICES,
+            WE_CATEGORY_CHOICES,
         )
         return Response({
-            "gender_marker": [{"value": v, "label": l} for v, l in GENDER_MARKER_CHOICES],
-            "implementation_modality": [{"value": v, "label": l} for v, l in IMPLEMENTATION_MODALITY_CHOICES],
-            "geographic_typology": [{"value": v, "label": l} for v, l in GEOGRAPHIC_TYPOLOGY_CHOICES],
-            "fragility_status": [{"value": v, "label": l} for v, l in FRAGILITY_STATUS_CHOICES],
+            "we_category": [{"value": v, "label": l} for v, l in WE_CATEGORY_CHOICES],
             "risk_rating": [{"value": v, "label": l} for v, l in RISK_RATING_CHOICES],
-            # Pas de soft-delete sur CrossCuttingTheme (contrairement a Country/
-            # Sector/Donor) — a ajouter si POL-1.07 doit s'y appliquer aussi.
-            "cross_cutting_themes": [
-                {"value": t.id, "label": t.name}
-                for t in CrossCuttingTheme.objects.all()
-            ],
+            "climate_marker": [{"value": v, "label": l} for v, l in CLIMATE_MARKER_CHOICES],
         })
 
     @action(detail=True, methods=["get", "post"])

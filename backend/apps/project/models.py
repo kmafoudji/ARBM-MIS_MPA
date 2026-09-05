@@ -19,7 +19,6 @@ from apps.identity.models import AppUser
 from apps.reference.models import (
     Country,
     Currency,
-    CrossCuttingTheme,
     Donor,
     RegionalHub,
     Sdg,
@@ -74,39 +73,14 @@ GATE_STAGES = {"trc_endorsed", "ic_approved", "bed_approved"}
 
 EXCEPTION_STAGES = {"suspended", "cancelled"}
 
-GENDER_MARKER_CHOICES = [
-    ("0", "Category 0 — Not targeted"),
-    ("1", "Category 1 — Significant"),
-    ("2", "Category 2 — Principal"),
-]
-
-RIO_MARKER_CHOICES = [
-    ("not_targeted", "Not targeted"),
-    ("significant", "Significant"),
-    ("principal", "Principal"),
-]
-
-IMPLEMENTATION_MODALITY_CHOICES = [
-    ("direct", "Direct"),
-    ("country_systems", "Country systems"),
-    ("ngo", "NGO"),
-    ("private", "Private"),
-    ("multi_actor", "Multi-actor"),
-    ("hybrid", "Hybrid"),
-]
-
-GEOGRAPHIC_TYPOLOGY_CHOICES = [
-    ("urban", "Urban"),
-    ("peri_urban", "Peri-urban"),
-    ("rural", "Rural"),
-    ("remote", "Remote"),
-    ("mixed_multi_district", "Mixed / multi-district"),
-]
-
-FRAGILITY_STATUS_CHOICES = [
-    ("fcv", "FCV"),
-    ("pre_fcv", "Pre-FCV"),
-    ("stable", "Stable"),
+# Categorie d'autonomisation economique des femmes (remplace le marqueur
+# genre OECD-DAC, decision du 5 septembre 2026).
+WE_CATEGORY_CHOICES = [
+    ("WE001", "WE001 — EWE"),
+    ("WE002", "WE002 — RWE"),
+    ("WE003", "WE003 — SWE"),
+    ("WE004", "WE004 — WEB"),
+    ("WE005", "WE005 — NWE"),
 ]
 
 INVESTMENT_CYCLE_CHOICES = [
@@ -114,11 +88,13 @@ INVESTMENT_CYCLE_CHOICES = [
     ("LLF2", "LLF2"),
 ]
 
+# Valeurs a definir : une seule option provisoire pour les deux marqueurs.
 RISK_RATING_CHOICES = [
-    ("low", "Low"),
-    ("moderate", "Moderate"),
-    ("substantial", "Substantial"),
-    ("high", "High"),
+    ("tbd", "To be defined"),
+]
+
+CLIMATE_MARKER_CHOICES = [
+    ("tbd", "To be defined"),
 ]
 
 
@@ -165,47 +141,22 @@ class Project(models.Model):
         help_text="ODD du projet, sans distinction primaire/contributif "
         "(au moins 1 exige a BED Approved, POL-1.10 ; cf. ADR 0006).",
     )
-    gender_marker = models.CharField(
-        max_length=1, choices=GENDER_MARKER_CHOICES, null=True, blank=True,
-        help_text="Marqueur OECD-DAC genre.",
-    )
-    rio_marker_mitigation = models.CharField(
-        max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted"
-    )
-    rio_marker_adaptation = models.CharField(
-        max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted"
-    )
-    rio_marker_biodiversity = models.CharField(
-        max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted"
-    )
-    rio_marker_desertification = models.CharField(
-        max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted"
-    )
-    rio_marker_water = models.CharField(
-        max_length=20, choices=RIO_MARKER_CHOICES, default="not_targeted",
-        help_text="OECD-DAC Rio Marker — Water (Objectif de Eau)."
-    )
-    cross_cutting_themes = models.ManyToManyField(
-        CrossCuttingTheme, related_name="projects", blank=True
-    )
-    implementation_modality = models.CharField(
-        max_length=20, choices=IMPLEMENTATION_MODALITY_CHOICES, null=True, blank=True
+    we_category = models.CharField(
+        max_length=5, choices=WE_CATEGORY_CHOICES, null=True, blank=True,
+        help_text="Categorie d'autonomisation economique des femmes (WE).",
     )
     beneficiary_target_direct = models.PositiveIntegerField(
         null=True, blank=True,
         help_text="Cible beneficiaires directs (agrege — desagregation detaillee -> Module 6).",
     )
     beneficiary_target_indirect = models.PositiveIntegerField(null=True, blank=True)
-    geographic_typology = models.CharField(
-        max_length=30, choices=GEOGRAPHIC_TYPOLOGY_CHOICES, null=True, blank=True
-    )
-    fragility_status = models.CharField(
-        max_length=10, choices=FRAGILITY_STATUS_CHOICES, null=True, blank=True,
-        help_text="Revu annuellement (RG-4.2).",
-    )
     risk_rating = models.CharField(
         max_length=15, choices=RISK_RATING_CHOICES, null=True, blank=True,
-        help_text="Revu annuellement (RG-4.2).",
+        help_text="Revu annuellement (RG-4.2). Valeurs a definir.",
+    )
+    climate_marker = models.CharField(
+        max_length=10, choices=CLIMATE_MARKER_CHOICES, null=True, blank=True,
+        help_text="Marqueur climat. Valeurs a definir.",
     )
 
     # --- Rattachements portefeuille (deja presents, complements) ---

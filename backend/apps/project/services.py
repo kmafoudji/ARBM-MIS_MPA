@@ -202,14 +202,8 @@ def _check_bed_approved_prerequisites_complete(project):
     missing = []
     if not project.sdgs.exists():
         missing.append("ODD (au moins un)")
-    if not project.gender_marker:
-        missing.append("Marqueur Genre")
-    if not project.implementation_modality:
-        missing.append("Modalite de mise en oeuvre")
-    if not project.geographic_typology:
-        missing.append("Typologie geographique")
-    if not project.fragility_status:
-        missing.append("Statut de fragilite")
+    if not project.we_category:
+        missing.append("Categorie WE")
     if not project.risk_rating:
         missing.append("Notation de risque composite")
     if not project.start_date:

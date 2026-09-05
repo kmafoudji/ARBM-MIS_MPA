@@ -18,12 +18,6 @@ import Select from "../components/Select";
 import { INVESTMENT_CYCLE_CHOICES } from "../choices";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 
-const RIO_MARKER_CHOICES = [
-  { value: "not_targeted", label: "Not targeted" },
-  { value: "significant",  label: "Significant" },
-  { value: "principal",    label: "Principal" },
-];
-
 const REPORTING_FREQUENCY_CHOICES = [
   { value: "monthly",     label: "Monthly" },
   { value: "quarterly",   label: "Quarterly" },
@@ -75,7 +69,7 @@ const STAGE_TOAST = {
     type: "success",
     title: "IC Approved",
     message: "Investment Committee approval recorded.",
-    bullets: ["Ensure BED Approved prerequisites are met: Gender Marker, Risk Rating, Fragility Status, start and end dates."],
+    bullets: ["Ensure BED Approved prerequisites are met: SDGs, WE Category, Risk category, start and end dates."],
   },
   appraisal: {
     type: "info",
@@ -455,17 +449,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     primary_sector: "",
     contributing_sector_ids: [],
     sdg_ids: [],
-    gender_marker: "",
-    implementation_modality: "",
-    geographic_typology: "",
-    fragility_status: "",
+    we_category: "",
     risk_rating: "",
-    cross_cutting_theme_ids: [],
-    rio_marker_mitigation: "not_targeted",
-    rio_marker_adaptation: "not_targeted",
-    rio_marker_biodiversity: "not_targeted",
-    rio_marker_desertification: "not_targeted",
-    rio_marker_water: "not_targeted",
+    climate_marker: "",
   });
 
   const { data: project, isLoading } = useQuery({
@@ -566,17 +552,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       primary_sector: project.primary_sector || "",
       contributing_sector_ids: project.contributing_sectors_detail?.map((s) => s.id) || [],
       sdg_ids: project.sdgs_detail?.map((s) => s.number) || [],
-      gender_marker: project.gender_marker || "",
-      implementation_modality: project.implementation_modality || "",
-      geographic_typology: project.geographic_typology || "",
-      fragility_status: project.fragility_status || "",
+      we_category: project.we_category || "",
       risk_rating: project.risk_rating || "",
-      cross_cutting_theme_ids: project.cross_cutting_theme_ids || [],
-      rio_marker_mitigation:     project.rio_marker_mitigation     || "not_targeted",
-      rio_marker_adaptation:     project.rio_marker_adaptation     || "not_targeted",
-      rio_marker_biodiversity:   project.rio_marker_biodiversity   || "not_targeted",
-      rio_marker_desertification:project.rio_marker_desertification|| "not_targeted",
-      rio_marker_water:          project.rio_marker_water          || "not_targeted",
+      climate_marker: project.climate_marker || "",
     });
     setShowClassificationForm(true);
   }
@@ -587,17 +565,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       primary_sector: cForm.primary_sector ? Number(cForm.primary_sector) : null,
       contributing_sector_ids: cForm.contributing_sector_ids,
       sdg_ids: cForm.sdg_ids,
-      gender_marker: cForm.gender_marker || null,
-      implementation_modality: cForm.implementation_modality || null,
-      geographic_typology: cForm.geographic_typology || null,
-      fragility_status: cForm.fragility_status || null,
+      we_category: cForm.we_category || null,
       risk_rating: cForm.risk_rating || null,
-      cross_cutting_theme_ids: cForm.cross_cutting_theme_ids,
-      rio_marker_mitigation: cForm.rio_marker_mitigation,
-      rio_marker_adaptation: cForm.rio_marker_adaptation,
-      rio_marker_biodiversity: cForm.rio_marker_biodiversity,
-      rio_marker_desertification: cForm.rio_marker_desertification,
-      rio_marker_water: cForm.rio_marker_water,
+      climate_marker: cForm.climate_marker || null,
     });
   }
 
@@ -883,7 +853,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           logframeRows.length > 0,                              // Logframe
           (envelope?.financing_sources?.length || 0) > 0,       // Financial envelope
           partners.length > 0,                                  // Partners
-          (project.sdgs_detail?.length || 0) > 0 && !!project.gender_marker, // Classification
+          (project.sdgs_detail?.length || 0) > 0 && !!project.we_category, // Classification
           !!project.reporting_frequency,                        // Reporting
           !!project.pad_reference_url,                          // PAD document
           !!(project.start_date && project.end_date),           // Dates
@@ -1052,51 +1022,18 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="genderMarker">Gender Marker</label>
+                    <label className="field-label" htmlFor="weCategory">WE Category</label>
                     <Select
-                      id="genderMarker"
+                      id="weCategory"
                       placeholder="Select"
-                      options={classificationChoices?.gender_marker || []}
-                      value={cForm.gender_marker}
-                      onChange={(v) => setCForm({ ...cForm, gender_marker: v })}
+                      options={classificationChoices?.we_category || []}
+                      value={cForm.we_category}
+                      onChange={(v) => setCForm({ ...cForm, we_category: v })}
                     />
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="modality">Implementation Modality</label>
-                    <Select
-                      id="modality"
-                      placeholder="Select"
-                      options={classificationChoices?.implementation_modality || []}
-                      value={cForm.implementation_modality}
-                      onChange={(v) => setCForm({ ...cForm, implementation_modality: v })}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label" htmlFor="typology">Geographic Typology</label>
-                    <Select
-                      id="typology"
-                      placeholder="Select"
-                      options={classificationChoices?.geographic_typology || []}
-                      value={cForm.geographic_typology}
-                      onChange={(v) => setCForm({ ...cForm, geographic_typology: v })}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label" htmlFor="fragility">Fragility Status</label>
-                    <Select
-                      id="fragility"
-                      placeholder="Select"
-                      options={classificationChoices?.fragility_status || []}
-                      value={cForm.fragility_status}
-                      onChange={(v) => setCForm({ ...cForm, fragility_status: v })}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label" htmlFor="risk">Risk Rating</label>
+                    <label className="field-label" htmlFor="risk">Risk category</label>
                     <Select
                       id="risk"
                       placeholder="Select"
@@ -1107,32 +1044,14 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                   </div>
 
                   <div className="field">
-                    <label className="field-label" htmlFor="themes">Cross-Cutting Themes</label>
-                    <MultiSelect id="themes" placeholder="Search themes..."
-                      options={(classificationChoices?.cross_cutting_themes || []).map((c) => ({ value: c.value, label: c.label }))}
-                      value={cForm.cross_cutting_theme_ids}
-                      onChange={(v) => setCForm({ ...cForm, cross_cutting_theme_ids: v })} />
-                  </div>
-
-                  {/* Rio Markers */}
-                </div>
-
-                <div style={{ marginTop: "var(--s-3)" }}>
-                  <div className="card-sub" style={{ marginBottom: 8 }}>Rio Markers (OECD-DAC)</div>
-                  <div className="grid grid-2">
-                    {[
-                      ["rio_marker_mitigation",     "CC Mitigation"],
-                      ["rio_marker_adaptation",      "CC Adaptation"],
-                      ["rio_marker_biodiversity",    "Biodiversity"],
-                      ["rio_marker_desertification", "Desertification"],
-                      ["rio_marker_water",           "Water"],
-                    ].map(([key, label]) => (
-                      <div key={key} className="field">
-                        <label className="field-label" htmlFor={key}>{label}</label>
-                        <Select id={key} required options={RIO_MARKER_CHOICES} value={cForm[key]}
-                          onChange={(v) => setCForm({ ...cForm, [key]: v })} />
-                      </div>
-                    ))}
+                    <label className="field-label" htmlFor="climateMarker">Climate marker</label>
+                    <Select
+                      id="climateMarker"
+                      placeholder="Select"
+                      options={classificationChoices?.climate_marker || []}
+                      value={cForm.climate_marker}
+                      onChange={(v) => setCForm({ ...cForm, climate_marker: v })}
+                    />
                   </div>
                 </div>
 
@@ -1191,39 +1110,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     </div>
                   ) : "—"}
                 </Dt>
-                <Dt term="Gender Marker">{project.gender_marker_display || "—"}</Dt>
-                <Dt term="Modality">{project.implementation_modality_display || "—"}</Dt>
-                <Dt term="Geographic Typology">{project.geographic_typology_display || "—"}</Dt>
-                <Dt term="Cross-Cutting Themes">{project.cross_cutting_theme_names?.join(", ") || "—"}</Dt>
-                <Dt term="Fragility">{project.fragility_status_display || "—"}</Dt>
-                <Dt term="Risk Rating">{project.risk_rating_display || "—"}</Dt>
-              </div>
-
-              {/* Rio Markers */}
-              <div style={{ marginTop: 16 }}>
-                <div className="card-sub" style={{ marginBottom: 8 }}>Rio Markers (OECD-DAC)</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {[
-                    ["CC Mitigation",  project.rio_marker_mitigation],
-                    ["CC Adaptation",  project.rio_marker_adaptation],
-                    ["Biodiversity",   project.rio_marker_biodiversity],
-                    ["Desertification", project.rio_marker_desertification],
-                    ["Water",          project.rio_marker_water],
-                  ].map(([label, val]) => (
-                    <div key={label} style={{
-                      display: "flex", flexDirection: "column", alignItems: "center",
-                      padding: "6px 12px", borderRadius: 8, minWidth: 100,
-                      background: val === "principal" ? "#dcfce7" : val === "significant" ? "#f0f6dc" : "#f3f4f6",
-                      border: `1px solid ${val === "principal" ? "#86efac" : val === "significant" ? "#A4C53F40" : "#e5e7eb"}`,
-                    }}>
-                      <span style={{ fontSize: 10, color: "#6b7280", marginBottom: 2 }}>{label}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700,
-                        color: val === "principal" ? "#16a34a" : val === "significant" ? "#7a9420" : "#9ca3af" }}>
-                        {val === "principal" ? "Principal" : val === "significant" ? "Significant" : "Not targeted"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <Dt term="WE Category">{project.we_category_display || "—"}</Dt>
+                <Dt term="Risk category">{project.risk_rating_display || "—"}</Dt>
+                <Dt term="Climate marker">{project.climate_marker_display || "—"}</Dt>
               </div>
               </>
             )}

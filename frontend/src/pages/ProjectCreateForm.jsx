@@ -14,42 +14,6 @@ const STEPS = [
   { id: 3, label: "Confirm" },
 ];
 
-const GENDER_MARKER_CHOICES = [
-  { value: "0", label: "Category 0 — Not targeted" },
-  { value: "1", label: "Category 1 — Significant"  },
-  { value: "2", label: "Category 2 — Principal"    },
-];
-const RIO_CHOICES = [
-  { value: "not_targeted", label: "Not targeted" },
-  { value: "significant",  label: "Significant"  },
-  { value: "principal",    label: "Principal"     },
-];
-const FRAGILITY_CHOICES = [
-  { value: "fcv",     label: "FCV"     },
-  { value: "pre_fcv", label: "Pre-FCV" },
-  { value: "stable",  label: "Stable"  },
-];
-const RISK_CHOICES = [
-  { value: "low",          label: "Low"          },
-  { value: "moderate",     label: "Moderate"      },
-  { value: "substantial",  label: "Substantial"   },
-  { value: "high",         label: "High"          },
-];
-const MODALITY_CHOICES = [
-  { value: "direct",         label: "Direct"         },
-  { value: "country_systems",label: "Country systems" },
-  { value: "ngo",            label: "NGO"             },
-  { value: "private",        label: "Private"         },
-  { value: "multi_actor",    label: "Multi-actor"     },
-  { value: "hybrid",         label: "Hybrid"          },
-];
-const GEO_CHOICES = [
-  { value: "urban",               label: "Urban"               },
-  { value: "peri_urban",          label: "Peri-urban"          },
-  { value: "rural",               label: "Rural"               },
-  { value: "remote",              label: "Remote"              },
-  { value: "mixed_multi_district",label: "Mixed / multi-district" },
-];
 const FREQ_CHOICES = [
   { value: "monthly",     label: "Monthly"     },
   { value: "quarterly",   label: "Quarterly"   },
@@ -58,6 +22,7 @@ const FREQ_CHOICES = [
 ];
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
+const labelOf = (choices, value) => (choices || []).find((c) => c.value === value)?.label || "—";
 // onChange receives the value itself (Select), not an event.
 function FieldSelect({ id, label, required, value, onChange, choices, placeholder }) {
   return (
@@ -130,11 +95,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
     contributingSectorIds: [], lifecycle_stage: "concept_note",
     // Step 2
     sdgIds: [],
-    gender_marker: "", implementation_modality: "", geographic_typology: "",
-    fragility_status: "", risk_rating: "", cross_cutting_theme_ids: [],
-    rio_marker_mitigation: "not_targeted", rio_marker_adaptation: "not_targeted",
-    rio_marker_biodiversity: "not_targeted", rio_marker_desertification: "not_targeted",
-    rio_marker_water: "not_targeted",
+    we_category: "", risk_rating: "", climate_marker: "",
     // Step 3
     budget_amount: "",
     // Step 4
@@ -145,7 +106,12 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   const { data: countries   } = useQuery({ queryKey: ["countries"],  queryFn: () => apiFetch("/api/reference/countries/")  });
   const { data: sectors     } = useQuery({ queryKey: ["sectors"],    queryFn: () => apiFetch("/api/reference/sectors/")    });
   const { data: sdgs        } = useQuery({ queryKey: ["sdgs"],       queryFn: () => apiFetch("/api/reference/sdgs/")       });
-  const { data: themes      } = useQuery({ queryKey: ["ref","cross_cutting_themes"], queryFn: () => apiFetch("/api/reference/cross-cutting-themes/") });
+  // Same source (and query key) as the Classification form in ProjectDetail:
+  // the vocabularies live in the backend only.
+  const { data: classificationChoices } = useQuery({
+    queryKey: ["classification-choices"],
+    queryFn: () => apiFetch("/api/projects/classification-choices/"),
+  });
 
   /* ── Helpers champ ── */
   const set = (k, v) => setF((f) => ({ ...f, [k]: v }));
@@ -206,17 +172,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
       // 2. Enregistrer la classification (étape 2) en PATCH
       await apiFetch(`/api/projects/${pid}/`, { method: "PATCH", body: JSON.stringify({
-        gender_marker: f.gender_marker || null,
-        implementation_modality: f.implementation_modality || null,
-        geographic_typology: f.geographic_typology || null,
-        fragility_status: f.fragility_status || null,
+        we_category: f.we_category || null,
         risk_rating: f.risk_rating || null,
-        cross_cutting_theme_ids: f.cross_cutting_theme_ids,
-        rio_marker_mitigation: f.rio_marker_mitigation,
-        rio_marker_adaptation: f.rio_marker_adaptation,
-        rio_marker_biodiversity: f.rio_marker_biodiversity,
-        rio_marker_desertification: f.rio_marker_desertification,
-        rio_marker_water: f.rio_marker_water,
+        climate_marker: f.climate_marker || null,
       })});
 
       qc.invalidateQueries({ queryKey: ["projects"] });
@@ -332,43 +290,14 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                   value={f.contributingSectorIds} onChange={(v) => set("contributingSectorIds", v)} />
               </div>
 
-              <FieldSelect id="genderMarker" label="Gender Marker" value={f.gender_marker}
-                onChange={(v) => set("gender_marker", v)} choices={GENDER_MARKER_CHOICES} />
+              <FieldSelect id="weCategory" label="WE Category" value={f.we_category}
+                onChange={(v) => set("we_category", v)} choices={classificationChoices?.we_category || []} />
 
-              <FieldSelect id="modality" label="Implementation Modality" value={f.implementation_modality}
-                onChange={(v) => set("implementation_modality", v)} choices={MODALITY_CHOICES} />
+              <FieldSelect id="risk" label="Risk category" value={f.risk_rating}
+                onChange={(v) => set("risk_rating", v)} choices={classificationChoices?.risk_rating || []} />
 
-              <FieldSelect id="geoTypo" label="Geographic Typology" value={f.geographic_typology}
-                onChange={(v) => set("geographic_typology", v)} choices={GEO_CHOICES} />
-
-              <FieldSelect id="fragility" label="Fragility Status" value={f.fragility_status}
-                onChange={(v) => set("fragility_status", v)} choices={FRAGILITY_CHOICES} />
-
-              <FieldSelect id="risk" label="Risk Rating" value={f.risk_rating}
-                onChange={(v) => set("risk_rating", v)} choices={RISK_CHOICES} />
-
-              <div className="field">
-                <label className="field-label" htmlFor="themes">Cross-Cutting Themes</label>
-                <MultiSelect id="themes" placeholder="Search themes..."
-                  options={(themes || []).map((t) => ({ value: t.id, label: t.name }))}
-                  value={f.cross_cutting_theme_ids} onChange={(v) => set("cross_cutting_theme_ids", v)} />
-              </div>
-            </div>
-
-            <div style={{ marginTop: "var(--s-3)" }}>
-              <div className="card-sub" style={{ marginBottom: 8 }}>Rio Markers (OECD-DAC)</div>
-              <div className="grid grid-2">
-                {[
-                  ["rio_marker_mitigation",     "CC Mitigation"],
-                  ["rio_marker_adaptation",      "CC Adaptation"],
-                  ["rio_marker_biodiversity",    "Biodiversity"],
-                  ["rio_marker_desertification", "Desertification"],
-                  ["rio_marker_water",           "Water"],
-                ].map(([key, label]) => (
-                  <FieldSelect key={key} id={key} label={label} value={f[key]}
-                    onChange={(v) => set(key, v)} choices={RIO_CHOICES} />
-                ))}
-              </div>
+              <FieldSelect id="climateMarker" label="Climate marker" value={f.climate_marker}
+                onChange={(v) => set("climate_marker", v)} choices={classificationChoices?.climate_marker || []} />
             </div>
           </div>
         </div>
@@ -420,49 +349,12 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
                 <Icon name="layers" size={12} style={{ color: "#A4C53F" }} /> Classification & Alignment
               </div>
               <div className="dl">
-                <div><div className="dl-term">Gender marker</div>
-                  <div className="dl-desc">{GENDER_MARKER_CHOICES.find(c => c.value === f.gender_marker)?.label || "—"}</div></div>
-                <div><div className="dl-term">Implementation modality</div>
-                  <div className="dl-desc">{MODALITY_CHOICES.find(c => c.value === f.implementation_modality)?.label || "—"}</div></div>
-                <div><div className="dl-term">Geographic typology</div>
-                  <div className="dl-desc">{GEO_CHOICES.find(c => c.value === f.geographic_typology)?.label || "—"}</div></div>
-                <div><div className="dl-term">Fragility status</div>
-                  <div className="dl-desc">{FRAGILITY_CHOICES.find(c => c.value === f.fragility_status)?.label || "—"}</div></div>
-                <div><div className="dl-term">Risk rating</div>
-                  <div className="dl-desc">{RISK_CHOICES.find(c => c.value === f.risk_rating)?.label || "—"}</div></div>
-                {f.cross_cutting_theme_ids.length > 0 && (
-                  <div><div className="dl-term">Cross-cutting themes</div>
-                    <div className="dl-desc">{(themes || []).filter(t => f.cross_cutting_theme_ids.map(Number).includes(t.id)).map(t => t.name).join(", ") || "—"}</div></div>
-                )}
-              </div>
-            </div>
-
-            {/* Rio Markers */}
-            <div style={{ marginBottom: 20, paddingTop: 16, borderTop: "1px solid #f0f0ee" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase",
-                letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <Icon name="globe" size={12} style={{ color: "#A4C53F" }} /> Rio Markers (OECD-DAC)
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {[
-                  ["CC Mitigation",  f.rio_marker_mitigation],
-                  ["CC Adaptation",  f.rio_marker_adaptation],
-                  ["Biodiversity",   f.rio_marker_biodiversity],
-                  ["Desertification",f.rio_marker_desertification],
-                  ["Water",          f.rio_marker_water],
-                ].map(([label, val]) => (
-                  <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center",
-                    padding: "6px 12px", borderRadius: 8,
-                    background: val === "principal" ? "#dcfce7" : val === "significant" ? "#f0f6dc" : "#f3f4f6",
-                    border: `1px solid ${val === "principal" ? "#86efac" : val === "significant" ? "#A4C53F40" : "#e5e7eb"}`,
-                    minWidth: 100 }}>
-                    <span style={{ fontSize: 10, color: "#6b7280", marginBottom: 2 }}>{label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700,
-                      color: val === "principal" ? "#16a34a" : val === "significant" ? "#7a9420" : "#9ca3af" }}>
-                      {val === "principal" ? "Principal" : val === "significant" ? "Significant" : "Not targeted"}
-                    </span>
-                  </div>
-                ))}
+                <div><div className="dl-term">WE Category</div>
+                  <div className="dl-desc">{labelOf(classificationChoices?.we_category, f.we_category)}</div></div>
+                <div><div className="dl-term">Risk category</div>
+                  <div className="dl-desc">{labelOf(classificationChoices?.risk_rating, f.risk_rating)}</div></div>
+                <div><div className="dl-term">Climate marker</div>
+                  <div className="dl-desc">{labelOf(classificationChoices?.climate_marker, f.climate_marker)}</div></div>
               </div>
             </div>
 

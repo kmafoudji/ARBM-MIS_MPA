@@ -989,7 +989,6 @@ class PortfolioAggregationView(APIView):
         chain_level = request.query_params.get("chain_level")
         country_id  = request.query_params.get("country")
         donor_id    = request.query_params.get("donor")
-        fragility   = request.query_params.get("fragility")
         rag_filter  = request.query_params.get("rag")
 
         # Projets Effective uniquement (workspace actif), dans le perimetre
@@ -1011,8 +1010,6 @@ class PortfolioAggregationView(APIView):
             projects = projects.filter(
                 financial_envelope__sources__donor_id=donor_id
             ).distinct()
-        if fragility:
-            projects = projects.filter(fragility_status=fragility)
 
         project_ids = list(projects.values_list("id", flat=True))
 
@@ -1196,7 +1193,6 @@ class PortfolioAggregationView(APIView):
                 "chain_level": chain_level,
                 "country":     country_id,
                 "donor":       donor_id,
-                "fragility":   fragility,
                 "rag":         rag_filter,
             },
             "indicators": result,

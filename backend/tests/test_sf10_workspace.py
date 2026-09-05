@@ -17,11 +17,8 @@ def make_effective_project():
     sdg = SdgFactory(number=2)
     project = ProjectFactory(
         lifecycle_stage="effective",  # forcé directement en base
-        gender_marker="1",
-        implementation_modality="direct",
-        geographic_typology="rural",
-        fragility_status="stable",
-        risk_rating="low",
+        we_category="WE001",
+        risk_rating="tbd",
         start_date=date(2026, 1, 1),
         end_date=date(2029, 12, 31),
     )
@@ -109,11 +106,8 @@ class TestGenerateWorkspace:
         sdg = SdgFactory(number=4)
         project = ProjectFactory(
             lifecycle_stage="effective",
-            gender_marker="1",
-            implementation_modality="direct",
-            geographic_typology="rural",
-            fragility_status="stable",
-            risk_rating="low",
+            we_category="WE001",
+            risk_rating="tbd",
             start_date=date(2026, 1, 1),
             end_date=None,
             reporting_frequency="quarterly",

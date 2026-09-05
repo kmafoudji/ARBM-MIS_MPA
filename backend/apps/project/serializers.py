@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.identity.models import AppUser
-from apps.reference.models import Country, CrossCuttingTheme, Sdg, Sector
+from apps.reference.models import Country, Sdg, Sector
 
 from .models import (
     LIFECYCLE_STAGE_CHOICES,
@@ -178,17 +178,9 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     # SF-2 — labels lisibles (le front n'affichait que le code brut, ex.
     # "2" au lieu de "Categorie 2 - Principal")
-    gender_marker_display = serializers.CharField(source="get_gender_marker_display", read_only=True)
-    implementation_modality_display = serializers.CharField(
-        source="get_implementation_modality_display", read_only=True
-    )
-    geographic_typology_display = serializers.CharField(
-        source="get_geographic_typology_display", read_only=True
-    )
-    fragility_status_display = serializers.CharField(source="get_fragility_status_display", read_only=True)
+    we_category_display = serializers.CharField(source="get_we_category_display", read_only=True)
     risk_rating_display = serializers.CharField(source="get_risk_rating_display", read_only=True)
-    cross_cutting_theme_ids = serializers.SerializerMethodField()
-    cross_cutting_theme_names = serializers.SerializerMethodField()
+    climate_marker_display = serializers.CharField(source="get_climate_marker_display", read_only=True)
     pad_reference_url = serializers.SerializerMethodField()
     pad_reference_name = serializers.SerializerMethodField()
     reporting_frequency_display = serializers.CharField(
@@ -216,14 +208,9 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             "primary_sector", "primary_sector_name", "primary_sector_icon", "primary_sector_color",
             "contributing_sectors_detail",
             "sdgs_detail",
-            "gender_marker", "gender_marker_display",
-            "implementation_modality", "implementation_modality_display",
-            "geographic_typology", "geographic_typology_display",
-            "fragility_status", "fragility_status_display",
+            "we_category", "we_category_display",
             "risk_rating", "risk_rating_display",
-            "cross_cutting_theme_ids", "cross_cutting_theme_names",
-            "rio_marker_mitigation", "rio_marker_adaptation",
-            "rio_marker_biodiversity", "rio_marker_desertification", "rio_marker_water",
+            "climate_marker", "climate_marker_display",
             "has_workspace", "toc_node_count",
             "pad_reference_url", "pad_reference_name",
             "reporting_frequency", "reporting_frequency_display", "next_reporting_due",
@@ -277,12 +264,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             for s in obj.sdgs.all()
         ]
 
-    def get_cross_cutting_theme_ids(self, obj):
-        return list(obj.cross_cutting_themes.values_list("id", flat=True))
-
-    def get_cross_cutting_theme_names(self, obj):
-        return [t.name for t in obj.cross_cutting_themes.all()]
-
     def get_pad_reference_url(self, obj):
         return obj.pad_reference_file.url if obj.pad_reference_file else None
 
@@ -293,19 +274,14 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
     """
     SF-2 — ecriture de la classification strategique complete : secteurs
-    (primaire + contributifs), ODD (un seul ensemble, ADR 0006) et les 5
-    champs a choix unique. Secteurs contributifs et ODD passent par
-    set_project_sectors()/set_project_sdgs() (meme validation qu'a la
-    creation : le secteur primaire ne peut pas doubler en contributif) — PAS
-    par l'assignation M2M par defaut de DRF, qui ne sait pas appliquer cette
-    regle. cross_cutting_themes, seul M2M ici sans
-    through model, reste sur l'assignation standard.
+    (primaire + contributifs), ODD (un seul ensemble, ADR 0006) et les 3
+    champs a choix unique (categorie WE, risque, marqueur climat). Secteurs
+    contributifs et ODD passent par set_project_sectors()/set_project_sdgs()
+    (meme validation qu'a la creation : le secteur primaire ne peut pas
+    doubler en contributif) — PAS par l'assignation M2M par defaut de DRF,
+    qui ne sait pas appliquer cette regle.
     """
 
-    cross_cutting_theme_ids = serializers.PrimaryKeyRelatedField(
-        queryset=CrossCuttingTheme.objects.all(), many=True, required=False,
-        source="cross_cutting_themes",
-    )
     contributing_sector_ids = serializers.PrimaryKeyRelatedField(
         queryset=Sector.objects.all(), many=True, required=False, write_only=True
     )
@@ -319,10 +295,7 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
             "name", "acronym", "budget_amount",
             "primary_sector", "contributing_sector_ids",
             "sdg_ids",
-            "gender_marker", "implementation_modality", "geographic_typology",
-            "fragility_status", "risk_rating", "cross_cutting_theme_ids",
-            "rio_marker_mitigation", "rio_marker_adaptation",
-            "rio_marker_biodiversity", "rio_marker_desertification", "rio_marker_water",
+            "we_category", "risk_rating", "climate_marker",
         ]
 
     def update(self, instance, validated_data):
