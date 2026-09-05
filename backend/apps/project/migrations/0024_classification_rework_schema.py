@@ -1,4 +1,5 @@
-# Classification rework (SF-2), 5 September 2026: the OECD gender marker becomes
+# Classification rework (SF-2), step 2 of 2 — schema, 5 September 2026:
+# the OECD gender marker becomes
 # the WE category, risk rating and the new climate marker get a single
 # "to be defined" value, and the fields the fund does not track are dropped
 # (Rio markers, implementation modality, geographic typology, fragility
@@ -7,22 +8,13 @@
 from django.db import migrations, models
 
 
-def clear_remapped_values(apps, schema_editor):
-    """Old gender-marker and risk-rating values have no counterpart in the
-    new vocabularies: null them rather than keep invalid choices."""
-    Project = apps.get_model("project", "Project")
-    Project.objects.exclude(gender_marker__isnull=True).update(gender_marker=None)
-    Project.objects.exclude(risk_rating__isnull=True).update(risk_rating=None)
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("project", "0022_project_reporting_frequency_monthly"),
+        ("project", "0023_classification_rework_data"),
     ]
 
     operations = [
-        migrations.RunPython(clear_remapped_values, migrations.RunPython.noop),
         migrations.RenameField(
             model_name="project", old_name="gender_marker", new_name="we_category",
         ),
