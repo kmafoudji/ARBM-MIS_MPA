@@ -4,6 +4,9 @@
    (.dev-notes/style/design.md): charcoal + Growth Green, six-color
    accent palette with fixed sector/status mappings, Inter only,
    flat cards, no shadows. Token names (--lime…) predate the remap.
+   Type scale, weights and surfaces follow the POC mockups
+   (.dev-notes/style/mockups/): compact sizes, weights 700-800 for
+   everything that carries hierarchy, white cards on a warm grey page.
    ============================================================ */
 :root {
   /* Brand LLF — Growth Green #0EB584 (L0); dark shades derived for
@@ -24,7 +27,7 @@
   --paper:       #FFFFFF; /* bg.light */
   --surface:     #FAFAFA; /* card.fill */
   --surface-2:   #F7F6F6; /* bg.panel */
-  --rule:        #EFEFEF; /* card.border */
+  --rule:        #ECEBE8; /* card.border (mockup) */
   --rule-soft:   #F7F6F6;
   --sidebar:     #2B2B2B; /* bg.dark */
 
@@ -62,7 +65,7 @@
   --s-0: 4px; --s-1: 8px; --s-2: 12px; --s-3: 16px;
   --s-4: 24px; --s-5: 32px; --s-6: 48px; --s-7: 64px;
 
-  --r-1: 4px; --r-2: 8px; --r-3: 8px; --r-4: 12px;
+  --r-1: 4px; --r-2: 9px; --r-3: 12px; --r-4: 12px;
 
   /* No drop shadows anywhere (design.md §4.2) */
   --shadow-1: none;
@@ -75,9 +78,9 @@ html, body, #root { margin: 0; padding: 0; min-height: 100%; }
 body {
   font-family: var(--font-body);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.35;
   color: var(--ink);
-  background: var(--paper);
+  background: var(--surface-2);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11", "ss01", "ss03";
 }
@@ -184,7 +187,7 @@ input, select, textarea { font: inherit; color: inherit; }
   padding: 9px var(--s-2);
   border-radius: var(--r-2);
   color: rgba(255,255,255,0.78);
-  font-weight: 450;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.12s ease;
   margin-bottom: 1px;
@@ -198,10 +201,10 @@ input, select, textarea { font: inherit; color: inherit; }
 .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
 .nav-item.active {
   background: var(--lime);
-  color: var(--lime-darker);
-  font-weight: 500;
+  color: white;
+  font-weight: 700;
 }
-.nav-item.active .nav-icon { color: var(--lime-darker); }
+.nav-item.active .nav-icon { color: white; }
 .nav-icon {
   width: 16px; height: 16px;
   flex-shrink: 0;
@@ -217,7 +220,7 @@ input, select, textarea { font: inherit; color: inherit; }
   padding: 1px 6px;
   border-radius: 100px;
 }
-.nav-item.active .nav-badge { background: rgba(15,26,30,0.15); color: var(--lime-darker); }
+.nav-item.active .nav-badge { background: rgba(255,255,255,0.2); color: white; }
 
 .sidebar-footer { padding: var(--s-3); border-top: 1px solid rgba(255,255,255,0.08); }
 
@@ -401,8 +404,8 @@ input, select, textarea { font: inherit; color: inherit; }
 
 /* Views */
 .view {
-  padding: var(--s-5);
-  max-width: 1280px;
+  padding: var(--s-4) var(--s-5) var(--s-6);
+  max-width: 1560px;
   width: 100%;
   margin: 0 auto;
 }
@@ -414,35 +417,35 @@ input, select, textarea { font: inherit; color: inherit; }
 .view-header { margin-bottom: var(--s-5); }
 .view-eyebrow {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--lime-dark);
+  color: var(--green);
   margin-bottom: var(--s-1);
 }
 .view-title {
   font-family: var(--font-display);
-  font-weight: 300; /* titles are Inter Light (design.md §3.3) */
-  font-size: 30px;
-  letter-spacing: 0;
+  font-weight: 800; /* mockup: bold titles anchor the hierarchy */
+  font-size: 26px;
+  letter-spacing: -0.3px;
   color: var(--ink);
   margin: 0 0 var(--s-1);
   line-height: 1.15;
 }
 .view-lead {
-  font-size: 15px;
-  color: var(--muted);
+  font-size: 13px;
+  color: var(--ink-soft);
   max-width: 720px;
-  line-height: 1.55;
+  line-height: 1.5;
   margin: 0;
 }
 
 /* Cards */
 .card {
-  background: var(--surface);
+  background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: var(--r-3);
-  padding: var(--s-4);
+  padding: 18px 20px;
   box-shadow: var(--shadow-1);
 }
 .card-flush { padding: 0; }
@@ -460,13 +463,13 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .card-title {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 800;
   font-size: 15px;
   color: var(--ink);
   margin: 0;
   letter-spacing: -0.005em;
 }
-.card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.card-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 .card-body { padding: var(--s-4); }
 @media (max-width: 600px) {
   .card-body { padding: var(--s-3); }
@@ -490,15 +493,17 @@ input, select, textarea { font: inherit; color: inherit; }
 .mb-3 { margin-bottom: var(--s-3); } .mb-4 { margin-bottom: var(--s-4); }
 .mb-5 { margin-bottom: var(--s-5); }
 
+.section-title { font-size: 13px; font-weight: 800; color: var(--ink); }
 .label-eyebrow {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
 .text-muted { color: var(--muted); }
 .text-mono { font-family: var(--font-mono); }
+.code-ref { font-family: var(--font-mono); font-weight: 700; color: var(--green); letter-spacing: 0.04em; }
 .text-sm { font-size: 12px; }
 .text-xs { font-size: 11px; }
 .text-display { font-family: var(--font-display); }
@@ -511,11 +516,11 @@ input, select, textarea { font: inherit; color: inherit; }
   gap: 6px;
   padding: 8px 14px;
   border-radius: var(--r-2);
-  border: 1px solid var(--rule);
-  background: var(--surface);
+  border: 1px solid var(--subtle);
+  background: var(--paper);
   color: var(--ink);
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 12.5px;
   cursor: pointer;
   transition: all 0.12s ease;
   font-family: var(--font-body);
@@ -524,9 +529,9 @@ input, select, textarea { font: inherit; color: inherit; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary {
   background: var(--lime);
-  color: var(--lime-darker);
+  color: white;
   border-color: var(--lime);
-  font-weight: 600;
+  font-weight: 700;
 }
 .btn-primary:hover:not(:disabled) { background: var(--lime-dark); color: white; border-color: var(--lime-dark); }
 .btn-dark { background: var(--ink); color: white; border-color: var(--ink); }
@@ -781,7 +786,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .table th {
   text-align: left;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -818,7 +823,7 @@ input, select, textarea { font: inherit; color: inherit; }
 @media (max-width: 700px) { .dl { grid-template-columns: 1fr; } }
 .dl-term {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -865,8 +870,8 @@ input, select, textarea { font: inherit; color: inherit; }
 .phase-marker { display: inline-flex; }
 .phase-done .phase-marker { color: var(--lime); }
 .phase-pending { color: var(--muted); opacity: 0.6; }
-.phase-current .phase-label { font-weight: 600; }
-.phase-date { font-size: 11px; color: var(--muted); }
+.phase-current .phase-label { font-weight: 800; }
+.phase-date { font-size: 11px; color: var(--muted); font-weight: 700; }
 .phase-doc { display: inline-flex; justify-content: center; color: var(--ink, inherit); }
 .timeline-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .timeline-note {

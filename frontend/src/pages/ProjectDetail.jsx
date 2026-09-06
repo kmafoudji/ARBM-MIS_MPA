@@ -217,7 +217,7 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
 
   return (
     <div style={{ marginBottom: "var(--s-4)" }}>
-      <div className="text-sm" style={{ fontWeight: 600, marginBottom: "var(--s-2)" }}>
+      <div className="section-title" style={{ marginBottom: "var(--s-2)" }}>
         Stages
       </div>
       <ol className="phase-list">
@@ -1489,7 +1489,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             <LifecyclePhaseList project={project} transitions={transitions} stageChoices={stageChoices} />
           )}
 
-          <div className="text-sm" style={{ fontWeight: 600, marginBottom: "var(--s-2)" }}>
+          <div className="section-title" style={{ marginBottom: "var(--s-2)" }}>
             Audit trail
           </div>
           {transitions?.length === 0 && (
