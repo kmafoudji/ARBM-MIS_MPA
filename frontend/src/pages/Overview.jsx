@@ -55,18 +55,28 @@ function Bar({ pct, color }) {
 }
 
 /* ── Badge étape ────────────────────────────────────────────────────────── */
+// Short labels for the dashboard pill (the mockup abbreviates the same way);
+// the full stage name stays in the tooltip.
+const STAGE_SHORT = {
+  pipeline_taskforce_review: "Pipeline TF Review",
+  pipeline_taskforce_approved: "Pipeline TF Approved",
+  preparation_identification: "Preparation",
+  substantially_complete: "Subst. Complete",
+  mid_term_review: "Mid-Term Review",
+};
+
 function StagePill({ stage }) {
   const phase = STAGE_PHASE[stage] || "exception";
   const { color, label } = PHASE_META[phase] || {};
   const slug = stage?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "—";
   return (
-    <span style={{
+    <span title={slug} style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      fontSize: 11, fontWeight: 600, padding: "2px 8px",
-      borderRadius: 99, background: color + "22", color: color,
+      fontSize: 11, fontWeight: 700, padding: "2px 8px",
+      borderRadius: 99, background: color + "22", color: color, whiteSpace: "nowrap",
     }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      {slug}
+      {STAGE_SHORT[stage] || slug}
     </span>
   );
 }
@@ -262,7 +272,7 @@ export default function Overview({ user, onProjectClick }) {
                 <thead>
                   <tr>
                     <th>Project</th>
-                    <th style={{ width: 200, textAlign: "right" }}>Stage · Budget</th>
+                    <th style={{ width: 220, textAlign: "right" }}>Stage · Budget</th>
                   </tr>
                 </thead>
                 <tbody>
