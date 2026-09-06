@@ -197,8 +197,8 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   return (
     <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
       border: "1px solid #e5e7eb",
-      // compact: fill whatever height the parent flex column gives us
-      ...(compact ? { flex: 1, minHeight: 320, display: "flex" } : {}) }}>
+      // compact: fixed dashboard height so the row does not stretch with its neighbour
+      ...(compact ? { height: 320, display: "flex" } : {}) }}>
 
       {/* Style overrides for native MapLibre controls */}
       <style>{`
@@ -253,7 +253,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         </div>
       )}
 
-      <div ref={mapRef} style={compact ? { flex: 1, width: "100%" } : { height: 520, width: "100%" }} />
+      <div ref={mapRef} style={compact ? { height: "100%", width: "100%" } : { height: 520, width: "100%" }} />
 
       {/* Attribution */}
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,

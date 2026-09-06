@@ -258,33 +258,33 @@ export default function Overview({ user, onProjectClick }) {
           </div>
           {recentProjects.length === 0
             ? <div className="empty"><div className="empty-title">No projects yet</div></div>
-            : <div className="table-wrap"><table className="table">
+            : <div className="table-wrap"><table className="table" style={{ tableLayout: "fixed", minWidth: 0 }}>
                 <thead>
                   <tr>
                     <th>Project</th>
-                    <th style={{ width: 140 }}>Sector</th>
-                    <th style={{ width: 120 }}>Stage</th>
-                    <th style={{ width: 90, textAlign: "right" }}>Budget</th>
+                    <th style={{ width: 200, textAlign: "right" }}>Stage · Budget</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentProjects.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: 700, fontSize: 13 }}>
-                        <div>{p.name}</div>
-                        <div className="text-xs text-muted">{p.country_names?.slice(0, 2).join(", ")}</div>
-                      </td>
-                      <td>
-                        {p.primary_sector_name
-                          ? <span className="badge badge-lime" style={{ fontSize: 10, whiteSpace: "normal", lineHeight: 1.2 }}>{p.primary_sector_name}</span>
-                          : <span className="text-muted">—</span>}
-                      </td>
-                      <td><StagePill stage={p.lifecycle_stage} /></td>
-                      <td className="text-mono text-xs" style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        {p.budget_amount ? fmt(Number(p.budget_amount)) : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {recentProjects.map(p => {
+                    const meta = [p.country_names?.slice(0, 2).join(", "), p.primary_sector_name].filter(Boolean).join(" · ");
+                    return (
+                      <tr key={p.id}>
+                        <td style={{ minWidth: 0 }}>
+                          <div title={p.name} style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                          <div className="text-xs text-muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+                            <StagePill stage={p.lifecycle_stage} />
+                            <span className="text-mono text-xs" style={{ minWidth: 56, textAlign: "right" }}>
+                              {p.budget_amount ? fmt(Number(p.budget_amount)) : "—"}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table></div>
           }
