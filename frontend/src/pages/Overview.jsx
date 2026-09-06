@@ -262,25 +262,25 @@ export default function Overview({ user, onProjectClick }) {
                 <thead>
                   <tr>
                     <th>Project</th>
-                    <th style={{ width: 80 }}>Sector</th>
-                    <th style={{ width: 130 }}>Stage</th>
+                    <th style={{ width: 140 }}>Sector</th>
+                    <th style={{ width: 120 }}>Stage</th>
                     <th style={{ width: 90, textAlign: "right" }}>Budget</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentProjects.map(p => (
                     <tr key={p.id}>
-                      <td style={{ fontWeight: 500, fontSize: 13 }}>
+                      <td style={{ fontWeight: 700, fontSize: 13 }}>
                         <div>{p.name}</div>
                         <div className="text-xs text-muted">{p.country_names?.slice(0, 2).join(", ")}</div>
                       </td>
                       <td>
                         {p.primary_sector_name
-                          ? <span className="badge badge-lime" style={{ fontSize: 10 }}>{p.primary_sector_name}</span>
+                          ? <span className="badge badge-lime" style={{ fontSize: 10, whiteSpace: "normal", lineHeight: 1.2 }}>{p.primary_sector_name}</span>
                           : <span className="text-muted">—</span>}
                       </td>
                       <td><StagePill stage={p.lifecycle_stage} /></td>
-                      <td className="text-mono text-xs" style={{ textAlign: "right" }}>
+                      <td className="text-mono text-xs" style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                         {p.budget_amount ? fmt(Number(p.budget_amount)) : "—"}
                       </td>
                     </tr>
