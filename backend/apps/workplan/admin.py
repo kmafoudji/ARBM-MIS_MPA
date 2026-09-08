@@ -22,7 +22,7 @@ class ActivityInline(admin.TabularInline):
 class WorkplanComponentAdmin(admin.ModelAdmin):
     list_display  = ("code", "name", "project", "order", "is_active")
     list_filter   = ("project", "is_active")
-    search_fields = ("code", "name", "project__code")
+    search_fields = ("code", "name", "project__official_reference_number")
     inlines       = [WorkplanSubComponentInline]
 
 
@@ -54,7 +54,7 @@ class ActivityAdmin(admin.ModelAdmin):
         "planned_start", "planned_end", "revised_end", "is_overdue", "is_active",
     )
     list_filter   = ("status", "is_critical_path", "requires_evidence", "is_active")
-    search_fields = ("code", "name", "sub_component__component__project__code")
+    search_fields = ("code", "name", "sub_component__component__project__official_reference_number")
     readonly_fields = ("baseline_start", "baseline_end", "created_at", "updated_at")
     inlines       = [MilestoneInline, DelayLogInline]
 

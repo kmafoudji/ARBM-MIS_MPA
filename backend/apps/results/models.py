@@ -689,9 +689,9 @@ EVIDENCE_STATUS_CHOICES = [
 
 
 def evidence_upload_path(instance, filename):
-    """Chemin de stockage : evidence/<project_code>/<indicator_code>/<filename>"""
+    """Chemin de stockage : evidence/<reference projet>/<indicator_code>/<filename>"""
     rd  = instance.results_data
-    prj = rd.logframe_row.project.code
+    prj = rd.logframe_row.project.official_reference_number or rd.logframe_row.project_id
     ind = rd.logframe_row.indicator.code
     return f"evidence/{prj}/{ind}/{filename}"
 

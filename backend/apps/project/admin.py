@@ -31,14 +31,14 @@ class ProjectStageTransitionInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "primary_sector", "lifecycle_stage", "created_by")
+    list_display = ("official_reference_number", "name", "primary_sector", "lifecycle_stage", "created_by")
     list_filter = ("lifecycle_stage", "primary_sector", "we_category", "risk_rating")
-    search_fields = ("code", "name", "official_reference_number")
+    search_fields = ("name", "official_reference_number")
     inlines = [ProjectCountryInline, ProjectSectorInline, ProjectSdgInline, ProjectStageTransitionInline]
     fieldsets = (
         ("Identite de base (SF-1 Etape 1)", {
             "fields": (
-                "name", "code", "official_reference_number", "investment_cycle",
+                "name", "official_reference_number", "investment_cycle",
                 "pad_reference_file",
                 "lifecycle_stage",
             )

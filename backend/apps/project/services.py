@@ -102,21 +102,7 @@ def set_project_countries(project, country_ids, lead_country_id):
             for cid in country_ids
         ]
     )
-    project.code = generate_project_code(project)
-    project.save(update_fields=["code"])
     return project
-
-
-def generate_project_code(project):
-    """Code interne unique : <ISO3 pays chef de file>-<sequence 4 chiffres> (POL-1.05)."""
-    lead = project.lead_country
-    prefix = lead.iso3 if lead else "XXX"
-    existing = Project.objects.filter(code__startswith=f"{prefix}-").exclude(pk=project.pk).count()
-    candidate = f"{prefix}-{existing + 1:04d}"
-    while Project.objects.filter(code=candidate).exclude(pk=project.pk).exists():
-        existing += 1
-        candidate = f"{prefix}-{existing + 1:04d}"
-    return candidate
 
 
 def _stage_index(stage_code):

@@ -21,7 +21,6 @@ from apps.project.models import (
     ProjectImplementingPartner,
 )
 from apps.project.services import (
-    generate_project_code,
     generate_reporting_periods,
     generate_workspace,
 )
@@ -136,10 +135,6 @@ def _apply_project(context):
         sdg = Sdg.objects.filter(number=number).first()
         if sdg is not None:
             project.sdgs.add(sdg)
-
-    if not project.code:
-        project.code = generate_project_code(project)
-        project.save(update_fields=["code"])
 
 
 def _apply_envelope(context):

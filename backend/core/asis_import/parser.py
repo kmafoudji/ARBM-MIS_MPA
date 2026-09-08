@@ -561,7 +561,7 @@ def parse(file_obj):
 # classification rework retired gender_marker, rio_marker_*, ...) would
 # otherwise lose its values without anyone noticing.
 PROJECT_COLUMNS = frozenset({
-    "official_reference_number", "name", "acronym", "lead_country_iso3",
+    "official_reference_number", "name", "lead_country_iso3",
     "hub_code", "primary_sector", "sdgs", "primary_sdg", "contributing_sdgs",
     "lifecycle_stage", "we_category", "risk_rating", "climate_marker",
     "reporting_frequency", "beneficiary_target_direct", "beneficiary_target_indirect",
@@ -613,17 +613,6 @@ def _parse_project(context):
         context.error(SHEET_PROJECT, row_number, "The project name is required.", column="name")
     else:
         desired["name"] = name
-
-    acronym = as_text(values.get("acronym"))
-    if acronym:
-        if len(acronym) > 20:
-            context.error(
-                SHEET_PROJECT, row_number,
-                f"acronym is {len(acronym)} characters; the model accepts 20.",
-                column="acronym",
-            )
-        else:
-            desired["acronym"] = acronym
 
     # -- reference-table lookups ------------------------------------------
 
@@ -784,7 +773,7 @@ def _parse_project(context):
     action = ACTION_UPDATE if diffs else ACTION_UNCHANGED
     context.plan.add_change(
         SHEET_PROJECT, action, reference,
-        detail=f"Existing project {context.project.code or ''}".strip(),
+        detail=f"Existing project {context.project.official_reference_number or ''}".strip(),
         diffs=diffs, payload=payload,
     )
 
