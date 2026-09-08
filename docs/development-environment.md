@@ -110,7 +110,9 @@ export default {
 
 The frontend is the only entry point: Vite proxies `/api`, `/auth`, `/health`
 and `/media` to `backend` and `/martin` to the tile server, so backend, db,
-redis and martin never need a public port.
+redis and martin never need a public port. Martin reads
+`infra/martin/config.yaml` (mounted by the base compose file) and publishes
+only the sources listed there; a new table needs an entry and a restart.
 
 ## Bringing the stack up
 

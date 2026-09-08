@@ -64,6 +64,7 @@ Commands that write to the database:
 | `seed_reference_data` | **no** | idempotent |
 | `seed_sdg_targets` | **no** | idempotent |
 | `import_gadm` | **no** | `--countries`, `--level`, `--geom`; slow with `--geom` |
+| `import_natural_earth` | yes | `--datasets`, `--file` (local GeoJSON, used by the tests) |
 | `seed_rbac_matrix` | **no** | |
 
 Check `python manage.py <command> --help` before assuming a flag exists. When
