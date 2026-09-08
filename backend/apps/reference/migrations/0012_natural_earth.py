@@ -79,4 +79,16 @@ class Migration(migrations.Migration):
             """,
             reverse_sql="DROP VIEW IF EXISTS ne_country_label;",
         ),
+        migrations.RunSQL(
+            # One view per resolution: Martin publishes whole tables, so a
+            # single ne_country source would ship both resolutions in every
+            # tile. The style reads 50m below zoom 5 and 10m from zoom 5.
+            sql="""
+                CREATE VIEW ne_country_50m AS
+                SELECT id, adm0_a3, iso_a3, name, min_zoom, geometry FROM ne_country WHERE scale = 50;
+                CREATE VIEW ne_country_10m AS
+                SELECT id, adm0_a3, iso_a3, name, min_zoom, geometry FROM ne_country WHERE scale = 10;
+            """,
+            reverse_sql="DROP VIEW IF EXISTS ne_country_50m; DROP VIEW IF EXISTS ne_country_10m;",
+        ),
     ]

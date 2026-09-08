@@ -73,7 +73,8 @@ export const BASEMAP_STYLE = {
   version: 8,
   glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
   sources: {
-    "ne-country": martin("ne_country", 0, 10),
+    "ne-country-50m": martin("ne_country_50m", 0, 5),
+    "ne-country-10m": martin("ne_country_10m", 4, 10),
     "ne-country-label": martin("ne_country_label", 1, 10),
     "ne-place": martin("ne_place", 2, 12),
     "ne-lake": martin("ne_lake", 3, 12),
@@ -82,11 +83,11 @@ export const BASEMAP_STYLE = {
   layers: [
     { id: "bg", type: "background", paint: { "background-color": WATER } },
 
-    { id: "land-50m-fill", type: "fill", source: "ne-country", "source-layer": "ne_country",
-      maxzoom: SWITCH_ZOOM, filter: ["==", ["get", "scale"], 50],
+    { id: "land-50m-fill", type: "fill", source: "ne-country-50m", "source-layer": "ne_country_50m",
+      maxzoom: SWITCH_ZOOM,
       paint: { "fill-color": LAND } },
-    { id: "land-10m-fill", type: "fill", source: "ne-country", "source-layer": "ne_country",
-      minzoom: SWITCH_ZOOM, filter: ["==", ["get", "scale"], 10],
+    { id: "land-10m-fill", type: "fill", source: "ne-country-10m", "source-layer": "ne_country_10m",
+      minzoom: SWITCH_ZOOM,
       paint: { "fill-color": LAND } },
 
     { id: "lakes-fill", type: "fill", source: "ne-lake", "source-layer": "ne_lake",
@@ -101,12 +102,12 @@ export const BASEMAP_STYLE = {
       minzoom: 4, filter: ["==", ["get", "level"], 1],
       paint: { "line-color": ADMIN1, "line-width": 0.5 } },
 
-    { id: "land-50m-border", type: "line", source: "ne-country", "source-layer": "ne_country",
-      maxzoom: SWITCH_ZOOM, filter: ["==", ["get", "scale"], 50],
+    { id: "land-50m-border", type: "line", source: "ne-country-50m", "source-layer": "ne_country_50m",
+      maxzoom: SWITCH_ZOOM,
       paint: { "line-color": BORDER,
                "line-width": ["interpolate", ["linear"], ["zoom"], 2, 0.8, 6, 1.4] } },
-    { id: "land-10m-border", type: "line", source: "ne-country", "source-layer": "ne_country",
-      minzoom: SWITCH_ZOOM, filter: ["==", ["get", "scale"], 10],
+    { id: "land-10m-border", type: "line", source: "ne-country-10m", "source-layer": "ne_country_10m",
+      minzoom: SWITCH_ZOOM,
       paint: { "line-color": BORDER,
                "line-width": ["interpolate", ["linear"], ["zoom"], 2, 0.8, 6, 1.4] } },
 

@@ -4,8 +4,10 @@
 # tables, which would otherwise show up in /catalog. Every source is listed.
 listen_addresses: "0.0.0.0:3000"
 
+# DATABASE_URL is set by docker-compose.yml. Martin expands it only when the
+# reference is unquoted.
 postgres:
-  connection_string: "${DATABASE_URL}"
+  connection_string: ${DATABASE_URL}
   pool_size: 5
   auto_publish: false
   tables:
@@ -24,18 +26,34 @@ postgres:
         name: varchar
         gadm_uid: varchar
         country_id: int8
-    # Natural Earth basemap (import_natural_earth)
-    ne_country:
+    # Natural Earth basemap (import_natural_earth). Views are declared with
+    # explicit bounds: PostGIS has no statistics for ST_EstimatedExtent on a view.
+    ne_country_50m:
       schema: public
-      table: ne_country
+      table: ne_country_50m
       srid: 4326
       geometry_column: geometry
       geometry_type: MULTIPOLYGON
       id_column: id
+      bounds: [-180, -90, 180, 90]
       minzoom: 0
+      maxzoom: 5
+      properties:
+        adm0_a3: varchar
+        iso_a3: varchar
+        name: varchar
+        min_zoom: float8
+    ne_country_10m:
+      schema: public
+      table: ne_country_10m
+      srid: 4326
+      geometry_column: geometry
+      geometry_type: MULTIPOLYGON
+      id_column: id
+      bounds: [-180, -90, 180, 90]
+      minzoom: 4
       maxzoom: 10
       properties:
-        scale: int2
         adm0_a3: varchar
         iso_a3: varchar
         name: varchar
@@ -46,6 +64,7 @@ postgres:
       srid: 4326
       geometry_column: geometry
       geometry_type: POINT
+      bounds: [-180, -90, 180, 90]
       minzoom: 1
       maxzoom: 10
       properties:
