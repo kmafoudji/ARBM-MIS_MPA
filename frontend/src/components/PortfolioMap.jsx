@@ -81,24 +81,48 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     map.on("webglcontextlost", () => setMapReady(false));
     map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
 
+    // MapLibre stringifies feature properties in event payloads: null → "null".
+    const clean = (v) => (v && v !== "null" ? v : null);
+    const div = (text, css) => {
+      const d = document.createElement("div");
+      d.textContent = text;
+      d.style.cssText = css;
+      return d;
+    };
+
+    // Click: the project card — full name, reference, pillar › sector with
+    // the sector colour (the same colour as the point), stage, and the link.
     map.on("click", "proj-points", (e) => {
       const f = e.features?.[0];
       if (!f) return;
       const p = f.properties;
       const el = document.createElement("div");
-      el.style.cssText = "font-family:inherit;padding:10px 12px;min-width:180px";
-      const title = document.createElement("div");
-      title.textContent = p.name || "—";
-      title.style.cssText = "font-size:13px;font-weight:600;color:#2B2B2B;margin-bottom:2px";
-      const sub = document.createElement("div");
-      sub.textContent = [p.official_reference_number, p.lead_country_name].filter(v => v && v !== "null").join(" · ");
-      sub.style.cssText = "font-size:11px;color:#9ca3af;margin-bottom:8px";
+      el.style.cssText = "font-family:inherit;padding:12px 14px;min-width:220px;max-width:280px";
+      el.append(div(p.name || "—", "font-size:13px;font-weight:600;color:#2B2B2B;line-height:1.3"));
+      const ref = [clean(p.official_reference_number), clean(p.lead_country_name)].filter(Boolean).join(" · ");
+      if (ref) el.append(div(ref, "font-size:11px;color:#9ca3af;margin-top:2px"));
+
+      const sector = clean(p.primary_sector_name);
+      if (sector) {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:#4b5563";
+        const dot = document.createElement("span");
+        dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;flex:none;background:${clean(p.primary_sector_color) || FALLBACK_COLOR}`;
+        const pillar = clean(p.pillar_name);
+        row.append(dot, div(pillar ? `${pillar} › ${sector}` : sector, ""));
+        el.append(row);
+      }
+      const stage = clean(p.lifecycle_stage_display);
+      if (stage) {
+        el.append(div(stage, "display:inline-block;margin-top:8px;font-size:10px;font-weight:600;color:#374151;background:#f3f4f6;border-radius:999px;padding:2px 8px"));
+      }
+
       const btn = document.createElement("button");
       btn.textContent = "Open project →";
-      btn.style.cssText = "font-size:12px;font-weight:600;color:#0C9A71;background:none;border:none;padding:0;cursor:pointer";
-      // MapLibre stringifies feature properties in event payloads
+      btn.style.cssText = "display:block;margin-top:10px;font-size:12px;font-weight:600;color:#0C9A71;background:none;border:none;padding:0;cursor:pointer";
       btn.addEventListener("click", () => onProjectClickRef.current?.(Number(p.id)));
-      el.append(title, sub, btn);
+      el.append(btn);
+
       hoverRef.current?.remove();
       popupRef.current?.remove();
       popupRef.current = new maplibregl.Popup({ offset: 12, className: "arbm-popup" })
@@ -107,8 +131,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         .addTo(map);
       popupRef.current.on("close", () => { popupRef.current = null; });
     });
-    // Hover: a lightweight, non-interactive card; the click popup (with the
-    // link) replaces it and hover stays quiet while a click popup is open.
+
+    // Hover: identification only — acronym (or name) and country, one line.
+    // The click card replaces it and hover stays quiet while a card is open.
     const hover = new maplibregl.Popup({
       offset: 12, className: "arbm-popup arbm-popup-hover",
       closeButton: false, closeOnClick: false,
@@ -119,21 +144,11 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       const f = e.features?.[0];
       if (!f || popupRef.current) return;
       const p = f.properties;
-      const clean = (v) => (v && v !== "null" ? v : null);
-      const line1 = [clean(p.official_reference_number), clean(p.lead_country_name)].filter(Boolean).join(" · ");
-      const line2 = [clean(p.primary_sector_name), clean(p.lifecycle_stage_display)].filter(Boolean).join(" · ");
       const el = document.createElement("div");
-      el.style.cssText = "font-family:inherit;padding:8px 10px;max-width:220px";
-      const title = document.createElement("div");
-      title.textContent = p.name || "—";
-      title.style.cssText = "font-size:12px;font-weight:600;color:#2B2B2B";
-      el.append(title);
-      [line1, line2].filter(Boolean).forEach((text) => {
-        const row = document.createElement("div");
-        row.textContent = text;
-        row.style.cssText = "font-size:11px;color:#6b7280;margin-top:2px";
-        el.append(row);
-      });
+      el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap;display:flex;gap:6px;align-items:baseline";
+      el.append(div(clean(p.acronym) || p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B"));
+      const country = clean(p.lead_country_name);
+      if (country) el.append(div(country, "font-size:11px;color:#6b7280"));
       hover.setLngLat(f.geometry.coordinates).setDOMContent(el).addTo(map);
     });
     map.on("mouseleave", "proj-points", () => {
