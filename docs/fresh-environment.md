@@ -68,6 +68,22 @@ downloaded from the GADM server at run time; when that host is unreachable
 the command reports the failed countries and exits non-zero. Re-run later —
 it is idempotent per country.
 
+### 4b. Basemap (Natural Earth)
+
+```bash
+dc exec -T backend python manage.py import_natural_earth            # countries 50m + 10m, populated places, lakes
+dc exec -T backend python manage.py import_natural_earth --dry-run  # download and count only
+```
+
+The map background (`ne_country`, `ne_place`, `ne_lake`, served by Martin)
+is empty until this runs; the project overlays still draw. `--datasets NAME
+[NAME ...]` narrows the run and `--file PATH` loads a local GeoJSON instead
+of downloading. The source is the Natural Earth release pinned in the
+command (`NE_TAG`); a failed download exits non-zero and the re-run is
+idempotent. Martin lists its sources at `/martin/catalog` through the
+frontend proxy. Restart `martin` after the first import if it started
+before the tables existed.
+
 ### 5. Projects
 
 Projects are loaded through the application: **Projects → Bulk Import**

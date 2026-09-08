@@ -1,6 +1,6 @@
 /**
  * ProjectMap — Carte géographique projet
- * Style flat minimaliste + eau bleu pâle (D+B)
+ * Fond de carte partagé : mapStyle.js (tuiles Martin, Positron réduit).
  * Source : /api/projects/<pk>/geojson/ → PostGIS GADM
  */
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -8,47 +8,7 @@ import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-
-const MARTIN_URL = "/martin";
-
-const STYLE = {
-  version: 8,
-  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
-  sources: {
-    // Tuiles vectorielles Martin PostGIS — GADM Admin 1/2
-    "martin-gadm": {
-      type: "vector",
-      tiles: [`${MARTIN_URL}/gadm_area/{z}/{x}/{y}`],
-      minzoom: 0,
-      maxzoom: 14,
-    },
-    // Fond monde — Natural Earth (pays, océans)
-    "ne-countries": {
-      type: "geojson",
-      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
-    },
-    "ne-ocean": {
-      type: "geojson",
-      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_ocean.geojson",
-    },
-  },
-  layers: [
-    { id: "bg",           type: "background", paint: { "background-color": "#EDEDEA" } },
-    { id: "ocean",        type: "fill",   source: "ne-ocean",
-      paint: { "fill-color": "#E0EBF0" } },
-    { id: "land-fill",    type: "fill",   source: "ne-countries",
-      paint: { "fill-color": "#EDEDEA" } },
-    { id: "land-border",  type: "line",   source: "ne-countries",
-      paint: { "line-color": "#FFFFFF", "line-width": 1.2 } },
-    // Admin 1 GADM (fond — toutes les régions du monde)
-    { id: "gadm-admin1-fill", type: "fill",   source: "martin-gadm", "source-layer": "gadm_area",
-      filter: ["==", ["get", "level"], 1],
-      paint: { "fill-color": "#EDEDEA", "fill-opacity": 0 } },
-    { id: "gadm-admin1-line", type: "line",   source: "martin-gadm", "source-layer": "gadm_area",
-      filter: ["==", ["get", "level"], 1],
-      paint: { "line-color": "#d4d4d0", "line-width": 0.4 } },
-  ],
-};
+import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
 
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
@@ -81,7 +41,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
     if (!mapRef.current) return;
     const map = new maplibregl.Map({
       container: mapRef.current,
-      style: STYLE,
+      style: BASEMAP_STYLE,
       center: [20, 10],
       zoom: 2.5,
       attributionControl: false,
@@ -133,9 +93,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
     if (countries0.length) {
       map.addSource("proj-country", { type: "geojson", data: { type: "FeatureCollection", features: countries0 } });
       map.addLayer({ id: "proj-country-fill", type: "fill", source: "proj-country",
-        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.18 } });
+        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.18 } }, LABELS_LAYER_ID);
       map.addLayer({ id: "proj-country-border", type: "line", source: "proj-country",
-        paint: { "line-color": "#7a9420", "line-width": 2, "line-opacity": 0.9 } });
+        paint: { "line-color": "#7a9420", "line-width": 2, "line-opacity": 0.9 } }, LABELS_LAYER_ID);
     }
 
     // Admin 1 depuis Martin — filtré sur les pays du projet
@@ -155,9 +115,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
       // Tous les Admin 1 — fond tirets gris léger
       map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
       map.addLayer({ id: "proj-admin1-fill", type: "fill", source: "proj-admin1",
-        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.08 } });
+        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.08 } }, LABELS_LAYER_ID);
       map.addLayer({ id: "proj-admin1-line", type: "line", source: "proj-admin1",
-        paint: { "line-color": "#7a9420", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } });
+        paint: { "line-color": "#7a9420", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } }, LABELS_LAYER_ID);
 
     }
 
@@ -165,9 +125,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
     if (admin2.length) {
       map.addSource("proj-admin2", { type: "geojson", data: { type: "FeatureCollection", features: admin2 } });
       map.addLayer({ id: "proj-admin2-fill", type: "fill", source: "proj-admin2",
-        paint: { "fill-color": "#1B5A8C", "fill-opacity": 0.40 } });
+        paint: { "fill-color": "#1B5A8C", "fill-opacity": 0.40 } }, LABELS_LAYER_ID);
       map.addLayer({ id: "proj-admin2-line", type: "line", source: "proj-admin2",
-        paint: { "line-color": "#1B5A8C", "line-width": 1.5, "line-opacity": 1 } });
+        paint: { "line-color": "#1B5A8C", "line-width": 1.5, "line-opacity": 1 } }, LABELS_LAYER_ID);
     }
 
     // Admin 1 actifs — directement in_scope OU parent d'Admin 2 sélectionnés
@@ -186,9 +146,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
       if (admin1Active.length && !map.getSource("proj-admin1-active")) {
         map.addSource("proj-admin1-active", { type: "geojson", data: { type: "FeatureCollection", features: admin1Active } });
         map.addLayer({ id: "proj-admin1-active-fill", type: "fill", source: "proj-admin1-active",
-          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.20 } });
+          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.20 } }, LABELS_LAYER_ID);
         map.addLayer({ id: "proj-admin1-active-line", type: "line", source: "proj-admin1-active",
-          paint: { "line-color": "#7a9420", "line-width": 2.5, "line-opacity": 1 } });
+          paint: { "line-color": "#7a9420", "line-width": 2.5, "line-opacity": 1 } }, LABELS_LAYER_ID);
       }
     }
 
@@ -358,7 +318,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
         color: "#9ca3af", zIndex: 5, background: "rgba(255,255,255,0.7)",
         padding: "2px 6px", borderRadius: 4 }}>
-        © Natural Earth · GADM · aRBM-MIS
+        {ATTRIBUTION}
       </div>
     </div>
   );

@@ -87,15 +87,18 @@ services:
     depends_on:
       - backend
 
-  # Martin — serveur de tuiles vectorielles PostGIS (GADM Admin 1/2)
+  # Martin — serveur de tuiles vectorielles PostGIS (GADM Admin 1/2 + fond
+  # de carte Natural Earth). Sources déclarées dans martin/config.yaml.
   martin:
-    image: ghcr.io/maplibre/martin:latest
+    image: ghcr.io/maplibre/martin:1.13.0
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-arbm_mes}:${POSTGRES_PASSWORD:-arbm_mes}@db:5432/${POSTGRES_DB:-arbm_mes}
-    command: --listen-addresses 0.0.0.0:3000
+    volumes:
+      - ./martin/config.yaml:/config.yaml:ro
+    command: --config /config.yaml
     depends_on:
       db:
         condition: service_healthy

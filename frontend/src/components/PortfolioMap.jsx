@@ -1,52 +1,15 @@
 /**
  * PortfolioMap — portfolio-wide project map
  * One point per project (from /api/projects/map/); clicking a point opens
- * a popup linking to the project detail. Same flat basemap as ProjectMap,
- * without the Martin vector tiles (points need no admin boundaries).
+ * a popup linking to the project detail. Basemap shared with ProjectMap
+ * (mapStyle.js); the points sit on top of every label.
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-
-const STYLE = {
-  version: 8,
-  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
-  sources: {
-    // World basemap — Natural Earth (countries, oceans)
-    "ne-countries": {
-      type: "geojson",
-      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
-    },
-    "ne-ocean": {
-      type: "geojson",
-      data: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_ocean.geojson",
-    },
-  },
-  layers: [
-    { id: "bg",          type: "background", paint: { "background-color": "#EDEDEA" } },
-    { id: "ocean",       type: "fill", source: "ne-ocean",
-      paint: { "fill-color": "#E0EBF0" } },
-    { id: "land-fill",   type: "fill", source: "ne-countries",
-      paint: { "fill-color": "#EDEDEA" } },
-    { id: "land-border", type: "line", source: "ne-countries",
-      paint: { "line-color": "#FFFFFF", "line-width": 1.2 } },
-    { id: "country-labels", type: "symbol", source: "ne-countries",
-      layout: {
-        "symbol-placement": "point",
-        "text-field": ["get", "NAME"],
-        "text-font": ["Noto Sans Regular"],
-        "text-size": ["interpolate", ["linear"], ["zoom"], 2, 9, 5, 13],
-        "text-padding": 4,
-      },
-      paint: {
-        "text-color": "#7E7E7E",
-        "text-halo-color": "#FFFFFF",
-        "text-halo-width": 1.2,
-      } },
-  ],
-};
+import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
 
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
@@ -89,7 +52,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     if (!mapRef.current) return;
     const map = new maplibregl.Map({
       container: mapRef.current,
-      style: STYLE,
+      style: BASEMAP_STYLE,
       center: [20, 10],
       zoom: 2.5,
       attributionControl: false,
@@ -259,7 +222,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
         color: "#9ca3af", zIndex: 5, background: "rgba(255,255,255,0.7)",
         padding: "2px 6px", borderRadius: 4 }}>
-        © Natural Earth · GADM · ARBM-MIS
+        {ATTRIBUTION}
       </div>
     </div>
   );
