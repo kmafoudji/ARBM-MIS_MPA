@@ -23,11 +23,10 @@ Usage :
     python manage.py import_gadm --level 1           # Admin 1 seulement
 """
 
-import json
-import urllib.request
-import urllib.error
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+
+from apps.reference.geo_import import fetch_geojson, geom_from_feature
 
 GADM_BASE = "https://geodata.ucdavis.edu/gadm/gadm4.1/json"
 
@@ -57,46 +56,6 @@ GADM_GAPS_EXPECTED = {
     "LBY": "pas d'Admin 2",
     "QAT": "pas d'Admin 2",
 }
-
-
-def fetch_geojson(url, stdout):
-    """Télécharge un GeoJSON depuis l'URL GADM.
-
-    Retourne un tuple (statut, données) :
-        ("ok", dict)      téléchargement et parsing réussis
-        ("absent", None)  404 : le pays n'a pas ce niveau administratif
-        ("echec", str)    erreur réseau/serveur, message d'explication
-
-    Aucun cas ne lève d'exception : sur 57 pays × 2 niveaux, un timeout isolé
-    ne doit pas faire perdre l'import des autres pays. Les échecs sont
-    récapitulés en fin de run et le rattrapage se fait avec --countries.
-    """
-    stdout.write(f"  ↓ {url}")
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "ARBM-MES/1.0"})
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            return "ok", json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return "absent", None
-        return "echec", f"HTTP {e.code}"
-    except Exception as e:
-        return "echec", f"{type(e).__name__} : {e}"
-
-
-def geom_from_feature(feature):
-    """Convertit la géométrie GeoJSON en WKT pour Django/GEOS."""
-    try:
-        from django.contrib.gis.geos import GEOSGeometry
-        geom_json = json.dumps(feature["geometry"])
-        geom = GEOSGeometry(geom_json, srid=4326)
-        # S'assurer que c'est un MultiPolygon
-        if geom.geom_type == "Polygon":
-            from django.contrib.gis.geos import MultiPolygon
-            geom = MultiPolygon(geom, srid=4326)
-        return geom
-    except Exception:
-        return None
 
 
 class Command(BaseCommand):
