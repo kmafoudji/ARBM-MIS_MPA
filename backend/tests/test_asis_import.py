@@ -28,6 +28,7 @@ SHEETS_WITH_NOTE = {
     "01_project",
     "02_financing_source",
     "05_project_partners",
+    "06_toc_nodes",
     "07_indicators_logframe",
     "08_logframe_targets",
     "09_components",
@@ -50,6 +51,7 @@ HEADERS = {
     "03_donors": ["code", "name"],
     "04_agencies": ["code", "name", "agency_type_note"],
     "05_project_partners": ["agency_code", "role", "is_lead"],
+    "06_toc_nodes": ["node_ref", "chain_level", "parent_ref", "statement", "assumptions"],
     "07_indicators_logframe": [
         "indicator_code", "chain_level", "sector", "name", "definition", "unit",
         "direction", "baseline_value", "baseline_year", "end_target_value",
@@ -71,10 +73,14 @@ HEADERS = {
 
 SHEET_ORDER = [
     "00_README", "98_Loader_Notes", "01_project", "02a_envelope", "02_financing_source",
-    "03_donors", "04_agencies", "05_project_partners", "07_indicators_logframe",
+    "03_donors", "04_agencies", "05_project_partners", "06_toc_nodes", "07_indicators_logframe",
     "08_logframe_targets", "09_components", "10_activities", "11_milestones",
     "12_gadm_scope", "13_results_data", "99_Parked",
 ]
+
+# Emitted only when the test supplies rows for them: the base workbook keeps
+# the 13-sheet shape.
+OPTIONAL_SHEETS = {"06_toc_nodes"}
 
 PROJECT_NAME = "Test project"
 
@@ -121,6 +127,8 @@ def build_workbook(rows):
     book = Workbook()
     book.remove(book.active)
     for name in SHEET_ORDER:
+        if name in OPTIONAL_SHEETS and name not in rows:
+            continue
         sheet = book.create_sheet(name)
         if name not in HEADERS:
             sheet.append([f"Sheet {name} — ignored by the import."])
@@ -812,3 +820,176 @@ def test_unknown_project_column_is_reported(auth_client, rows):
     assert warning is not None, messages(validation.data["warnings"])
     assert warning["sheet"] == "01_project"
     assert "fragility_status" in warning["message"] and "gender_marker" in warning["message"]
+
+
+# ---------------------------------------------------------------------------
+# 06_toc_nodes (optional sheet, decision 0010)
+# ---------------------------------------------------------------------------
+
+
+def toc_rows():
+    """
+    A complete 5-level tree written top-down, as the PAD reads it, with the
+    fan-in the model cannot hold as `parent`: two activities feed one
+    output, and two outputs feed one immediate outcome.
+    """
+    return [
+        ["REF001-IMP-1", "Ultimate Outcome", "", "Impact statement", "Stable economy"],
+        ["REF001-OC-1", "Intermediate Outcome", "REF001-IMP-1", "Intermediate 1", ""],
+        ["REF001-IO-1", "Immediate Outcome", "REF001-OC-1", "Immediate 1", "Farmers adopt"],
+        ["REF001-OUT-1", "Output", "REF001-IO-1", "Output 1", ""],
+        ["REF001-OUT-2", "Output", "REF001-IO-1", "Output 2", ""],
+        ["REF001-ACT-1", "activity", "REF001-OUT-1", "Activity 1", ""],
+        ["REF001-ACT-2", "activity", "REF001-OUT-1", "Activity 2", ""],
+        ["REF001-ACT-3", "activity", "REF001-OUT-2", "Activity 3", ""],
+    ]
+
+
+@pytest.mark.django_db
+def test_without_the_toc_sheet_nothing_about_the_toc_is_planned(auth_client, rows):
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    assert "06_toc_nodes" not in response.data["summary"]
+    assert "06_toc_nodes" not in messages(response.data["warnings"])
+
+
+@pytest.mark.django_db
+def test_a_complete_toc_sheet_is_planned_bottom_up_with_cross_pathways(auth_client, rows):
+    rows["06_toc_nodes"] = toc_rows()
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    assert response.data["errors"] == []
+    counts = response.data["summary"]["06_toc_nodes"]
+    assert counts["create"] == 8  # 7 nodes + the ultimate outcome field
+    changes = [c for c in response.data["changes"] if c["sheet"] == "06_toc_nodes"]
+    targets = [c["target"] for c in changes]
+    # Activities before outputs before outcomes: parents exist when needed.
+    assert targets.index("REF001-ACT-1") < targets.index("REF001-OUT-1")
+    assert targets.index("REF001-OUT-2") < targets.index("REF001-IO-1")
+    fan_in = next(c for c in changes if c["target"] == "REF001-OUT-1")
+    assert "2 contributors, 1 as cross-pathway" in fan_in["detail"]
+
+
+@pytest.mark.django_db
+def test_committing_the_toc_writes_the_tree_the_model_way(auth_client, rows):
+    from apps.project.models import Project
+    from apps.results.models import ToCNode
+
+    rows["06_toc_nodes"] = toc_rows()
+    rows["07_indicators_logframe"][0][12] = "REF001-OUT-1"  # toc_node_ref
+    commit_once(auth_client, rows)
+
+    project = Project.objects.get(official_reference_number="REF001")
+    toc = project.theory_of_change
+    assert toc.ultimate_outcome == "Impact statement"
+    nodes = {n.statement: n for n in ToCNode.objects.filter(toc=toc)}
+    assert len(nodes) == 7
+    # Inverted: the model's parent is the first contributor in file order.
+    assert nodes["Activity 1"].parent is None
+    assert nodes["Output 1"].parent == nodes["Activity 1"]
+    assert nodes["Output 2"].parent == nodes["Activity 3"]
+    assert nodes["Immediate 1"].parent == nodes["Output 1"]
+    assert nodes["Intermediate 1"].parent == nodes["Immediate 1"]
+    assert nodes["Immediate 1"].assumptions == "Farmers adopt"
+    # The other contributors are cross-pathways, contributor -> target.
+    assert list(nodes["Activity 2"].cross_pathways.all()) == [nodes["Output 1"]]
+    assert list(nodes["Output 2"].cross_pathways.all()) == [nodes["Immediate 1"]]
+    assert nodes["Activity 1"].cross_pathways.count() == 0
+    # Codes come from create_toc_node, as on the ToC page.
+    assert nodes["Activity 1"].code == "A"
+    assert nodes["Output 1"].code == "A.1"
+    assert nodes["Immediate 1"].code == "A.1.1"
+    # 07.toc_node_ref becomes the logframe link.
+    assert nodes["Output 1"].logframe_row == project.logframe_rows.get()
+    assert nodes["Output 2"].logframe_row is None
+
+
+@pytest.mark.django_db
+def test_an_identical_toc_reload_is_unchanged_and_writes_nothing(auth_client, rows):
+    from apps.results.models import ToCNode
+
+    rows["06_toc_nodes"] = toc_rows()
+    commit_once(auth_client, rows)
+    before = sorted(ToCNode.objects.values_list("pk", flat=True))
+
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    counts = response.data["summary"]["06_toc_nodes"]
+    assert counts["unchanged"] == 8
+    assert counts["create"] == 0 and counts["delete"] == 0
+    assert sorted(ToCNode.objects.values_list("pk", flat=True)) == before
+
+
+@pytest.mark.django_db
+def test_a_changed_toc_replaces_the_whole_tree_visibly(auth_client, rows):
+    from apps.results.models import ToCNode
+
+    rows["06_toc_nodes"] = toc_rows()
+    commit_once(auth_client, rows)
+
+    rows["06_toc_nodes"][3][3] = "Output 1 — reworded"
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    counts = response.data["summary"]["06_toc_nodes"]
+    assert counts["delete"] == 7
+    assert counts["create"] == 7
+    assert counts["unchanged"] == 1  # the ultimate outcome field
+    assert "replaced as a whole" in messages(response.data["warnings"])
+
+    commit_once(auth_client, rows)
+    statements = set(ToCNode.objects.values_list("statement", flat=True))
+    assert "Output 1 — reworded" in statements and "Output 1" not in statements
+    assert ToCNode.objects.count() == 7
+
+
+@pytest.mark.django_db
+def test_an_incomplete_tree_warns_and_skips_the_sheet(auth_client, rows):
+    """The shape of the legacy PADs: no activities, no immediate outcomes."""
+    rows["06_toc_nodes"] = [
+        ["REF001-IMP-1", "Ultimate Outcome", "", "Impact statement", ""],
+        ["REF001-OC-1", "Intermediate Outcome", "REF001-IMP-1", "Intermediate 1", ""],
+        ["REF001-OUT-1", "Output", "REF001-OC-1", "Output 1", ""],
+    ]
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    assert response.data["errors"] == []
+    assert "06_toc_nodes" not in response.data["summary"]
+    text = messages(response.data["warnings"])
+    # OUT-1 hangs straight off an intermediate outcome: a skipped tier, and
+    # an output with no activity under it. Both are warnings, not errors.
+    assert "REF001-OUT-1 (output): parent_ref REF001-OC-1 is intermediate_outcome, more than one level up" in text
+    assert "1 node(s) have no contributor and 1 skip a level" in text
+
+    rows["06_toc_nodes"] = [
+        ["REF001-IMP-1", "Ultimate Outcome", "", "Impact statement", ""],
+        ["REF001-OC-1", "Intermediate Outcome", "REF001-IMP-1", "Intermediate 1", ""],
+        ["REF001-IO-1", "Immediate Outcome", "REF001-OC-1", "Immediate 1", ""],
+        ["REF001-OUT-1", "Output", "REF001-IO-1", "Output 1", ""],
+    ]
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 200, response.data
+    assert response.data["errors"] == []
+    assert "06_toc_nodes" not in response.data["summary"]
+    text = messages(response.data["warnings"])
+    assert "REF001-OUT-1 (output) has no contributing activity" in text
+    assert "Sheet skipped: 1 node(s) have no contributor and 0 skip a level" in text
+    # The rest of the workbook is planned as usual.
+    assert response.data["summary"]["01_project"]["create"] == 1
+
+
+@pytest.mark.django_db
+def test_toc_format_defects_are_errors(auth_client, rows):
+    rows["06_toc_nodes"] = toc_rows() + [
+        ["REF001-ACT-9", "activity", "REF001-NOPE", "Dangling", ""],
+        ["REF001-ACT-1", "activity", "REF001-OUT-1", "Duplicate ref", ""],
+        ["REF001-X", "impact", "REF001-IMP-1", "Unknown level", ""],
+        ["REF001-OUT-3", "Output", "REF001-ACT-3", "Upside down", ""],
+    ]
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 422, response.data
+    text = messages(response.data["errors"])
+    assert "parent_ref 'REF001-NOPE' is not in the sheet" in text
+    assert "REF001-OUT-3 (output): parent_ref REF001-ACT-3 is activity, which is not above it" in text
+    assert "REF001-ACT-1 appears more than once" in text
+    assert "'impact' is not a value the model accepts" in text
+    assert "06_toc_nodes" not in response.data["summary"]

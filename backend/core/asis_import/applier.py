@@ -25,7 +25,15 @@ from apps.project.services import (
     generate_workspace,
 )
 from apps.reference.models import Currency, Donor, ImplementingAgency, Sdg
-from apps.results.models import Indicator, LogframeRow, LogframeTarget, ResultsData
+from apps.results.models import (
+    Indicator,
+    LogframeRow,
+    LogframeTarget,
+    ResultsData,
+    TheoryOfChange,
+    ToCNode,
+)
+from apps.results.services import create_toc_node
 from apps.workplan.models import Activity, Milestone, WorkplanComponent, WorkplanSubComponent
 
 from .plan import ACTION_CREATE, ACTION_DELETE, ACTION_REPLACE, ACTION_UNCHANGED, ACTION_UPDATE
@@ -44,6 +52,7 @@ from .parser import (
     SHEET_PROJECT,
     SHEET_RESULTS,
     SHEET_TARGETS,
+    SHEET_TOC,
     SHEET_WORKSPACE,
 )
 
@@ -61,6 +70,7 @@ class ApplyContext:
         self.agencies = {}  # workbook code -> ImplementingAgency
         self.indicators = {}  # code -> Indicator
         self.logframe_rows = {}  # indicator code -> LogframeRow
+        self.toc_nodes = {}  # workbook node_ref -> ToCNode
         self.components = {}  # code -> WorkplanComponent
         self.sub_components = {}  # code -> WorkplanSubComponent
         self.activities = {}  # code -> Activity
@@ -82,6 +92,7 @@ def apply(plan, actor=None):
     _apply_agencies(context)
     _apply_partners(context)
     _apply_indicators(context)
+    _apply_toc(context)
     _apply_components(context)
     _apply_activities(context)
     _apply_milestones(context)
@@ -283,6 +294,54 @@ def _apply_indicators(context):
                     "is_original_pad": payload.get("is_original_pad", False),
                 },
             )
+
+
+def _apply_toc(context):
+    """
+    The Theory of Change, when the plan carries one (sheet 06 present and
+    complete). Nodes are created bottom-up through `create_toc_node()`, the
+    same path the ToC page uses, so the adjacency check and the codes are
+    the model's own. Extra contributors become cross-pathways afterwards:
+    the M2M needs both ends to exist.
+    """
+    changes = context.plan.changes_for(SHEET_TOC)
+    if not any(c.action in WRITES or c.action == ACTION_DELETE for c in changes):
+        return
+
+    toc, _ = TheoryOfChange.objects.get_or_create(
+        project=context.project, defaults={"created_by": context.actor}
+    )
+
+    for change in context.plan.changes_for(SHEET_TOC, ACTION_DELETE):
+        ToCNode.objects.filter(pk=change.payload["existing_pk"], toc=toc).delete()
+
+    for change in changes:
+        if change.action not in WRITES:
+            continue
+        payload = change.payload
+        if payload.get("kind") == "ultimate":
+            toc.ultimate_outcome = payload["statement"]
+            toc.save(update_fields=["ultimate_outcome", "updated_at"])
+        elif payload.get("kind") == "node":
+            parent = context.toc_nodes.get(payload["parent_ref"]) if payload.get("parent_ref") else None
+            logframe_row = context.logframe_rows.get(payload.get("logframe_indicator"))
+            node = create_toc_node(
+                toc, payload["chain_level"], parent.pk if parent else None,
+                statement=payload["statement"],
+                assumptions=payload.get("assumptions", ""),
+                logframe_row=logframe_row,
+            )
+            context.toc_nodes[payload["node_ref"]] = node
+
+    for change in changes:
+        payload = change.payload
+        if change.action not in WRITES or payload.get("kind") != "node":
+            continue
+        target = context.toc_nodes.get(payload["node_ref"])
+        for ref in payload.get("extra_contributors", []):
+            contributor = context.toc_nodes.get(ref)
+            if contributor is not None and target is not None:
+                contributor.cross_pathways.add(target)
 
 
 def _apply_components(context):
