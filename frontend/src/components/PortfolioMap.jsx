@@ -34,6 +34,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
   const popupRef = useRef(null);
+  const hoverRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
 
   // The popup DOM lives outside React — keep the latest callback in a ref
@@ -98,16 +99,51 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       // MapLibre stringifies feature properties in event payloads
       btn.addEventListener("click", () => onProjectClickRef.current?.(Number(p.id)));
       el.append(title, sub, btn);
+      hoverRef.current?.remove();
       popupRef.current?.remove();
       popupRef.current = new maplibregl.Popup({ offset: 12, className: "arbm-popup" })
         .setLngLat(f.geometry.coordinates)
         .setDOMContent(el)
         .addTo(map);
+      popupRef.current.on("close", () => { popupRef.current = null; });
     });
-    map.on("mouseenter", "proj-points", () => { map.getCanvas().style.cursor = "pointer"; });
-    map.on("mouseleave", "proj-points", () => { map.getCanvas().style.cursor = ""; });
+    // Hover: a lightweight, non-interactive card; the click popup (with the
+    // link) replaces it and hover stays quiet while a click popup is open.
+    const hover = new maplibregl.Popup({
+      offset: 12, className: "arbm-popup arbm-popup-hover",
+      closeButton: false, closeOnClick: false,
+    });
+    hoverRef.current = hover;
+    map.on("mousemove", "proj-points", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      const f = e.features?.[0];
+      if (!f || popupRef.current) return;
+      const p = f.properties;
+      const clean = (v) => (v && v !== "null" ? v : null);
+      const line1 = [clean(p.official_reference_number), clean(p.lead_country_name)].filter(Boolean).join(" · ");
+      const line2 = [clean(p.primary_sector_name), clean(p.lifecycle_stage_display)].filter(Boolean).join(" · ");
+      const el = document.createElement("div");
+      el.style.cssText = "font-family:inherit;padding:8px 10px;max-width:220px";
+      const title = document.createElement("div");
+      title.textContent = p.name || "—";
+      title.style.cssText = "font-size:12px;font-weight:600;color:#2B2B2B";
+      el.append(title);
+      [line1, line2].filter(Boolean).forEach((text) => {
+        const row = document.createElement("div");
+        row.textContent = text;
+        row.style.cssText = "font-size:11px;color:#6b7280;margin-top:2px";
+        el.append(row);
+      });
+      hover.setLngLat(f.geometry.coordinates).setDOMContent(el).addTo(map);
+    });
+    map.on("mouseleave", "proj-points", () => {
+      map.getCanvas().style.cursor = "";
+      hover.remove();
+    });
 
     return () => {
+      hoverRef.current?.remove();
+      hoverRef.current = null;
       popupRef.current?.remove();
       popupRef.current = null;
       ro?.disconnect();
@@ -195,6 +231,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
           border: 1px solid #e5e7eb !important;
         }
         .arbm-popup .maplibregl-popup-tip { display: none !important; }
+        .arbm-popup-hover { pointer-events: none; }
       `}</style>
 
       {/* Loading */}
