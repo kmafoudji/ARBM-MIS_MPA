@@ -113,6 +113,78 @@ class GadmArea(models.Model):
         return f"{self.name} (L{self.level}, {self.country.iso3})"
 
 
+class NaturalEarthCountry(models.Model):
+    """Natural Earth admin-0 country polygons, two resolutions in one table.
+
+    Basemap only (served by Martin as vector tiles); not a portfolio reference.
+    The 50m rows draw at low zoom, the 10m rows from zoom 5 upwards; the style
+    picks the resolution with a filter on `scale`. Seeded by
+    import_natural_earth.
+    """
+
+    SCALE_CHOICES = [(10, "1:10m"), (50, "1:50m")]
+
+    scale = models.PositiveSmallIntegerField(choices=SCALE_CHOICES)
+    adm0_a3 = models.CharField(
+        max_length=3,
+        help_text="Natural Earth ADM0_A3, unique per resolution (ISO_A3 is -99 for some).",
+    )
+    iso_a3 = models.CharField(max_length=3, blank=True)
+    name = models.CharField(max_length=100)
+    name_long = models.CharField(max_length=150, blank=True)
+    label_x = models.FloatField(null=True, blank=True, help_text="Label anchor longitude.")
+    label_y = models.FloatField(null=True, blank=True, help_text="Label anchor latitude.")
+    scalerank = models.PositiveSmallIntegerField(default=0)
+    min_zoom = models.FloatField(default=0, help_text="Natural Earth MIN_ZOOM hint.")
+    geometry = gis_models.MultiPolygonField(srid=4326)
+
+    class Meta:
+        db_table = "ne_country"
+        unique_together = [("scale", "adm0_a3")]
+        ordering = ["scale", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.scale}m)"
+
+
+class NaturalEarthPlace(models.Model):
+    """Natural Earth 10m populated places (basemap labels)."""
+
+    ne_id = models.BigIntegerField(unique=True, help_text="Natural Earth NE_ID, stable across releases.")
+    name = models.CharField(max_length=100)
+    adm0_a3 = models.CharField(max_length=3, blank=True)
+    featurecla = models.CharField(max_length=50, blank=True)
+    is_capital = models.BooleanField(default=False, help_text="FEATURECLA is an Admin-0 capital.")
+    scalerank = models.PositiveSmallIntegerField(default=0)
+    min_zoom = models.FloatField(default=0)
+    pop_max = models.BigIntegerField(default=0)
+    geometry = gis_models.PointField(srid=4326)
+
+    class Meta:
+        db_table = "ne_place"
+        ordering = ["scalerank", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class NaturalEarthLake(models.Model):
+    """Natural Earth 10m lakes (basemap water)."""
+
+    ne_id = models.BigIntegerField(unique=True)
+    name = models.CharField(max_length=100, blank=True)
+    scalerank = models.PositiveSmallIntegerField(default=0)
+    min_zoom = models.FloatField(default=0)
+    geometry = gis_models.MultiPolygonField(srid=4326)
+
+    class Meta:
+        db_table = "ne_lake"
+        ordering = ["scalerank", "name"]
+
+    def __str__(self):
+        return self.name or f"lake {self.ne_id}"
+
+
 class Donor(models.Model):
     """Les 6 donateurs du LLF2 : ADFD, Gates Foundation, IsDB, ISFD, KSRelief, QFFD."""
 
