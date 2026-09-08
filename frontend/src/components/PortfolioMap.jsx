@@ -177,7 +177,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     clusterHandlersRef.current.click = (lngLat, leaves) => {
       const el = document.createElement("div");
       el.style.cssText = "font-family:inherit;padding:10px 14px;min-width:240px";
-      el.append(div(`${leaves.length} projects here`, "font-size:11px;color:#9ca3af;margin-bottom:6px"));
+      el.append(div(`${leaves.length} projects`, "font-size:11px;color:#9ca3af;margin-bottom:6px"));
       leaves.forEach((leaf) => {
         const p = leaf.properties;
         const row = document.createElement("button");
@@ -253,7 +253,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     popupRef.current?.remove();
     popupRef.current = null;
 
-    ["proj-points", "proj-points-halo"].forEach(id => {
+    ["proj-points", "proj-points-halo", "proj-points-inner", "proj-points-count"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     clusterMarkersRef.current.forEach(m => m.remove());
@@ -285,6 +285,31 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 1.5,
       } });
+    // "Count mode": while any cluster is on screen, single points take the
+    // same donut shape with a 1, so every marker reads the same way.
+    map.addLayer({ id: "proj-points-inner", type: "circle", source: "proj-points",
+      filter: ["!", ["has", "point_count"]],
+      layout: { visibility: "none" },
+      paint: { "circle-radius": 7, "circle-color": "#ffffff" } });
+    map.addLayer({ id: "proj-points-count", type: "symbol", source: "proj-points",
+      filter: ["!", ["has", "point_count"]],
+      layout: {
+        visibility: "none",
+        "text-field": "1",
+        "text-font": ["Noto Sans Bold"],
+        "text-size": 10,
+        "text-allow-overlap": true,
+        "text-ignore-placement": true,
+      },
+      paint: { "text-color": "#2B2B2B" } });
+    const setCountMode = (on) => {
+      if (!map.getLayer("proj-points")) return;
+      map.setPaintProperty("proj-points", "circle-radius", on ? 13 : 6);
+      map.setPaintProperty("proj-points", "circle-stroke-width", on ? 2 : 1.5);
+      map.setLayoutProperty("proj-points-halo", "visibility", on ? "none" : "visible");
+      map.setLayoutProperty("proj-points-inner", "visibility", on ? "visible" : "none");
+      map.setLayoutProperty("proj-points-count", "visibility", on ? "visible" : "none");
+    };
 
     // Cluster markers: a ring split by sector in proportion (one colour when
     // every project shares the sector), the count in the middle. Clusters
@@ -297,6 +322,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.querySourceFeatures("proj-points").forEach((f) => {
         if (f.properties.cluster_id != null) clusters.set(f.properties.cluster_id, f);
       });
+      setCountMode(clusters.size > 0);
       for (const [id, f] of clusters) {
         seen.add(id);
         if (markers.has(id)) continue;
