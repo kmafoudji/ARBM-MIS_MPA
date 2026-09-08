@@ -14,6 +14,31 @@ import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
 
+// Donut for a cluster: sector colours in proportion, the count in the middle.
+function clusterElement(leaves) {
+  const counts = new Map();
+  leaves.forEach((l) => {
+    const c = l.properties.primary_sector_color || FALLBACK_COLOR;
+    counts.set(c, (counts.get(c) || 0) + 1);
+  });
+  let acc = 0;
+  const stops = [...counts].map(([color, n]) => {
+    const from = acc; acc += (n / leaves.length) * 360;
+    return `${color} ${from}deg ${acc}deg`;
+  });
+  const el = document.createElement("div");
+  el.style.cssText = "position:relative;width:26px;height:26px;border-radius:50%;cursor:pointer;" +
+    "box-shadow:0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,0.25);" +
+    `background:conic-gradient(${stops.join(",")})`;
+  const inner = document.createElement("div");
+  inner.textContent = String(leaves.length);
+  inner.style.cssText = "position:absolute;inset:6px;border-radius:50%;background:#fff;" +
+    "display:flex;align-items:center;justify-content:center;" +
+    "font:700 10px/1 system-ui,sans-serif;color:#2B2B2B";
+  el.append(inner);
+  return el;
+}
+
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   features.forEach(f => {
@@ -35,6 +60,10 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const mapInst = useRef(null);
   const popupRef = useRef(null);
   const hoverRef = useRef(null);
+  // Clusters are HTML markers (a donut of sector colours cannot be drawn by
+  // a circle layer); the handlers are set at map init, the markers later.
+  const clusterHandlersRef = useRef({});
+  const clusterMarkersRef = useRef(new Map());
   const [mapReady, setMapReady] = useState(false);
 
   // The popup DOM lives outside React — keep the latest callback in a ref
@@ -143,13 +172,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       openCard(f.geometry.coordinates, el);
     });
 
-    // Click on a cluster (projects whose points coincide, e.g. two projects
+    // Cluster card (projects whose points coincide, e.g. two projects
     // covering the same country): a list, one row per project.
-    map.on("click", "proj-clusters", async (e) => {
-      const f = e.features?.[0];
-      if (!f) return;
-      const src = map.getSource("proj-points");
-      const leaves = await src.getClusterLeaves(f.properties.cluster_id, 50, 0);
+    clusterHandlersRef.current.click = (lngLat, leaves) => {
       const el = document.createElement("div");
       el.style.cssText = "font-family:inherit;padding:10px 14px;min-width:240px";
       el.append(div(`${leaves.length} projects here`, "font-size:11px;color:#9ca3af;margin-bottom:6px"));
@@ -166,21 +191,16 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         row.addEventListener("click", () => onProjectClickRef.current?.(Number(p.id)));
         el.append(row);
       });
-      openCard(f.geometry.coordinates, el);
-    });
-    map.on("mousemove", "proj-clusters", (e) => {
-      map.getCanvas().style.cursor = "pointer";
-      const f = e.features?.[0];
-      if (!f || popupRef.current) return;
+      openCard(lngLat, el);
+    };
+    clusterHandlersRef.current.enter = (lngLat, count) => {
+      if (popupRef.current) return;
       const el = document.createElement("div");
       el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap";
-      el.append(div(`${f.properties.point_count} projects · click to list`, "font-size:11px;color:#4b5563"));
-      hover.setLngLat(f.geometry.coordinates).setDOMContent(el).addTo(map);
-    });
-    map.on("mouseleave", "proj-clusters", () => {
-      map.getCanvas().style.cursor = "";
-      hover.remove();
-    });
+      el.append(div(`${count} projects · click to list`, "font-size:11px;color:#4b5563"));
+      hover.setLngLat(lngLat).setDOMContent(el).addTo(map);
+    };
+    clusterHandlersRef.current.leave = () => hover.remove();
 
     // Hover: identification only — official reference and country, one line.
     // The click card replaces it and hover stays quiet while a card is open.
@@ -202,6 +222,8 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     });
 
     return () => {
+      clusterMarkersRef.current.forEach(m => m.remove());
+      clusterMarkersRef.current.clear();
       hoverRef.current?.remove();
       hoverRef.current = null;
       popupRef.current?.remove();
@@ -231,9 +253,11 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     popupRef.current?.remove();
     popupRef.current = null;
 
-    ["proj-points", "proj-points-halo", "proj-clusters", "proj-cluster-count"].forEach(id => {
+    ["proj-points", "proj-points-halo"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
+    clusterMarkersRef.current.forEach(m => m.remove());
+    clusterMarkersRef.current.clear();
     if (map.getSource("proj-points")) map.removeSource("proj-points");
 
     // Points that coincide on screen (projects covering the same country get
@@ -261,27 +285,51 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 1.5,
       } });
-    map.addLayer({ id: "proj-clusters", type: "circle", source: "proj-points",
-      filter: ["has", "point_count"],
-      paint: {
-        "circle-radius": 11,
-        "circle-color": "#4A4F54",
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 2,
-      } });
-    map.addLayer({ id: "proj-cluster-count", type: "symbol", source: "proj-points",
-      filter: ["has", "point_count"],
-      layout: {
-        "text-field": ["get", "point_count_abbreviated"],
-        "text-font": ["Noto Sans Regular"],
-        "text-size": 11,
-        "text-allow-overlap": true,
-      },
-      paint: { "text-color": "#ffffff" } });
+
+    // Cluster markers: a ring split by sector in proportion (one colour when
+    // every project shares the sector), the count in the middle. Clusters
+    // change with the zoom, so they are rebuilt whenever the source settles.
+    const source = map.getSource("proj-points");
+    const markers = clusterMarkersRef.current;
+    const syncClusters = async () => {
+      const seen = new Set();
+      const clusters = new Map();
+      map.querySourceFeatures("proj-points").forEach((f) => {
+        if (f.properties.cluster_id != null) clusters.set(f.properties.cluster_id, f);
+      });
+      for (const [id, f] of clusters) {
+        seen.add(id);
+        if (markers.has(id)) continue;
+        const leaves = await source.getClusterLeaves(id, 50, 0);
+        if (markers.has(id)) continue;
+        const el = clusterElement(leaves);
+        const lngLat = f.geometry.coordinates;
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          clusterHandlersRef.current.click?.(lngLat, leaves);
+        });
+        el.addEventListener("mouseenter", () => clusterHandlersRef.current.enter?.(lngLat, leaves.length));
+        el.addEventListener("mouseleave", () => clusterHandlersRef.current.leave?.());
+        markers.set(id, new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map));
+      }
+      markers.forEach((m, id) => {
+        if (!seen.has(id)) { m.remove(); markers.delete(id); }
+      });
+    };
+    const onData = (e) => {
+      if (e.sourceId === "proj-points" && e.isSourceLoaded) syncClusters();
+    };
+    map.on("data", onData);
+    map.on("moveend", syncClusters);
+    syncClusters();
 
     if (feats.length) {
       map.fitBounds(getBbox(feats), { padding: 48, maxZoom: 6, duration: 900 });
     }
+    return () => {
+      map.off("data", onData);
+      map.off("moveend", syncClusters);
+    };
   }, [mapReady, geojson, projects]);
 
   return (
@@ -365,13 +413,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
             </div>
           ))}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4,
-            paddingTop: 4, borderTop: "1px solid #f0f0ee", lineHeight: "16px" }}>
-            <span style={{ width: 12, height: 12, borderRadius: "50%", flex: "none",
-              background: "#4A4F54", color: "#fff", fontSize: 8, fontWeight: 700,
-              display: "inline-flex", alignItems: "center", justifyContent: "center" }}>2</span>
-            <span>Several projects at one point</span>
-          </div>
         </div>
       )}
 
