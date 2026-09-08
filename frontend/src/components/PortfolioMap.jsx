@@ -132,7 +132,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       popupRef.current.on("close", () => { popupRef.current = null; });
     });
 
-    // Hover: identification only — acronym (or name) and country, one line.
+    // Hover: identification only — official reference and country, one line.
     // The click card replaces it and hover stays quiet while a card is open.
     const hover = new maplibregl.Popup({
       offset: 12, className: "arbm-popup arbm-popup-hover",
@@ -146,7 +146,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       const p = f.properties;
       const el = document.createElement("div");
       el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap;display:flex;gap:6px;align-items:baseline";
-      el.append(div(clean(p.acronym) || p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B"));
+      el.append(div(clean(p.official_reference_number) || p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B"));
       const country = clean(p.lead_country_name);
       if (country) el.append(div(country, "font-size:11px;color:#6b7280"));
       hover.setLngLat(f.geometry.coordinates).setDOMContent(el).addTo(map);
