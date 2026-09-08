@@ -2,8 +2,8 @@
 Tests — official reference number as the user-facing project identifier.
 
 The reference is required and unique at creation and on the basic-info
-update; the internal `code` and `acronym` stay in the model but are not what
-users see.
+update; it is the only identifier besides the database id (the internal
+`code` and the `acronym` were removed in September 2026).
 """
 import pytest
 from rest_framework.test import APIClient

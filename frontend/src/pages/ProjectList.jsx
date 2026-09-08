@@ -180,7 +180,7 @@ function ProjectCard({ project, onClick }) {
       {/* Identity */}
       <div style={{ minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "monospace", fontSize: 11, color: sg.color, fontWeight: 700, letterSpacing: .5 }}>
-          <span>{project.official_reference_number || project.code}</span>
+          <span>{project.official_reference_number}</span>
           <span style={{ color: "#d1d5db" }}>·</span>
           <Flag iso2={project.lead_country_iso2} size={12} />
           <span style={{ textTransform: "uppercase" }}>{project.lead_country_name}</span>

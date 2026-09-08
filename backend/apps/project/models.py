@@ -101,19 +101,10 @@ CLIMATE_MARKER_CHOICES = [
 class Project(models.Model):
     # --- SF-1 Etape 1 : Identite de base (Core ID) ---
     name = models.CharField(max_length=255, help_text="Obligatoire des Concept Note.")
-    acronym = models.CharField(
-        max_length=20, blank=True,
-        help_text="Sigle court du projet (ex. PAAFS, WASH-IDN). Optionnel.",
-    )
-    code = models.CharField(
-        max_length=30, unique=True, null=True, blank=True,
-        help_text="Code projet interne — genere automatiquement a partir du pays chef "
-        "de file, une fois les pays du projet connus (POL-1.05). Voir "
-        "apps.project.services.generate_project_code().",
-    )
     official_reference_number = models.CharField(
         max_length=50, unique=True, null=True, blank=True,
-        help_text="Numero de reference officiel. Unicite controlee (rejet du doublon).",
+        help_text="Numero de reference officiel, seul identifiant visible du projet "
+        "(l'ancien code interne et le sigle ont ete retires). Unicite controlee.",
     )
     investment_cycle = models.CharField(
         max_length=10, choices=INVESTMENT_CYCLE_CHOICES, null=True, blank=True,
@@ -218,7 +209,7 @@ class Project(models.Model):
         return pc.country if pc else None
 
     def __str__(self):
-        return f"{self.code or '(sans code)'} - {self.name}"
+        return f"{self.official_reference_number or '(sans reference)'} - {self.name}"
 
 
 class ProjectCountry(models.Model):
@@ -312,7 +303,7 @@ class ProjectStageTransition(models.Model):
         ordering = ["-transitioned_at"]
 
     def __str__(self):
-        return f"{self.project.code} : {self.from_stage} -> {self.to_stage}"
+        return f"{self.project.official_reference_number} : {self.from_stage} -> {self.to_stage}"
 
 
 # ---------------------------------------------------------------------------
@@ -396,7 +387,7 @@ class ProjectFinancialEnvelope(models.Model):
         return result["total"] or 0
 
     def __str__(self):
-        return f"Enveloppe {self.project.code}"
+        return f"Enveloppe {self.project.official_reference_number}"
 
 
 class FinancingSource(models.Model):
@@ -623,7 +614,7 @@ class ProjectGadmScope(models.Model):
         ordering = ["-is_primary", "area__level", "area__name"]
 
     def __str__(self):
-        return f"{self.project.code} — {self.area.name} (L{self.area.level})"
+        return f"{self.project.official_reference_number} — {self.area.name} (L{self.area.level})"
 
 
 # ---------------------------------------------------------------------------
@@ -688,7 +679,7 @@ class ReportingPeriod(models.Model):
         return self.submitted_at.date() > self.due_date
 
     def __str__(self):
-        return f"{self.project.code} — {self.label or f'P{self.period_number}'}"
+        return f"{self.project.official_reference_number} — {self.label or f'P{self.period_number}'}"
 
 
 # ---------------------------------------------------------------------------
@@ -729,4 +720,4 @@ class ProjectWorkspace(models.Model):
         db_table = "project_workspace"
 
     def __str__(self):
-        return f"Workspace — {self.project.code}"
+        return f"Workspace — {self.project.official_reference_number}"

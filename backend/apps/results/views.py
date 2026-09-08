@@ -1322,7 +1322,6 @@ class PIRSDataView(APIView):
             # En-tête projet
             "project": {
                 "id":             project.id,
-                "code":           project.code,
                 "official_reference_number": project.official_reference_number,
                 "name":           project.name,
                 "sector":         project.primary_sector.name if project.primary_sector else None,
@@ -1541,7 +1540,7 @@ class PIRSDataView(APIView):
         now_local = timezone.localtime(timezone.now())
         gen_datetime = now_local.strftime("%d %B %Y at %H:%M")
         gen_date     = now_local.strftime("%d %B %Y")
-        editor_name  = proj.get("code", "LLFMU")
+        editor_name  = proj.get("official_reference_number") or "LLFMU"
 
         # ── Document ───────────────────────────────────────────────────
         doc = Document()

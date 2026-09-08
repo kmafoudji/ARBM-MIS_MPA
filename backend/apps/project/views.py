@@ -467,8 +467,6 @@ class ProjectBasicUpdateView(APIView):
 
         if "name" in data:
             project.name = data["name"]
-        if "acronym" in data:
-            project.acronym = data["acronym"]
         if "official_reference_number" in data:
             from apps.project.serializers import validate_official_reference_number
             try:
@@ -941,9 +939,7 @@ class ProjectMapPointsView(APIView):
             lead = p.lead_country
             meta[p.id] = {
                 "id":                      p.id,
-                "code":                    p.code,
                 "name":                    p.name,
-                "acronym":                 p.acronym,
                 "official_reference_number": p.official_reference_number,
                 "lifecycle_stage":         p.lifecycle_stage,
                 "lifecycle_stage_display": p.get_lifecycle_stage_display(),

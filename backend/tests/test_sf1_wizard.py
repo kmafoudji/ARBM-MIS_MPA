@@ -32,7 +32,7 @@ class TestProjectCode:
         assert resp.status_code == 201
         from apps.project.models import Project
         project = Project.objects.get(pk=resp.data["id"])
-        assert project.code.startswith("SEN-")
+        assert project.official_reference_number == payload["official_reference_number"]
 
     def test_duplicate_name_allowed(self, auth_client):
         """Deux projets peuvent avoir le même nom (unicité sur la référence, pas le nom)."""
