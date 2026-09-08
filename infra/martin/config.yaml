@@ -1,10 +1,85 @@
-# Martin v1.13 — ARBM-MIS
-# Connexion via variable DATABASE_URL injectée par docker-compose
+# Martin 1.13 — ARBM-MIS tile sources.
+# Mounted read-only by infra/docker-compose.yml and passed with --config.
+# auto_publish is off on purpose: the PostGIS image ships the TIGER geocoder
+# tables, which would otherwise show up in /catalog. Every source is listed.
 listen_addresses: "0.0.0.0:3000"
 
 postgres:
   connection_string: "${DATABASE_URL}"
   pool_size: 5
-  auto_publish:
-    tables: true
-    functions: false
+  auto_publish: false
+  tables:
+    # GADM Admin 1/2 (apps.reference.GadmArea, import_gadm --geom)
+    gadm_area:
+      schema: public
+      table: gadm_area
+      srid: 4326
+      geometry_column: geometry
+      geometry_type: MULTIPOLYGON
+      id_column: id
+      minzoom: 2
+      maxzoom: 12
+      properties:
+        level: int2
+        name: varchar
+        gadm_uid: varchar
+        country_id: int8
+    # Natural Earth basemap (import_natural_earth)
+    ne_country:
+      schema: public
+      table: ne_country
+      srid: 4326
+      geometry_column: geometry
+      geometry_type: MULTIPOLYGON
+      id_column: id
+      minzoom: 0
+      maxzoom: 10
+      properties:
+        scale: int2
+        adm0_a3: varchar
+        iso_a3: varchar
+        name: varchar
+        min_zoom: float8
+    ne_country_label:
+      schema: public
+      table: ne_country_label
+      srid: 4326
+      geometry_column: geometry
+      geometry_type: POINT
+      minzoom: 1
+      maxzoom: 10
+      properties:
+        scale: int2
+        adm0_a3: varchar
+        name: varchar
+        scalerank: int2
+        min_zoom: float8
+    ne_place:
+      schema: public
+      table: ne_place
+      srid: 4326
+      geometry_column: geometry
+      geometry_type: POINT
+      id_column: id
+      minzoom: 2
+      maxzoom: 12
+      properties:
+        name: varchar
+        adm0_a3: varchar
+        is_capital: bool
+        scalerank: int2
+        min_zoom: float8
+        pop_max: int8
+    ne_lake:
+      schema: public
+      table: ne_lake
+      srid: 4326
+      geometry_column: geometry
+      geometry_type: MULTIPOLYGON
+      id_column: id
+      minzoom: 3
+      maxzoom: 12
+      properties:
+        name: varchar
+        scalerank: int2
+        min_zoom: float8
