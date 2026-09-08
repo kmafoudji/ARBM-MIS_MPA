@@ -36,7 +36,14 @@ from apps.reference.models import (
     Sdg,
     Sector,
 )
-from apps.results.models import Indicator, LogframeRow, LogframeTarget, ResultsData
+from apps.results.models import (
+    PARENT_LEVEL,
+    Indicator,
+    LogframeRow,
+    LogframeTarget,
+    ResultsData,
+    ToCNode,
+)
 from apps.workplan.models import (
     Activity,
     Milestone,
@@ -55,7 +62,8 @@ from .plan import (
     ImportPlan,
 )
 
-# Sheets that are ignored (design §7).
+# Sheets that are ignored (design §7). `99b_toc_nodes_parked` stays ignored
+# even now that `06_toc_nodes` loads: renaming the sheet is the opt-in.
 IGNORED_SHEETS = {"00_README", "98_Loader_Notes", "99_Parked", "99b_toc_nodes_parked"}
 
 SHEET_PROJECT = "01_project"
@@ -64,6 +72,7 @@ SHEET_FINANCING = "02_financing_source"
 SHEET_DONORS = "03_donors"
 SHEET_AGENCIES = "04_agencies"
 SHEET_PARTNERS = "05_project_partners"
+SHEET_TOC = "06_toc_nodes"  # optional: loaded when present and complete (design §7)
 SHEET_INDICATORS = "07_indicators_logframe"
 SHEET_TARGETS = "08_logframe_targets"
 SHEET_COMPONENTS = "09_components"
@@ -101,6 +110,7 @@ SHEET_HEADER_MARKERS = {
     SHEET_DONORS: ["code", "name"],
     SHEET_AGENCIES: ["code", "name"],
     SHEET_PARTNERS: ["agency_code", "role"],
+    SHEET_TOC: ["node_ref", "chain_level"],
     SHEET_INDICATORS: ["indicator_code", "chain_level"],
     SHEET_TARGETS: ["indicator_code", "target_date"],
     SHEET_COMPONENTS: ["code", "level"],
@@ -426,6 +436,7 @@ class ParseContext:
         self.sub_component_codes = {}  # code -> parent code
         self.activity_codes = set()
         self.indicator_rows = {}  # indicator code -> workbook row
+        self.indicator_toc_refs = {}  # indicator code -> 06_toc_nodes node_ref
         self.planned_targets = {}  # (indicator code, date) -> PlannedChange
         self.has_activityless_milestone = False
 
@@ -538,6 +549,7 @@ def parse(file_obj):
         _parse_partners(context)
         _parse_indicators(context)
         _parse_targets(context)
+        _parse_toc(context)
         _parse_components(context)
         _parse_activities(context)
         _parse_milestones(context)
@@ -1272,6 +1284,9 @@ def _parse_indicators(context):
             )
             continue
         context.indicator_rows[code] = row_number
+        toc_ref = as_text(values.get("toc_node_ref"))
+        if toc_ref:
+            context.indicator_toc_refs[code] = toc_ref
 
         name = as_text(values.get("name"))
         if not name:
@@ -1510,6 +1525,344 @@ def _parse_targets(context):
         _plan_target(
             context, SHEET_TARGETS, row_number, code, target_date, target_value,
             is_original_pad=bool(is_pad), existing_row=existing_row,
+        )
+
+
+# ---------------------------------------------------------------------------
+# 06_toc_nodes (optional)
+# ---------------------------------------------------------------------------
+
+
+# Levels that become ToCNode rows. The ultimate outcome is not a node: the
+# ToC page has four levels and carries the impact as
+# `TheoryOfChange.ultimate_outcome`.
+TOC_NODE_LEVELS = ("activity", "output", "immediate_outcome", "intermediate_outcome")
+TOC_ULTIMATE = "ultimate_outcome"
+# Rank in the causal chain, lowest first: what "one level up" means below.
+TOC_RANK = {level: index for index, level in enumerate(TOC_NODE_LEVELS + (TOC_ULTIMATE,))}
+
+
+def _toc_signature(chain_level, statement, superior_statement, assumptions):
+    return _signature([chain_level, statement, superior_statement, assumptions])
+
+
+def _parse_toc(context):
+    """
+    The Theory of Change, loaded only when the sheet is present and the tree
+    is complete (decision 0010).
+
+    The sheet is written top-down, the way a PAD reads: `parent_ref` names
+    the node one level *up*. The model reads the other way — `ToCNode.parent`
+    is the contributor one level *down*, an activity is the root, and a node
+    has exactly one parent. So the sheet is inverted here: for each node,
+    the contributors that name it. The first contributor in file order
+    becomes `parent`; every other one is linked with `cross_pathways`
+    (RG-2.6). No node is duplicated or invented.
+
+    A node with no contributor cannot exist in the model (it would need a
+    parent it does not have). That is the shape of the two legacy PADs, whose
+    trees stop at Output. It is not a format defect, so it is not an error:
+    every such node is warned about and the sheet is skipped as a whole. A
+    partial ToC would be worse than none.
+
+    A skipped tier (an output hung straight off an intermediate outcome, as
+    the legacy PADs do) is the same incompleteness and is handled the same
+    way. Format defects — an unknown level, a `parent_ref` that names
+    nothing or names a node below, a duplicate `node_ref` — are errors, as
+    on every other sheet.
+
+    Sync: nodes have no key column, so the tree is compared by content, like
+    milestones. An identical tree is reported `unchanged` and left alone.
+    Any difference replaces the whole tree, with one `delete` per stored
+    node so the cost is visible: the model regenerates the codes and a
+    deletion drops the `logframe_row` and cross-pathway links that hand
+    editing may have added.
+    """
+    sheet = context.reader.read(SHEET_TOC)
+    if sheet is None:
+        return
+    if sheet.header_row is None:
+        context.error(
+            SHEET_TOC, None,
+            "Header row not found: node_ref, chain_level, parent_ref, statement, "
+            "assumptions expected.",
+        )
+        return
+
+    # -- read and validate the rows ---------------------------------------
+    nodes = {}  # node_ref -> dict, in file order
+    ultimate_rows = []
+    for row_number, values in sheet.rows:
+        node_ref = as_text(values.get("node_ref"))
+        if not node_ref:
+            context.error(SHEET_TOC, row_number, "node_ref is required.", column="node_ref")
+            continue
+        if node_ref in nodes or any(u["node_ref"] == node_ref for u in ultimate_rows):
+            context.error(
+                SHEET_TOC, row_number,
+                f"node_ref {node_ref} appears more than once in the sheet.",
+                column="node_ref",
+            )
+            continue
+
+        chain_level = _read_enum(
+            context, SHEET_TOC, row_number, values, "chain_level", set(TOC_RANK)
+        )
+        if chain_level is None:
+            context.error(
+                SHEET_TOC, row_number, f"Node {node_ref}: chain_level is required.",
+                column="chain_level",
+            )
+            continue
+
+        statement = as_text(values.get("statement"))
+        if not statement:
+            context.error(
+                SHEET_TOC, row_number, f"Node {node_ref}: statement is required.",
+                column="statement",
+            )
+            continue
+
+        record = {
+            "row": row_number,
+            "node_ref": node_ref,
+            "chain_level": chain_level,
+            "parent_ref": as_text(values.get("parent_ref")) or None,
+            "statement": statement,
+            "assumptions": as_text(values.get("assumptions")) or "",
+        }
+        if chain_level == TOC_ULTIMATE:
+            ultimate_rows.append(record)
+        else:
+            nodes[node_ref] = record
+
+    if len(ultimate_rows) > 1:
+        for record in ultimate_rows[1:]:
+            context.error(
+                SHEET_TOC, record["row"],
+                f"Node {record['node_ref']}: a second ultimate outcome. The model holds "
+                "one, as TheoryOfChange.ultimate_outcome.",
+                column="chain_level",
+            )
+    ultimate = ultimate_rows[0] if ultimate_rows else None
+    all_records = dict(nodes)
+    if ultimate is not None:
+        all_records[ultimate["node_ref"]] = ultimate
+
+    # -- superior links: each parent_ref must name a node exactly one level up
+    format_ok = True
+    skipped = []  # (record, superior) pairs more than one level apart
+    for record in all_records.values():
+        superior_ref = record["parent_ref"]
+        if record["chain_level"] == TOC_ULTIMATE:
+            if superior_ref:
+                context.error(
+                    SHEET_TOC, record["row"],
+                    f"Node {record['node_ref']}: the ultimate outcome has no parent_ref.",
+                    column="parent_ref",
+                )
+                format_ok = False
+            continue
+        if not superior_ref:
+            context.error(
+                SHEET_TOC, record["row"],
+                f"Node {record['node_ref']}: parent_ref is required (the node one level "
+                "up in the chain).",
+                column="parent_ref",
+            )
+            format_ok = False
+            continue
+        superior = all_records.get(superior_ref)
+        if superior is None:
+            context.error(
+                SHEET_TOC, record["row"],
+                f"Node {record['node_ref']}: parent_ref {superior_ref!r} is not in the sheet.",
+                column="parent_ref",
+            )
+            format_ok = False
+            continue
+        gap = TOC_RANK[superior["chain_level"]] - TOC_RANK[record["chain_level"]]
+        if gap < 1:
+            context.error(
+                SHEET_TOC, record["row"],
+                f"Node {record['node_ref']} ({record['chain_level']}): parent_ref "
+                f"{superior_ref} is {superior['chain_level']}, which is not above it "
+                "in the chain.",
+                column="parent_ref",
+            )
+            format_ok = False
+        elif gap > 1:
+            # A skipped tier — the legacy PADs hang outputs straight off
+            # intermediate outcomes. That is the tree being incomplete, not
+            # the sheet being malformed: handled with the other gaps below.
+            skipped.append((record, superior))
+    if not format_ok:
+        return
+
+    # -- invert: contributors per node, in file order ---------------------
+    contributors = {ref: [] for ref in nodes}
+    for record in nodes.values():
+        superior_ref = record["parent_ref"]
+        if superior_ref in contributors:
+            contributors[superior_ref].append(record["node_ref"])
+
+    # -- completeness: a node without a contributor has no legal parent ---
+    incomplete = [
+        record for record in nodes.values()
+        if record["chain_level"] != "activity" and not contributors[record["node_ref"]]
+    ]
+    if incomplete or skipped:
+        for record, superior in skipped:
+            context.warn(
+                SHEET_TOC, record["row"],
+                f"Node {record['node_ref']} ({record['chain_level']}): parent_ref "
+                f"{superior['node_ref']} is {superior['chain_level']}, more than one "
+                "level up. The model enforces strict level adjacency.",
+                column="parent_ref",
+            )
+        for record in incomplete:
+            level_below = PARENT_LEVEL[record["chain_level"]]
+            context.warn(
+                SHEET_TOC, record["row"],
+                f"Node {record['node_ref']} ({record['chain_level']}) has no contributing "
+                f"{level_below}: the model roots the chain at Activity and needs one.",
+                column="node_ref",
+            )
+        context.warn(
+            SHEET_TOC, None,
+            f"Sheet skipped: {len(incomplete)} node(s) have no contributor and "
+            f"{len(skipped)} skip a level, so the tree cannot be built without "
+            "inventing nodes. Nothing from 06_toc_nodes is loaded; the rest of the "
+            "workbook is unaffected (decision 0010).",
+        )
+        return
+    if not nodes:
+        context.warn(SHEET_TOC, None, "Sheet has no node rows; nothing to load.")
+        return
+
+    # -- ultimate outcome: a field on the ToC, not a node -----------------
+    toc = None
+    if context.project is not None:
+        toc = getattr(context.project, "theory_of_change", None)
+    if ultimate is None:
+        context.warn(
+            SHEET_TOC, None,
+            "No ultimate_outcome row: TheoryOfChange.ultimate_outcome is left as it is.",
+        )
+    else:
+        current = toc.ultimate_outcome if toc is not None else ""
+        if _same(current, ultimate["statement"]):
+            context.plan.add_change(
+                SHEET_TOC, ACTION_UNCHANGED, ultimate["node_ref"],
+                detail="Ultimate outcome (TheoryOfChange.ultimate_outcome)",
+            )
+        else:
+            context.plan.add_change(
+                SHEET_TOC, ACTION_CREATE if toc is None else ACTION_UPDATE,
+                ultimate["node_ref"],
+                detail="Ultimate outcome (TheoryOfChange.ultimate_outcome)",
+                diffs=[FieldDiff("ultimate_outcome", _display(current), ultimate["statement"])],
+                payload={"kind": "ultimate", "statement": ultimate["statement"]},
+            )
+
+    # -- logframe links from 07.toc_node_ref ------------------------------
+    logframe_by_node = {}
+    for indicator_code, node_ref in context.indicator_toc_refs.items():
+        if node_ref not in nodes:
+            if ultimate is None or node_ref != ultimate["node_ref"]:
+                context.warn(
+                    SHEET_INDICATORS, context.indicator_rows.get(indicator_code),
+                    f"Indicator {indicator_code}: toc_node_ref {node_ref!r} is not in "
+                    "06_toc_nodes; no link made.",
+                    column="toc_node_ref",
+                )
+            continue
+        if node_ref in logframe_by_node:
+            context.warn(
+                SHEET_INDICATORS, context.indicator_rows.get(indicator_code),
+                f"Indicator {indicator_code}: node {node_ref} is already linked to "
+                f"{logframe_by_node[node_ref]}; a node carries one logframe row.",
+                column="toc_node_ref",
+            )
+            continue
+        logframe_by_node[node_ref] = indicator_code
+
+    # -- sync by content against the stored tree --------------------------
+    def superior_statement(record):
+        # The ultimate outcome is not a node, so an intermediate outcome has
+        # no superior on the stored side either; it is compared as such.
+        superior = nodes.get(record["parent_ref"])
+        return superior["statement"] if superior else ""
+
+    file_signatures = [
+        _toc_signature(r["chain_level"], r["statement"], superior_statement(r), r["assumptions"])
+        for r in nodes.values()
+    ]
+    stored = []
+    if toc is not None:
+        stored = list(
+            ToCNode.objects.filter(toc=toc)
+            .prefetch_related("children", "cross_pathways")
+            .order_by("pk")
+        )
+    stored_signatures = []
+    for node in stored:
+        # The sheet names one superior per node. In the model's orientation
+        # that superior is the node's child when it was the first
+        # contributor, or a cross-pathway target when it was not. Good
+        # enough to recognise an identical re-import, which is the case this
+        # comparison exists for.
+        children = sorted(node.children.all(), key=lambda c: c.pk)
+        targets = sorted(node.cross_pathways.all(), key=lambda c: c.pk)
+        superior = children[0] if children else (targets[0] if targets else None)
+        superior_text = superior.statement if superior else ""
+        stored_signatures.append(
+            _toc_signature(node.chain_level, node.statement, superior_text, node.assumptions)
+        )
+
+    from collections import Counter
+
+    if stored and Counter(file_signatures) == Counter(stored_signatures):
+        for record in nodes.values():
+            context.plan.add_change(
+                SHEET_TOC, ACTION_UNCHANGED, record["node_ref"],
+                detail=f"{record['chain_level']}: {record['statement'][:60]}",
+            )
+        return
+
+    if stored:
+        for node in stored:
+            context.plan.add_change(
+                SHEET_TOC, ACTION_DELETE, node.code or f"#{node.pk}",
+                detail=f"{node.chain_level}: {node.statement[:60]} — replaced by the file",
+                payload={"existing_pk": node.pk},
+            )
+        context.warn(
+            SHEET_TOC, None,
+            f"The stored tree ({len(stored)} node(s)) differs from the file and is "
+            "replaced as a whole: codes are regenerated, and logframe links and "
+            "cross-pathways added by hand are lost.",
+        )
+
+    # Creates bottom-up, so the applier meets each parent before its children.
+    ordered = sorted(nodes.values(), key=lambda r: (TOC_RANK[r["chain_level"]], r["row"]))
+    for record in ordered:
+        own = contributors[record["node_ref"]]
+        payload = {
+            "kind": "node",
+            "node_ref": record["node_ref"],
+            "chain_level": record["chain_level"],
+            "statement": record["statement"],
+            "assumptions": record["assumptions"],
+            "parent_ref": own[0] if own else None,
+            "extra_contributors": own[1:],
+            "logframe_indicator": logframe_by_node.get(record["node_ref"]),
+        }
+        detail = f"{record['chain_level']}: {record['statement'][:60]}"
+        if len(own) > 1:
+            detail += f" — {len(own)} contributors, {len(own) - 1} as cross-pathway(s)"
+        context.plan.add_change(
+            SHEET_TOC, ACTION_CREATE, record["node_ref"], detail=detail, payload=payload,
         )
 
 

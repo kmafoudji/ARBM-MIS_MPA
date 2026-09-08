@@ -15,6 +15,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0007](0007-sector-taxonomy-pillar-then-sector.md) | The sector taxonomy has two levels: a project sits in a sector, under a pillar |
 | [0008](0008-type-hierarchy-follows-poc-mockups.md) | Typographic hierarchy follows the POC mockups, not the LLF template's Light titles |
 | [0009](0009-basemap-served-from-postgis-via-martin.md) | The basemap is Natural Earth in PostGIS, served by Martin from an explicit source list |
+| [0010](0010-toc-sheet-loaded-when-complete.md) | The import loads a Theory of Change only when the tree is complete; fan-in becomes cross-pathways |
 
 ## Pending
 
@@ -29,7 +30,8 @@ Questions with no decision yet. Each becomes a numbered file when decided.
 - Whether and how the French backend is translated (`help_text` generates
   migrations; three tiers by risk).
 - The Logframe tab is gated on Theory of Change nodes rather than on logframe
-  rows; what suspended projects show.
+  rows (0010 unblocks it for workbooks with a complete tree, not for the two
+  legacy PADs); what suspended projects show.
 - Project deletion is physical and open to every writer — soft delete and the
   role allowed to delete.
 - Frontend routing on Azure Container Apps; the production images.
