@@ -42,6 +42,12 @@
   --sec-women-bg:  #DFCEF1;
   --sec-climate:   #0089C5;
   --sec-climate-bg:#AFDFF3;
+  /* L5 of each sector hue (design.md §2.2), for large tinted surfaces */
+  --sec-health-pale:  #FDF3F3;
+  --sec-agri-pale:    #EFFFFA;
+  --sec-infra-pale:   #FFFAF0;
+  --sec-women-pale:   #F7F0FF;
+  --sec-climate-pale: #DBF4FF;
 
   /* Status — Good green, Mixed blue, Attention yellow, Problematic coral */
   --green:       #0EB584;
@@ -1804,62 +1810,121 @@ input, select, textarea { font: inherit; color: inherit; }
    Tab bar grouped by pillar, filter chips, indicator card grid, detail drawer.
 --------------------------------------------------------------------------- */
 
-/* Tab bar: two rows of pills — the pillars (plus "All" and the cross-cutting
-   entry) on top, the sectors of the active pillar underneath. "All" is how the
-   sector filter is lifted, in both rows. */
-.cat-tabbar { margin-bottom: var(--s-3); }
+/* Page head: title block on the left, a compact search on the right. */
+.cat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-3);
+}
+.cat-head .view-lead { margin-top: var(--s-1); }
+.cat-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 300px;
+  max-width: 100%;
+  padding: 8px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+}
+.cat-search:focus-within { border-color: var(--lime); color: var(--ink-soft); }
+.cat-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+/* First row: one card per pillar, plus "all" and the cross-cutting entry. */
+.cat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+.cat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  font-family: var(--font-body);
+  padding: 13px 15px;
+  border-radius: var(--r-3);
+  border: 1.5px solid transparent;
+  background: var(--tab-pale, var(--surface));
+  transition: border-color 0.12s, background 0.12s;
+}
+.cat-card:hover { border-color: var(--tab-color); }
+.cat-card.active { border-color: var(--tab-color); border-width: 2px; }
+.cat-card.dashed { border-style: dashed; border-color: var(--tab-color); }
+.cat-card.dashed.active { border-color: var(--tab-color); }
+.cat-card-name { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.cat-card-value { font-size: 21px; font-weight: 800; color: var(--tab-color); line-height: 1; }
+.cat-card-sub { font-size: 11px; color: var(--tab-color); }
+.cat-card-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tab-color);
+}
+
+/* Second row: the entries of the active card. */
 .cat-tabrow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  padding-bottom: var(--s-1);
-  border-bottom: 1px solid var(--rule);
+  gap: 6px;
+  margin-bottom: var(--s-2);
 }
-.cat-tabrow.sub {
-  padding: var(--s-1) 0 var(--s-1) var(--s-2);
-  border-bottom: none;
-  border-left: 2px solid var(--tab-color, var(--rule));
-  margin-left: 2px;
+
+/* The numbers of the current selection, on one line. */
+.cat-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: var(--s-2);
 }
-.cat-tabrow.sub .cat-tab { font-size: 11.5px; padding: 4px 9px; }
+.cat-stats b { color: var(--ink); font-weight: 700; }
 .cat-tab {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   line-height: 1;
   color: var(--ink-soft);
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 7px 14px;
   white-space: nowrap;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-/* The pillar's own pill carries its colour as a dot, so the run of sectors
-   after it reads as belonging to it without a second row of labels. */
-.cat-tab.lead::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--tab-color, var(--muted));
-  flex-shrink: 0;
-}
-.cat-tab:hover { background: var(--rule-soft); color: var(--ink); }
+.cat-tab:hover { border-color: var(--subtle); color: var(--ink); }
 .cat-tab.active {
   background: var(--tab-color, var(--ink));
   border-color: var(--tab-color, var(--ink));
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
 }
-.cat-tab.active::before { background: rgba(255, 255, 255, 0.9); }
-.cat-tab.empty { opacity: 0.45; }
-.cat-tab-count { font-size: 10.5px; font-weight: 600; color: var(--subtle); }
-.cat-tab.active .cat-tab-count { color: rgba(255, 255, 255, 0.85); }
+.cat-tab.empty { opacity: 0.5; }
 
 /* Filter chips */
 .filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
