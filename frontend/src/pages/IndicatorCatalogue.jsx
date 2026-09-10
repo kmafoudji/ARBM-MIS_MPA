@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import Select from "../components/Select";
+import MultiSelect from "../components/MultiSelect";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import { groupSectorOptions } from "../utils.js";
 
@@ -212,6 +213,24 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
 }
 
 
+/**
+ * Logos ODD, servis depuis frontend/public/logos/sdg/<n>.png. `names` est la
+ * table numero -> libelle rendue par /api/reference/sdgs/ ; elle peut manquer
+ * le temps que la requete revienne, le titre retombe alors sur le numero.
+ */
+function SdgLogos({ numbers, names = {}, size = 20 }) {
+  if (!numbers || numbers.length === 0) return <span className="text-muted text-sm">—</span>;
+  return (
+    <span className="row" style={{ gap: 4, flexWrap: "wrap" }}>
+      {[...numbers].sort((a, b) => a - b).map((n) => (
+        <img key={n} src={`/logos/sdg/${n}.png`}
+          alt={`SDG ${n}`} title={names[n] ? `SDG ${n} — ${names[n]}` : `SDG ${n}`}
+          style={{ width: size, height: size, borderRadius: 3, display: "block" }} />
+      ))}
+    </span>
+  );
+}
+
 const DIRECTION_LABEL = {
   increase: "↑ Upward",
   decrease: "↓ Downward",
@@ -297,7 +316,7 @@ function ComboField({ label, choices, value, onChange, textarea }) {
 // ---------------------------------------------------------------------------
 // Fiche IRS dans le tiroir : lecture + formulaire d'edition inline
 // ---------------------------------------------------------------------------
-function IndicatorDrawer({ indicatorId, onClose, canEdit }) {
+function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {} }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
@@ -351,14 +370,27 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit }) {
     <>
       <div className="drawer-backdrop" onClick={onClose} />
       <aside className="drawer" role="dialog" aria-label="Indicator sheet">
-        <div className="drawer-header row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ minWidth: 0 }}>
-            <div className="text-mono text-sm text-muted">{detail?.code || ""}</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, lineHeight: 1.3 }}>
-              {detail?.name || "Loading..."}
+        <div className="drawer-header">
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <div className="drawer-code">{detail?.code || ""}</div>
+              <h2 className="drawer-name">{detail?.name || "Loading..."}</h2>
             </div>
+            <button className="drawer-close" onClick={onClose} aria-label="Close">×</button>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          {detail && (
+            <div className="drawer-tags">
+              <span className="drawer-tag">{typeLabel(detail)}</span>
+              <span className="drawer-tag">{detail.sector_name}</span>
+              {detail.subsector && <span className="drawer-tag">{detail.subsector}</span>}
+              <span className="drawer-tag">{DIRECTION_LABEL[detail.direction]}</span>
+              <span className="drawer-tag">v{detail.version || 1}</span>
+              <span className="drawer-sdgs">
+                <span className="drawer-sdgs-label">SDGs</span>
+                <SdgLogos numbers={detail.related_sdg_numbers} names={sdgName} size={22} />
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="drawer-body">
@@ -366,15 +398,12 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit }) {
 
           {detail && !editing && (
             <>
-              <div className="row" style={{ justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <span className={TYPE_COLOR[detail.indicator_type] || "badge"}>
-                    {typeLabel(detail)}
-                  </span>
-                  <span className="text-muted text-sm">{detail.sector_name}</span>
-                  {detail.subsector && <span className="text-muted text-sm">· {detail.subsector}</span>}
-                  <span className="text-muted text-sm">{DIRECTION_LABEL[detail.direction]}</span>
-                </div>
+              <div className="drawer-note row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <span>
+                  Institutional codebook (POL-2.01): the definition, the method and the
+                  disaggregation are the same for every project — only baselines and
+                  targets vary.
+                </span>
                 {canEdit && (
                   <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={startEdit}>
                     <Icon name="pencil" size={13} /> Edit
@@ -437,30 +466,11 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit }) {
                     </div>
                   </div>
                 )}
-                <div>
-                  <div className="dl-term">Version</div>
-                  <div className="dl-desc">v{detail.version || 1}</div>
-                </div>
               </div>
 
               {/* SF-6 : dimensions de désagrégation */}
               <DisaggregationDimensionsPanel indicatorId={detail.id} />
 
-              {detail.related_sdg_numbers?.length > 0 && (
-                <div className="dl" style={{ marginTop: 12 }}>
-                  <div>
-                    <div className="dl-term">Related SDGs</div>
-                    <div className="dl-desc row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      {detail.related_sdg_numbers.map((n) => (
-                        <span key={n} className="row" style={{ gap: 4, alignItems: "center" }}>
-                          <img src={`/logos/sdg/${n}.png`} alt={`SDG ${n}`} style={{ width: 24, height: 24 }} />
-                          <span className="text-sm">SDG {n}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
 
@@ -583,6 +593,17 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit }) {
                 value={form.responsible || ""}
                 onChange={(v) => setForm({ ...form, responsible: v })}
               />
+
+              <div className="field">
+                <label className="field-label" htmlFor="ind-sdgs">SDGs</label>
+                <MultiSelect
+                  id="ind-sdgs"
+                  placeholder="Search SDGs..."
+                  options={sdgs.map((s) => ({ value: s.number, label: `SDG ${s.number} — ${s.name}` }))}
+                  value={form.related_sdg_numbers || []}
+                  onChange={(v) => setForm({ ...form, related_sdg_numbers: v })}
+                />
+              </div>
 
               <div className="field">
                 <label className="field-label">Cross-cutting tags</label>
@@ -801,25 +822,50 @@ export default function IndicatorCatalogue() {
     return map;
   }, [sdgs]);
 
+  // Un indicateur porte souvent plusieurs ODD : il figure sous chacun d'eux,
+  // pas seulement sous le premier. `sdg` null = le groupe sans ODD, range en
+  // dernier et rotule par le sous-secteur.
   const sections = useMemo(() => {
     const byType = new Map();
     for (const ind of items) {
       if (!byType.has(ind.indicator_type)) byType.set(ind.indicator_type, new Map());
       const groups = byType.get(ind.indicator_type);
-      const n = ind.related_sdg_numbers?.[0];
-      const key = n ? `SDG ${n}${sdgName[n] ? `: ${sdgName[n]}` : ""}` : (ind.subsector || "");
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(ind);
+      const keys = (ind.related_sdg_numbers || []).length
+        ? ind.related_sdg_numbers.map((n) => `sdg:${n}`)
+        : [`sub:${ind.subsector || ""}`];
+      for (const key of keys) {
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(ind);
+      }
     }
+    const groupSort = (a, b) => {
+      const [ka, kb] = [a[0], b[0]];
+      const [sa, sb] = [ka.startsWith("sdg:"), kb.startsWith("sdg:")];
+      if (sa !== sb) return sa ? -1 : 1;                       // les ODD d'abord
+      if (sa) return Number(ka.slice(4)) - Number(kb.slice(4)); // puis par numero
+      return ka.localeCompare(kb);
+    };
     return [...byType.entries()]
       .sort((a, b) => TYPE_ORDER.indexOf(a[0]) - TYPE_ORDER.indexOf(b[0]))
       .map(([type, groups]) => ({
         type,
         label: TYPE_LABELS[type] || type,
-        groups: [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])),
-        count: [...groups.values()].reduce((n, g) => n + g.length, 0),
+        groups: [...groups.entries()].sort(groupSort).map(([key, rows]) => ({
+          key,
+          sdg: key.startsWith("sdg:") ? Number(key.slice(4)) : null,
+          label: key.startsWith("sdg:")
+            ? `SDG ${key.slice(4)}${sdgName[key.slice(4)] ? ` · ${sdgName[key.slice(4)]}` : ""}`
+            : (key.slice(4) || "No SDG linked"),
+          rows,
+        })),
+        count: [...new Set([...groups.values()].flat())].length,
       }));
   }, [items, sdgName]);
+
+  // Couleur de l'onglet actif : elle habille les barres de section.
+  const tabColor = activeTab?.tag
+    ? "var(--sec-women)"
+    : (sectorColor[activeTab?.sectorIds?.[activeTab.sectorIds.length - 1]] || DEFAULT_SECTOR_TOKEN);
 
   const withSdg  = items.filter((i) => i.related_sdg_numbers?.length > 0).length;
   const noLevel  = items.filter((i) => !i.chain_level).length;
@@ -949,16 +995,23 @@ export default function IndicatorCatalogue() {
 
       {!isLoading && sections.map((sec) => (
         <div key={sec.type} className="cat-section">
-          <div className="cat-section-title">
+          <div className="cat-section-bar" style={{ background: tabColor }}>
             {sec.label}<span className="count">{sec.count}</span>
           </div>
-          {sec.groups.map(([group, rows]) => (
-            <div key={group || "_"}>
-              {group && <div className="cat-group-title">{group}</div>}
+          {sec.groups.map((group) => (
+            <div key={group.key}>
+              <div className="cat-group-title">
+                {group.sdg && (
+                  <img src={`/logos/sdg/${group.sdg}.png`} alt="" style={{ width: 22, height: 22, borderRadius: 3 }} />
+                )}
+                {group.label}
+                <span className="count">{group.rows.length}</span>
+              </div>
               <div className="ind-grid">
-                {rows.map((ind) => (
+                {group.rows.map((ind) => (
                   <button key={ind.id} type="button"
                     className={`ind-card${openId === ind.id ? " open" : ""}`}
+                    style={{ borderLeftColor: sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN }}
                     onClick={() => setOpenId(ind.id)}>
                     <div className="ind-card-top">
                       <span className="ind-card-code" style={{ color: sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN }}>
@@ -978,6 +1031,11 @@ export default function IndicatorCatalogue() {
                         return <span key={t} style={{ background: style.bg, color: style.color }}>{t.replace("_", " ")}</span>;
                       })}
                     </div>
+                    {ind.related_sdg_numbers?.length > 0 && (
+                      <div className="ind-card-sdgs">
+                        <SdgLogos numbers={ind.related_sdg_numbers} names={sdgName} size={18} />
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -987,7 +1045,8 @@ export default function IndicatorCatalogue() {
       ))}
 
       {openId && (
-        <IndicatorDrawer indicatorId={openId} canEdit={canEdit} onClose={() => setOpenId(null)} />
+        <IndicatorDrawer indicatorId={openId} canEdit={canEdit} sdgs={sdgs || []} sdgName={sdgName}
+          onClose={() => setOpenId(null)} />
       )}
     </div>
   );

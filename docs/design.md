@@ -89,6 +89,33 @@ single-edge borders, no vertical colour stripes, no header or footer bars.
   Unicode glyphs are the only decorative devices.
 - Never a dark card and an accent card side by side.
 
+## Exceptions in force
+
+The rules above hold everywhere except where this section says otherwise. An
+exception is a decision, not an oversight: it names the page, the rule it
+breaks and why, so a later session does not "fix" it back.
+
+### Indicator Catalogue — the LLF library explorer
+
+Approved 10 September 2026, when the catalogue was rebuilt from the LLF
+indicator-library mockup (`.dev-notes/style/mockups/`). Three devices of that
+mockup carry structure the flat rules cannot, and are scoped to that page by
+their class names (`.cat-*`, `.ind-card`, `.drawer*` in `styles.css`):
+
+- **Solid sector-coloured section bars** (`.cat-section-bar`) and a **4 px
+  colour stripe** on the left edge of each indicator card — against "no
+  vertical colour stripes, no header bars". The colour is the sector's, taken
+  from the pillar mapping, so it carries meaning.
+- **A shadow on card hover** — against "no shadows anywhere". It is declared as
+  its own token, `--shadow-card-hover`; `--shadow-1` … `--shadow-3` stay
+  `none`, and nothing outside this page may use the new one.
+- **A charcoal panel header** on the detail drawer, with the code in Growth
+  Green mono on the dark ground — an application of the dark-background rule
+  outside the navigation, where it had only been used for the sidebar.
+
+Whether these devices become the rule for the whole interface is **not
+decided**; until it is, they stay on this page alone.
+
 ## Assets
 
 Logos ship in `frontend/public/logos/` (`llf/`, `donors/`, `agencies/`,
