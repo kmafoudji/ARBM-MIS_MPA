@@ -684,6 +684,10 @@ const CCT_TABS = [
   { key: "cct:climate", tags: ["climate"], label: "Climate", title: "Climate adaptation" },
 ];
 
+// Entree "tout le catalogue" : premier groupe de la barre, onglet par defaut,
+// et le seul moyen de lever le filtre de secteur.
+const ALL_TAB = { key: "all", label: "All", title: "The whole catalogue", all: true };
+
 // Les noms de pilier sont trop longs pour une barre compacte ; le nom complet
 // reste dans le `title` de l'onglet.
 const PILLAR_SHORT = {
@@ -752,69 +756,67 @@ export default function IndicatorCatalogue() {
   const all = useMemo(() => indicators || [], [indicators]);
 
   // --- Onglets : pilier -> "All <pilier>" + ses secteurs (ADR 0007) --------
-  const pillarGroups = useMemo(() => {
+  // Deux rangees : les groupes (tout / les piliers / le transversal) en haut,
+  // les entrees du groupe actif en dessous. `lead` est l'entree du groupe
+  // elle-meme — "tout le pilier" — et sert de bouton pour lever le filtre de
+  // secteur sans quitter le pilier.
+  const tabGroups = useMemo(() => {
     const bySeq = (a, b) => (a.sequence || 0) - (b.sequence || 0) || a.name.localeCompare(b.name);
-    return groupSectorOptions(sectors)
+    const pillars = groupSectorOptions(sectors)
       .sort((a, b) => bySeq(a[0], b[0]))
       .map(([pillar, children]) => ({
+        id: `p${pillar.id}`,
         pillar,
         color: PILLAR_TOKEN[pillar.code] || DEFAULT_SECTOR_TOKEN,
-        // Le premier onglet est l'entree du groupe : le pilier entier.
-        tabs: [
-          {
-            key: `p:${pillar.id}`,
-            label: PILLAR_SHORT[pillar.code] || pillar.name,
-            title: `All ${pillar.name}`,
-            sectorIds: [pillar.id, ...children.map((c) => c.id)],
-          },
-          ...[...children].sort(bySeq).map((c) => ({ key: `s:${c.id}`, label: c.name, title: c.name, sectorIds: [c.id] })),
-        ],
+        lead: {
+          key: `p:${pillar.id}`,
+          label: PILLAR_SHORT[pillar.code] || pillar.name,
+          title: `All ${pillar.name}`,
+          sectorIds: [pillar.id, ...children.map((c) => c.id)],
+        },
+        tabs: [...children].sort(bySeq).map((c) => ({
+          key: `s:${c.id}`, label: c.name, title: c.name, sectorIds: [c.id],
+        })),
       }));
+    return [
+      { id: "all", color: "var(--ink)", lead: ALL_TAB, tabs: [] },
+      ...pillars,
+      { id: "cct", color: "var(--sec-women)", lead: CCT_TABS[0], tabs: CCT_TABS.slice(1) },
+    ];
   }, [sectors]);
+  const pillarGroups = useMemo(() => tabGroups.filter((g) => g.pillar), [tabGroups]);
 
   const sectorColor = useMemo(() => {
     const map = {};
-    for (const { pillar, color, tabs } of pillarGroups) {
-      map[pillar.id] = color;
-      for (const t of tabs) for (const id of t.sectorIds) map[id] = color;
+    for (const { color, lead } of pillarGroups) {
+      for (const id of lead.sectorIds) map[id] = color;
     }
     return map;
   }, [pillarGroups]);
 
-  const countFor = (t) =>
-    t.tags
-      ? all.filter((i) => t.tags.some((tag) => (i.cross_cutting_tags || []).includes(tag))).length
-      : all.filter((i) => t.sectorIds.includes(i.sector)).length;
+  const countFor = (t) => {
+    if (t.all) return all.length;
+    if (t.tags) return all.filter((i) => t.tags.some((tag) => (i.cross_cutting_tags || []).includes(tag))).length;
+    return all.filter((i) => t.sectorIds.includes(i.sector)).length;
+  };
 
-  // Onglet par defaut : celui qui porte le plus d'indicateurs.
-  const firstTab = pillarGroups[0]?.tabs[0]?.key;
-  const defaultTab = useMemo(() => {
-    let best = null, bestN = -1;
-    for (const g of pillarGroups) {
-      for (const t of g.tabs) {
-        if (t.key.startsWith("p:")) continue;
-        const n = countFor(t);
-        if (n > bestN) { best = t.key; bestN = n; }
-      }
-    }
-    return best;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pillarGroups, all]);
-
-  const activeKey = tab || defaultTab || firstTab;
-  const activeTab = useMemo(() => {
-    const cct = CCT_TABS.find((t) => t.key === activeKey);
-    if (cct) return cct;
-    for (const g of pillarGroups) {
-      const t = g.tabs.find((x) => x.key === activeKey);
-      if (t) return t;
-    }
-    return null;
-  }, [activeKey, pillarGroups]);
+  // Le catalogue s'ouvre sur "All" : c'est aussi la façon de lever le filtre.
+  const activeKey = tab || ALL_TAB.key;
+  const activeGroup = useMemo(
+    () => tabGroups.find((g) => g.lead.key === activeKey || g.tabs.some((t) => t.key === activeKey)) || tabGroups[0],
+    [activeKey, tabGroups],
+  );
+  const activeTab = useMemo(
+    () => (activeGroup?.lead.key === activeKey
+      ? activeGroup.lead
+      : activeGroup?.tabs.find((t) => t.key === activeKey)) || ALL_TAB,
+    [activeGroup, activeKey],
+  );
 
   // --- Contenu de l'onglet ------------------------------------------------
   const tabItems = useMemo(() => {
     if (!activeTab) return [];
+    if (activeTab.all) return all;
     if (activeTab.tags) {
       return all.filter((i) => activeTab.tags.some((t) => (i.cross_cutting_tags || []).includes(t)));
     }
@@ -865,9 +867,7 @@ export default function IndicatorCatalogue() {
   }, [items]);
 
   // Couleur de l'onglet actif : elle habille les barres de section.
-  const tabColor = activeTab?.tags
-    ? "var(--sec-women)"
-    : (sectorColor[activeTab?.sectorIds?.[activeTab.sectorIds.length - 1]] || DEFAULT_SECTOR_TOKEN);
+  const tabColor = activeGroup?.color || DEFAULT_SECTOR_TOKEN;
 
   const withSdg  = items.filter((i) => i.related_sdg_numbers?.length > 0).length;
   const noLevel  = items.filter((i) => !i.chain_level).length;
@@ -906,29 +906,42 @@ export default function IndicatorCatalogue() {
         </div>
       </div>
 
-      {/* Onglets sur une seule ligne : un pilier par pastille ; les secteurs du
-          pilier actif se deplient a sa suite, les autres restent replies. */}
+      {/* Deux rangees : les piliers, puis les secteurs du pilier actif. */}
       <div className="cat-tabbar">
-        {[...pillarGroups.map(({ pillar, color, tabs }) => ({ id: `p${pillar.id}`, color, tabs })),
-          { id: "cct", color: "var(--sec-women)", tabs: CCT_TABS }].map((group) => {
-          const open = group.tabs.some((t) => t.key === activeKey);
-          const shown = open ? group.tabs : group.tabs.slice(0, 1);
-          return (
-            <span key={group.id} className="cat-tabgroup" style={{ "--tab-color": group.color }}>
-              {shown.map((t, i) => {
-                const n = countFor(t);
-                return (
-                  <button key={t.key} title={t.title || t.label}
-                    className={`cat-tab${activeKey === t.key ? " active" : ""}`
-                      + (i === 0 ? " lead" : "") + (n === 0 ? " empty" : "")}
-                    onClick={() => selectTab(t.key)}>
-                    {t.label}<span className="cat-tab-count">{n}</span>
-                  </button>
-                );
-              })}
-            </span>
-          );
-        })}
+        <div className="cat-tabrow">
+          {tabGroups.map((g) => {
+            const n = countFor(g.lead);
+            const on = activeGroup?.id === g.id;
+            return (
+              <button key={g.id} title={g.lead.title || g.lead.label}
+                style={{ "--tab-color": g.color }}
+                className={`cat-tab lead${on ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                onClick={() => selectTab(g.lead.key)}>
+                {g.lead.label}<span className="cat-tab-count">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+        {activeGroup?.tabs.length > 0 && (
+          <div className="cat-tabrow sub" style={{ "--tab-color": activeGroup.color }}>
+            <button
+              className={`cat-tab${activeKey === activeGroup.lead.key ? " active" : ""}`}
+              title={activeGroup.lead.title}
+              onClick={() => selectTab(activeGroup.lead.key)}>
+              All<span className="cat-tab-count">{countFor(activeGroup.lead)}</span>
+            </button>
+            {activeGroup.tabs.map((t) => {
+              const n = countFor(t);
+              return (
+                <button key={t.key} title={t.title || t.label}
+                  className={`cat-tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                  onClick={() => selectTab(t.key)}>
+                  {t.label}<span className="cat-tab-count">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* KPI de l'onglet */}
