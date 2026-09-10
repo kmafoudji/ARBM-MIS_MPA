@@ -14,9 +14,9 @@ const TYPE_ICONS = {
 };
 
 const STATUS_CONFIG = {
-  pending:  { color: "#d97706", bg: "#fef9c3", label: "Pending" },
-  verified: { color: "#16a34a", bg: "#dcfce7", label: "Verified" },
-  rejected: { color: "#dc2626", bg: "#fee2e2", label: "Rejected" },
+  pending:  { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "Pending" },
+  verified: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Verified" },
+  rejected: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Rejected" },
 };
 
 export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
@@ -73,14 +73,14 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
   const evidences = data?.results || [];
 
   return (
-    <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, marginTop: 8 }}>
+    <div style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: 10, padding: 16, marginTop: 8 }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <span style={{ fontWeight: 700, fontSize: 12, color: "#374151" }}>
-          <Icon name="folder" size={13} style={{ marginRight: 6, color: "#A4C53F" }} />
+        <span style={{ fontWeight: 700, fontSize: 12, color: "var(--ink-soft)" }}>
+          <Icon name="folder" size={13} style={{ marginRight: 6, color: "var(--lime)" }} />
           Evidence & Supporting Documents
           {evidences.length > 0 && (
-            <span style={{ marginLeft: 8, fontSize: 11, background: "#f0f6dc", color: "#7a9420", padding: "1px 8px", borderRadius: 99 }}>
+            <span style={{ marginLeft: 8, fontSize: 11, background: "var(--lime-pale)", color: "var(--lime-darker)", padding: "1px 8px", borderRadius: 99 }}>
               {evidences.length}
             </span>
           )}
@@ -100,40 +100,40 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
       {/* Liste des preuves */}
       {isLoading && <span className="spinner" />}
       {evidences.length === 0 && !adding && (
-        <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, fontStyle: "italic" }}>No evidence attached yet.</p>
+        <p style={{ fontSize: 12, color: "var(--subtle)", margin: 0, fontStyle: "italic" }}>No evidence attached yet.</p>
       )}
       {evidences.map(ev => {
         const sc = STATUS_CONFIG[ev.status] || STATUS_CONFIG.pending;
         return (
-          <div key={ev.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
+          <div key={ev.id} style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flex: 1 }}>
-                <Icon name={TYPE_ICONS[ev.evidence_type] || "folder"} size={16} style={{ color: "#9ca3af", flexShrink: 0, marginTop: 1 }} />
+                <Icon name={TYPE_ICONS[ev.evidence_type] || "folder"} size={16} style={{ color: "var(--subtle)", flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 12, color: "#111" }}>{ev.title}</div>
-                  {ev.description && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{ev.description}</div>}
+                  <div style={{ fontWeight: 600, fontSize: 12, color: "var(--ink)" }}>{ev.title}</div>
+                  {ev.description && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{ev.description}</div>}
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 7px", borderRadius: 99, background: sc.bg, color: sc.color }}>
                       {sc.label}
                     </span>
-                    <span style={{ fontSize: 10, color: "#9ca3af" }}>{ev.evidence_type_display}</span>
-                    {ev.uploaded_by && <span style={{ fontSize: 10, color: "#9ca3af" }}>by {ev.uploaded_by}</span>}
+                    <span style={{ fontSize: 10, color: "var(--subtle)" }}>{ev.evidence_type_display}</span>
+                    {ev.uploaded_by && <span style={{ fontSize: 10, color: "var(--subtle)" }}>by {ev.uploaded_by}</span>}
                     {ev.file_url && (
                       <a href={ev.file_url} target="_blank" rel="noreferrer"
-                        style={{ fontSize: 10, color: "#1B5A8C", display: "flex", alignItems: "center", gap: 3 }}>
+                        style={{ fontSize: 10, color: "var(--blue)", display: "flex", alignItems: "center", gap: 3 }}>
                         <Icon name="download" size={10} /> Download
                       </a>
                     )}
                     {ev.external_url && (
                       <a href={ev.external_url} target="_blank" rel="noreferrer"
-                        style={{ fontSize: 10, color: "#1B5A8C", display: "flex", alignItems: "center", gap: 3 }}>
+                        style={{ fontSize: 10, color: "var(--blue)", display: "flex", alignItems: "center", gap: 3 }}>
                         <Icon name="globe" size={10} /> Open link
                       </a>
                     )}
                   </div>
                   {/* Notes vérification */}
                   {ev.notes && (
-                    <div style={{ fontSize: 11, color: "#6b7280", fontStyle: "italic", marginTop: 4 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic", marginTop: 4 }}>
                       Note: {ev.notes}
                     </div>
                   )}
@@ -147,11 +147,11 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
                       <input className="field-input" style={{ fontSize: 11, height: 28, width: 140 }}
                         placeholder="Verification notes…" value={notes}
                         onChange={e => setNotes(e.target.value)} />
-                      <button className="btn btn-ghost btn-sm" style={{ color: "#16a34a", padding: "2px 8px", fontSize: 11 }}
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--lime)", padding: "2px 8px", fontSize: 11 }}
                         onClick={() => actionMutation.mutate({ evId: ev.id, action: "verify", notes })}>
                         ✓ Verify
                       </button>
-                      <button className="btn btn-ghost btn-sm" style={{ color: "#dc2626", padding: "2px 8px", fontSize: 11 }}
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--rose)", padding: "2px 8px", fontSize: 11 }}
                         onClick={() => actionMutation.mutate({ evId: ev.id, action: "reject", notes })}>
                         ✗ Reject
                       </button>
@@ -165,7 +165,7 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
                   )}
                 </div>
               )}
-              <button className="btn btn-ghost btn-sm" style={{ color: "#dc2626", flexShrink: 0 }}
+              <button className="btn btn-ghost btn-sm" style={{ color: "var(--rose)", flexShrink: 0 }}
                 onClick={() => deleteMutation.mutate(ev.id)}>
                 <Icon name="trash" size={11} />
               </button>
@@ -176,7 +176,7 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
 
       {/* Formulaire upload */}
       {adding && (
-        <div style={{ background: "#f0f6dc", border: "1px solid #A4C53F", borderRadius: 10, padding: 14, marginTop: 8 }}>
+        <div style={{ background: "var(--lime-pale)", border: "1px solid var(--lime)", borderRadius: 10, padding: 14, marginTop: 8 }}>
           <div className="grid grid-2" style={{ gap: 10, marginBottom: 10 }}>
             <div className="field" style={{ marginBottom: 0 }}>
               <label className="field-label">Title *</label>

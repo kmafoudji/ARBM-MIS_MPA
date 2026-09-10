@@ -118,8 +118,8 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
             {[
               { label: "Total",     val: total,     color: "var(--ink)" },
               { label: "Approved",  val: approved,  color: "var(--lime-dark, var(--lime))" },
-              { label: "Submitted", val: submitted, color: "var(--navy, #1B5A8C)" },
-              { label: "Overdue",   val: overdue,   color: overdue > 0 ? "#dc2626" : "var(--text-muted)" },
+              { label: "Submitted", val: submitted, color: "var(--navy, var(--blue))" },
+              { label: "Overdue",   val: overdue,   color: overdue > 0 ? "var(--rose)" : "var(--text-muted)" },
             ].map((k) => (
               <div key={k.label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.val}</div>
@@ -172,11 +172,11 @@ export default function ReportingSchedule({ projectId, reportingFrequency, proje
                     <td><strong>{p.label}</strong></td>
                     <td className="text-sm">{fmtDate(p.start_date)}</td>
                     <td className="text-sm">{fmtDate(p.end_date)}</td>
-                    <td className="text-sm" style={{ color: late ? "#dc2626" : undefined }}>
+                    <td className="text-sm" style={{ color: late ? "var(--rose)" : undefined }}>
                       {fmtDate(p.due_date)}
-                      {late && <Icon name="alert-circle" size={12} style={{ marginLeft: 4, color: "#dc2626" }} />}
+                      {late && <Icon name="alert-circle" size={12} style={{ marginLeft: 4, color: "var(--rose)" }} />}
                     </td>
-                    <td className="text-sm" style={{ color: p.is_late ? "#dc2626" : undefined }}>
+                    <td className="text-sm" style={{ color: p.is_late ? "var(--rose)" : undefined }}>
                       {fmtDate(p.submitted_at)}
                     </td>
                     <td>

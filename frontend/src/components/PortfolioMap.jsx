@@ -28,11 +28,11 @@ function clusterElement(leaves) {
   });
   const el = document.createElement("div");
   el.style.cssText = "position:relative;width:26px;height:26px;border-radius:50%;cursor:pointer;" +
-    "box-shadow:0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,0.25);" +
+    "box-shadow:0 0 0 2px #FFFFFF, 0 1px 4px rgba(0,0,0,0.25);" +
     `background:conic-gradient(${stops.join(",")})`;
   const inner = document.createElement("div");
   inner.textContent = String(leaves.length);
-  inner.style.cssText = "position:absolute;inset:6px;border-radius:50%;background:#fff;" +
+  inner.style.cssText = "position:absolute;inset:6px;border-radius:50%;background:#FFFFFF;" +
     "display:flex;align-items:center;justify-content:center;" +
     "font:700 10px/1 system-ui,sans-serif;color:#2B2B2B";
   el.append(inner);
@@ -149,19 +149,19 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       el.style.cssText = "font-family:inherit;padding:12px 14px;min-width:220px;max-width:280px";
       el.append(div(p.name || "—", "font-size:13px;font-weight:600;color:#2B2B2B;line-height:1.3"));
       const ref = [clean(p.official_reference_number), clean(p.lead_country_name)].filter(Boolean).join(" · ");
-      if (ref) el.append(div(ref, "font-size:11px;color:#9ca3af;margin-top:2px"));
+      if (ref) el.append(div(ref, "font-size:11px;color:#A7A7A7;margin-top:2px"));
 
       const sector = clean(p.primary_sector_name);
       if (sector) {
         const row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:#4b5563";
+        row.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:#545454";
         const pillar = clean(p.pillar_name);
         row.append(sectorDot(p.primary_sector_color), div(pillar ? `${pillar} › ${sector}` : sector, ""));
         el.append(row);
       }
       const stage = clean(p.lifecycle_stage_display);
       if (stage) {
-        el.append(div(stage, "display:inline-block;margin-top:8px;font-size:10px;font-weight:600;color:#374151;background:#f3f4f6;border-radius:999px;padding:2px 8px"));
+        el.append(div(stage, "display:inline-block;margin-top:8px;font-size:10px;font-weight:600;color:#545454;background:#F7F6F6;border-radius:999px;padding:2px 8px"));
       }
 
       const btn = document.createElement("button");
@@ -177,16 +177,16 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     clusterHandlersRef.current.click = (lngLat, leaves) => {
       const el = document.createElement("div");
       el.style.cssText = "font-family:inherit;padding:10px 14px;min-width:240px";
-      el.append(div(`${leaves.length} projects`, "font-size:11px;color:#9ca3af;margin-bottom:6px"));
+      el.append(div(`${leaves.length} projects`, "font-size:11px;color:#A7A7A7;margin-bottom:6px"));
       leaves.forEach((leaf) => {
         const p = leaf.properties;
         const row = document.createElement("button");
-        row.style.cssText = "display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-top:1px solid #f0f0ee;padding:8px 0;cursor:pointer;font-family:inherit";
+        row.style.cssText = "display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-top:1px solid #ECEBE8;padding:8px 0;cursor:pointer;font-family:inherit";
         const text = document.createElement("div");
         text.style.cssText = "min-width:0";
         text.append(div(p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B;line-height:1.3"));
         const meta = [clean(p.official_reference_number), clean(p.primary_sector_name)].filter(Boolean).join(" · ");
-        if (meta) text.append(div(meta, "font-size:11px;color:#6b7280;margin-top:1px"));
+        if (meta) text.append(div(meta, "font-size:11px;color:#7E7E7E;margin-top:1px"));
         row.append(sectorDot(p.primary_sector_color), text);
         row.addEventListener("click", () => onProjectClickRef.current?.(Number(p.id)));
         el.append(row);
@@ -197,7 +197,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       if (popupRef.current) return;
       const el = document.createElement("div");
       el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap";
-      el.append(div(`${count} projects · click to list`, "font-size:11px;color:#4b5563"));
+      el.append(div(`${count} projects · click to list`, "font-size:11px;color:#545454"));
       hover.setLngLat(lngLat).setDOMContent(el).addTo(map);
     };
     clusterHandlersRef.current.leave = () => hover.remove();
@@ -213,7 +213,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap;display:flex;gap:6px;align-items:baseline";
       el.append(div(clean(p.official_reference_number) || p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B"));
       const country = clean(p.lead_country_name);
-      if (country) el.append(div(country, "font-size:11px;color:#6b7280"));
+      if (country) el.append(div(country, "font-size:11px;color:#7E7E7E"));
       hover.setLngLat(f.geometry.coordinates).setDOMContent(el).addTo(map);
     });
     map.on("mouseleave", "proj-points", () => {
@@ -360,7 +360,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
   return (
     <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
-      border: "1px solid #e5e7eb",
+      border: "1px solid #ECEBE8",
       // compact: fixed dashboard height so the row does not stretch with its neighbour
       ...(compact ? { height: 320, display: "flex" } : {}) }}>
 
@@ -369,31 +369,31 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         .maplibregl-ctrl-group {
           border-radius: 8px !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
-          border: 1px solid #e5e7eb !important;
+          border: 1px solid #ECEBE8 !important;
           overflow: hidden;
         }
         .maplibregl-ctrl-group button {
           width: 32px !important; height: 32px !important;
           background: rgba(255,255,255,0.95) !important;
           border: none !important;
-          border-bottom: 1px solid #f0f0ee !important;
+          border-bottom: 1px solid #ECEBE8 !important;
         }
         .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
         .maplibregl-ctrl-group button:hover { background: #EFFFFA !important; }
         .maplibregl-ctrl-group button span { filter: none !important; }
         .maplibregl-ctrl-scale {
           background: rgba(255,255,255,0.85) !important;
-          border: 1px solid #ccc !important;
+          border: 1px solid #ECEBE8 !important;
           border-radius: 4px !important;
           font-size: 10px !important;
-          color: #6b7280 !important;
+          color: #7E7E7E !important;
           padding: 1px 5px !important;
         }
         .arbm-popup .maplibregl-popup-content {
           border-radius: 10px !important;
           padding: 0 !important;
           box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-          border: 1px solid #e5e7eb !important;
+          border: 1px solid #ECEBE8 !important;
         }
         .arbm-popup .maplibregl-popup-tip { display: none !important; }
         .arbm-popup-hover { pointer-events: none; }
@@ -402,8 +402,8 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       {/* Loading */}
       {isLoading && (
         <div style={{ position: "absolute", inset: 0, zIndex: 5,
-          background: "#EDEDEA", display: "flex",
-          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>
+          background: "#F7F6F6", display: "flex",
+          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#A7A7A7" }}>
           <span className="spinner" style={{ marginRight: 8 }} /> Loading map…
         </div>
       )}
@@ -412,8 +412,8 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       {!isLoading && geojson && feats.length === 0 && (
         <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
           zIndex: 5, background: "rgba(255,255,255,0.95)", borderRadius: 10,
-          padding: "8px 14px", fontSize: 12, color: "#6b7280",
-          border: "1px solid #e5e7eb" }}>
+          padding: "8px 14px", fontSize: 12, color: "#7E7E7E",
+          border: "1px solid #ECEBE8" }}>
           No projects to display on the map
         </div>
       )}
@@ -423,12 +423,11 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       {/* Legend — colour = primary sector */}
       {legend.length > 0 && !isLoading && (
         <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5,
-          background: "rgba(255,255,255,0.92)", border: "1px solid #e5e7eb",
+          background: "rgba(255,255,255,0.92)", border: "1px solid #ECEBE8",
           borderRadius: 8, padding: compact ? "6px 8px" : "8px 10px",
-          fontSize: 11, color: "#4b5563", maxWidth: 200,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          fontSize: 11, color: "#545454", maxWidth: 200, }}>
           <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
-            textTransform: "uppercase", color: "#9ca3af", marginBottom: 4 }}>
+            textTransform: "uppercase", color: "#A7A7A7", marginBottom: 4 }}>
             Primary sector
           </div>
           {legend.map(([name, color]) => (
@@ -444,7 +443,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
       {/* Attribution */}
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
-        color: "#9ca3af", zIndex: 5, background: "rgba(255,255,255,0.7)",
+        color: "#A7A7A7", zIndex: 5, background: "rgba(255,255,255,0.7)",
         padding: "2px 6px", borderRadius: 4 }}>
         {ATTRIBUTION}
       </div>

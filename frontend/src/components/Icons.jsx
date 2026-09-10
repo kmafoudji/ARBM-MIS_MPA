@@ -66,8 +66,8 @@ export const IconPortfolio = () => (
 
 export const BrandMark = ({ size = 32 }) => (
   <svg width={size} height={size} viewBox="0 0 38 38" aria-hidden="true">
-    <polygon points="19,2 36,19 19,36 2,19" fill="#111111"/>
-    <polygon points="19,7 31,19 19,31 7,19" fill="#A4C53F"/>
+    <polygon points="19,2 36,19 19,36 2,19" fill="#2B2B2B"/>
+    <polygon points="19,7 31,19 19,31 7,19" fill="#0EB584"/>
   </svg>
 );
 
@@ -86,9 +86,9 @@ export const LogoFull = ({ dark = false, height = 40, width }) => (
 
 export const MicrosoftLogo = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-    <rect x="0" y="0" width="7" height="7" fill="#F35325" />
-    <rect x="9" y="0" width="7" height="7" fill="#81BC06" />
-    <rect x="0" y="9" width="7" height="7" fill="#05A6F0" />
-    <rect x="9" y="9" width="7" height="7" fill="#FFBA08" />
+    <rect x="0" y="0" width="7" height="7" fill="#FB563B" />
+    <rect x="9" y="0" width="7" height="7" fill="#0EB584" />
+    <rect x="0" y="9" width="7" height="7" fill="#0089C5" />
+    <rect x="9" y="9" width="7" height="7" fill="#F49D07" />
   </svg>
 );

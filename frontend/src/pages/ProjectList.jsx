@@ -13,11 +13,11 @@ import PortfolioMap from "../components/PortfolioMap.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 const STAGE_GROUPS = {
-  pipeline:      { label: "Pipeline",      color: "#6366f1", bg: "#ede9fe", keys: ["concept_note","pipeline_taskforce_review","pipeline_taskforce_approved","preparation_identification"] },
-  appraisal:     { label: "Appraisal",     color: "#d97706", bg: "#fef9c3", keys: ["trc_endorsed","ic_approved","bed_approved","appraisal"] },
-  implementation:{ label: "Active",        color: "#A4C53F", bg: "#f0f6dc", keys: ["effective","implementing","mid_term_review"] },
-  closing:       { label: "Closing",       color: "#16a34a", bg: "#dcfce7", keys: ["substantially_complete","closed"] },
-  suspended:     { label: "Suspended",     color: "#dc2626", bg: "#fee2e2", keys: ["suspended","cancelled"] },
+  pipeline:      { label: "Pipeline",      color: "var(--violet)", bg: "var(--violet-soft)", keys: ["concept_note","pipeline_taskforce_review","pipeline_taskforce_approved","preparation_identification"] },
+  appraisal:     { label: "Appraisal",     color: "var(--orange)", bg: "var(--sec-infra-pale)", keys: ["trc_endorsed","ic_approved","bed_approved","appraisal"] },
+  implementation:{ label: "Active",        color: "var(--lime)", bg: "var(--lime-pale)", keys: ["effective","implementing","mid_term_review"] },
+  closing:       { label: "Closing",       color: "var(--lime)", bg: "var(--lime-pale)", keys: ["substantially_complete","closed"] },
+  suspended:     { label: "Suspended",     color: "var(--rose)", bg: "var(--rose-soft)", keys: ["suspended","cancelled"] },
 };
 
 const STAGE_BADGE = {
@@ -42,7 +42,7 @@ function stageGroup(stage) {
   for (const [k, g] of Object.entries(STAGE_GROUPS)) {
     if (g.keys.includes(stage)) return { key: k, ...g };
   }
-  return { key: "pipeline", label: "Unknown", color: "#9ca3af", bg: "#f3f4f6" };
+  return { key: "pipeline", label: "Unknown", color: "var(--subtle)", bg: "var(--surface-2)" };
 }
 
 /* ── Sous-composants ─────────────────────────────────────────────────────── */
@@ -59,27 +59,27 @@ function KpiBar({ projects }) {
 
   return (
     <div style={{
-      display: "flex", gap: 0, background: "#fff",
-      border: "1px solid #e5e7eb", borderRadius: 12,
+      display: "flex", gap: 0, background: "var(--paper)",
+      border: "1px solid var(--rule)", borderRadius: 12,
       overflow: "hidden", marginBottom: 20,
     }}>
       {[
-        { value: total,                      label: "Total projects",     color: "#1B5A8C", border: true },
-        { value: active,                     label: "Active",             color: "#A4C53F", border: true },
-        { value: formatBudget(budget),       label: "Portfolio budget",   color: "#374151", border: true },
-        { value: countries,                  label: "Countries covered",  color: "#6366f1", border: false },
+        { value: total,                      label: "Total projects",     color: "var(--blue)", border: true },
+        { value: active,                     label: "Active",             color: "var(--lime)", border: true },
+        { value: formatBudget(budget),       label: "Portfolio budget",   color: "var(--ink-soft)", border: true },
+        { value: countries,                  label: "Countries covered",  color: "var(--violet)", border: false },
       ].map(({ value, label, color, border }) => (
         <div key={label} style={{
           flex: 1, padding: "16px 20px", textAlign: "center",
-          borderRight: border ? "1px solid #f0f0ee" : "none",
+          borderRight: border ? "1px solid var(--rule)" : "none",
         }}>
           <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>{label}</div>
+          <div style={{ fontSize: 11, color: "var(--subtle)", marginTop: 4 }}>{label}</div>
         </div>
       ))}
       {/* Stade bar */}
-      <div style={{ flex: 2, padding: "12px 20px", borderLeft: "1px solid #f0f0ee" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+      <div style={{ flex: 2, padding: "12px 20px", borderLeft: "1px solid var(--rule)" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
           By stage
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -114,10 +114,10 @@ function daysSince(iso) {
 }
 
 function daysColor(days, terminal) {
-  if (days == null || terminal) return "#111";
-  if (days >= DAYS_STALLED) return "#dc2626";
-  if (days >= DAYS_WARN) return "#d97706";
-  return "#111";
+  if (days == null || terminal) return "var(--ink)";
+  if (days >= DAYS_STALLED) return "var(--rose)";
+  if (days >= DAYS_WARN) return "var(--orange)";
+  return "var(--ink)";
 }
 
 function stageSummary(project) {
@@ -139,10 +139,10 @@ function StageBar({ idx, exception }) {
     <div style={{ display: "flex", alignItems: "center", gap: 3, opacity: exception ? 0.35 : 1 }}>
       {LIFECYCLE_ORDER.map((s, i) => {
         const done = i <= idx;
-        const color = !done ? "#e5e7eb" : GATE_STAGES.has(s) ? "#16a34a" : "#1B5A8C";
+        const color = !done ? "var(--rule)" : GATE_STAGES.has(s) ? "var(--lime)" : "var(--blue)";
         return (
           <span key={s} style={{ display: "contents" }}>
-            {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 14, background: "#d1d5db", margin: "0 3px" }} />}
+            {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 14, background: "var(--rule)", margin: "0 3px" }} />}
             <span title={s} style={{ flex: 1, height: 7, borderRadius: 99, background: color, minWidth: 14 }} />
           </span>
         );
@@ -166,31 +166,29 @@ function ProjectCard({ project, onClick }) {
   ].filter(Boolean);
 
   return (
-    <div onClick={() => onClick(project.id)}
+    <div className="card-click" onClick={() => onClick(project.id)}
       style={{
-        background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12,
-        padding: "14px 20px", cursor: "pointer", transition: "all .15s",
+        background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 12,
+        padding: "14px 20px",
         borderLeft: `4px solid ${sg.color}`,
         display: "grid", gridTemplateColumns: "minmax(260px, 1fr) minmax(280px, 1.1fr) 90px 130px",
         gap: 24, alignItems: "center",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px #0001"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; }}
     >
       {/* Identity */}
       <div style={{ minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "monospace", fontSize: 11, color: sg.color, fontWeight: 700, letterSpacing: .5 }}>
           <span>{project.official_reference_number}</span>
-          <span style={{ color: "#d1d5db" }}>·</span>
+          <span style={{ color: "var(--rule)" }}>·</span>
           <Flag iso2={project.lead_country_iso2} size={12} />
           <span style={{ textTransform: "uppercase" }}>{project.lead_country_name}</span>
-          {project.hub_name && <><span style={{ color: "#d1d5db" }}>·</span><span style={{ textTransform: "uppercase" }}>{project.hub_name}</span></>}
+          {project.hub_name && <><span style={{ color: "var(--rule)" }}>·</span><span style={{ textTransform: "uppercase" }}>{project.hub_name}</span></>}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "#111", margin: "3px 0 4px", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)", margin: "3px 0 4px", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
              title={project.name}>
           {project.name}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6b7280" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)" }}>
           <SectorIcon name={project.primary_sector_icon} color={project.primary_sector_color} size={14} />
           <span>{meta.join(" · ")}</span>
         </div>
@@ -199,7 +197,7 @@ function ProjectCard({ project, onClick }) {
       {/* Stage progress */}
       <div style={{ minWidth: 0 }}>
         <StageBar idx={idx} exception={exception} />
-        <div style={{ fontSize: 12, fontWeight: 600, color: exception ? sg.color : "#374151", marginTop: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: exception ? sg.color : "var(--ink-soft)", marginTop: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {text}
         </div>
       </div>
@@ -209,13 +207,13 @@ function ProjectCard({ project, onClick }) {
         <div style={{ fontSize: 20, fontWeight: 700, color: daysColor(days, terminal || exception), lineHeight: 1.1 }}>
           {days ?? "—"}
         </div>
-        <div style={{ fontSize: 11, color: "#6b7280" }}>days in stage</div>
+        <div style={{ fontSize: 11, color: "var(--muted)" }}>days in stage</div>
       </div>
 
       {/* Action */}
       <div style={{ textAlign: "right" }}>
         {stalled ? (
-          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: "#fee2e2", color: "#dc2626" }}>
+          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: "var(--rose-soft)", color: "var(--rose)" }}>
             ⚑ Stalled
           </span>
         ) : (
@@ -285,9 +283,9 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
   function selectStyle(active) {
     return {
       height: 32, padding: "0 10px", fontSize: 12, fontWeight: 500,
-      border: active ? "1px solid #A4C53F" : "1px solid #e5e7eb",
-      borderRadius: 8, background: active ? "#f0f6dc" : "#f9fafb",
-      color: active ? "#374151" : "#9ca3af",
+      border: active ? "1px solid var(--lime)" : "1px solid var(--rule)",
+      borderRadius: 8, background: active ? "var(--lime-pale)" : "var(--surface)",
+      color: active ? "var(--ink-soft)" : "var(--subtle)",
       fontFamily: "inherit", cursor: "pointer", outline: "none",
     };
   }
@@ -321,18 +319,18 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
       {/* ── Filtres ─────────────────────────────────────────────────── */}
       <div style={{
         display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
-        padding: "10px 14px", background: "#fff",
-        border: "1px solid #e5e7eb", borderRadius: 10, marginBottom: 20,
+        padding: "10px 14px", background: "var(--paper)",
+        border: "1px solid var(--rule)", borderRadius: 10, marginBottom: 20,
       }}>
-        <Icon name="filter" size={13} style={{ color: "#9ca3af", flexShrink: 0 }} />
+        <Icon name="filter" size={13} style={{ color: "var(--subtle)", flexShrink: 0 }} />
 
         {/* Recherche */}
         <input type="text" placeholder="Search by name or reference…"
           value={search} onChange={e => setSearch(e.target.value)}
           style={{
             height: 32, padding: "0 10px", fontSize: 12,
-            border: search ? "1px solid #A4C53F" : "1px solid #e5e7eb",
-            borderRadius: 8, background: search ? "#f0f6dc" : "#f9fafb",
+            border: search ? "1px solid var(--lime)" : "1px solid var(--rule)",
+            borderRadius: 8, background: search ? "var(--lime-pale)" : "var(--surface)",
             fontFamily: "inherit", outline: "none", minWidth: 200,
           }}
         />
@@ -369,8 +367,8 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
         {hasFilter && (
           <button onClick={clearFilters} style={{
             height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
-            border: "1px solid #fca5a5", borderRadius: 8,
-            background: "#fef2f2", color: "#dc2626",
+            border: "1px solid var(--rose-soft)", borderRadius: 8,
+            background: "var(--sec-health-pale)", color: "var(--rose)",
             fontFamily: "inherit", cursor: "pointer",
             display: "flex", alignItems: "center", gap: 6,
           }}>
@@ -379,11 +377,11 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
         )}
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "#9ca3af" }}>
+          <span style={{ fontSize: 11, color: "var(--subtle)" }}>
             {filtered.length}{hasFilter ? ` of ${data.length}` : ""} project{filtered.length !== 1 ? "s" : ""}
           </span>
           {/* Toggle view mode */}
-          <div style={{ display: "flex", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+          <div style={{ display: "flex", border: "1px solid var(--rule)", borderRadius: 8, overflow: "hidden" }}>
             {[
               { mode: "cards", icon: "grid" },
               { mode: "map", icon: "map-pin" },
@@ -392,8 +390,8 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
               <button key={mode} onClick={() => setViewMode(mode)}
                 style={{
                   width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-                  background: viewMode === mode ? "#A4C53F" : "#fff",
-                  color: viewMode === mode ? "#fff" : "#9ca3af",
+                  background: viewMode === mode ? "var(--lime)" : "var(--paper)",
+                  color: viewMode === mode ? "var(--paper)" : "var(--subtle)",
                   border: "none", cursor: "pointer",
                 }}>
                 <Icon name={icon} size={14} />
@@ -417,7 +415,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
       {/* ── Skeleton ────────────────────────────────────────────────── */}
       {isLoading && (
         <div className="card card-flush">
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f0f0ee" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--rule)" }}>
             <SkeletonCard height={16} />
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -464,7 +462,7 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
                       )}
                     </span>
                   </td>
-                  <td style={{ fontSize: 12, color: "#6b7280" }}>{p.hub_name || "—"}</td>
+                  <td style={{ fontSize: 12, color: "var(--muted)" }}>{p.hub_name || "—"}</td>
                   <td>
                     <span className="row" style={{ gap: 7 }}>
                       <SectorIcon name={p.primary_sector_icon} color={p.primary_sector_color} size={22} />
@@ -510,10 +508,10 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
 
       {/* ── Aucun résultat après filtre ─────────────────────────────── */}
       {!isLoading && data.length > 0 && filtered.length === 0 && viewMode !== "map" && (
-        <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "var(--subtle)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 12 }}>
           <Icon name="filter" size={28} style={{ display: "block", margin: "0 auto 10px", opacity: 0.3 }} />
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 6 }}>No projects match</div>
-          <button onClick={clearFilters} style={{ fontSize: 12, color: "#A4C53F", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-soft)", marginBottom: 6 }}>No projects match</div>
+          <button onClick={clearFilters} style={{ fontSize: 12, color: "var(--lime)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
             Clear filters
           </button>
         </div>

@@ -14,13 +14,13 @@ import Icon from "../components/Icon";
 const ENDPOINT = "/api/import/asis/";
 
 const ACTION_STYLE = {
-  create:    { label: "Created",   color: "#16a34a", bg: "#dcfce7" },
-  update:    { label: "Updated",   color: "#d97706", bg: "#fef9c3" },
+  create:    { label: "Created",   color: "var(--lime)", bg: "var(--lime-pale)" },
+  update:    { label: "Updated",   color: "var(--orange)", bg: "var(--sec-infra-pale)" },
   // The only destructive action, and the only one coloured as a warning:
   // rows the file dropped from a table that has no key to match on.
-  delete:    { label: "Deleted",   color: "#dc2626", bg: "#fee2e2" },
-  replace:   { label: "Replaced",  color: "#6366f1", bg: "#e0e7ff" },
-  unchanged: { label: "Unchanged", color: "#6b7280", bg: "#f3f4f6" },
+  delete:    { label: "Deleted",   color: "var(--rose)", bg: "var(--rose-soft)" },
+  replace:   { label: "Replaced",  color: "var(--violet)", bg: "var(--violet-soft)" },
+  unchanged: { label: "Unchanged", color: "var(--muted)", bg: "var(--surface-2)" },
 };
 
 const ACTION_ORDER = ["create", "update", "delete", "replace", "unchanged"];
@@ -63,7 +63,7 @@ function IssueList({ title, items, tone }) {
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
           {items.map((issue, index) => (
             <li key={index}>
-              <code style={{ fontSize: 11, color: "#6b7280" }}>
+              <code style={{ fontSize: 11, color: "var(--muted)" }}>
                 {issue.sheet}{issue.row ? `:${issue.row}` : ""}
                 {issue.column ? ` · ${issue.column}` : ""}
               </code>{" "}
@@ -91,7 +91,7 @@ function SheetRow({ sheet, counts, changes, expanded, onToggle }) {
             {ACTION_ORDER.filter(action => counts[action]).map(action => (
               <span key={action} style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
                 <ActionTag action={action} />
-                <span style={{ fontSize: 12, color: "#6b7280" }}>{counts[action]}</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{counts[action]}</span>
               </span>
             ))}
           </div>
@@ -99,7 +99,7 @@ function SheetRow({ sheet, counts, changes, expanded, onToggle }) {
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={4} style={{ background: "#fafafa", padding: 0 }}>
+          <td colSpan={4} style={{ background: "var(--surface)", padding: 0 }}>
             <div style={{ maxHeight: 320, overflowY: "auto", padding: "8px 12px" }}>
               <table className="table" style={{ fontSize: 12 }}>
                 <tbody>
@@ -107,16 +107,16 @@ function SheetRow({ sheet, counts, changes, expanded, onToggle }) {
                     <tr key={index}>
                       <td style={{ width: 90 }}><ActionTag action={change.action} /></td>
                       <td style={{ fontWeight: 600 }}>{change.target}</td>
-                      <td style={{ color: "#6b7280" }}>
+                      <td style={{ color: "var(--muted)" }}>
                         {change.detail}
                         {change.diffs?.length > 0 && (
                           <div style={{ marginTop: 4 }}>
                             {change.diffs.map((diff, position) => (
                               <div key={position} style={{ fontSize: 11 }}>
                                 <code>{diff.field}</code>{" "}
-                                <span style={{ color: "#b91c1c" }}>{String(diff.from ?? "—")}</span>
+                                <span style={{ color: "var(--rose)" }}>{String(diff.from ?? "—")}</span>
                                 {" → "}
-                                <span style={{ color: "#15803d" }}>{String(diff.to ?? "—")}</span>
+                                <span style={{ color: "var(--lime-darker)" }}>{String(diff.to ?? "—")}</span>
                               </div>
                             ))}
                           </div>
@@ -212,7 +212,7 @@ export default function BulkImport({ onOpenProject }) {
             {busy ? "Working…" : "Validate"}
           </button>
           {file && (
-            <span style={{ fontSize: 12, color: "#6b7280" }}>
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>
               {file.name} · {(file.size / 1024).toFixed(0)} KB
             </span>
           )}
@@ -220,8 +220,8 @@ export default function BulkImport({ onOpenProject }) {
       </div>
 
       {failure && (
-        <div className="card" style={{ marginBottom: 20, borderLeft: "3px solid #dc2626" }}>
-          <div className="card-body" style={{ color: "#b91c1c", fontSize: 13 }}>{failure}</div>
+        <div className="card" style={{ marginBottom: 20, borderLeft: "3px solid var(--rose)" }}>
+          <div className="card-body" style={{ color: "var(--rose)", fontSize: 13 }}>{failure}</div>
         </div>
       )}
 
@@ -274,12 +274,12 @@ export default function BulkImport({ onOpenProject }) {
           <IssueList
             title="Errors — these block the import"
             items={errors}
-            tone={{ color: "#dc2626", icon: "circle-x" }}
+            tone={{ color: "var(--rose)", icon: "circle-x" }}
           />
           <IssueList
             title="Warnings — reported, not blocking"
             items={warnings}
-            tone={{ color: "#d97706", icon: "alert-triangle" }}
+            tone={{ color: "var(--orange)", icon: "alert-triangle" }}
           />
 
           <div className="card">
@@ -302,7 +302,7 @@ export default function BulkImport({ onOpenProject }) {
                 {busy ? "Writing…" : "Confirm and import"}
               </button>
               {committed && (
-                <span style={{ color: "#15803d", fontSize: 13, fontWeight: 600 }}>
+                <span style={{ color: "var(--lime-darker)", fontSize: 13, fontWeight: 600 }}>
                   <Icon name="check-circle" size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
                   Imported.
                   {onOpenProject && committed.project_id && (

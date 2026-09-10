@@ -81,47 +81,48 @@ code-like values only.
 |---|---|---|
 | `--r-1` … `--r-4` | 4, 8, 8, 12 px | Corner radii: small controls → cards |
 | `--s-0` … `--s-7` | 4, 8, 12, 16, 24, 32, 48, 64 px | Spacing scale |
-| `--shadow-1` … `--shadow-3` | `none` | **No drop shadows anywhere.** The tokens exist so that legacy `box-shadow: var(--shadow-*)` declarations resolve to nothing. |
+| `--shadow-1` … `--shadow-3` | `none` | **No resting shadows.** The tokens exist so that legacy `box-shadow: var(--shadow-*)` declarations resolve to nothing. |
+| `--shadow-hover` | `0 4px 14px rgba(43,43,43,.10)` | The one shadow: a surface that is itself a control lifts **under the pointer**. Never on a resting surface. |
 
-Cards are flat: a `--surface` fill and a `--rule` border, aligned edges, no
-single-edge borders, no vertical colour stripes, no header or footer bars.
+Cards rest flat: a `--surface` or `--paper` fill and a `--rule` border, aligned
+edges, no bevels. What a card may carry is set out below.
+
+## Colour as structure
+
+Adopted 10 September 2026, generalised from the Indicator Catalogue after it
+was rebuilt from the LLF indicator-library mockup (`.dev-notes/style/mockups/`).
+Colour here is never decoration: each device below states *which* attribute of
+the data it is showing, and takes that attribute's fixed hue.
+
+- **Section band** (`.section-bar`): the heading of a run of rows, filled with
+  the colour that names the run — in the catalogue the result level (impact
+  purple, outcome green, output blue, measure types charcoal). Text on it is
+  white and bold.
+- **Left stripe**: a 4 px coloured left edge on a row or card, carrying a
+  second attribute — in the catalogue the sector, through the pillar mapping.
+  One stripe at most; if there is nothing to say, the edge stays `--rule`.
+- **Tinted selector cards** (`.cat-cards` in the catalogue): a card per choice,
+  filled with the L5 step of its hue (`--sec-*-pale`) and outlined in the hue
+  when active. Never a mixed tint of your own.
+- **Dark panel headers**: the header of a drawer, a modal (`.modal-header`) or
+  a table (`.table th`) is `--sidebar` charcoal with white text; a monospaced
+  reference on it is Growth Green. The dark ground is no longer the sidebar's
+  alone.
+- **Hover elevation**: `--shadow-hover` on rows and on `.card-click`.
+
+A layer that floats above the page — a drawer, a popover, a map tooltip —
+may carry a soft shadow of its own: it is separating a layer, not decorating
+a card. Nothing that sits *in* the page does.
 
 ## Don't
 
-- No shadows, gradients, bevels, 3-D.
+- No resting shadows, gradients, bevels, 3-D.
 - No colours outside the palette, including off-palette greys.
+- No colour that means nothing: every fill above names an attribute of the data.
 - No font other than Inter; no italic titles; no all caps.
 - No clip art, stock icons, emoji or illustrations; the LLF icon set and
   Unicode glyphs are the only decorative devices.
 - Never a dark card and an accent card side by side.
-
-## Exceptions in force
-
-The rules above hold everywhere except where this section says otherwise. An
-exception is a decision, not an oversight: it names the page, the rule it
-breaks and why, so a later session does not "fix" it back.
-
-### Indicator Catalogue — the LLF library explorer
-
-Approved 10 September 2026, when the catalogue was rebuilt from the LLF
-indicator-library mockup (`.dev-notes/style/mockups/`). Three devices of that
-mockup carry structure the flat rules cannot, and are scoped to that page by
-their class names (`.cat-*`, `.ind-card`, `.drawer*` in `styles.css`):
-
-- **Solid coloured section bars** (`.cat-section-bar`) and a **4 px colour
-  stripe** on the left edge of each indicator row — against "no vertical
-  colour stripes, no header bars". Both carry meaning: the bar takes the
-  result level's colour (impact purple, outcome green, output blue, measure
-  types charcoal), the stripe the sector's, from the pillar mapping.
-- **A shadow on card hover** — against "no shadows anywhere". It is declared as
-  its own token, `--shadow-card-hover`; `--shadow-1` … `--shadow-3` stay
-  `none`, and nothing outside this page may use the new one.
-- **A charcoal panel header** on the detail drawer, with the code in Growth
-  Green mono on the dark ground — an application of the dark-background rule
-  outside the navigation, where it had only been used for the sidebar.
-
-Whether these devices become the rule for the whole interface is **not
-decided**; until it is, they stay on this page alone.
 
 ## Assets
 

@@ -26,18 +26,18 @@ function stripHtml(html) {
 // LLF status mapping (design.md §2.4): good = green, mixed = blue,
 // attention = yellow, problematic = coral; tints from the tonal scales.
 const STATUS_COLORS = {
-  not_started: { bg: "#F7F6F6", text: "#7E7E7E", border: "#D1D1D1", label: "Not Started" },
-  in_progress:  { bg: "#DBF4FF", text: "#0089C5", border: "#83C9E8", label: "In Progress" },
-  on_hold:      { bg: "#FFFAF0", text: "#F49D07", border: "#FBD593", label: "On Hold" },
-  completed:    { bg: "#EFFFFA", text: "#0EB584", border: "#95E1CB", label: "Completed" },
-  cancelled:    { bg: "#FDF3F3", text: "#FB563B", border: "#FCB4A9", label: "Cancelled" },
+  not_started: { bg: "var(--surface-2)", text: "var(--muted)", border: "var(--subtle)", label: "Not Started" },
+  in_progress:  { bg: "var(--sec-climate-pale)", text: "var(--blue)", border: "var(--blue-soft)", label: "In Progress" },
+  on_hold:      { bg: "var(--sec-infra-pale)", text: "var(--orange)", border: "var(--orange-soft)", label: "On Hold" },
+  completed:    { bg: "var(--lime-pale)", text: "var(--lime)", border: "var(--lime-soft)", label: "Completed" },
+  cancelled:    { bg: "var(--sec-health-pale)", text: "var(--rose)", border: "var(--rose-soft)", label: "Cancelled" },
 };
 
 const MILESTONE_STATUS_COLORS = {
-  pending:    { bg: "#F7F6F6", text: "#7E7E7E" },
-  achieved:   { bg: "#EFFFFA", text: "#0EB584" },
-  missed:     { bg: "#FDF3F3", text: "#FB563B" },
-  forecasted: { bg: "#DBF4FF", text: "#0089C5" },
+  pending:    { bg: "var(--surface-2)", text: "var(--muted)" },
+  achieved:   { bg: "var(--lime-pale)", text: "var(--lime)" },
+  missed:     { bg: "var(--sec-health-pale)", text: "var(--rose)" },
+  forecasted: { bg: "var(--sec-climate-pale)", text: "var(--blue)" },
 };
 
 const DELAY_CATEGORIES = [
@@ -84,13 +84,13 @@ function StatusBadge({ status }) {
 function ProgressBar({ value, status }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ flex: 1, height: 6, background: "#EFEFEF", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ flex: 1, height: 6, background: "var(--rule)", borderRadius: 3, overflow: "hidden" }}>
         <div style={{
           width: `${value}%`, height: "100%", borderRadius: 3, transition: "width .3s ease",
-          background: status === "completed" ? "#0EB584" : status === "on_hold" ? "#F49D07" : status === "cancelled" ? "#FB563B" : "#0089C5",
+          background: status === "completed" ? "var(--lime)" : status === "on_hold" ? "var(--orange)" : status === "cancelled" ? "var(--rose)" : "var(--blue)",
         }} />
       </div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "#7E7E7E", minWidth: 28 }}>{value}%</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", minWidth: 28 }}>{value}%</span>
     </div>
   );
 }
@@ -100,7 +100,7 @@ function OverduePill() {
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 3,
       padding: "1px 6px", borderRadius: 10, fontSize: 10, fontWeight: 700,
-      background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca",
+      background: "var(--sec-health-pale)", color: "var(--rose)", border: "1px solid var(--rose-soft)",
     }}>
       <Icon name="alert-circle" size={9} /> OVERDUE
     </span>
@@ -109,11 +109,11 @@ function OverduePill() {
 
 function SummaryCard({ icon, label, value, accent }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#94a3b8", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+    <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 10, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--subtle)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
         <Icon name={icon} size={12} />{label}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: accent || "#1e293b" }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: accent || "var(--ink)" }}>{value}</div>
     </div>
   );
 }
@@ -121,8 +121,8 @@ function SummaryCard({ icon, label, value, accent }) {
 // ─── Component Form ───────────────────────────────────────────────────────────
 
 const fieldStyle = { display: "flex", flexDirection: "column", gap: 5 };
-const labelStyle = { fontSize: 12, fontWeight: 600, color: "#374151" };
-const inputStyle = { padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, color: "#1e293b", outline: "none", width: "100%", boxSizing: "border-box" };
+const labelStyle = { fontSize: 12, fontWeight: 600, color: "var(--ink-soft)" };
+const inputStyle = { padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 6, fontSize: 13, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
 const textareaStyle = { ...inputStyle, resize: "vertical", fontFamily: "inherit" };
 
 function ComponentForm({ onSave, onCancel }) {
@@ -144,7 +144,7 @@ function ComponentForm({ onSave, onCancel }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {err && <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>{err}</div>}
+      {err && <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)" }}>{err}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
         <div style={fieldStyle}>
           <label style={labelStyle}>Code *</label>
@@ -156,10 +156,10 @@ function ComponentForm({ onSave, onCancel }) {
         </div>
       </div>
       <div style={fieldStyle}>
-        <label style={labelStyle}>Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <label style={labelStyle}>Description <span style={{ color: "var(--subtle)", fontWeight: 400 }}>(optional)</span></label>
         <textarea style={{ ...textareaStyle, minHeight: 72 }} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Brief description of this component..." />
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
         <button className="btn btn-primary" onClick={handleSave}><Icon name="plus" size={14} /> Create Component</button>
       </div>
@@ -189,14 +189,14 @@ function SubComponentForm({ componentId, componentName, onSave, onCancel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Parent component badge */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#eff6ff", borderRadius: 8, border: "1px solid #bfdbfe" }}>
-        <Icon name="layers" size={13} style={{ color: "#2563eb" }} />
-        <span style={{ fontSize: 12, color: "#1e40af" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--sec-climate-pale)", borderRadius: 8, border: "1px solid var(--blue-soft)" }}>
+        <Icon name="layers" size={13} style={{ color: "var(--blue)" }} />
+        <span style={{ fontSize: 12, color: "var(--blue)" }}>
           <strong>Component:</strong> {componentName || `#${componentId}`}
         </span>
       </div>
 
-      {err && <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626" }}>{err}</div>}
+      {err && <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)" }}>{err}</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
         <div style={fieldStyle}>
@@ -209,10 +209,10 @@ function SubComponentForm({ componentId, componentName, onSave, onCancel }) {
         </div>
       </div>
       <div style={fieldStyle}>
-        <label style={labelStyle}>Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <label style={labelStyle}>Description <span style={{ color: "var(--subtle)", fontWeight: 400 }}>(optional)</span></label>
         <textarea style={{ ...textareaStyle, minHeight: 72 }} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Brief description of this sub-component..." />
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
         <button className="btn btn-primary" onClick={handleSave}><Icon name="plus" size={14} /> Create Sub-Component</button>
       </div>
@@ -225,10 +225,10 @@ function SubComponentForm({ componentId, componentName, onSave, onCancel }) {
 const SECTION = {
   display: "flex", flexDirection: "column", gap: 10,
   padding: "14px 16px", borderRadius: 10,
-  border: "1px solid #e2e8f0", background: "#fafafa",
+  border: "1px solid var(--rule)", background: "var(--surface)",
 };
 const SECTION_TITLE = {
-  fontSize: 10, fontWeight: 700, color: "#94a3b8",
+  fontSize: 10, fontWeight: 700, color: "var(--subtle)",
   textTransform: "uppercase", letterSpacing: "0.07em",
   marginBottom: 2,
 };
@@ -267,7 +267,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
       {err && (
-        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)", display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alert-circle" size={13} /> {err}
         </div>
       )}
@@ -286,7 +286,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
           </div>
         </div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Description <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+          <label style={labelStyle}>Description <span style={{ color: "var(--subtle)", fontWeight: 400 }}>(optional)</span></label>
           <textarea style={{ ...textareaStyle, minHeight: 52 }} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Operational details..." />
         </div>
         <div style={fieldStyle}>
@@ -310,7 +310,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
             <option value="__external__">⤷ External / Other (free text)</option>
           </select>
           {form.responsible_user != null && (
-            <div style={{ fontSize: 11, color: "#2563eb", padding: "4px 8px", background: "#eff6ff", borderRadius: 6, border: "1px solid #bfdbfe", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--blue)", padding: "4px 8px", background: "var(--sec-climate-pale)", borderRadius: 6, border: "1px solid var(--blue-soft)", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
               <Icon name="user" size={11} />
               {users.find(u => u.id === form.responsible_user)?.email}
             </div>
@@ -352,18 +352,18 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
       </div>
 
       {/* ── Results Link ── */}
-      <div style={{ ...SECTION, borderColor: outputNodes.length > 0 ? "#bbf7d0" : "#e2e8f0", background: outputNodes.length > 0 ? "#f0fdf4" : "#fafafa" }}>
-        <div style={{ ...SECTION_TITLE, color: outputNodes.length > 0 ? "#16a34a" : "#94a3b8" }}>
+      <div style={{ ...SECTION, borderColor: outputNodes.length > 0 ? "var(--lime-soft)" : "var(--rule)", background: outputNodes.length > 0 ? "var(--lime-pale)" : "var(--surface)" }}>
+        <div style={{ ...SECTION_TITLE, color: outputNodes.length > 0 ? "var(--lime)" : "var(--subtle)" }}>
           Results Link — ToC Output (SF-2)
         </div>
         {outputNodes.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: 12, color: "var(--subtle)", display: "flex", alignItems: "center", gap: 6 }}>
             <Icon name="info" size={13} />
             No Output nodes defined in the Theory of Change yet. You can link this activity later.
           </div>
         ) : (
           <>
-            <select style={{ ...sel, background: "#fff" }} value={form.output_node} onChange={e => set("output_node", e.target.value)}>
+            <select style={{ ...sel, background: "var(--paper)" }} value={form.output_node} onChange={e => set("output_node", e.target.value)}>
               <option value="">— No output linked —</option>
               {outputNodes.map(n => (
                 <option key={n.id} value={n.id}>
@@ -372,7 +372,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
               ))}
             </select>
             {selectedOutput && (
-              <div style={{ fontSize: 12, color: "#166534", marginTop: 4, padding: "6px 10px", background: "#dcfce7", borderRadius: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--lime-darker)", marginTop: 4, padding: "6px 10px", background: "var(--lime-pale)", borderRadius: 6 }}>
                 ↳ {stripHtml(selectedOutput.statement)}
               </div>
             )}
@@ -384,22 +384,22 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
       <div style={SECTION}>
         <div style={SECTION_TITLE}>Budget & Flags</div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Planned Budget (USD) <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+          <label style={labelStyle}>Planned Budget (USD) <span style={{ color: "var(--subtle)", fontWeight: 400 }}>(optional)</span></label>
           <input style={{ ...inputStyle, maxWidth: 200 }} type="number" min={0} value={form.budget_planned} onChange={e => set("budget_planned", e.target.value)} placeholder="0" />
         </div>
         <div style={{ display: "flex", gap: 20, marginTop: 4 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "var(--ink-soft)" }}>
             <input type="checkbox" checked={form.requires_evidence} onChange={e => set("requires_evidence", e.target.checked)} />
             <span>
               <strong>Evidence required</strong>
-              <span style={{ color: "#94a3b8", marginLeft: 4, fontSize: 11 }}>before Completed</span>
+              <span style={{ color: "var(--subtle)", marginLeft: 4, fontSize: 11 }}>before Completed</span>
             </span>
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "#374151" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: "var(--ink-soft)" }}>
             <input type="checkbox" checked={form.is_critical_path} onChange={e => set("is_critical_path", e.target.checked)} />
             <span>
               <strong>Critical path</strong>
-              <span style={{ color: "#94a3b8", marginLeft: 4, fontSize: 11 }}>◆</span>
+              <span style={{ color: "var(--subtle)", marginLeft: 4, fontSize: 11 }}>◆</span>
             </span>
           </label>
         </div>
@@ -444,7 +444,7 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {err && (
-        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)", display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alert-circle" size={13} /> {err}
         </div>
       )}
@@ -476,9 +476,9 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
               style={{
                 flex: 1, padding: "8px 4px", borderRadius: 8, border: "2px solid",
                 cursor: "pointer", fontSize: 12, fontWeight: 600,
-                borderColor: form.status === opt.value ? "#0EB584" : "#e2e8f0",
-                background: form.status === opt.value ? "#EFFFFA" : "#fff",
-                color: form.status === opt.value ? "#09815F" : "#64748b",
+                borderColor: form.status === opt.value ? "var(--lime)" : "var(--rule)",
+                background: form.status === opt.value ? "var(--lime-pale)" : "var(--paper)",
+                color: form.status === opt.value ? "var(--lime-darker)" : "var(--muted)",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
               }}>
               <span style={{ fontSize: 16 }}>{opt.icon}</span>
@@ -489,19 +489,19 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
       </div>
 
       <div style={fieldStyle}>
-        <label style={labelStyle}>Evidence URL <span style={{ color: "#94a3b8", fontWeight: 400 }}>(optional)</span></label>
+        <label style={labelStyle}>Evidence URL <span style={{ color: "var(--subtle)", fontWeight: 400 }}>(optional)</span></label>
         <input style={inputStyle} type="url" value={form.evidence_url} onChange={e => set("evidence_url", e.target.value)} placeholder="https://..." />
       </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#fdf4ff", border: "1px solid #e9d5ff", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--sec-women-pale)", border: "1px solid var(--violet-soft)", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--ink-soft)" }}>
         <input type="checkbox" checked={form.is_gate} onChange={e => set("is_gate", e.target.checked)} />
         <div>
           <strong>Gate milestone</strong>
-          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>Blocks this activity from reaching 100% until achieved</div>
+          <div style={{ fontSize: 11, color: "var(--subtle)", marginTop: 1 }}>Blocks this activity from reaching 100% until achieved</div>
         </div>
       </label>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
         <button className="btn btn-primary" onClick={handleSave}><Icon name="check" size={14} /> Save Milestone</button>
       </div>
@@ -535,30 +535,30 @@ function DelayForm({ activity, onSave, onCancel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {err && (
-        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, fontSize: 13, color: "#dc2626", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)", display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alert-circle" size={13} /> {err}
         </div>
       )}
 
       {/* Context banner */}
-      <div style={{ padding: "12px 14px", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Activity Timeline</div>
+      <div style={{ padding: "12px 14px", background: "var(--sec-infra-pale)", border: "1px solid var(--orange-soft)", borderRadius: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--orange)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Activity Timeline</div>
         <div style={{ display: "flex", gap: 20, fontSize: 13 }}>
           <div>
-            <div style={{ fontSize: 10, color: "#b45309", fontWeight: 600, textTransform: "uppercase" }}>Baseline</div>
-            <div style={{ fontWeight: 600, color: "#92400e" }}>{activity.baseline_end || activity.planned_end}</div>
+            <div style={{ fontSize: 10, color: "var(--orange)", fontWeight: 600, textTransform: "uppercase" }}>Baseline</div>
+            <div style={{ fontWeight: 600, color: "var(--orange)" }}>{activity.baseline_end || activity.planned_end}</div>
           </div>
-          <div style={{ color: "#fed7aa", fontSize: 18, alignSelf: "center" }}>→</div>
+          <div style={{ color: "var(--orange-soft)", fontSize: 18, alignSelf: "center" }}>→</div>
           <div>
-            <div style={{ fontSize: 10, color: "#b45309", fontWeight: 600, textTransform: "uppercase" }}>Current End</div>
-            <div style={{ fontWeight: 600, color: "#92400e" }}>{activity.revised_end || activity.planned_end}</div>
+            <div style={{ fontSize: 10, color: "var(--orange)", fontWeight: 600, textTransform: "uppercase" }}>Current End</div>
+            <div style={{ fontWeight: 600, color: "var(--orange)" }}>{activity.revised_end || activity.planned_end}</div>
           </div>
           {variance !== null && (
             <>
-              <div style={{ color: "#fed7aa", fontSize: 18, alignSelf: "center" }}>→</div>
+              <div style={{ color: "var(--orange-soft)", fontSize: 18, alignSelf: "center" }}>→</div>
               <div>
-                <div style={{ fontSize: 10, color: "#b45309", fontWeight: 600, textTransform: "uppercase" }}>New End</div>
-                <div style={{ fontWeight: 700, color: variance > 0 ? "#dc2626" : "#16a34a" }}>
+                <div style={{ fontSize: 10, color: "var(--orange)", fontWeight: 600, textTransform: "uppercase" }}>New End</div>
+                <div style={{ fontWeight: 700, color: variance > 0 ? "var(--rose)" : "var(--lime)" }}>
                   {form.revised_end} {variance > 0 ? `(+${variance}d)` : variance < 0 ? `(${variance}d)` : "(no change)"}
                 </div>
               </div>
@@ -574,14 +574,14 @@ function DelayForm({ activity, onSave, onCancel }) {
           <input style={inputStyle} type="date" value={form.previous_end} onChange={e => set("previous_end", e.target.value)} />
         </div>
         <div style={fieldStyle}>
-          <label style={{ ...labelStyle, color: "#dc2626" }}>New End Date *</label>
-          <input style={{ ...inputStyle, borderColor: form.revised_end ? "#d1d5db" : "#fca5a5" }} type="date" value={form.revised_end} onChange={e => set("revised_end", e.target.value)} />
+          <label style={{ ...labelStyle, color: "var(--rose)" }}>New End Date *</label>
+          <input style={{ ...inputStyle, borderColor: form.revised_end ? "var(--rule)" : "var(--rose-soft)" }} type="date" value={form.revised_end} onChange={e => set("revised_end", e.target.value)} />
         </div>
       </div>
 
       {/* Delay category */}
       <div style={fieldStyle}>
-        <label style={labelStyle}>Delay Category * <span style={{ color: "#94a3b8", fontWeight: 400, fontSize: 11 }}>(RG-7.2 standardized taxonomy)</span></label>
+        <label style={labelStyle}>Delay Category * <span style={{ color: "var(--subtle)", fontWeight: 400, fontSize: 11 }}>(RG-7.2 standardized taxonomy)</span></label>
         <select style={sel} value={form.delay_category} onChange={e => set("delay_category", e.target.value)}>
           {DELAY_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
@@ -589,23 +589,23 @@ function DelayForm({ activity, onSave, onCancel }) {
 
       {/* Justification */}
       <div style={fieldStyle}>
-        <label style={{ ...labelStyle, color: "#dc2626" }}>Justification *</label>
-        <textarea style={{ ...textareaStyle, minHeight: 80, borderColor: form.justification.trim() ? "#d1d5db" : "#fca5a5" }}
+        <label style={{ ...labelStyle, color: "var(--rose)" }}>Justification *</label>
+        <textarea style={{ ...textareaStyle, minHeight: 80, borderColor: form.justification.trim() ? "var(--rule)" : "var(--rose-soft)" }}
           value={form.justification} onChange={e => set("justification", e.target.value)}
           placeholder="Mandatory narrative: describe the root cause, impact, and corrective actions taken..." />
-        <span style={{ fontSize: 11, color: "#94a3b8" }}>{form.justification.length} characters</span>
+        <span style={{ fontSize: 11, color: "var(--subtle)" }}>{form.justification.length} characters</span>
       </div>
 
       {/* Cascade */}
-      <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, cursor: "pointer" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--sec-infra-pale)", border: "1px solid var(--orange-soft)", borderRadius: 8, cursor: "pointer" }}>
         <input type="checkbox" checked={form.cascade_applied} onChange={e => set("cascade_applied", e.target.checked)} />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#92400e" }}>Apply cascade to successor activities</div>
-          <div style={{ fontSize: 11, color: "#b45309" }}>Automatically shift dependent activities by the same delay (RG-7.3)</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--orange)" }}>Apply cascade to successor activities</div>
+          <div style={{ fontSize: 11, color: "var(--orange)" }}>Automatically shift dependent activities by the same delay (RG-7.3)</div>
         </div>
       </label>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
         <button className="btn btn-ghost" onClick={onCancel}><Icon name="x" size={14} /> Cancel</button>
         <button className="btn btn-primary" onClick={handleSave}><Icon name="alert-triangle" size={14} /> Record Delay</button>
       </div>
@@ -657,21 +657,21 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
   });
 
   return (
-    <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 480, background: "#fff", borderLeft: "1px solid #e2e8f0", boxShadow: "-4px 0 24px rgba(0,0,0,.08)", display: "flex", flexDirection: "column", zIndex: 200 }}>
+    <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 480, background: "var(--paper)", borderLeft: "1px solid var(--rule)", boxShadow: "-4px 0 24px rgba(0,0,0,.08)", display: "flex", flexDirection: "column", zIndex: 200 }}>
       {/* Header */}
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--rule)", background: "var(--surface)" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>{activity.code}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--subtle)", letterSpacing: "0.05em" }}>{activity.code}</span>
               {activity.is_overdue && <OverduePill />}
               {activity.is_critical_path && (
-                <span style={{ fontSize: 10, fontWeight: 700, background: "#fdf4ff", color: "#9333ea", border: "1px solid #e9d5ff", borderRadius: 10, padding: "1px 6px" }}>CRITICAL PATH</span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: "var(--sec-women-pale)", color: "var(--violet)", border: "1px solid var(--violet-soft)", borderRadius: 10, padding: "1px 6px" }}>CRITICAL PATH</span>
               )}
             </div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#1e293b", lineHeight: 1.3 }}>{activity.name}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>{activity.name}</div>
           </div>
-          <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#94a3b8", padding: 4 }}>
+          <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--subtle)", padding: 4 }}>
             <Icon name="x" size={18} />
           </button>
         </div>
@@ -679,7 +679,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--rule)", background: "var(--surface)" }}>
         {[
           { key: "info",       label: "Details",                           icon: "info"        },
           { key: "milestones", label: `Milestones (${milestones.length})`, icon: "check"  },
@@ -688,8 +688,8 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
           <button key={t.key} onClick={() => setActiveSection(t.key)} style={{
             padding: "10px 16px", border: "none", background: "none", cursor: "pointer",
             fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
-            color: activeSection === t.key ? "#0EB584" : "#64748b",
-            borderBottom: activeSection === t.key ? "2px solid #0EB584" : "2px solid transparent",
+            color: activeSection === t.key ? "var(--lime)" : "var(--muted)",
+            borderBottom: activeSection === t.key ? "2px solid var(--lime)" : "2px solid transparent",
           }}>
             <Icon name={t.icon} size={12} />{t.label}
           </button>
@@ -701,8 +701,8 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
 
         {activeSection === "info" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Quick Update</div>
+            <div style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: 10, padding: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Quick Update</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 12 }}>
                 <div style={fieldStyle}>
                   <label style={{ ...labelStyle, fontSize: 11 }}>Status</label>
@@ -728,24 +728,24 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
                 { label: "Planned Budget", value: activity.budget_planned ? `${Number(activity.budget_planned).toLocaleString()} USD` : "—" },
                 { label: "Spent",          value: activity.budget_spent  ? `${Number(activity.budget_spent).toLocaleString()} USD`  : "—" },
               ].map(item => (
-                <div key={item.label} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 12px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{item.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e293b", fontWeight: 500 }}>{item.value}</div>
+                <div key={item.label} style={{ background: "var(--surface)", borderRadius: 8, padding: "10px 12px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500 }}>{item.value}</div>
                 </div>
               ))}
             </div>
 
             {activity.output_node_detail && (
-              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "10px 14px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Linked Output (ToC — SF-2)</div>
-                <div style={{ fontSize: 13, color: "#14532d", fontWeight: 500 }}>{activity.output_node_detail.code} · {stripHtml(activity.output_node_detail.statement)?.substring(0, 80)}</div>
+              <div style={{ background: "var(--lime-pale)", border: "1px solid var(--lime-soft)", borderRadius: 8, padding: "10px 14px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--lime)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Linked Output (ToC — SF-2)</div>
+                <div style={{ fontSize: 13, color: "var(--lime-darker)", fontWeight: 500 }}>{activity.output_node_detail.code} · {stripHtml(activity.output_node_detail.statement)?.substring(0, 80)}</div>
               </div>
             )}
 
             {activity.description && (
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Description</div>
-                <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>{activity.description}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Description</div>
+                <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.6 }}>{activity.description}</div>
               </div>
             )}
           </div>
@@ -757,18 +757,18 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
               <Icon name="check" size={14} /> Add Milestone
             </button>
             {milestones.length === 0 && (
-              <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>No milestones defined for this activity.</div>
+              <div style={{ textAlign: "center", padding: "24px 0", color: "var(--subtle)", fontSize: 13 }}>No milestones defined for this activity.</div>
             )}
             {milestones.map(m => {
               const mc = MILESTONE_STATUS_COLORS[m.status] || MILESTONE_STATUS_COLORS.pending;
               return (
-                <div key={m.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px 14px", background: m.is_gate ? "#fdfbff" : "#fff", borderLeft: m.is_gate ? "3px solid #9333ea" : undefined }}>
+                <div key={m.id} style={{ border: "1px solid var(--rule)", borderRadius: 8, padding: "12px 14px", background: m.is_gate ? "var(--surface)" : "var(--paper)", borderLeft: m.is_gate ? "3px solid var(--violet)" : undefined }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{m.name}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{m.name}</div>
+                      <div style={{ fontSize: 11, color: "var(--subtle)", marginTop: 2 }}>
                         {m.category} · {m.planned_date}
-                        {m.is_gate && <span style={{ marginLeft: 8, color: "#9333ea", fontWeight: 700 }}>GATE</span>}
+                        {m.is_gate && <span style={{ marginLeft: 8, color: "var(--violet)", fontWeight: 700 }}>GATE</span>}
                       </div>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: mc.bg, color: mc.text }}>{m.status}</span>
@@ -785,24 +785,24 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
               <Icon name="alert-triangle" size={14} /> Report a Delay
             </button>
             {delays.length === 0 && (
-              <div style={{ textAlign: "center", padding: "24px 0", color: "#94a3b8", fontSize: 13 }}>No delays recorded for this activity.</div>
+              <div style={{ textAlign: "center", padding: "24px 0", color: "var(--subtle)", fontSize: 13 }}>No delays recorded for this activity.</div>
             )}
             {delays.map(d => (
-              <div key={d.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px 14px" }}>
+              <div key={d.id} style={{ border: "1px solid var(--rule)", borderRadius: 8, padding: "12px 14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
                     {d.delay_category_display}
-                    <span style={{ marginLeft: 8, fontWeight: 400, color: d.variance_days > 0 ? "#dc2626" : "#16a34a" }}>{d.variance_days > 0 ? "+" : ""}{d.variance_days}d</span>
+                    <span style={{ marginLeft: 8, fontWeight: 400, color: d.variance_days > 0 ? "var(--rose)" : "var(--lime)" }}>{d.variance_days > 0 ? "+" : ""}{d.variance_days}d</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: d.approval_status === "approved" ? "#f0fdf4" : d.approval_status === "rejected" ? "#fef2f2" : "#fefce8", color: d.approval_status === "approved" ? "#16a34a" : d.approval_status === "rejected" ? "#dc2626" : "#ca8a04" }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: d.approval_status === "approved" ? "var(--lime-pale)" : d.approval_status === "rejected" ? "var(--sec-health-pale)" : "var(--sec-infra-pale)", color: d.approval_status === "approved" ? "var(--lime)" : d.approval_status === "rejected" ? "var(--rose)" : "var(--orange)" }}>
                     {d.approval_status_display}
                   </span>
                 </div>
-                <div style={{ fontSize: 11, color: "#64748b" }}>
+                <div style={{ fontSize: 11, color: "var(--muted)" }}>
                   {d.previous_end} → {d.revised_end}
-                  {d.cumulative_variance_days > 0 && <span style={{ marginLeft: 12, color: "#dc2626", fontWeight: 600 }}>Cumulative: +{d.cumulative_variance_days}d</span>}
+                  {d.cumulative_variance_days > 0 && <span style={{ marginLeft: 12, color: "var(--rose)", fontWeight: 600 }}>Cumulative: +{d.cumulative_variance_days}d</span>}
                 </div>
-                {d.justification && <div style={{ fontSize: 12, color: "#475569", marginTop: 6, fontStyle: "italic" }}>{d.justification}</div>}
+                {d.justification && <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 6, fontStyle: "italic" }}>{d.justification}</div>}
               </div>
             ))}
           </div>
@@ -828,19 +828,19 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
 
 function ActivityRow({ activity, onClick }) {
   return (
-    <div onClick={onClick} style={{ display: "grid", gridTemplateColumns: "180px 1fr 120px 130px 90px 80px", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", background: activity.is_overdue ? "#fff7f7" : "#fff", transition: "background .15s" }}
-      onMouseEnter={e => e.currentTarget.style.background = activity.is_overdue ? "#fef2f2" : "#f8fafc"}
-      onMouseLeave={e => e.currentTarget.style.background = activity.is_overdue ? "#fff7f7" : "#fff"}>
+    <div onClick={onClick} style={{ display: "grid", gridTemplateColumns: "180px 1fr 120px 130px 90px 80px", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid var(--surface-2)", cursor: "pointer", background: activity.is_overdue ? "var(--sec-health-pale)" : "var(--paper)", transition: "background .15s" }}
+      onMouseEnter={e => e.currentTarget.style.background = activity.is_overdue ? "var(--sec-health-pale)" : "var(--surface)"}
+      onMouseLeave={e => e.currentTarget.style.background = activity.is_overdue ? "var(--sec-health-pale)" : "var(--paper)"}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontFamily: "monospace" }}>{activity.code}</span>
-        {activity.is_critical_path && <span title="Critical path" style={{ color: "#9333ea", fontSize: 10 }}>◆</span>}
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--subtle)", fontFamily: "monospace" }}>{activity.code}</span>
+        {activity.is_critical_path && <span title="Critical path" style={{ color: "var(--violet)", fontSize: 10 }}>◆</span>}
         {activity.is_overdue && <OverduePill />}
       </div>
-      <div style={{ fontSize: 13, color: "#1e293b", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activity.name}</div>
-      <div style={{ fontSize: 11, color: "#64748b" }}>{activity.revised_end || activity.planned_end || "—"}</div>
+      <div style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activity.name}</div>
+      <div style={{ fontSize: 11, color: "var(--muted)" }}>{activity.revised_end || activity.planned_end || "—"}</div>
       <div><StatusBadge status={activity.status} /></div>
       <div><ProgressBar value={activity.progress} status={activity.status} /></div>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}><Icon name="chevron-right" size={14} style={{ color: "#94a3b8" }} /></div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}><Icon name="chevron-right" size={14} style={{ color: "var(--subtle)" }} /></div>
     </div>
   );
 }
@@ -865,14 +865,14 @@ function SubComponentBlock({ projectId, sub, outputNodes, users, onActivityClick
 
   return (
     <div style={{ marginBottom: 2 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: "#f1f5f9", borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", cursor: "pointer" }}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", background: "var(--surface-2)", borderTop: "1px solid var(--rule)", borderBottom: "1px solid var(--rule)", cursor: "pointer" }}
         onClick={() => setExpanded(e => !e)}>
-        <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} style={{ color: "#94a3b8" }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", fontFamily: "monospace" }}>{sub.code}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#374151", flex: 1 }}>{sub.name}</span>
-        <span style={{ fontSize: 11, color: "#94a3b8" }}>
+        <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} style={{ color: "var(--subtle)" }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", fontFamily: "monospace" }}>{sub.code}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)", flex: 1 }}>{sub.name}</span>
+        <span style={{ fontSize: 11, color: "var(--subtle)" }}>
           {completedCount}/{activities.length} completed
-          {overdueCount > 0 && <span style={{ marginLeft: 8, color: "#dc2626", fontWeight: 700 }}>· {overdueCount} overdue</span>}
+          {overdueCount > 0 && <span style={{ marginLeft: 8, color: "var(--rose)", fontWeight: 700 }}>· {overdueCount} overdue</span>}
         </span>
         <button className="btn btn-ghost" style={{ fontSize: 11, padding: "3px 8px" }}
           onClick={e => { e.stopPropagation(); setModal(true); }}>
@@ -883,10 +883,10 @@ function SubComponentBlock({ projectId, sub, outputNodes, users, onActivityClick
       {expanded && (
         <div>
           {activities.length === 0 ? (
-            <div style={{ padding: "14px 16px", color: "#94a3b8", fontSize: 12, fontStyle: "italic" }}>No activities yet — click "+ Activity" to get started.</div>
+            <div style={{ padding: "14px 16px", color: "var(--subtle)", fontSize: 12, fontStyle: "italic" }}>No activities yet — click "+ Activity" to get started.</div>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "180px 1fr 120px 130px 90px 80px", gap: 12, padding: "6px 16px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e2e8f0", background: "#fafafa" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "180px 1fr 120px 130px 90px 80px", gap: 12, padding: "6px 16px", fontSize: 10, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid var(--rule)", background: "var(--surface)" }}>
                 <span>Code</span><span>Name</span><span>End Date</span><span>Status</span><span>Progress</span><span></span>
               </div>
               {activities.map(a => <ActivityRow key={a.id} activity={a} onClick={() => onActivityClick(a)} />)}
@@ -935,17 +935,17 @@ function ComponentBlock({ projectId, component, outputNodes, users, onActivityCl
   const overdueActivities = subs.reduce((n, s) => n + (s.activities?.filter(a => a.is_overdue).length || 0), 0);
 
   return (
-    <div style={{ marginBottom: 12, border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#2B2B2B", cursor: "pointer" }}
+    <div style={{ marginBottom: 12, border: "1px solid var(--rule)", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "var(--ink)", cursor: "pointer" }}
         onClick={() => setExpanded(e => !e)}>
         <Icon name={expanded ? "chevron-down" : "chevron-right"} size={14} style={{ color: "rgba(255,255,255,.6)" }} />
         <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.7)", fontFamily: "monospace" }}>{component.code}</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", flex: 1 }}>{component.name}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--paper)", flex: 1 }}>{component.name}</span>
         <span style={{ fontSize: 11, color: "rgba(255,255,255,.65)" }}>
           {completedActivities}/{totalActivities} activities
-          {overdueActivities > 0 && <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 700 }}>· {overdueActivities} overdue</span>}
+          {overdueActivities > 0 && <span style={{ marginLeft: 10, color: "var(--rose-soft)", fontWeight: 700 }}>· {overdueActivities} overdue</span>}
         </span>
-        <button className="btn" style={{ fontSize: 11, padding: "4px 10px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 6 }}
+        <button className="btn" style={{ fontSize: 11, padding: "4px 10px", background: "rgba(255,255,255,.15)", color: "var(--paper)", border: "1px solid rgba(255,255,255,.25)", borderRadius: 6 }}
           onClick={e => { e.stopPropagation(); setModal(true); }}>
           <Icon name="plus" size={12} /> Sub-Component
         </button>
@@ -954,7 +954,7 @@ function ComponentBlock({ projectId, component, outputNodes, users, onActivityCl
       {expanded && (
         <div>
           {subs.length === 0 ? (
-            <div style={{ padding: "16px", color: "#94a3b8", fontSize: 13, fontStyle: "italic" }}>No sub-components yet — click "+ Sub-Component" to structure this component.</div>
+            <div style={{ padding: "16px", color: "var(--subtle)", fontSize: 13, fontStyle: "italic" }}>No sub-components yet — click "+ Sub-Component" to structure this component.</div>
           ) : subs.map(s => (
             <SubComponentBlock key={s.id} projectId={projectId} sub={s} outputNodes={outputNodes} users={users} onActivityClick={onActivityClick} onRefresh={onRefresh} />
           ))}
@@ -1028,7 +1028,7 @@ export default function Workplan({ projectId, canEdit = true }) {
 
   if (isLoading) {
     return (
-      <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
+      <div style={{ padding: 40, textAlign: "center", color: "var(--subtle)" }}>
         <Icon name="clock" size={20} style={{ marginBottom: 8 }} />
         <div style={{ fontSize: 13 }}>Loading workplan…</div>
       </div>
@@ -1041,12 +1041,12 @@ export default function Workplan({ projectId, canEdit = true }) {
       {summary && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 20 }}>
           <SummaryCard icon="list"          label="Total"       value={summary.total_activities} />
-          <SummaryCard icon="clock"        label="In Progress" value={summary.in_progress}       accent="#2563eb" />
-          <SummaryCard icon="circle-check"  label="Completed"   value={summary.completed}          accent="#16a34a" />
-          <SummaryCard icon="alert-triangle" label="Overdue"    value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "#dc2626" : "#64748b"} />
-          <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="#0EB584" />
+          <SummaryCard icon="clock"        label="In Progress" value={summary.in_progress}       accent="var(--blue)" />
+          <SummaryCard icon="circle-check"  label="Completed"   value={summary.completed}          accent="var(--lime)" />
+          <SummaryCard icon="alert-triangle" label="Overdue"    value={summary.overdue_count}      accent={summary.overdue_count > 0 ? "var(--rose)" : "var(--muted)"} />
+          <SummaryCard icon="bar-chart-2"   label="Progress"    value={`${summary.overall_progress}%`} accent="var(--lime)" />
           <SummaryCard icon="zap"           label="SPI"         value={summary.latest_spi != null ? summary.latest_spi.toFixed(2) : "—"}
-            accent={summary.latest_spi >= 1 ? "#16a34a" : summary.latest_spi != null ? "#dc2626" : "#64748b"} />
+            accent={summary.latest_spi >= 1 ? "var(--lime)" : summary.latest_spi != null ? "var(--rose)" : "var(--muted)"} />
         </div>
       )}
 
@@ -1055,8 +1055,8 @@ export default function Workplan({ projectId, canEdit = true }) {
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Icon name="alert-triangle" size={15} style={{ color: "#dc2626" }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#dc2626" }}>
+              <Icon name="alert-triangle" size={15} style={{ color: "var(--rose)" }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--rose)" }}>
                 {alerts.length} Active Alert{alerts.length > 1 ? "s" : ""}
               </span>
             </div>
@@ -1068,15 +1068,15 @@ export default function Workplan({ projectId, canEdit = true }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {alerts.slice(0, 5).map(alert => {
               const ALERT_COLORS = {
-                escalation_l3:    { bg: "#fef2f2", border: "#fecaca", text: "#dc2626", icon: "alert-triangle" },
-                escalation_l2:    { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c", icon: "alert-triangle" },
-                escalation_l1:    { bg: "#fefce8", border: "#fde68a", text: "#ca8a04", icon: "alert-triangle" },
-                milestone_missed: { bg: "#fef2f2", border: "#fecaca", text: "#dc2626", icon: "circle-x" },
-                activity_overdue: { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c", icon: "clock" },
-                milestone_t0:     { bg: "#fefce8", border: "#fde68a", text: "#ca8a04", icon: "clock" },
-                milestone_t7:     { bg: "#eff6ff", border: "#bfdbfe", text: "#2563eb", icon: "info" },
-                milestone_t30:    { bg: "#f8fafc", border: "#e2e8f0", text: "#64748b", icon: "info" },
-                delay_pending:    { bg: "#fdf4ff", border: "#e9d5ff", text: "#9333ea", icon: "clock" },
+                escalation_l3:    { bg: "var(--sec-health-pale)", border: "var(--rose-soft)", text: "var(--rose)", icon: "alert-triangle" },
+                escalation_l2:    { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "alert-triangle" },
+                escalation_l1:    { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "alert-triangle" },
+                milestone_missed: { bg: "var(--sec-health-pale)", border: "var(--rose-soft)", text: "var(--rose)", icon: "circle-x" },
+                activity_overdue: { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "clock" },
+                milestone_t0:     { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "clock" },
+                milestone_t7:     { bg: "var(--sec-climate-pale)", border: "var(--blue-soft)", text: "var(--blue)", icon: "info" },
+                milestone_t30:    { bg: "var(--surface)", border: "var(--rule)", text: "var(--muted)", icon: "info" },
+                delay_pending:    { bg: "var(--sec-women-pale)", border: "var(--violet-soft)", text: "var(--violet)", icon: "clock" },
               };
               const cfg = ALERT_COLORS[alert.alert_type] || ALERT_COLORS.activity_overdue;
               return (
@@ -1087,7 +1087,7 @@ export default function Workplan({ projectId, canEdit = true }) {
                       {alert.alert_type_display}
                       {alert.days_overdue > 0 && <span style={{ marginLeft: 8, fontWeight: 400 }}>· +{alert.days_overdue}d</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.4 }}>{alert.message}</div>
+                    <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.4 }}>{alert.message}</div>
                   </div>
                   <button onClick={() => apiFetch(`/api/projects/${projectId}/workplan/alerts/${alert.id}/acknowledge/`, { method: "PATCH" }).then(() => refetchAlerts())}
                     style={{ border: "none", background: "none", cursor: "pointer", fontSize: 11, color: cfg.text, fontWeight: 600, whiteSpace: "nowrap", padding: "2px 6px" }}>
@@ -1097,7 +1097,7 @@ export default function Workplan({ projectId, canEdit = true }) {
               );
             })}
             {alerts.length > 5 && (
-              <div style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: "6px 0" }}>
+              <div style={{ fontSize: 12, color: "var(--subtle)", textAlign: "center", padding: "6px 0" }}>
                 +{alerts.length - 5} more alert{alerts.length - 5 > 1 ? "s" : ""}
               </div>
             )}
@@ -1108,8 +1108,8 @@ export default function Workplan({ projectId, canEdit = true }) {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", margin: 0 }}>Workplan — Components & Activities</h3>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0" }}>Component → Sub-Component → Activity · ToC links (SF-2) · Milestones & Delay tracking</p>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Workplan — Components & Activities</h3>
+          <p style={{ fontSize: 12, color: "var(--subtle)", margin: "4px 0 0" }}>Component → Sub-Component → Activity · ToC links (SF-2) · Milestones & Delay tracking</p>
         </div>
         {canEdit && (
           <button className="btn btn-primary" onClick={() => setModal(true)}>
@@ -1117,21 +1117,21 @@ export default function Workplan({ projectId, canEdit = true }) {
           </button>
         )}
         {/* View toggle */}
-        <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", marginLeft: 4 }}>
+        <div style={{ display: "flex", border: "1px solid var(--rule)", borderRadius: 8, overflow: "hidden", marginLeft: 4 }}>
           <button onClick={() => setViewMode("list")} style={{
             padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 6,
-            background: viewMode === "list" ? "#2B2B2B" : "#fff",
-            color: viewMode === "list" ? "#fff" : "#64748b",
+            background: viewMode === "list" ? "var(--ink)" : "var(--paper)",
+            color: viewMode === "list" ? "var(--paper)" : "var(--muted)",
           }}>
             <Icon name="list" size={13} /> List
           </button>
           <button onClick={() => setViewMode("gantt")} style={{
             padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 6,
-            background: viewMode === "gantt" ? "#2B2B2B" : "#fff",
-            color: viewMode === "gantt" ? "#fff" : "#64748b",
-            borderLeft: "1px solid #e2e8f0",
+            background: viewMode === "gantt" ? "var(--ink)" : "var(--paper)",
+            color: viewMode === "gantt" ? "var(--paper)" : "var(--muted)",
+            borderLeft: "1px solid var(--rule)",
           }}>
             <Icon name="bar-chart-2" size={13} /> Gantt
           </button>
@@ -1142,9 +1142,9 @@ export default function Workplan({ projectId, canEdit = true }) {
       {viewMode === "list" && (
         <>
           {components.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed #e2e8f0", borderRadius: 12, color: "#94a3b8" }}>
+            <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed var(--rule)", borderRadius: 12, color: "var(--subtle)" }}>
               <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-              <div style={{ fontSize: 15, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Empty Workplan</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>Empty Workplan</div>
               <div style={{ fontSize: 13, marginBottom: 16 }}>Start by creating the first component of this project, aligned with the PAD structure.</div>
               {canEdit && (
                 <button className="btn btn-primary" onClick={() => setModal(true)}>
@@ -1163,7 +1163,7 @@ export default function Workplan({ projectId, canEdit = true }) {
 
       {/* Gantt view */}
       {viewMode === "gantt" && (
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", padding: "16px" }}>
+        <div style={{ border: "1px solid var(--rule)", borderRadius: 10, overflow: "hidden", padding: "16px" }}>
           <GanttChart
             components={components}
             onActivityClick={setSelectedActivity}

@@ -22,14 +22,14 @@ const STAGE_PHASE = {
   suspended: "exception", cancelled: "exception",
 };
 const PHASE_META = {
-  pre_approval:  { label: "Pre-Approval",  color: "#A7A7A7" },
-  approval_gate: { label: "Approval Gate", color: "#F49D07" },
-  implementation:{ label: "Implementation",color: "#0EB584" },
-  closure:       { label: "Closure",       color: "#7E46B8" },
-  exception:     { label: "Exception",     color: "#FB563B" },
+  pre_approval:  { label: "Pre-Approval",  color: "var(--subtle)" },
+  approval_gate: { label: "Approval Gate", color: "var(--orange)" },
+  implementation:{ label: "Implementation",color: "var(--lime)" },
+  closure:       { label: "Closure",       color: "var(--violet)" },
+  exception:     { label: "Exception",     color: "var(--rose)" },
 };
 /* LLF multi-series chart order (design.md §4.5) */
-const SECTOR_COLOR = ["#0EB584", "#0089C5", "#F49D07", "#FB563B", "#7E46B8", "#A7A7A7"];
+const SECTOR_COLOR = ["var(--lime)", "var(--blue)", "var(--orange)", "var(--rose)", "var(--violet)", "var(--subtle)"];
 
 /* ── KPI héro ───────────────────────────────────────────────────────────── */
 function HeroKpi({ icon, label, value, sub, accent }) {

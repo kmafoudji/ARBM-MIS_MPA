@@ -294,8 +294,8 @@ export default function ImplementingPartners({ projectId, envelopeTotal, canEdit
                   width: `${pctAllocated}%`,
                   background:
                     Number(pctAllocated) > 100
-                      ? "var(--danger, #e11d48)"
-                      : "var(--lime, #A4C53F)",
+                      ? "var(--danger, var(--rose))"
+                      : "var(--lime, var(--lime))",
                   borderRadius: 3,
                   transition: "width 0.3s ease",
                 }}

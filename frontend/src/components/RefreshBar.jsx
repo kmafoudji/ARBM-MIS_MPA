@@ -25,7 +25,7 @@ export default function RefreshBar({ dataUpdatedAt, isFetching, onRefresh }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
-      fontSize: 11, color: "#9ca3af",
+      fontSize: 11, color: "var(--subtle)",
     }}>
       {isFetching ? (
         <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -41,8 +41,8 @@ export default function RefreshBar({ dataUpdatedAt, isFetching, onRefresh }) {
         style={{
           display: "inline-flex", alignItems: "center", gap: 4,
           padding: "3px 10px", borderRadius: 99,
-          border: "1px solid #e5e7eb", background: "#fff",
-          fontSize: 11, color: "#6b7280", cursor: "pointer",
+          border: "1px solid var(--rule)", background: "var(--paper)",
+          fontSize: 11, color: "var(--muted)", cursor: "pointer",
           opacity: isFetching ? 0.5 : 1, fontFamily: "inherit",
         }}>
         <Icon name="refresh" size={11} /> Refresh
@@ -56,12 +56,12 @@ export default function RefreshBar({ dataUpdatedAt, isFetching, onRefresh }) {
  */
 export function SkeletonRow({ cols = 5 }) {
   return (
-    <tr style={{ borderBottom: "1px solid #f0f0ee" }}>
+    <tr style={{ borderBottom: "1px solid var(--rule)" }}>
       {Array.from({ length: cols }).map((_, i) => (
         <td key={i} style={{ padding: "12px" }}>
           <div style={{
             height: 12, borderRadius: 6,
-            background: "linear-gradient(90deg, #f0f0ee 25%, #e5e5e2 50%, #f0f0ee 75%)",
+            background: "linear-gradient(90deg, var(--rule) 25%, var(--surface-2) 50%, var(--rule) 75%)",
             backgroundSize: "200% 100%",
             animation: "shimmer 1.5s infinite",
             width: i === 0 ? "80%" : i === cols - 1 ? "60%" : "70%",
@@ -82,7 +82,7 @@ export function SkeletonCard({ height = 80 }) {
   return (
     <div style={{
       height, borderRadius: 12,
-      background: "linear-gradient(90deg, #f0f0ee 25%, #e8e8e5 50%, #f0f0ee 75%)",
+      background: "linear-gradient(90deg, var(--rule) 25%, var(--surface-2) 50%, var(--rule) 75%)",
       backgroundSize: "200% 100%",
       animation: "shimmer 1.5s infinite",
     }}>

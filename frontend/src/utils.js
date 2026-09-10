@@ -120,3 +120,23 @@ export function groupSectorOptions(sectors) {
     .filter((s) => s.parent === null || s.parent === undefined)
     .map((p) => [p, list.filter((s) => s.parent === p.id)]);
 }
+
+/**
+ * RESULT_LEVEL_COLOR — la couleur d'un niveau de resultat, partout pareille :
+ * bandeau de section du catalogue, en-tete de niveau du cadre logique, ToC.
+ * Violet impact, vert outcome, bleu output, charbon pour les types de mesure
+ * (docs/design.md, "Colour as structure").
+ */
+export const RESULT_LEVEL_COLOR = {
+  impact:               "var(--violet)",
+  ultimate_outcome:     "var(--violet)",
+  intermediate_outcome: "var(--sec-agri)",
+  immediate_outcome:    "var(--sec-agri)",
+  outcome:              "var(--sec-agri)",
+  output:               "var(--sec-climate)",
+  activity:             "var(--muted)",
+  numeric:              "var(--ink)",
+  percentage:           "var(--ink)",
+  yes_no:               "var(--ink)",
+  count:                "var(--ink)",
+};
