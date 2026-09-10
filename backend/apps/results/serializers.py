@@ -29,6 +29,7 @@ class IndicatorListSerializer(serializers.ModelSerializer):
         source="get_aggregation_rule_display", read_only=True
     )
     chain_level_display = serializers.CharField(source="get_chain_level_display", read_only=True)
+    related_sdg_numbers = serializers.SerializerMethodField()
 
     class Meta:
         model  = Indicator
@@ -38,9 +39,13 @@ class IndicatorListSerializer(serializers.ModelSerializer):
             "direction", "direction_display", "unit",
             "aggregation_rule", "aggregation_rule_display",
             "chain_level", "chain_level_display",
-            "cross_cutting_tags",
+            "cross_cutting_tags", "related_sdg_numbers",
             "reporting_frequency", "version", "is_active",
         ]
+
+    def get_related_sdg_numbers(self, obj):
+        # The catalogue groups by SDG: prefetched in IndicatorListView.
+        return sorted(s.number for s in obj.related_sdgs.all())
 
 
 class IndicatorDetailSerializer(serializers.ModelSerializer):
