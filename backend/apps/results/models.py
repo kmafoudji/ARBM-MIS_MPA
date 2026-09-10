@@ -14,6 +14,8 @@ Architecture (v2 — complétée SF-1/SF-2/SF-3) :
   TargetRevision   — historique immuable des révisions de cibles (SF-3, RG-3.3/3.4)
 """
 from django.db import models
+from django.db.models.signals import post_delete, pre_delete
+from django.dispatch import receiver
 
 from apps.identity.models import AppUser
 from apps.project.models import Project
@@ -54,6 +56,11 @@ INDICATOR_TYPE_CHOICES = [
     ("percentage",  "Percentage"),
     ("yes_no",      "Yes / No"),
     ("count",       "Count"),
+    # Indicateur apporté par un workbook AS-IS : son code n'était pas au
+    # catalogue au moment de l'import. Il appartient au projet qui l'a apporté,
+    # pas au catalogue institutionnel de la LLFMU (POL-2.01), et il disparaît
+    # avec lui — voir les deux récepteurs en bas de ce fichier.
+    ("project_specific", "Project-specific"),
 ]
 
 DIRECTION_CHOICES = [
@@ -120,7 +127,7 @@ class Indicator(models.Model):
 
     # SF-1 : type étendu aux 4 types SFD (BRQ-2.02)
     indicator_type = models.CharField(
-        max_length=15, choices=INDICATOR_TYPE_CHOICES, default="numeric"
+        max_length=20, choices=INDICATOR_TYPE_CHOICES, default="project_specific"
     )
     direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
 
@@ -754,3 +761,37 @@ class Evidence(models.Model):
             except Exception:
                 return None
         return None
+
+
+# ---------------------------------------------------------------------------
+# Nettoyage des indicateurs de projet (POL-2.01)
+# ---------------------------------------------------------------------------
+
+# Un indicateur `project_specific` n'existe que pour le projet qui l'a apporté
+# par import. Quand ce projet part, ses LogframeRow partent en cascade et
+# l'indicateur resterait au catalogue sans plus rien pour le rattacher : c'est
+# ce qui est arrivé à CIV1008, dont les 11 indicateurs ont survécu au projet.
+#
+# Le rattachement est LogframeRow, pas une clé étrangère sur Indicator : il
+# faut donc relever les identifiants AVANT la cascade et ne supprimer
+# qu'APRÈS, sinon le PROTECT de LogframeRow.indicator bloque la suppression.
+
+
+@receiver(pre_delete, sender=Project)
+def _collect_project_specific_indicators(sender, instance, **kwargs):
+    instance._project_specific_indicator_ids = list(
+        Indicator.objects
+        .filter(logframe_rows__project=instance, indicator_type="project_specific")
+        .values_list("pk", flat=True)
+        .distinct()
+    )
+
+
+@receiver(post_delete, sender=Project)
+def _delete_orphaned_project_specific_indicators(sender, instance, **kwargs):
+    ids = getattr(instance, "_project_specific_indicator_ids", None)
+    if not ids:
+        return
+    # Un indicateur qu'un autre projet utilise encore n'est pas orphelin :
+    # le supprimer emporterait la ligne de cadre logique d'un projet vivant.
+    Indicator.objects.filter(pk__in=ids, logframe_rows__isnull=True).delete()

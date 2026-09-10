@@ -1340,6 +1340,12 @@ def _parse_indicators(context):
             "kind": "indicator",
             "code": code,
             "name": name,
+            # A code the catalogue does not have is not an institutional
+            # indicator: it belongs to the project that brought it, and it is
+            # deleted with that project. The applier reads this only when it
+            # creates the row — an indicator already in the catalogue keeps
+            # whatever type the LLFMU gave it (POL-2.01).
+            "indicator_type": "project_specific",
             "sector_id": sector.pk,
             "definition": definition,
             "unit": unit,
@@ -1354,7 +1360,8 @@ def _parse_indicators(context):
         if indicator is None:
             context.plan.add_change(
                 SHEET_INDICATORS, ACTION_CREATE, f"Indicator {code}",
-                detail=name[:120], payload=indicator_payload,
+                detail=f"Project-specific (new code) — {name[:90]}",
+                payload=indicator_payload,
             )
         else:
             context.plan.add_change(

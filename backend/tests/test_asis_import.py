@@ -727,6 +727,57 @@ def test_existing_donor_is_matched_case_insensitively(auth_client, rows):
     assert Donor.objects.filter(code__iexact="testdonor").count() == 1
 
 
+@pytest.mark.django_db
+def test_a_new_indicator_code_is_catalogued_as_project_specific(auth_client, rows):
+    """
+    A code the catalogue does not have belongs to the project that brought it,
+    not to the institutional catalogue: the loader says so on the row instead
+    of leaving the model default to mean it by accident.
+    """
+    from apps.results.models import Indicator
+
+    validation = post(auth_client, build_workbook(rows))
+    change = next(
+        c for c in validation.data["changes"]
+        if c["sheet"] == "07_indicators_logframe" and c["action"] == "create"
+    )
+    assert "Project-specific" in change["detail"]
+
+    workbook = build_workbook(rows)
+    validation = post(auth_client, workbook, mode="validate")
+    workbook.seek(0)
+    commit = post(auth_client, workbook, mode="commit",
+                  expected_sha256=validation.data["file_sha256"])
+    assert commit.status_code == 200, commit.data
+    assert Indicator.objects.get(code="REF001-IND-01").indicator_type == "project_specific"
+
+
+@pytest.mark.django_db
+def test_an_indicator_already_in_the_catalogue_keeps_its_type(auth_client, rows, reference_data):
+    """POL-2.01: a project file does not rewrite a catalogue the LLFMU governs."""
+    from apps.results.models import Indicator
+
+    Indicator.objects.create(
+        code="REF001-IND-01",
+        sector=reference_data["sector"],
+        name="Institutional wording",
+        indicator_type="percentage",
+        direction="increase",
+        definition="A definition.",
+        unit="Percent",
+    )
+    workbook = build_workbook(rows)
+    validation = post(auth_client, workbook, mode="validate")
+    workbook.seek(0)
+    commit = post(auth_client, workbook, mode="commit",
+                  expected_sha256=validation.data["file_sha256"])
+    assert commit.status_code == 200, commit.data
+
+    indicator = Indicator.objects.get(code="REF001-IND-01")
+    assert indicator.indicator_type == "percentage"
+    assert indicator.name == "Institutional wording"
+
+
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
