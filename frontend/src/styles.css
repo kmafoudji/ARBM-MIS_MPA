@@ -71,6 +71,9 @@
   --shadow-1: none;
   --shadow-2: none;
   --shadow-3: none;
+  /* Except the indicator catalogue's card hover — a declared exception
+     (docs/design.md, "Exceptions in force"). Nothing else may use it. */
+  --shadow-card-hover: 0 4px 14px rgba(43, 43, 43, 0.10);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -1856,37 +1859,47 @@ input, select, textarea { font: inherit; color: inherit; }
 .filter-chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 600; }
 .filter-chip-sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
 
-/* Sections inside a tab */
+/* Sections inside a tab. The solid sector-coloured bar and the card's left
+   stripe are the two documented exceptions to docs/design.md, scoped to this
+   page — see "Exceptions in force" there. */
 .cat-section { margin-bottom: var(--s-4); }
-.cat-section-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-  padding-bottom: var(--s-2);
+.cat-section-bar {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: var(--r-2);
+  padding: 8px 14px;
+  margin-bottom: var(--s-1);
 }
-.cat-section-title .count { font-size: 11px; font-weight: 500; color: var(--subtle); }
+.cat-section-bar .count { margin-left: auto; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); }
 .cat-group-title {
-  font-size: 11px;
-  color: var(--muted);
-  padding: var(--s-2) 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  padding: var(--s-2) 2px 6px;
 }
+.cat-group-title .count { font-size: 11px; font-weight: 500; color: var(--subtle); }
 
 /* Indicator cards */
 .ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-2); }
 .ind-card {
-  background: var(--surface);
+  background: var(--paper);
   border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule);
   border-radius: var(--r-3);
   padding: 11px 13px;
   cursor: pointer;
   text-align: left;
   font-family: var(--font-body);
-  transition: border-color 0.12s, background 0.12s;
+  transition: box-shadow 0.12s, border-color 0.12s;
 }
-.ind-card:hover { border-color: var(--subtle); background: var(--paper); }
+.ind-card:hover { box-shadow: var(--shadow-card-hover); }
 .ind-card.open { border-color: var(--lime); background: var(--lime-pale); }
 .ind-card-top { display: flex; align-items: center; gap: 8px; }
 .ind-card-code { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
@@ -1895,21 +1908,23 @@ input, select, textarea { font: inherit; color: inherit; }
 .ind-card-meta span {
   font-size: 10.5px;
   color: var(--muted);
-  background: var(--rule-soft);
+  background: var(--surface-2);
   border-radius: 999px;
   padding: 1px 8px;
 }
+.ind-card-sdgs { margin-top: 8px; }
 
-/* Detail drawer */
+/* Detail drawer — three quarters of the window, dark header */
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(10, 10, 10, 0.35); z-index: 100; }
 .drawer {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 460px;
-  max-width: 100vw;
-  background: var(--surface);
+  width: 75vw;
+  min-width: 420px;
+  max-width: 1280px;
+  background: var(--paper);
   border-left: 1px solid var(--rule);
   z-index: 101;
   display: flex;
@@ -1917,8 +1932,61 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .drawer-header {
   padding: var(--s-3) var(--s-4);
-  border-bottom: 1px solid var(--rule);
-  background: var(--paper);
+  background: var(--sidebar);
+  color: #fff;
+}
+.drawer-code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lime);
+}
+.drawer-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 4px 0 0;
+  color: #fff;
+}
+.drawer-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: var(--r-1);
+  flex-shrink: 0;
+}
+.drawer-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.drawer-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.drawer-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.88);
+}
+.drawer-sdgs { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+.drawer-sdgs-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+.drawer-sdgs .text-muted { color: rgba(255,255,255,0.55); }
+.drawer-note {
+  background: #FFFAF0;
+  border: 1px solid var(--orange);
+  border-radius: var(--r-2);
+  padding: 10px 13px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  margin-bottom: var(--s-3);
 }
 .drawer-body { padding: var(--s-4); overflow-y: auto; flex: 1; }
-@media (max-width: 540px) { .drawer { width: 100%; } }
+@media (max-width: 900px) { .drawer { width: 100%; min-width: 0; } }

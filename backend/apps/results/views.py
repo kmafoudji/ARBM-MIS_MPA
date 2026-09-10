@@ -13,7 +13,18 @@ from apps.identity.permissions import ReadOnlyOrHasModulePermission
 from core.scope import ProjectInScope, hub_q
 from apps.project.models import Project
 
-from .models import Indicator, LogframeRow, LogframeTarget, TargetRevision, TheoryOfChange, ToCNode
+from apps.reference.models import Sdg
+from .models import (
+    AGGREGATION_RULE_CHOICES,
+    CHAIN_LEVEL_CHOICES,
+    CROSS_CUTTING_TAG_CHOICES,
+    Indicator,
+    LogframeRow,
+    LogframeTarget,
+    TargetRevision,
+    TheoryOfChange,
+    ToCNode,
+)
 
 def fmt_decimal(value):
     """Formate un Decimal : supprime les zéros décimaux inutiles.
@@ -157,13 +168,50 @@ class IndicatorDetailView(APIView):
             "data_source", "collection_method", "reporting_frequency",
             "means_of_verification", "responsible",
             "assumptions", "limitations", "is_active",
+            # Offerts par le formulaire du catalogue depuis SF-1 mais absents
+            # de cette liste : les trois etaient silencieusement ignores.
+            "chain_level", "aggregation_rule", "cross_cutting_tags",
         ]
         data = {k: v for k, v in request.data.items() if k in editable}
+
+        # La vue ne passe pas par un serializer en ecriture : les vocabulaires
+        # fermes se verifient ici, sinon un 200 repond a une valeur refusee.
+        errors = {}
+        if "chain_level" in data and data["chain_level"]:
+            if data["chain_level"] not in dict(CHAIN_LEVEL_CHOICES):
+                errors["chain_level"] = "Unknown chain level."
+        if "aggregation_rule" in data:
+            if data["aggregation_rule"] not in dict(AGGREGATION_RULE_CHOICES):
+                errors["aggregation_rule"] = "Unknown aggregation rule."
+        if "cross_cutting_tags" in data:
+            tags = data["cross_cutting_tags"]
+            known = dict(CROSS_CUTTING_TAG_CHOICES)
+            if not isinstance(tags, list) or any(t not in known for t in tags):
+                errors["cross_cutting_tags"] = "Unknown cross-cutting tag."
+
+        # Les ODD sont un M2M : ils arrivent sous le meme nom que celui rendu
+        # par le serializer, pour ne pas avoir deux vocabulaires cote client.
+        sdg_numbers = request.data.get("related_sdg_numbers")
+        if sdg_numbers is not None:
+            if not isinstance(sdg_numbers, list) or any(
+                not isinstance(n, int) or isinstance(n, bool) for n in sdg_numbers
+            ):
+                errors["related_sdg_numbers"] = "Expected a list of SDG numbers."
+            elif Sdg.objects.filter(number__in=sdg_numbers).count() != len(set(sdg_numbers)):
+                errors["related_sdg_numbers"] = "Unknown SDG number."
+
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
         for field, value in data.items():
             setattr(ind, field, value)
         ind.save()
-        # Rechargement propre pour renvoyer la fiche complete
-        ind.refresh_from_db()
+        if sdg_numbers is not None:
+            ind.related_sdgs.set(Sdg.objects.filter(number__in=sdg_numbers))
+
+        # Rechargement propre pour renvoyer la fiche complete. `refresh_from_db`
+        # ne rafraichit pas un M2M : on relit l'objet avec son prefetch.
+        ind = Indicator.objects.prefetch_related("related_sdgs").get(pk=pk)
         return Response(IndicatorDetailSerializer(ind).data)
 
 
