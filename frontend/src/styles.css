@@ -1804,33 +1804,56 @@ input, select, textarea { font: inherit; color: inherit; }
    Tab bar grouped by pillar, filter chips, indicator card grid, detail drawer.
 --------------------------------------------------------------------------- */
 
-/* Tab bar: one row of pillar labels above the row of sector tabs. */
+/* Tab bar: a single row of pills. One pill per pillar (the whole pillar); the
+   sectors of the active pillar unfold after it, the other pillars stay folded,
+   so the bar keeps to one line whatever the taxonomy grows to. */
 .cat-tabbar {
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: var(--s-3);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.cat-tabbar-inner { display: flex; align-items: stretch; gap: 0; min-width: min-content; }
-.cat-pillar {
   display: flex;
-  flex-direction: column;
-  padding-right: var(--s-3);
-  margin-right: var(--s-3);
-  border-right: 1px solid var(--rule);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--rule);
 }
-.cat-pillar:last-child { border-right: none; margin-right: 0; padding-right: 0; }
-.cat-pillar-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  padding: 0 14px 2px;
+.cat-tabgroup { display: flex; align-items: center; gap: 3px; }
+.cat-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 10px;
   white-space: nowrap;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.cat-pillar-tabs { display: flex; gap: 2px; }
-.cat-tabbar .tab { padding-top: 4px; }
-.tab.empty { opacity: 0.45; }
+/* The pillar's own pill carries its colour as a dot, so the run of sectors
+   after it reads as belonging to it without a second row of labels. */
+.cat-tab.lead::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tab-color, var(--muted));
+  flex-shrink: 0;
+}
+.cat-tab:hover { background: var(--rule-soft); color: var(--ink); }
+.cat-tab.active {
+  background: var(--tab-color, var(--ink));
+  border-color: var(--tab-color, var(--ink));
+  color: #fff;
+  font-weight: 600;
+}
+.cat-tab.active::before { background: rgba(255, 255, 255, 0.9); }
+.cat-tab.empty { opacity: 0.45; }
+.cat-tab-count { font-size: 10.5px; font-weight: 600; color: var(--subtle); }
+.cat-tab.active .cat-tab-count { color: rgba(255, 255, 255, 0.85); }
 
 /* Filter chips */
 .filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
