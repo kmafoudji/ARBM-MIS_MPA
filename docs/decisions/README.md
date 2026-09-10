@@ -16,13 +16,14 @@ consequences in the present tense; the history behind them is not kept here.
 | [0008](0008-type-hierarchy-follows-poc-mockups.md) | Typographic hierarchy follows the POC mockups, not the LLF template's Light titles |
 | [0009](0009-basemap-served-from-postgis-via-martin.md) | The basemap is Natural Earth in PostGIS, served by Martin from an explicit source list |
 | [0010](0010-toc-sheet-loaded-when-complete.md) | The import loads a Theory of Change only when the tree is complete; fan-in becomes cross-pathways |
+| [0011](0011-imported-indicators-are-project-specific.md) | An indicator the import creates is project-specific and dies with its project |
 
 ## Pending
 
 Questions with no decision yet. Each becomes a numbered file when decided.
 
-- `Indicator.indicator_type` holds chain levels, not types — which side of the
-  model changes.
+- `Indicator.indicator_type` holds chain levels for the seeded rows and a
+  provenance since 0011, not only types — which side of the model changes.
 - How much of the data-dictionary correction (v1.2) reaches the Django models,
   and in what order.
 - The portfolio country list exists in a fixture, in a constant and in GADM —

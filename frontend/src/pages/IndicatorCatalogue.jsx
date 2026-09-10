@@ -245,6 +245,7 @@ const TYPE_COLOR = {
   percentage:  "badge badge-blue",
   yes_no:      "badge badge-violet",
   count:       "badge badge-teal",
+  project_specific: "badge badge-rose",
 };
 
 const AGGREGATION_LABELS = {
@@ -712,7 +713,10 @@ const PILLAR_PALE = {
 const DEFAULT_SECTOR_TOKEN = "var(--muted)";
 
 // Ordre d'affichage des sections d'un onglet (BRQ-2.02).
-const TYPE_ORDER = ["impact", "outcome", "output", "numeric", "percentage", "yes_no", "count"];
+// `project_specific` ferme la liste : les sections institutionnelles d'abord,
+// les indicateurs apportes par un projet en bloc a la fin.
+const TYPE_ORDER = ["impact", "outcome", "output", "numeric", "percentage",
+                    "yes_no", "count", "project_specific"];
 // Les donnees portent output/outcome/impact, absents de INDICATOR_TYPE_CHOICES :
 // get_indicator_type_display renvoie alors la valeur brute, en minuscules.
 const TYPE_LABELS = {
@@ -723,6 +727,7 @@ const TYPE_LABELS = {
   percentage: "Percentage",
   yes_no:     "Yes / No",
   count:      "Count",
+  project_specific: "Project-specific",
 };
 const typeLabel = (ind) =>
   TYPE_LABELS[ind.indicator_type] || ind.indicator_type_display || ind.indicator_type;
