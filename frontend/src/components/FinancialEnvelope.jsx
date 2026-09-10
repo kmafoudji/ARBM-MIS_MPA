@@ -465,7 +465,7 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
             fontSize: 13, fontWeight: 600,
           }}>
             <span style={{ color: "var(--text-muted)" }}>Total allocated</span>
-            <span style={{ color: over ? "#dc2626" : "var(--lime-darker)" }}>
+            <span style={{ color: over ? "var(--rose)" : "var(--lime-darker)" }}>
               {fmt(allocTotal)} / {fmt(total)} USD
               {over && <span style={{ marginLeft: 8, fontSize: 11 }}>⚠ Exceeds envelope</span>}
             </span>

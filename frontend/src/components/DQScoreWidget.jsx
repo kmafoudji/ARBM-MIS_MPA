@@ -10,10 +10,10 @@ import { fmtNum } from "../utils.js";
 import Icon from "./Icon";
 
 const GRADE_CONFIG = {
-  A: { color: "#16a34a", bg: "#dcfce7", label: "Excellent", min: 80 },
-  B: { color: "#A4C53F", bg: "#f0f6dc", label: "Good",      min: 60 },
-  C: { color: "#d97706", bg: "#fef9c3", label: "Fair",      min: 40 },
-  D: { color: "#dc2626", bg: "#fee2e2", label: "Poor",      min: 0  },
+  A: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Excellent", min: 80 },
+  B: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Good",      min: 60 },
+  C: { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "Fair",      min: 40 },
+  D: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Poor",      min: 0  },
 };
 
 function grade(score) {
@@ -34,7 +34,7 @@ const DIMENSIONS = [
 function ScoreBar({ value, color }) {
   const pct = Math.min(100, Math.max(0, parseFloat(value) || 0));
   return (
-    <div style={{ flex: 1, height: 6, background: "#f0f0ee", borderRadius: 99, overflow: "hidden" }}>
+    <div style={{ flex: 1, height: 6, background: "var(--rule)", borderRadius: 99, overflow: "hidden" }}>
       <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .4s" }} />
     </div>
   );
@@ -83,12 +83,12 @@ export default function DQScoreWidget({ projectId, rowId, inline = false }) {
       <div style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
         onClick={() => setExpanded(e => !e)}>
         <DQScoreBadge score={composite} />
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={12} style={{ color: "#9ca3af" }} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={12} style={{ color: "var(--subtle)" }} />
         {expanded && (
           <div style={{
             position: "absolute", zIndex: 100,
-            background: "#fff", border: "1px solid #e5e7eb",
-            borderRadius: 10, padding: 14, boxShadow: "0 4px 20px #0001",
+            background: "var(--paper)", border: "1px solid var(--rule)",
+            borderRadius: 10, padding: 14, boxShadow: "var(--shadow-hover)",
             minWidth: 280, marginTop: 4,
           }}>
             <DQScoreDetail scores={scores} data={data} />
@@ -99,7 +99,7 @@ export default function DQScoreWidget({ projectId, rowId, inline = false }) {
   }
 
   return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+    <div style={{ border: "1px solid var(--rule)", borderRadius: 10, overflow: "hidden" }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -110,7 +110,7 @@ export default function DQScoreWidget({ projectId, rowId, inline = false }) {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{
             width: 36, height: 36, borderRadius: "50%",
-            background: cfg.color, color: "#fff",
+            background: cfg.color, color: "var(--paper)",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             fontSize: 16, fontWeight: 800,
           }}>{g}</span>
@@ -118,12 +118,12 @@ export default function DQScoreWidget({ projectId, rowId, inline = false }) {
             <div style={{ fontWeight: 700, fontSize: 13, color: cfg.color }}>
               DQ Score — {fmtNum(composite)}%
             </div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>
               {cfg.label} · {data.period}
             </div>
           </div>
         </div>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "#9ca3af" }} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={16} style={{ color: "var(--subtle)" }} />
       </div>
 
       {/* Détail dimensions */}
@@ -148,7 +148,7 @@ function DQScoreDetail({ scores, data }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <Icon name={dim.icon} size={13} style={{ color: cfg.color, flexShrink: 0 }} />
               <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{dim.label}</span>
-              <span style={{ fontSize: 10, color: "#9ca3af" }}>{dim.weight}</span>
+              <span style={{ fontSize: 10, color: "var(--subtle)" }}>{dim.weight}</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: cfg.color, minWidth: 40, textAlign: "right" }}>
                 {fmtNum(val)}%
               </span>
@@ -156,15 +156,15 @@ function DQScoreDetail({ scores, data }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <ScoreBar value={val} color={cfg.color} />
             </div>
-            <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>{dim.desc}</div>
+            <div style={{ fontSize: 10, color: "var(--subtle)", marginTop: 2 }}>{dim.desc}</div>
           </div>
         );
       })}
 
       {/* Détails techniques */}
       {data.details && (
-        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #f0f0ee" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--rule)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>
             Details
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
@@ -174,8 +174,8 @@ function DQScoreDetail({ scores, data }) {
               ["On time",          `${data.details.on_time_count}/${data.details.submitted_count}`],
               ["Anomalies",        data.details.inconsistencies],
             ].map(([label, val]) => (
-              <div key={label} style={{ fontSize: 11, color: "#374151" }}>
-                <span style={{ color: "#9ca3af" }}>{label}: </span>
+              <div key={label} style={{ fontSize: 11, color: "var(--ink-soft)" }}>
+                <span style={{ color: "var(--subtle)" }}>{label}: </span>
                 <strong>{val}</strong>
               </div>
             ))}
@@ -183,7 +183,7 @@ function DQScoreDetail({ scores, data }) {
         </div>
       )}
 
-      <div style={{ marginTop: 10, fontSize: 10, color: "#9ca3af", fontStyle: "italic" }}>
+      <div style={{ marginTop: 10, fontSize: 10, color: "var(--subtle)", fontStyle: "italic" }}>
         Accuracy score will reflect evidence verification once SF-10 is activated.
       </div>
     </>

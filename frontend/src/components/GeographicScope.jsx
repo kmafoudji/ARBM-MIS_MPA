@@ -258,7 +258,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
                     fontSize: 13, fontWeight: isActive ? 600 : 400,
                     color: isActive ? "var(--lime-dark, var(--lime))" : "var(--text-muted)",
                     background: "none", border: "none", cursor: "pointer",
-                    borderBottom: isActive ? "2px solid var(--lime, #A4C53F)" : "2px solid transparent",
+                    borderBottom: isActive ? "2px solid var(--lime, var(--lime))" : "2px solid transparent",
                     marginBottom: -2,
                     borderRadius: 0,
                   }}
@@ -268,8 +268,8 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
                   {t.children.length > 0 && (
                     <span style={{
                       fontSize: 10, fontWeight: 600,
-                      background: isActive ? "var(--lime, #A4C53F)" : "var(--rule)",
-                      color: isActive ? "#fff" : "var(--text-muted)",
+                      background: isActive ? "var(--lime, var(--lime))" : "var(--rule)",
+                      color: isActive ? "var(--paper)" : "var(--text-muted)",
                       borderRadius: 10, padding: "1px 6px",
                     }}>
                       {t.children.length}

@@ -24,18 +24,18 @@ const DEFAULT_LABEL_W = 260;
 
 // ─── Status palette ───────────────────────────────────────────────────────────
 const S = {
-  not_started: { fill: "#e2e8f0", stroke: "#94a3b8", text: "Not Started" },
-  in_progress:  { fill: "#3b82f6", stroke: "#2563eb", text: "In Progress" },
-  on_hold:      { fill: "#f59e0b", stroke: "#d97706", text: "On Hold"     },
-  completed:    { fill: "#22c55e", stroke: "#16a34a", text: "Completed"   },
-  cancelled:    { fill: "#ef4444", stroke: "#dc2626", text: "Cancelled"   },
+  not_started: { fill: "#ECEBE8", stroke: "#A7A7A7", text: "Not Started" },
+  in_progress:  { fill: "#0089C5", stroke: "#0089C5", text: "In Progress" },
+  on_hold:      { fill: "#F49D07", stroke: "#F49D07", text: "On Hold"     },
+  completed:    { fill: "#0EB584", stroke: "#0EB584", text: "Completed"   },
+  cancelled:    { fill: "#FB563B", stroke: "#FB563B", text: "Cancelled"   },
 };
 
 const MILESTONE_COLOR = {
-  pending:    "#9333ea",
-  achieved:   "#16a34a",
-  missed:     "#dc2626",
-  forecasted: "#2563eb",
+  pending:    "#7E46B8",
+  achieved:   "#0EB584",
+  missed:     "#FB563B",
+  forecasted: "#0089C5",
 };
 
 // ─── Zoom config ──────────────────────────────────────────────────────────────
@@ -81,12 +81,12 @@ function Tooltip({ tip }) {
     <div style={{
       position: "fixed", zIndex: 9999, pointerEvents: "none",
       left: tip.x + 16, top: tip.y - 10,
-      background: "#1e293b", color: "#fff", borderRadius: 8,
+      background: "#2B2B2B", color: "#FFFFFF", borderRadius: 8,
       padding: "10px 14px", fontSize: 12, lineHeight: 1.6,
       boxShadow: "0 4px 20px rgba(0,0,0,.25)", maxWidth: 280,
     }}>
-      <div style={{ fontWeight: 700, marginBottom: 4, color: "#A4C53F" }}>{tip.title}</div>
-      {tip.lines.map((l, i) => <div key={i} style={{ color: "#cbd5e1" }}>{l}</div>)}
+      <div style={{ fontWeight: 700, marginBottom: 4, color: "#0EB584" }}>{tip.title}</div>
+      {tip.lines.map((l, i) => <div key={i} style={{ color: "#ECEBE8" }}>{l}</div>)}
     </div>
   );
 }
@@ -196,9 +196,9 @@ export default function GanttChart({ components = [], onActivityClick }) {
 
   if (rows.length === 0) {
     return (
-      <div style={{ padding: "48px 24px", textAlign: "center", color: "#94a3b8" }}>
+      <div style={{ padding: "48px 24px", textAlign: "center", color: "#A7A7A7" }}>
         <Icon name="bar-chart-2" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-        <div style={{ fontSize: 14, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>No activities to display</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "#7E7E7E", marginBottom: 4 }}>No activities to display</div>
         <div style={{ fontSize: 12 }}>Add components and activities in the List view first.</div>
       </div>
     );
@@ -211,14 +211,14 @@ export default function GanttChart({ components = [], onActivityClick }) {
 
       {/* ── Toolbar ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>Zoom</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#A7A7A7", textTransform: "uppercase", letterSpacing: "0.05em" }}>Zoom</span>
         {["week", "month", "quarter"].map(z => (
           <button key={z} onClick={() => setZoom(z)} style={{
             padding: "4px 14px", borderRadius: 6, border: "1.5px solid",
             fontSize: 12, fontWeight: 600, cursor: "pointer",
-            borderColor: zoom === z ? "#A4C53F" : "#e2e8f0",
-            background: zoom === z ? "#f7ffe6" : "#fff",
-            color: zoom === z ? "#4a7c0a" : "#64748b",
+            borderColor: zoom === z ? "#0EB584" : "#ECEBE8",
+            background: zoom === z ? "#EFFFFA" : "#FFFFFF",
+            color: zoom === z ? "#09815F" : "#7E7E7E",
           }}>
             {z.charAt(0).toUpperCase() + z.slice(1)}
           </button>
@@ -227,30 +227,30 @@ export default function GanttChart({ components = [], onActivityClick }) {
         {/* Legend */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           {Object.entries(S).map(([k, v]) => (
-            <div key={k} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#7E7E7E" }}>
               <div style={{ width: 14, height: 8, borderRadius: 2, background: v.fill, border: `1px solid ${v.stroke}` }} />
               {v.text}
             </div>
           ))}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9333ea" }}>
-            <svg width={12} height={12}><polygon points="6,0 12,6 6,12 0,6" fill="#9333ea" /></svg>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#7E46B8" }}>
+            <svg width={12} height={12}><polygon points="6,0 12,6 6,12 0,6" fill="#7E46B8" /></svg>
             Milestone
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9333ea" }}>
-            <div style={{ width: 3, height: 14, background: "#9333ea", borderRadius: 2 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#7E46B8" }}>
+            <div style={{ width: 3, height: 14, background: "#7E46B8", borderRadius: 2 }} />
             Critical path
           </div>
         </div>
       </div>
 
       {/* ── Main grid ── */}
-      <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+      <div style={{ display: "flex", border: "1px solid #ECEBE8", borderRadius: 10, overflow: "hidden" }}>
 
         {/* Label column */}
-        <div style={{ width: labelW, flexShrink: 0, display: "flex", flexDirection: "column", borderRight: "2px solid #e2e8f0", background: "#fafafa" }}>
+        <div style={{ width: labelW, flexShrink: 0, display: "flex", flexDirection: "column", borderRight: "2px solid #ECEBE8", background: "#fafafa" }}>
           {/* Header */}
-          <div style={{ height: HEADER_H, background: "#f1f5f9", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", padding: "0 12px" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Activity</span>
+          <div style={{ height: HEADER_H, background: "#F7F6F6", borderBottom: "1px solid #ECEBE8", display: "flex", alignItems: "center", padding: "0 12px" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#7E7E7E", textTransform: "uppercase", letterSpacing: "0.05em" }}>Activity</span>
           </div>
           {/* Scrollable labels */}
           <div ref={labelScrollRef} onScroll={onLabelScroll}
@@ -270,29 +270,29 @@ export default function GanttChart({ components = [], onActivityClick }) {
                     height: ROW_H,
                     display: "flex", alignItems: "center",
                     padding: isComp ? "0 10px" : isSub ? "0 10px 0 20px" : "0 10px 0 32px",
-                    borderBottom: "1px solid #f1f5f9",
-                    background: isComp ? "#1B5A8C"
-                              : isSub  ? (hovered ? "#e8edf2" : "#f1f5f9")
-                              : (hovered ? "#eff6ff" : (i % 2 === 0 ? "#fff" : "#fafafa")),
+                    borderBottom: "1px solid #F7F6F6",
+                    background: isComp ? "#0089C5"
+                              : isSub  ? (hovered ? "#ECEBE8" : "#F7F6F6")
+                              : (hovered ? "#DBF4FF" : (i % 2 === 0 ? "#FFFFFF" : "#fafafa")),
                     cursor: isAct ? "pointer" : "default",
                     transition: "background .1s",
                   }}>
                   {isComp && <Icon name="layers" size={11} style={{ color: "rgba(255,255,255,.6)", marginRight: 6, flexShrink: 0 }} />}
-                  {isSub  && <Icon name="git-branch" size={11} style={{ color: "#94a3b8", marginRight: 6, flexShrink: 0 }} />}
-                  {isAct  && <Icon name="activity" size={11} style={{ color: "#64748b", marginRight: 6, flexShrink: 0 }} />}
+                  {isSub  && <Icon name="git-branch" size={11} style={{ color: "#A7A7A7", marginRight: 6, flexShrink: 0 }} />}
+                  {isAct  && <Icon name="activity" size={11} style={{ color: "#7E7E7E", marginRight: 6, flexShrink: 0 }} />}
                   <span style={{
                     fontSize: isComp ? 11 : 12,
                     fontWeight: isComp ? 700 : isSub ? 600 : 400,
-                    color: isComp ? "#fff" : isSub ? "#374151" : "#1e293b",
+                    color: isComp ? "#FFFFFF" : isSub ? "#545454" : "#2B2B2B",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     flex: 1,
                   }}>
                     {isAct && row.obj.is_critical_path
-                      ? <><span style={{ color: "#9333ea", marginRight: 4 }}>◆</span>{row.label}</>
+                      ? <><span style={{ color: "#7E46B8", marginRight: 4 }}>◆</span>{row.label}</>
                       : row.label}
                   </span>
                   {isAct && row.obj.is_overdue && (
-                    <span style={{ marginLeft: 4, fontSize: 9, color: "#dc2626", fontWeight: 700, flexShrink: 0 }}>!</span>
+                    <span style={{ marginLeft: 4, fontSize: 9, color: "#FB563B", fontWeight: 700, flexShrink: 0 }}>!</span>
                   )}
                 </div>
               );
@@ -306,7 +306,7 @@ export default function GanttChart({ components = [], onActivityClick }) {
           flexShrink: 0, position: "relative", zIndex: 10,
           transition: "background .15s",
         }}
-          onMouseEnter={e => e.currentTarget.style.background = "#A4C53F"}
+          onMouseEnter={e => e.currentTarget.style.background = "#0EB584"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
         />
 
@@ -316,21 +316,21 @@ export default function GanttChart({ components = [], onActivityClick }) {
           <div style={{ overflowX: "auto", overflowY: "hidden", flexShrink: 0 }}
             id="gantt-header-scroll">
             <svg width={gridW} height={HEADER_H} style={{ display: "block" }}>
-              <rect width={gridW} height={HEADER_H} fill="#f8fafc" />
+              <rect width={gridW} height={HEADER_H} fill="#FAFAFA" />
               {/* Month/quarter background bands */}
               {ticks.map((tick, i) => {
                 const nextX = ticks[i + 1]?.x ?? gridW;
                 const isEven = i % 2 === 0;
                 return (
                   <rect key={i} x={tick.x} y={0} width={nextX - tick.x} height={HEADER_H}
-                    fill={isEven ? "#f8fafc" : "#f1f5f9"} />
+                    fill={isEven ? "#FAFAFA" : "#F7F6F6"} />
                 );
               })}
               {/* Tick lines and labels */}
               {ticks.map((tick, i) => (
                 <g key={i}>
-                  <line x1={tick.x} y1={36} x2={tick.x} y2={HEADER_H} stroke="#d1d5db" strokeWidth={1} />
-                  <text x={tick.x + 6} y={30} fontSize={11} fill="#374151" fontWeight={600}>
+                  <line x1={tick.x} y1={36} x2={tick.x} y2={HEADER_H} stroke="#ECEBE8" strokeWidth={1} />
+                  <text x={tick.x + 6} y={30} fontSize={11} fill="#545454" fontWeight={600}>
                     {cfg.fmt(tick.date)}
                   </text>
                 </g>
@@ -338,11 +338,11 @@ export default function GanttChart({ components = [], onActivityClick }) {
               {/* Today marker in header */}
               {todayX >= 0 && todayX <= gridW && (
                 <>
-                  <rect x={todayX - 20} y={36} width={40} height={16} rx={4} fill="#ef4444" />
-                  <text x={todayX} y={48} fontSize={9} fill="#fff" textAnchor="middle" fontWeight={700}>TODAY</text>
+                  <rect x={todayX - 20} y={36} width={40} height={16} rx={4} fill="#FB563B" />
+                  <text x={todayX} y={48} fontSize={9} fill="#FFFFFF" textAnchor="middle" fontWeight={700}>TODAY</text>
                 </>
               )}
-              <line x1={0} y1={HEADER_H - 1} x2={gridW} y2={HEADER_H - 1} stroke="#e2e8f0" strokeWidth={1} />
+              <line x1={0} y1={HEADER_H - 1} x2={gridW} y2={HEADER_H - 1} stroke="#ECEBE8" strokeWidth={1} />
             </svg>
           </div>
 
@@ -361,10 +361,10 @@ export default function GanttChart({ components = [], onActivityClick }) {
                 return (
                   <rect key={`bg${row.id}`}
                     x={0} y={i * ROW_H} width={gridW} height={ROW_H}
-                    fill={isComp ? "#dbeafe"
-                        : isSub  ? "#f1f5f9"
-                        : hovered ? "#eff6ff"
-                        : i % 2 === 0 ? "#fff" : "#fafafa"}
+                    fill={isComp ? "#DBF4FF"
+                        : isSub  ? "#F7F6F6"
+                        : hovered ? "#DBF4FF"
+                        : i % 2 === 0 ? "#FFFFFF" : "#fafafa"}
                   />
                 );
               })}
@@ -372,20 +372,20 @@ export default function GanttChart({ components = [], onActivityClick }) {
               {/* Vertical grid lines */}
               {ticks.map((tick, i) => (
                 <line key={`vl${i}`} x1={tick.x} y1={0} x2={tick.x} y2={gridH}
-                  stroke="#e2e8f0" strokeWidth={1} strokeDasharray={zoom === "week" ? "none" : "3,3"} />
+                  stroke="#ECEBE8" strokeWidth={1} strokeDasharray={zoom === "week" ? "none" : "3,3"} />
               ))}
 
               {/* Horizontal row lines */}
               {rows.map((row, i) => (
                 <line key={`hl${row.id}`}
                   x1={0} y1={(i + 1) * ROW_H} x2={gridW} y2={(i + 1) * ROW_H}
-                  stroke="#f1f5f9" strokeWidth={1} />
+                  stroke="#F7F6F6" strokeWidth={1} />
               ))}
 
               {/* Today line */}
               {todayX >= 0 && todayX <= gridW && (
                 <line x1={todayX} y1={0} x2={todayX} y2={gridH}
-                  stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5,4" opacity={0.7} />
+                  stroke="#FB563B" strokeWidth={1.5} strokeDasharray="5,4" opacity={0.7} />
               )}
 
               {/* Activity bars */}
@@ -433,13 +433,13 @@ export default function GanttChart({ components = [], onActivityClick }) {
                     {/* Baseline ghost */}
                     {hasBaseline && (
                       <rect x={x} y={y + BAR_H} width={bw} height={3} rx={1.5}
-                        fill="#94a3b8" opacity={0.4} />
+                        fill="#A7A7A7" opacity={0.4} />
                     )}
 
                     {/* Bar shadow */}
                     {hovered && (
                       <rect x={x - 1} y={y - 1} width={w + 2} height={BAR_H + 2} rx={5}
-                        fill="none" stroke="#A4C53F" strokeWidth={2} opacity={0.7} />
+                        fill="none" stroke="#0EB584" strokeWidth={2} opacity={0.7} />
                     )}
 
                     {/* Bar background */}
@@ -459,20 +459,20 @@ export default function GanttChart({ components = [], onActivityClick }) {
 
                     {/* Critical path left accent */}
                     {act.is_critical_path && (
-                      <rect x={x} y={y} width={3} height={BAR_H} rx={2} fill="#9333ea" />
+                      <rect x={x} y={y} width={3} height={BAR_H} rx={2} fill="#7E46B8" />
                     )}
 
                     {/* Overdue right accent */}
                     {act.is_overdue && (
                       <rect x={x + w - 4} y={y} width={4} height={BAR_H}
-                        rx={2} fill="#ef4444" opacity={0.85} />
+                        rx={2} fill="#FB563B" opacity={0.85} />
                     )}
 
                     {/* Progress label */}
                     {w > 36 && (
                       <text x={x + Math.min(pw, w) / 2} y={y + BAR_H / 2 + 4}
                         fontSize={9} fontWeight={700} textAnchor="middle"
-                        fill={act.progress > 50 ? "#fff" : pal.stroke} opacity={0.95}>
+                        fill={act.progress > 50 ? "#FFFFFF" : pal.stroke} opacity={0.95}>
                         {act.progress}%
                       </text>
                     )}
@@ -480,7 +480,7 @@ export default function GanttChart({ components = [], onActivityClick }) {
                     {/* End date label (month+ zoom) */}
                     {zoom !== "week" && w > 60 && (
                       <text x={x + w + 4} y={y + BAR_H / 2 + 4}
-                        fontSize={9} fill="#64748b" dominantBaseline="middle">
+                        fontSize={9} fill="#7E7E7E" dominantBaseline="middle">
                         {pd(endStr)?.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
                       </text>
                     )}
@@ -490,7 +490,7 @@ export default function GanttChart({ components = [], onActivityClick }) {
                       const mx = xOf(ms.planned_date);
                       if (mx < x - 20 || mx > gridW) return null;
                       const my = y + BAR_H / 2;
-                      const mc = MILESTONE_COLOR[ms.status] || "#9333ea";
+                      const mc = MILESTONE_COLOR[ms.status] || "#7E46B8";
                       return (
                         <g key={ms.id}
                           onMouseEnter={e => {
@@ -505,8 +505,8 @@ export default function GanttChart({ components = [], onActivityClick }) {
                           onMouseLeave={hideTip}>
                           <polygon
                             points={`${mx},${my - MILESTONE_R} ${mx + MILESTONE_R},${my} ${mx},${my + MILESTONE_R} ${mx - MILESTONE_R},${my}`}
-                            fill={mc} stroke="#fff" strokeWidth={1.5} />
-                          {ms.is_gate && <circle cx={mx} cy={my} r={2.5} fill="#fff" />}
+                            fill={mc} stroke="#FFFFFF" strokeWidth={1.5} />
+                          {ms.is_gate && <circle cx={mx} cy={my} r={2.5} fill="#FFFFFF" />}
                         </g>
                       );
                     })}
@@ -519,10 +519,10 @@ export default function GanttChart({ components = [], onActivityClick }) {
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#94a3b8", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#A7A7A7", alignItems: "center" }}>
         <span>Drag the divider to resize the label column</span>
         <span>·</span>
-        <span><span style={{ color: "#ef4444" }}>Red right edge</span> = overdue</span>
+        <span><span style={{ color: "#FB563B" }}>Red right edge</span> = overdue</span>
         <span>·</span>
         <span>Grey underline = baseline shift</span>
         <span>·</span>

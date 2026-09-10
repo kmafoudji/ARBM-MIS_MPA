@@ -6,7 +6,7 @@ import Select from "../components/Select";
 import MultiSelect from "../components/MultiSelect";
 import SectorIcon from "../components/SectorIcon";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
-import { groupSectorOptions } from "../utils.js";
+import { groupSectorOptions, RESULT_LEVEL_COLOR } from "../utils.js";
 
 // Référentiel LLF2 / OCDE DAC — dimensions et catégories standard
 const PRESET_DIMENSIONS = [
@@ -85,7 +85,7 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
     <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
       <DialogModal {...dialog.dialogProps} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ fontWeight: 700, fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+        <span style={{ fontWeight: 700, fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
           Disaggregation dimensions
         </span>
         {!adding && (
@@ -98,19 +98,19 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
       {isLoading && <span className="spinner" />}
 
       {dims.length === 0 && !adding && (
-        <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>No disaggregation dimensions configured.</p>
+        <p style={{ fontSize: 12, color: "var(--subtle)", margin: 0 }}>No disaggregation dimensions configured.</p>
       )}
 
       {/* Dimensions existantes */}
       {dims.map(dim => (
-        <div key={dim.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "8px 12px", background: "#f9fafb", borderRadius: 8, border: "1px solid #f0f0ee" }}>
-          <span style={{ fontWeight: 600, fontSize: 12, minWidth: 100, color: "#374151" }}>{dim.name}</span>
+        <div key={dim.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "8px 12px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--rule)" }}>
+          <span style={{ fontWeight: 600, fontSize: 12, minWidth: 100, color: "var(--ink-soft)" }}>{dim.name}</span>
           <span style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
             {dim.categories.map(cat => (
-              <span key={cat} style={{ fontSize: 11, background: "#e0e7ff", color: "#3730a3", padding: "2px 8px", borderRadius: 99 }}>{cat}</span>
+              <span key={cat} style={{ fontSize: 11, background: "var(--violet-soft)", color: "var(--violet)", padding: "2px 8px", borderRadius: 99 }}>{cat}</span>
             ))}
           </span>
-          <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "#dc2626", flexShrink: 0 }}
+          <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "var(--rose)", flexShrink: 0 }}
             onClick={async () => {
               const ok = await dialog.confirm(`Remove dimension "${dim.name}" and all its collected values?`, { title: "Remove dimension", confirmLabel: "Remove", danger: true });
               if (ok) deleteMutation.mutate(dim.id);
@@ -122,7 +122,7 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
 
       {/* Formulaire d'ajout */}
       {adding && (
-        <div style={{ background: "#f0f6dc", borderRadius: 10, padding: 14, border: "1px solid #A4C53F", marginTop: 8 }}>
+        <div style={{ background: "var(--lime-pale)", borderRadius: 10, padding: 14, border: "1px solid var(--lime)", marginTop: 8 }}>
 
           {/* Sélection de la dimension */}
           <div className="field" style={{ marginBottom: 12 }}>
@@ -159,9 +159,9 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
                 {allCats.map(cat => (
                   <label key={cat} style={{
                     display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
-                    background: form.selectedCats.includes(cat) ? "#A4C53F" : "#fff",
-                    color: form.selectedCats.includes(cat) ? "#111" : "#374151",
-                    border: `1px solid ${form.selectedCats.includes(cat) ? "#7a9420" : "#e5e7eb"}`,
+                    background: form.selectedCats.includes(cat) ? "var(--lime)" : "var(--paper)",
+                    color: form.selectedCats.includes(cat) ? "var(--ink)" : "var(--ink-soft)",
+                    border: `1px solid ${form.selectedCats.includes(cat) ? "var(--lime-darker)" : "var(--rule)"}`,
                     borderRadius: 99, padding: "4px 12px", fontSize: 12, fontWeight: 500,
                     transition: "all .15s",
                   }}>
@@ -188,7 +188,7 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
               </div>
 
               {form.selectedCats.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 11, color: "#6b7280" }}>
+                <div style={{ marginTop: 8, fontSize: 11, color: "var(--muted)" }}>
                   {form.selectedCats.length} categor{form.selectedCats.length > 1 ? "ies" : "y"} selected
                 </div>
               )}
@@ -257,12 +257,12 @@ const AGGREGATION_LABELS = {
 };
 
 const CCT_COLORS = {
-  gender:      { bg: "#fce7f3", color: "#9d174d" },
-  climate:     { bg: "#d1fae5", color: "#065f46" },
-  youth:       { bg: "#fef3c7", color: "#92400e" },
-  disability:  { bg: "#e0e7ff", color: "#3730a3" },
-  idp_refugee: { bg: "#fee2e2", color: "#991b1b" },
-  equity:      { bg: "#f3e8ff", color: "#6b21a8" },
+  gender:      { bg: "var(--sec-women-pale)", color: "var(--rose)" },
+  climate:     { bg: "var(--lime-soft)", color: "var(--lime-darker)" },
+  youth:       { bg: "var(--sec-infra-pale)", color: "var(--orange)" },
+  disability:  { bg: "var(--violet-soft)", color: "var(--violet)" },
+  idp_refugee: { bg: "var(--rose-soft)", color: "var(--rose)" },
+  equity:      { bg: "var(--sec-women-pale)", color: "var(--violet)" },
 };
 
 // Champs texte/textarea generiques dans la fiche IRS
@@ -724,20 +724,6 @@ const TYPE_LABELS = {
   yes_no:     "Yes / No",
   count:      "Count",
 };
-// Couleur de la barre de section : celle du niveau de resultat, comme dans le
-// mockup LLF (`const LV` de aRBM-MIS_Indicator_Library_LLF.html) — violet pour
-// l'impact, vert pour l'outcome, bleu pour l'output, charbon pour les types de
-// mesure. Elle ne depend plus de l'onglet actif, qui pouvait etre gris.
-const TYPE_BAR = {
-  impact:     "var(--violet)",
-  outcome:    "var(--sec-agri)",
-  output:     "var(--sec-climate)",
-  numeric:    "var(--ink)",
-  percentage: "var(--ink)",
-  yes_no:     "var(--ink)",
-  count:      "var(--ink)",
-};
-
 const typeLabel = (ind) =>
   TYPE_LABELS[ind.indicator_type] || ind.indicator_type_display || ind.indicator_type;
 
@@ -1008,7 +994,7 @@ export default function IndicatorCatalogue() {
       {activeGroup?.tabs.length > 0 && (
         <div className="cat-tabrow" style={{ "--tab-color": activeGroup.color }}>
           <button
-            className={`cat-tab${activeKey === activeGroup.lead.key ? " active" : ""}`}
+            className={`tab${activeKey === activeGroup.lead.key ? " active" : ""}`}
             title={activeGroup.lead.title}
             onClick={() => selectTab(activeGroup.lead.key)}>
             {activeGroup.id === "cct" ? "All themes" : "All sectors"} · {countFor(activeGroup.lead)}
@@ -1017,7 +1003,7 @@ export default function IndicatorCatalogue() {
             const n = countFor(t);
             return (
               <button key={t.key} title={t.title || t.label}
-                className={`cat-tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
                 onClick={() => selectTab(t.key)}>
                 {t.label} · {n}
               </button>
@@ -1066,7 +1052,7 @@ export default function IndicatorCatalogue() {
 
       {!isLoading && sections.map((sec) => (
         <div key={sec.type} className="cat-section">
-          <div className="cat-section-bar" style={{ background: TYPE_BAR[sec.type] || "var(--ink)" }}>
+          <div className="section-bar" style={{ background: RESULT_LEVEL_COLOR[sec.type] || "var(--ink)" }}>
             {sec.label}<span className="count">{sec.count}</span>
           </div>
           {sec.groups.map((group) => (

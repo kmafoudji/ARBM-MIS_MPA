@@ -4,7 +4,7 @@ import { apiFetch } from "../api";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import Select from "../components/Select";
-import { fmtNum, fmtPct, fmtCurrency, groupSectorOptions } from "../utils.js";
+import { fmtNum, fmtPct, fmtCurrency, groupSectorOptions, RESULT_LEVEL_COLOR } from "../utils.js";
 import DQScoreWidget from "../components/DQScoreWidget";
 
 const CHAIN_LEVEL_ORDER = ["impact", "intermediate_outcome", "immediate_outcome", "output", "activity"];
@@ -183,7 +183,7 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
                 <span>{row.targets.length} target{row.targets.length > 1 ? "s" : ""}</span>
               )}
               {row.measurement_frequency_display && (
-                <span style={{ color:"#6b7280" }}>{row.measurement_frequency_display}</span>
+                <span style={{ color:"var(--muted)" }}>{row.measurement_frequency_display}</span>
               )}
               {row.toc_node_code && (
                 <span className="text-mono" style={{ fontSize:10 }}>ToC: {row.toc_node_code}</span>
@@ -200,7 +200,7 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
 
           {/* Notice lecture seule */}
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12,
-            padding:"6px 10px", background:"#f0f6dc", borderRadius:6, fontSize:11, color:"#7a9420" }}>
+            padding:"6px 10px", background:"var(--lime-pale)", borderRadius:6, fontSize:11, color:"var(--lime-darker)" }}>
             <Icon name="info-circle" size={12} />
             Baseline, targets and frequency are defined in the
             <strong style={{ marginLeft:3 }}>Theory of Change</strong> tab.
@@ -238,17 +238,17 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
                   <span key={t.id} style={{
                     display:"inline-flex", alignItems:"center", gap:6,
                     fontSize:12, padding:"4px 10px", borderRadius:99,
-                    background: t.status === "approved" ? "#dcfce7"
-                      : t.status === "revised" ? "#f3f4f6" : "#fef9c3",
-                    color: t.status === "approved" ? "#166534"
-                      : t.status === "revised" ? "#6b7280" : "#854d0e",
+                    background: t.status === "approved" ? "var(--lime-pale)"
+                      : t.status === "revised" ? "var(--surface-2)" : "var(--sec-infra-pale)",
+                    color: t.status === "approved" ? "var(--lime-darker)"
+                      : t.status === "revised" ? "var(--muted)" : "var(--orange)",
                     textDecoration: t.status === "revised" ? "line-through" : "none",
-                    border: `1px solid ${t.status === "approved" ? "#86efac"
-                      : t.status === "revised" ? "#e5e7eb" : "#fde047"}`,
+                    border: `1px solid ${t.status === "approved" ? "var(--lime-soft)"
+                      : t.status === "revised" ? "var(--rule)" : "var(--orange-soft)"}`,
                   }}>
                     {t.is_original_pad && (
-                      <span style={{ fontSize:9, fontWeight:700, color:"#1B5A8C",
-                        background:"#e0ebf6", padding:"1px 4px", borderRadius:99 }}>PAD</span>
+                      <span style={{ fontSize:9, fontWeight:700, color:"var(--blue)",
+                        background:"var(--rule)", padding:"1px 4px", borderRadius:99 }}>PAD</span>
                     )}
                     <span style={{ color:"inherit", opacity:0.7 }}>
                       {t.label || (t.target_date ? new Date(t.target_date).getFullYear() : "—")}
@@ -269,7 +269,7 @@ function LogframeRowCard({ row, projectId, onChanged, onOpenPIRS }) {
           {onOpenPIRS && (
             <div style={{ marginTop:"var(--s-3)", paddingTop:"var(--s-2)",
               borderTop:"1px solid var(--rule)" }}>
-              <button className="btn btn-ghost btn-sm row" style={{ gap:6, color:"#1B5A8C" }}
+              <button className="btn btn-ghost btn-sm row" style={{ gap:6, color:"var(--blue)" }}
                 onClick={() => onOpenPIRS(row.id)}>
                 <Icon name="file-text" size={13} /> View PIRS
               </button>
@@ -577,13 +577,13 @@ export default function Logframe({ projectId, onBack, onOpenPIRS, embedded = fal
       {embedded && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Icon name="bar-chart-2" size={16} style={{ color: "#A4C53F" }} />
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>Logframe — Indicator Summary</span>
-            <span style={{ fontSize: 12, background: "#f0f6dc", color: "#7a9420", padding: "2px 10px", borderRadius: 99, fontWeight: 600 }}>
+            <Icon name="bar-chart-2" size={16} style={{ color: "var(--lime)" }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Logframe — Indicator Summary</span>
+            <span style={{ fontSize: 12, background: "var(--lime-pale)", color: "var(--lime-darker)", padding: "2px 10px", borderRadius: 99, fontWeight: 600 }}>
               {(rows || []).length} indicator{rows?.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <span style={{ fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>
+          <span style={{ fontSize: 11, color: "var(--subtle)", fontStyle: "italic" }}>
             Attach indicators from the Theory of Change tab
           </span>
         </div>
@@ -609,15 +609,16 @@ export default function Logframe({ projectId, onBack, onOpenPIRS, embedded = fal
       {CHAIN_LEVEL_ORDER.map((level) => {
         const levelRows = grouped[level] || [];
         if (levelRows.length === 0) return null;
+        const levelColor = RESULT_LEVEL_COLOR[level] || "var(--ink)";
         return (
-          <div key={level} className="card card-flush mb-3">
+          <div key={level} className="card card-flush mb-3" style={{ borderLeft: `4px solid ${levelColor}` }}>
             <div className="card-header">
               <div className="row" style={{ gap: 10, alignItems: "center" }}>
                 <span style={{
                   width: 32, height: 32, borderRadius: 8,
-                  background: "color-mix(in srgb, var(--lime-dark) 14%, transparent)",
+                  background: `color-mix(in srgb, ${levelColor} 14%, transparent)`,
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  color: "var(--lime-dark)", flexShrink: 0,
+                  color: levelColor, flexShrink: 0,
                 }}>
                   <Icon name={CHAIN_LEVEL_ICON[level] || "target"} size={18} />
                 </span>

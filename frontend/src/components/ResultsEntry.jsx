@@ -13,10 +13,10 @@ import EvidencePanel from "./EvidencePanel.jsx";
 import DQScoreWidget from "./DQScoreWidget.jsx";
 
 const RAG_CONFIG = {
-  green: { color: "#16a34a", bg: "#dcfce7", border: "#86efac", label: "On track",  icon: "circle-check" },
-  amber: { color: "#d97706", bg: "#fef9c3", border: "#fde047", label: "At risk",   icon: "alert-triangle" },
-  red:   { color: "#dc2626", bg: "#fee2e2", border: "#fca5a5", label: "Off track", icon: "circle-x" },
-  na:    { color: "#9ca3af", bg: "#f3f4f6", border: "#e5e7eb", label: "No target", icon: "minus" },
+  green: { color: "var(--lime)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
+  amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
+  red:   { color: "var(--rose)", bg: "var(--rose-soft)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
+  na:    { color: "var(--subtle)", bg: "var(--surface-2)", border: "var(--rule)", label: "No target", icon: "minus" },
 };
 
 function RagBadge({ rag, rate }) {
@@ -53,7 +53,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
   if (isLoading) return <div style={{ padding: 12 }}><span className="spinner" /></div>;
 
   if (!data?.dimensions?.length) return (
-    <div style={{ padding: 12, fontSize: 12, color: "#9ca3af" }}>
+    <div style={{ padding: 12, fontSize: 12, color: "var(--subtle)" }}>
       No disaggregation dimensions configured for this indicator.
       Add dimensions in the Indicator Catalogue.
     </div>
@@ -90,18 +90,18 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
   }
 
   return (
-    <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, marginTop: 8 }}>
+    <div style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: 10, padding: 16, marginTop: 8 }}>
 
       {/* Titre */}
       <div style={{ marginBottom: 12 }}>
-        <span style={{ fontWeight: 700, fontSize: 12, color: "#374151" }}>
+        <span style={{ fontWeight: 700, fontSize: 12, color: "var(--ink-soft)" }}>
           Disaggregation — Total: <strong>{fmtNum(rd.actual_value)}</strong>
         </span>
       </div>
 
       {/* Avertissements */}
       {data.warnings?.map((w, i) => (
-        <div key={i} style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 10, color: "#854d0e" }}>
+        <div key={i} style={{ background: "var(--sec-infra-pale)", border: "1px solid var(--orange-soft)", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 10, color: "var(--orange)" }}>
           ⚠️ {w.message}
         </div>
       ))}
@@ -113,13 +113,13 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
         const sumOk  = Math.abs(dimSum - total) < 0.001;
         return (
           <div key={dim.id} style={{ marginBottom: 16 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
               {dim.name}
             </span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
               {dim.categories.map(cat => (
                 <div key={cat} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ fontSize: 10, color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>{cat}</label>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, whiteSpace: "nowrap" }}>{cat}</label>
                   <input
                     type="text"
                     inputMode="decimal"
@@ -136,7 +136,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
               ))}
               {/* Somme inline à droite des champs */}
               <div style={{ paddingBottom: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: sumOk ? "#16a34a" : "#d97706" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: sumOk ? "var(--lime)" : "var(--orange)" }}>
                   Σ = {fmtNum(dimSum)} {sumOk ? "✓" : `≠ ${fmtNum(total)}`}
                 </span>
               </div>
@@ -146,7 +146,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
       })}
 
       {/* Boutons en bas */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
         <button className="btn btn-ghost btn-sm row" style={{ gap: 6, fontSize: 12 }} onClick={onClose}>
           <Icon name="x" size={12} /> Close
         </button>
@@ -236,12 +236,12 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
             {data.status && data.status !== "approved" && (
               <span style={{
                 fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99,
-                background: data.status === "submitted" ? "#ede9fe" : data.status === "reviewed" ? "#fef9c3" : data.status === "rejected" ? "#fee2e2" : "#f3f4f6",
-                color: data.status === "submitted" ? "#6366f1" : data.status === "reviewed" ? "#d97706" : data.status === "rejected" ? "#dc2626" : "#9ca3af",
+                background: data.status === "submitted" ? "var(--violet-soft)" : data.status === "reviewed" ? "var(--sec-infra-pale)" : data.status === "rejected" ? "var(--rose-soft)" : "var(--surface-2)",
+                color: data.status === "submitted" ? "var(--violet)" : data.status === "reviewed" ? "var(--orange)" : data.status === "rejected" ? "var(--rose)" : "var(--subtle)",
               }}>{data.status}</span>
             )}
             {data.status === "approved" && (
-              <Icon name="lock" size={11} style={{ color: "#9ca3af" }} title="Approved" />
+              <Icon name="lock" size={11} style={{ color: "var(--subtle)" }} title="Approved" />
             )}
             {/* Boutons workflow selon statut */}
             {data.status === "draft" && !isLocked && (
@@ -251,7 +251,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
               </button>
             )}
             {data.status === "draft" && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#6366f1" }}
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--violet)" }}
                 onClick={() => workflowMutation.mutate({ action: "submit" })}
                 disabled={workflowMutation.isPending}>
                 <Icon name="arrow-right" size={10} /> Submit
@@ -259,12 +259,12 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
             )}
             {data.status === "submitted" && (
               <>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#16a34a" }}
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--lime)" }}
                   onClick={() => workflowMutation.mutate({ action: "approve" })}
                   disabled={workflowMutation.isPending}>
                   <Icon name="check" size={10} /> Approve
                 </button>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#dc2626" }}
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--rose)" }}
                   onClick={() => workflowMutation.mutate({ action: "reject" })}
                   disabled={workflowMutation.isPending}>
                   <Icon name="x" size={10} /> Reject
@@ -272,7 +272,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
               </>
             )}
             {data.status === "approved" && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "#d97706" }}
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--orange)" }}
                 onClick={() => workflowMutation.mutate({ action: "reopen" })}
                 disabled={workflowMutation.isPending}>
                 <Icon name="edit" size={10} /> Reopen
@@ -280,7 +280,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
             )}
             {/* Evidence */}
             {data && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: showEvidence ? "#A4C53F" : "#6b7280" }}
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: showEvidence ? "var(--lime)" : "var(--muted)" }}
                 onClick={() => setShowEvidence(s => !s)}>
                 <Icon name="folder" size={10} /> Docs
               </button>
@@ -288,7 +288,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
             {data && (
               <button
                 className="btn btn-ghost btn-sm"
-                style={{ fontSize: 10, padding: "1px 6px", color: disaggActive ? "#A4C53F" : "#1B5A8C", fontWeight: disaggActive ? 700 : 400 }}
+                style={{ fontSize: 10, padding: "1px 6px", color: disaggActive ? "var(--lime)" : "var(--blue)", fontWeight: disaggActive ? 700 : 400 }}
                 onClick={() => onDisaggregate({ id: data.id, actual_value: data.actual_value })}
               >
                 <Icon name="layers" size={10} /> {disaggActive ? "▲ Close" : "Disaggregate"}
@@ -306,13 +306,13 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
             )}
           </div>
         ) : isLocked ? (
-          <span style={{ fontSize: 10, color: "#d1d5db" }}>
+          <span style={{ fontSize: 10, color: "var(--rule)" }}>
             "🔒 Not open yet"
           </span>
         ) : (
           <button
             className="btn btn-ghost btn-sm"
-            style={{ fontSize: 11, color: "#9ca3af" }}
+            style={{ fontSize: 11, color: "var(--subtle)" }}
             onClick={() => { setValue(""); setNarrative(""); setOpen(true); }}
           >
             + Enter
@@ -323,7 +323,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
   }
 
   return (
-    <td style={{ padding: "6px 8px", background: "#f0f6dc", minWidth: 180 }}>
+    <td style={{ padding: "6px 8px", background: "var(--lime-pale)", minWidth: 180 }}>
       <DialogModal {...dialog.dialogProps} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <input
@@ -337,7 +337,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
           }}
           placeholder="Actual value"
           style={{
-            border: "1px solid #A4C53F", borderRadius: 6,
+            border: "1px solid var(--lime)", borderRadius: 6,
             padding: "4px 8px", fontSize: 13, width: "100%",
             outline: "none", fontFamily: "inherit",
           }}
@@ -349,7 +349,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
           placeholder="Narrative (optional)"
           rows={2}
           style={{
-            border: "1px solid #e5e7eb", borderRadius: 6,
+            border: "1px solid var(--rule)", borderRadius: 6,
             padding: "4px 8px", fontSize: 11, width: "100%",
             fontFamily: "inherit", resize: "none", outline: "none",
           }}
@@ -358,7 +358,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
           {hasData && data.status !== "approved" && (
             <button
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: 10, color: "#dc2626", padding: "2px 6px" }}
+              style={{ fontSize: 10, color: "var(--rose)", padding: "2px 6px" }}
               onClick={async () => {
                 const ok = await dialog.confirm("This value will be permanently deleted.", {
                   title: "Delete value?", confirmLabel: "Delete", danger: true,
@@ -416,7 +416,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
 
   if (error) return (
     <div className="card-body">
-      <p className="text-muted text-sm" style={{ margin: 0, color: "#dc2626" }}>
+      <p className="text-muted text-sm" style={{ margin: 0, color: "var(--rose)" }}>
         Error loading results: {JSON.stringify(error?.detail || error?.message || error)}
       </p>
     </div>
@@ -427,7 +427,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
       <p className="text-muted text-sm" style={{ margin: 0 }}>
         No indicators in the logframe. Add indicators to the Theory of Change first.
       </p>
-      <pre style={{ fontSize: 10, color: "#999", marginTop: 8 }}>
+      <pre style={{ fontSize: 10, color: "var(--muted)", marginTop: 8 }}>
         {JSON.stringify({ rows: data?.rows?.length, periods: data?.periods?.length }, null, 2)}
       </pre>
     </div>
@@ -450,25 +450,25 @@ export default function ResultsEntry({ projectId, canEdit }) {
         fontSize: 12, fontFamily: "inherit",
       }}>
         <thead>
-          <tr style={{ background: "#f7f7f5", borderBottom: "2px solid #e5e5e2" }}>
-            <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: 11, color: "#666", whiteSpace: "nowrap", minWidth: 220 }}>
+          <tr style={{ background: "var(--surface)", borderBottom: "2px solid var(--surface-2)" }}>
+            <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", minWidth: 220 }}>
               Indicator
             </th>
-            <th style={{ textAlign: "center", padding: "10px 8px", fontWeight: 700, fontSize: 11, color: "#666", whiteSpace: "nowrap" }}>
+            <th style={{ textAlign: "center", padding: "10px 8px", fontWeight: 700, fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
               Unit
             </th>
-            <th style={{ textAlign: "center", padding: "10px 8px", fontWeight: 700, fontSize: 11, color: "#666", whiteSpace: "nowrap" }}>
+            <th style={{ textAlign: "center", padding: "10px 8px", fontWeight: 700, fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
               Baseline
             </th>
             {periods.map((p) => (
               <th key={p.id} style={{
                 textAlign: "center", padding: "10px 8px",
-                fontWeight: 700, fontSize: 11, color: "#666",
+                fontWeight: 700, fontSize: 11, color: "var(--muted)",
                 whiteSpace: "nowrap", minWidth: 120,
-                borderLeft: "1px solid #e5e5e2",
+                borderLeft: "1px solid var(--surface-2)",
               }}>
                 {p.label}
-                <div style={{ fontWeight: 400, fontSize: 10, color: "#999", marginTop: 2 }}>
+                <div style={{ fontWeight: 400, fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
                   {p.status === "open"     ? "🟢 Open"
                   : p.status === "overdue" ? "⚠️ Overdue"
                   : p.status === "submitted" ? (p.is_late ? "📤 Submitted (late)" : "📤 Submitted")
@@ -487,11 +487,11 @@ export default function ResultsEntry({ projectId, canEdit }) {
             return (
               <React.Fragment key={row.row_id}>
                 <tr key={row.row_id} style={{
-                  borderBottom: rowDisagg ? "none" : "1px solid #f0f0ee",
-                  background: idx % 2 === 0 ? "#fff" : "#fafaf8",
+                  borderBottom: rowDisagg ? "none" : "1px solid var(--rule)",
+                  background: idx % 2 === 0 ? "var(--paper)" : "var(--surface)",
                 }}>
                   <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: "#111" }}>
+                    <div style={{ fontWeight: 600, fontSize: 12, color: "var(--ink)" }}>
                       <span className="badge" style={{ fontSize: 9, marginRight: 6 }}>
                         {row.indicator_code}
                       </span>
@@ -499,14 +499,14 @@ export default function ResultsEntry({ projectId, canEdit }) {
                         ? row.indicator_name.slice(0, 60) + "…"
                         : row.indicator_name}
                     </div>
-                    <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
                       {row.chain_level?.replace(/_/g, " ")}
                     </div>
                   </td>
-                  <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11, whiteSpace: "nowrap" }}>
+                  <td style={{ textAlign: "center", padding: "8px", color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }}>
                     {row.indicator_unit}
                   </td>
-                  <td style={{ textAlign: "center", padding: "8px", color: "#666", fontSize: 11 }}>
+                  <td style={{ textAlign: "center", padding: "8px", color: "var(--muted)", fontSize: 11 }}>
                     {row.baseline_value
                       ? `${fmtNum(row.baseline_value)} (${row.baseline_year || "—"})`
                       : "—"}
@@ -531,7 +531,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
                   ))}
                 </tr>
                 {rowDisagg && (
-                  <tr key={`${row.row_id}-disagg`} style={{ background: idx % 2 === 0 ? "#fff" : "#fafaf8", borderBottom: "1px solid #f0f0ee" }}>
+                  <tr key={`${row.row_id}-disagg`} style={{ background: idx % 2 === 0 ? "var(--paper)" : "var(--surface)", borderBottom: "1px solid var(--rule)" }}>
                     <td colSpan={colCount} style={{ padding: "0 14px 16px" }}>
                       <DisaggregationPanel
                         projectId={projectId}

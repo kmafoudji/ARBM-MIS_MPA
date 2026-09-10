@@ -13,10 +13,10 @@ function stripHtml(html) {
 }
 
 const RAG = {
-  green: { color: "#16a34a", bg: "#dcfce7", label: "On Track",  icon: "circle-check" },
-  amber: { color: "#d97706", bg: "#fef9c3", label: "At Risk",   icon: "alert-triangle" },
-  red:   { color: "#dc2626", bg: "#fee2e2", label: "Off Track", icon: "circle-x" },
-  na:    { color: "#6b7280", bg: "#f3f4f6", label: "No Data",   icon: "minus" },
+  green: { color: "var(--lime)", bg: "var(--lime-pale)", label: "On Track",  icon: "circle-check" },
+  amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "At Risk",   icon: "alert-triangle" },
+  red:   { color: "var(--rose)", bg: "var(--rose-soft)", label: "Off Track", icon: "circle-x" },
+  na:    { color: "var(--muted)", bg: "var(--surface-2)", label: "No Data",   icon: "minus" },
 };
 
 function RagBadge({ rag }) {
@@ -37,11 +37,11 @@ function SectionHeader({ title, icon }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
-      background: "#1B5A8C", color: "#fff",
+      background: "var(--blue)", color: "var(--paper)",
       padding: "9px 14px", borderRadius: 8,
       marginBottom: 10, marginTop: 24,
     }}>
-      {icon && <Icon name={icon} size={14} style={{ color: "#A4C53F" }} />}
+      {icon && <Icon name={icon} size={14} style={{ color: "var(--lime)" }} />}
       <span style={{ fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em" }}>
         {title}
       </span>
@@ -51,13 +51,13 @@ function SectionHeader({ title, icon }) {
 
 function InfoBlock({ rows }) {
   return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+    <div style={{ border: "1px solid var(--rule)", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
       {rows.filter(([, v]) => v || v === 0).map(([label, value, mono], i) => (
-        <div key={i} style={{ display: "flex", borderBottom: i < rows.length - 1 ? "1px solid #f0f0ee" : "none" }}>
-          <div style={{ width: 200, flexShrink: 0, padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "#1B5A8C", background: "#f0f6dc" }}>
+        <div key={i} style={{ display: "flex", borderBottom: i < rows.length - 1 ? "1px solid var(--rule)" : "none" }}>
+          <div style={{ width: 200, flexShrink: 0, padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--blue)", background: "var(--lime-pale)" }}>
             {label}
           </div>
-          <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, color: "#111", fontFamily: mono ? "monospace" : "inherit", lineHeight: 1.5 }}>
+          <div style={{ flex: 1, padding: "8px 12px", fontSize: 12, color: "var(--ink)", fontFamily: mono ? "monospace" : "inherit", lineHeight: 1.5 }}>
             {value}
           </div>
         </div>
@@ -71,10 +71,10 @@ function DataTable({ headers, rows }) {
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "#1B5A8C" }}>
+          <tr style={{ background: "var(--blue)" }}>
             {headers.map((h, i) => (
               <th key={i} style={{
-                padding: "9px 12px", color: "#fff",
+                padding: "9px 12px", color: "var(--paper)",
                 textAlign: typeof h === "object" ? h.align : "left",
                 fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
                 whiteSpace: "nowrap", verticalAlign: "middle",
@@ -86,7 +86,7 @@ function DataTable({ headers, rows }) {
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri} style={{ background: ri % 2 === 0 ? "#fff" : "#fafaf8", borderBottom: "1px solid #f0f0ee" }}>
+            <tr key={ri} style={{ background: ri % 2 === 0 ? "var(--paper)" : "var(--surface)", borderBottom: "1px solid var(--rule)" }}>
               {row.map((cell, ci) => (
                 <td key={ci} style={{
                   padding: "8px 12px",
@@ -119,7 +119,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
   );
 
   if (error) return (
-    <div className="view"><div style={{ color: "#dc2626", padding: 20 }}>
+    <div className="view"><div style={{ color: "var(--rose)", padding: 20 }}>
       Error: {JSON.stringify(error?.detail || error?.message)}
     </div></div>
   );
@@ -161,7 +161,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
           <div>
             <div className="view-eyebrow">Module 2 · SF-7 · Performance Indicator Reference Sheet</div>
             <h1 className="view-title" style={{ fontSize: 20, margin: "4px 0", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontFamily: "monospace", fontSize: 13, background: "#f0f6dc", color: "#1B5A8C", padding: "2px 8px", borderRadius: 6 }}>
+              <span style={{ fontFamily: "monospace", fontSize: 13, background: "var(--lime-pale)", color: "var(--blue)", padding: "2px 8px", borderRadius: 6 }}>
                 {indicator.code}
               </span>
               {indicator.name}
@@ -199,7 +199,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         ["Stage",         project.lifecycle_stage?.replace(/_/g, " ").toUpperCase()],
         ["PAD Document",  project.pad_name ? (
           <a href={project.pad_url} target="_blank" rel="noreferrer"
-            style={{ color: "#1B5A8C", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            style={{ color: "var(--blue)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name="download" size={12} /> {project.pad_name}
           </a>
         ) : null],
@@ -247,15 +247,15 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       {/* ── E. Targets ──────────────────────────────────────────────── */}
       <SectionHeader title="E. Targets" icon="target" />
       {targets.length === 0
-        ? <p style={{ color: "#9ca3af", fontSize: 13, fontStyle: "italic" }}>No targets defined.</p>
+        ? <p style={{ color: "var(--subtle)", fontSize: 13, fontStyle: "italic" }}>No targets defined.</p>
         : <DataTable
             headers={[`Label`, { label: `Target (${indicator.unit})`, align: "right" }, "Deadline", "Status", "PAD"]}
             rows={targets.map(t => [
               t.label || "—",
               <span style={{ fontWeight: 700 }}>{fmtNum(t.target_value)}</span>,
               t.target_date,
-              <span style={{ fontSize: 11, fontWeight: 700, color: t.status === "approved" ? "#16a34a" : "#d97706" }}>{t.status.toUpperCase()}</span>,
-              t.is_original_pad ? <span style={{ fontSize: 12, color: "#A4C53F" }}>✓</span> : null,
+              <span style={{ fontSize: 11, fontWeight: 700, color: t.status === "approved" ? "var(--lime)" : "var(--orange)" }}>{t.status.toUpperCase()}</span>,
+              t.is_original_pad ? <span style={{ fontSize: 12, color: "var(--lime)" }}>✓</span> : null,
             ])}
           />
       }
@@ -263,7 +263,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       {/* ── F. Results by Period ────────────────────────────────────── */}
       <SectionHeader title="F. Results by Reporting Period" icon="bar-chart-2" />
       {actuals.length === 0
-        ? <p style={{ color: "#9ca3af", fontSize: 13, fontStyle: "italic" }}>No approved data entered.</p>
+        ? <p style={{ color: "var(--subtle)", fontSize: 13, fontStyle: "italic" }}>No approved data entered.</p>
         : <DataTable
             headers={[
               "Period",
@@ -277,9 +277,9 @@ export default function PIRSView({ projectId, rowId, onBack }) {
               <span style={{ fontWeight: 500 }}>{a.period_label}</span>,
               <span style={{ fontWeight: 700 }}>{fmtNum(a.actual_value)}</span>,
               a.target_value ? <span>{fmtNum(a.target_value)}</span> : "—",
-              a.achievement_rate ? <span style={{ fontWeight: 700, color: RAG[a.rag_status]?.color || "#111" }}>{fmtPct(a.achievement_rate)}</span> : "—",
+              a.achievement_rate ? <span style={{ fontWeight: 700, color: RAG[a.rag_status]?.color || "var(--ink)" }}>{fmtPct(a.achievement_rate)}</span> : "—",
               <RagBadge rag={a.rag_status} />,
-              <span style={{ color: "#374151" }}>{a.narrative || "—"}</span>,
+              <span style={{ color: "var(--ink-soft)" }}>{a.narrative || "—"}</span>,
             ])}
           />
       }
@@ -293,7 +293,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
             const allCats = [...new Set(dim.categories.flatMap(c => c.values.map(v => v.cat)))];
             return (
               <div key={di} style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 11, color: "#1B5A8C", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <div style={{ fontWeight: 700, fontSize: 11, color: "var(--blue)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                   {dim.dimension}
                 </div>
                 <DataTable
@@ -319,7 +319,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
           ? (
             <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {indicator.cross_cutting_tags.map(t => (
-                <span key={t} style={{ fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99, background: "#f0f6dc", color: "#7a9420" }}>{t}</span>
+                <span key={t} style={{ fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 99, background: "var(--lime-pale)", color: "var(--lime-darker)" }}>{t}</span>
               ))}
             </span>
           ) : "—"],
@@ -330,7 +330,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       ]} />
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
-      <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #e5e7eb", textAlign: "center", fontSize: 11, color: "#9ca3af" }}>
+      <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid var(--rule)", textAlign: "center", fontSize: 11, color: "var(--subtle)" }}>
         PIRS · {indicator.code} · {project.official_reference_number} · v{indicator.version} · {genDate} · aRBM-MIS · IsDB LLF2
       </div>
     </div>

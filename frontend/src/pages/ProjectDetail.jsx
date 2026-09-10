@@ -252,7 +252,7 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
         })}
       </ol>
       {inException && (
-        <div className="text-sm" style={{ color: "var(--danger, #dc2626)", marginTop: "var(--s-2)" }}>
+        <div className="text-sm" style={{ color: "var(--danger, var(--rose))", marginTop: "var(--s-2)" }}>
           <Icon name="alert-triangle" size={13} style={{ marginRight: 4 }} />
           Project is in exception state: <strong>{labelOf(current)}</strong>
           {byStage[current] && <> (since {fmtDate(byStage[current])})</>}
@@ -284,7 +284,7 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
     ? Math.max(0, Math.floor((Date.now() - new Date(enteredOn + "T00:00:00").getTime()) / 86_400_000))
     : null;
   const daysColor = days == null || idx === STAGE_ORDER.length - 1 ? "var(--ink)"
-    : days >= 90 ? "#dc2626" : days >= 30 ? "#d97706" : "var(--ink)";
+    : days >= 90 ? "var(--rose)" : days >= 30 ? "var(--orange)" : "var(--ink)";
 
   return (
     <div
@@ -297,10 +297,10 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 16 }}>
         <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3 }}>
           {inException ? (
-            <span style={{ color: "#dc2626" }}>{labelOf(current)}</span>
+            <span style={{ color: "var(--rose)" }}>{labelOf(current)}</span>
           ) : (
             <>
-              <span style={{ color: GATE_STAGES.has(current) ? "#16a34a" : "#d97706" }}>
+              <span style={{ color: GATE_STAGES.has(current) ? "var(--lime)" : "var(--orange)" }}>
                 {idx + 1} · {labelOf(current)}
               </span>
               <span style={{ color: "var(--ink-soft)", fontWeight: 500 }}> · {phase}</span>
@@ -327,10 +327,10 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
       <div style={{ display: "flex", alignItems: "center", gap: 4, margin: "12px 0 8px", opacity: inException ? 0.35 : 1 }}>
         {STAGE_ORDER.map((code, i) => {
           const done = i <= idx;
-          const color = !done ? "var(--rule, #e5e7eb)" : i === idx ? "#d97706" : GATE_STAGES.has(code) ? "#16a34a" : "#1B5A8C";
+          const color = !done ? "var(--rule, var(--rule))" : i === idx ? "var(--orange)" : GATE_STAGES.has(code) ? "var(--lime)" : "var(--blue)";
           return (
             <span key={code} style={{ display: "contents" }}>
-              {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 16, background: "var(--rule, #d1d5db)", margin: "0 4px" }} />}
+              {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 16, background: "var(--rule, var(--rule))", margin: "0 4px" }} />}
               <span title={`${i + 1} · ${labelOf(code)}`} style={{ flex: 1, height: 8, borderRadius: 99, background: color }} />
             </span>
           );
@@ -338,9 +338,9 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
       </div>
 
       <div className="text-mono" style={{ display: "flex", gap: 20, fontSize: 10, letterSpacing: 1, color: "var(--ink-soft)", textTransform: "uppercase" }}>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "#1B5A8C", marginRight: 6, verticalAlign: "middle" }} />Origination 1–{SIGNATURE_INDEX}</span>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "#16a34a", marginRight: 6, verticalAlign: "middle" }} />Gate</span>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "#d97706", marginRight: 6, verticalAlign: "middle" }} />Current</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "var(--blue)", marginRight: 6, verticalAlign: "middle" }} />Origination 1–{SIGNATURE_INDEX}</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "var(--lime)", marginRight: 6, verticalAlign: "middle" }} />Gate</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "var(--orange)", marginRight: 6, verticalAlign: "middle" }} />Current</span>
         <span>Implementation {SIGNATURE_INDEX + 1}–{STAGE_ORDER.length}</span>
       </div>
     </div>
@@ -735,22 +735,22 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   // ── Bannière globale selon le stade ─────────────────────────────────────
   const STAGE_BANNERS = {
     effective: {
-      color: "#1B5A8C", bg: "#e0ebf6", border: "#93c5fd",
+      color: "var(--blue)", bg: "var(--rule)", border: "var(--blue-soft)",
       icon: "check-circle",
       text: "This project is Effective — the Theory of Change, classification and reporting configuration are now locked. Data entry and partners remain editable.",
     },
     implementing: {
-      color: "#166534", bg: "#dcfce7", border: "#86efac",
+      color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)",
       icon: "trending-up",
       text: "This project is under implementation. Results entry is open. Structural fields are locked.",
     },
     substantially_complete: {
-      color: "#854d0e", bg: "#fef9c3", border: "#fde047",
+      color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)",
       icon: "alert-triangle",
       text: "This project is substantially complete. Only evidence and final reports can be added.",
     },
     closed: {
-      color: "#6b7280", bg: "#f3f4f6", border: "#e5e7eb",
+      color: "var(--muted)", bg: "var(--surface-2)", border: "var(--rule)",
       icon: "lock",
       text: "This project is closed. All fields are read-only.",
     },
@@ -779,26 +779,26 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       <div style={{
         display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
         padding:"48px 24px", textAlign:"center",
-        background:"#fafaf8", border:"1px solid #e5e7eb", borderRadius:12,
+        background:"var(--surface)", border:"1px solid var(--rule)", borderRadius:12,
       }}>
         <div style={{
           width:56, height:56, borderRadius:"50%",
-          background:"#f3f4f6", display:"flex", alignItems:"center", justifyContent:"center",
+          background:"var(--surface-2)", display:"flex", alignItems:"center", justifyContent:"center",
           marginBottom:16,
         }}>
-          <Icon name="lock" size={24} style={{ color:"#9ca3af" }} />
+          <Icon name="lock" size={24} style={{ color:"var(--subtle)" }} />
         </div>
-        <div style={{ fontSize:15, fontWeight:700, color:"#374151", marginBottom:8 }}>
+        <div style={{ fontSize:15, fontWeight:700, color:"var(--ink-soft)", marginBottom:8 }}>
           This section is not yet available
         </div>
-        <div style={{ fontSize:13, color:"#6b7280", marginBottom:16, maxWidth:400 }}>
+        <div style={{ fontSize:13, color:"var(--muted)", marginBottom:16, maxWidth:400 }}>
           {lock.reason}
         </div>
         <div style={{
           display:"inline-flex", alignItems:"center", gap:8,
           padding:"8px 16px", borderRadius:8,
-          background:"#f0f6dc", border:"1px solid #A4C53F40",
-          fontSize:12, color:"#7a9420",
+          background:"var(--lime-pale)", border:"1px solid var(--lime-soft)",
+          fontSize:12, color:"var(--lime-darker)",
         }}>
           <Icon name="info-circle" size={13} />
           <span><strong>Requires:</strong> {lock.depends}</span>
@@ -866,7 +866,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div className="row" style={{ gap: 10, alignItems: "center", marginBottom: "var(--s-4)", fontSize: 12, color: "var(--text-muted)" }}>
             <span style={{ fontWeight: 600 }}>Project setup — {done}/{checks.length} sections completed</span>
             <div style={{ flex: 1, maxWidth: 220, height: 4, background: "var(--rule)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: "var(--lime, #A4C53F)", borderRadius: 2, transition: "width 0.4s ease" }} />
+              <div style={{ height: "100%", width: `${pct}%`, background: "var(--lime, var(--lime))", borderRadius: 2, transition: "width 0.4s ease" }} />
             </div>
             <span style={{ fontWeight: 700, color: pct === 100 ? "var(--lime-dark, var(--lime))" : "var(--text-muted)" }}>{pct}%</span>
           </div>
@@ -886,7 +886,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               </button>
             )}
             {!showBasicForm && !canEditBasicIdentity && (
-              <span style={{ fontSize:11, color:"#9ca3af", display:"flex", alignItems:"center", gap:4 }}>
+              <span style={{ fontSize:11, color:"var(--subtle)", display:"flex", alignItems:"center", gap:4 }}>
                 <Icon name="lock" size={11} /> Locked at BED Approved
               </span>
             )}
@@ -987,7 +987,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               </button>
             )}
             {!showClassificationForm && !canEditClassification && (
-              <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 11, color: "var(--subtle)", display: "flex", alignItems: "center", gap: 4 }}>
                 <Icon name="lock" size={11} /> Locked at Effective
               </span>
             )}
@@ -1135,7 +1135,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           </div>
         </div>
         <div className="card-body">
-          <p className="text-sm" style={{ margin: 0, color: "#6b7280" }}>
+          <p className="text-sm" style={{ margin: 0, color: "var(--muted)" }}>
             Identity, classification and reporting configuration are edited from their own modules.
             Irreversible actions live below.
           </p>
@@ -1143,17 +1143,17 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       </div>
 
       {canEdit ? (
-        <div className="card mb-3" style={{ borderColor: "var(--danger, #dc2626)" }}>
+        <div className="card mb-3" style={{ borderColor: "var(--danger, var(--rose))" }}>
           <div className="card-header">
             <div>
-              <h2 className="card-title" style={{ color: "var(--danger, #dc2626)" }}>
+              <h2 className="card-title" style={{ color: "var(--danger, var(--rose))" }}>
                 <Icon name="trash" size={15} style={{ marginRight: 6 }} />Danger zone
               </h2>
               <div className="card-sub">Irreversible actions on this project</div>
             </div>
             <button
               className="btn btn-sm"
-              style={{ color: "var(--danger, #dc2626)", borderColor: "var(--danger, #dc2626)" }}
+              style={{ color: "var(--danger, var(--rose))", borderColor: "var(--danger, var(--rose))" }}
               disabled={deleteProjectMutation.isPending}
               onClick={handleDeleteProject}
             >
@@ -1161,19 +1161,19 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             </button>
           </div>
           <div className="card-body">
-            <p className="text-sm" style={{ margin: 0, color: "#6b7280" }}>
+            <p className="text-sm" style={{ margin: 0, color: "var(--muted)" }}>
               Deleting the project removes all of its data (lifecycle, logframe, results, workplan, documents).
               You will be asked to confirm twice, the second time by typing the project code.
             </p>
             {deleteProjectMutation.isError && (
-              <div className="text-sm" style={{ color: "var(--danger, #dc2626)", marginTop: "var(--s-2)" }}>
+              <div className="text-sm" style={{ color: "var(--danger, var(--rose))", marginTop: "var(--s-2)" }}>
                 {deleteProjectMutation.error?.detail || String(deleteProjectMutation.error)}
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="text-sm" style={{ color: "#6b7280" }}>You do not have permission to change this project's settings.</div>
+        <div className="text-sm" style={{ color: "var(--muted)" }}>You do not have permission to change this project's settings.</div>
       )}
       </>)}
 
@@ -1419,7 +1419,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     Second approver {needsDualAuth && <span className="req">*</span>}
                   </label>
                   {needsDualAuth && (
-                    <div style={{ fontSize:11, color:"#d97706", marginBottom:4, fontWeight:600 }}>
+                    <div style={{ fontSize:11, color:"var(--orange)", marginBottom:4, fontWeight:600 }}>
                       ⚠️ Gate transition — second approver required
                     </div>
                   )}
@@ -1526,7 +1526,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
-                              style={{ fontSize: 11, padding: "2px 8px", color: "var(--danger, #dc2626)" }}
+                              style={{ fontSize: 11, padding: "2px 8px", color: "var(--danger, var(--rose))" }}
                               onClick={async () => {
                                 const ok = await dialog.confirm(`The project will revert to "${t.from_stage_display}".`, { title: `Delete transition to ${t.to_stage_display}?`, confirmLabel: "Delete", danger: true }); if (!ok) return;
                                 apiFetch(`/api/projects/${projectId}/transitions/${t.id}/`, { method: "DELETE" })
@@ -1654,7 +1654,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             </button>
           )}
           {!showReportingForm && !canEditReporting && (
-            <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 11, color: "var(--subtle)", display: "flex", alignItems: "center", gap: 4 }}>
               <Icon name="lock" size={11} /> Locked at Effective
             </span>
           )}
@@ -1700,8 +1700,8 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                 </div>
               </div>
               {(!project.end_date) && (
-                <div style={{ padding:"8px 12px", background:"#fef3c7", border:"1px solid #fcd34d",
-                  borderRadius:8, fontSize:12, color:"#7a3c00", marginBottom:8 }}>
+                <div style={{ padding:"8px 12px", background:"var(--sec-infra-pale)", border:"1px solid var(--orange-soft)",
+                  borderRadius:8, fontSize:12, color:"var(--orange)", marginBottom:8 }}>
                   ⚠️ Project end date is not set — periods cannot be generated without it.
                 </div>
               )}

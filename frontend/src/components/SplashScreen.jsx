@@ -61,7 +61,7 @@ export default function SplashScreen({ exiting = false }) {
           font-family: 'Inter', system-ui, sans-serif;
           font-size: 24px;
           font-weight: 700;
-          color: #fff;
+          color: #FFFFFF;
           letter-spacing: -0.03em;
           margin-top: 20px;
           animation: arbm-fade-up 0.55s 0.35s cubic-bezier(0.16,1,0.3,1) both;
@@ -70,7 +70,7 @@ export default function SplashScreen({ exiting = false }) {
           font-family: 'Inter', system-ui, sans-serif;
           font-size: 11px;
           font-weight: 600;
-          color: #A4C53F;
+          color: #0EB584;
           letter-spacing: 0.13em;
           text-transform: uppercase;
           margin-top: 7px;

@@ -93,9 +93,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
     if (countries0.length) {
       map.addSource("proj-country", { type: "geojson", data: { type: "FeatureCollection", features: countries0 } });
       map.addLayer({ id: "proj-country-fill", type: "fill", source: "proj-country",
-        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.18 } }, LABELS_LAYER_ID);
+        paint: { "fill-color": "#0EB584", "fill-opacity": 0.18 } }, LABELS_LAYER_ID);
       map.addLayer({ id: "proj-country-border", type: "line", source: "proj-country",
-        paint: { "line-color": "#7a9420", "line-width": 2, "line-opacity": 0.9 } }, LABELS_LAYER_ID);
+        paint: { "line-color": "#09815F", "line-width": 2, "line-opacity": 0.9 } }, LABELS_LAYER_ID);
     }
 
     // Admin 1 depuis Martin — filtré sur les pays du projet
@@ -115,9 +115,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
       // Tous les Admin 1 — fond tirets gris léger
       map.addSource("proj-admin1", { type: "geojson", data: { type: "FeatureCollection", features: admin1 } });
       map.addLayer({ id: "proj-admin1-fill", type: "fill", source: "proj-admin1",
-        paint: { "fill-color": "#A4C53F", "fill-opacity": 0.08 } }, LABELS_LAYER_ID);
+        paint: { "fill-color": "#0EB584", "fill-opacity": 0.08 } }, LABELS_LAYER_ID);
       map.addLayer({ id: "proj-admin1-line", type: "line", source: "proj-admin1",
-        paint: { "line-color": "#7a9420", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } }, LABELS_LAYER_ID);
+        paint: { "line-color": "#09815F", "line-width": 0.6, "line-dasharray": [4, 3], "line-opacity": 0.4 } }, LABELS_LAYER_ID);
 
     }
 
@@ -125,9 +125,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
     if (admin2.length) {
       map.addSource("proj-admin2", { type: "geojson", data: { type: "FeatureCollection", features: admin2 } });
       map.addLayer({ id: "proj-admin2-fill", type: "fill", source: "proj-admin2",
-        paint: { "fill-color": "#1B5A8C", "fill-opacity": 0.40 } }, LABELS_LAYER_ID);
+        paint: { "fill-color": "#0089C5", "fill-opacity": 0.40 } }, LABELS_LAYER_ID);
       map.addLayer({ id: "proj-admin2-line", type: "line", source: "proj-admin2",
-        paint: { "line-color": "#1B5A8C", "line-width": 1.5, "line-opacity": 1 } }, LABELS_LAYER_ID);
+        paint: { "line-color": "#0089C5", "line-width": 1.5, "line-opacity": 1 } }, LABELS_LAYER_ID);
     }
 
     // Admin 1 actifs — directement in_scope OU parent d'Admin 2 sélectionnés
@@ -146,9 +146,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
       if (admin1Active.length && !map.getSource("proj-admin1-active")) {
         map.addSource("proj-admin1-active", { type: "geojson", data: { type: "FeatureCollection", features: admin1Active } });
         map.addLayer({ id: "proj-admin1-active-fill", type: "fill", source: "proj-admin1-active",
-          paint: { "fill-color": "#A4C53F", "fill-opacity": 0.20 } }, LABELS_LAYER_ID);
+          paint: { "fill-color": "#0EB584", "fill-opacity": 0.20 } }, LABELS_LAYER_ID);
         map.addLayer({ id: "proj-admin1-active-line", type: "line", source: "proj-admin1-active",
-          paint: { "line-color": "#7a9420", "line-width": 2.5, "line-opacity": 1 } }, LABELS_LAYER_ID);
+          paint: { "line-color": "#09815F", "line-width": 2.5, "line-opacity": 1 } }, LABELS_LAYER_ID);
       }
     }
 
@@ -165,10 +165,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
       map.getCanvas().style.cursor = "pointer";
       const p = feats[0].properties || {};
       const levelLabel = p.level === 0 ? "Country" : p.level === 1 ? "Admin 1" : "Admin 2";
-      const color      = p.level === 2 ? "#1B5A8C" : "#7a9420";
+      const color      = p.level === 2 ? "#0089C5" : "#09815F";
       popup.setLngLat(e.lngLat).setHTML(
         `<div style="font-family:-apple-system,sans-serif;padding:8px 12px;min-width:120px">
-          <div style="font-size:13px;font-weight:600;color:#111">${p.name || p.country_name || "—"}</div>
+          <div style="font-size:13px;font-weight:600;color:#2B2B2B">${p.name || p.country_name || "—"}</div>
           <div style="font-size:10px;font-weight:600;color:${color};margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${levelLabel}</div>
         </div>`
       ).addTo(map);
@@ -195,39 +195,38 @@ export default function ProjectMap({ projectId, countries = [] }) {
 
   return (
     <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
-      border: "1px solid #e5e7eb", marginBottom: 4,
-      boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+      border: "1px solid #ECEBE8", marginBottom: 4, }}>
 
       {/* Style overrides contrôles natifs MapLibre */}
       <style>{`
         .maplibregl-ctrl-group {
           border-radius: 8px !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
-          border: 1px solid #e5e7eb !important;
+          border: 1px solid #ECEBE8 !important;
           overflow: hidden;
         }
         .maplibregl-ctrl-group button {
           width: 32px !important; height: 32px !important;
           background: rgba(255,255,255,0.95) !important;
           border: none !important;
-          border-bottom: 1px solid #f0f0ee !important;
+          border-bottom: 1px solid #ECEBE8 !important;
         }
         .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
-        .maplibregl-ctrl-group button:hover { background: #f0f6dc !important; }
+        .maplibregl-ctrl-group button:hover { background: #EFFFFA !important; }
         .maplibregl-ctrl-group button span { filter: none !important; }
         .maplibregl-ctrl-scale {
           background: rgba(255,255,255,0.85) !important;
-          border: 1px solid #ccc !important;
+          border: 1px solid #ECEBE8 !important;
           border-radius: 4px !important;
           font-size: 10px !important;
-          color: #6b7280 !important;
+          color: #7E7E7E !important;
           padding: 1px 5px !important;
         }
         .arbm-popup .maplibregl-popup-content {
           border-radius: 10px !important;
           padding: 0 !important;
           box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-          border: 1px solid #e5e7eb !important;
+          border: 1px solid #ECEBE8 !important;
         }
         .arbm-popup .maplibregl-popup-tip { display: none !important; }
       `}</style>
@@ -239,16 +238,16 @@ export default function ProjectMap({ projectId, countries = [] }) {
           position: "absolute", top: 160, left: 12, zIndex: 10,
           width: 32, height: 32, borderRadius: 8,
           background: "rgba(255,255,255,0.95)",
-          border: "1px solid #e5e7eb",
+          border: "1px solid #ECEBE8",
           boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           padding: 0, transition: "background .15s",
         }}
-        onMouseEnter={e => e.currentTarget.style.background = "#f0f6dc"}
+        onMouseEnter={e => e.currentTarget.style.background = "#EFFFFA"}
         onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.95)"}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          stroke="#545454" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
         </svg>
@@ -264,41 +263,41 @@ export default function ProjectMap({ projectId, countries = [] }) {
         border: "1px solid rgba(0,0,0,0.06)",
         minWidth: 150,
       }}>
-        <div style={{ fontWeight: 700, fontSize: 11, color: "#374151",
+        <div style={{ fontWeight: 700, fontSize: 11, color: "#545454",
           textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
           Geographic scope
         </div>
         {countries.map(c => (
           <div key={c.iso2} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
             <span style={{ width: 12, height: 12, borderRadius: 3,
-              background: "#A4C53F", border: "1.5px solid #7a9420", flexShrink: 0 }} />
-            <span style={{ color: "#374151", fontSize: 12 }}>{c.flag} {c.name}</span>
+              background: "#0EB584", border: "1.5px solid #09815F", flexShrink: 0 }} />
+            <span style={{ color: "#545454", fontSize: 12 }}>{c.flag} {c.name}</span>
             {c.is_lead && (
-              <span style={{ fontSize: 9, fontWeight: 700, color: "#7a9420",
-                background: "#f0f6dc", padding: "1px 5px", borderRadius: 99 }}>LEAD</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#09815F",
+                background: "#EFFFFA", padding: "1px 5px", borderRadius: 99 }}>LEAD</span>
             )}
           </div>
         ))}
         {scopeCount > 0 && (
-          <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #f0f0ee",
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #ECEBE8",
             display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ width: 12, height: 12, borderRadius: 3,
-              background: "#1B5A8C", border: "1.5px solid #1B5A8C", flexShrink: 0 }} />
-            <span style={{ color: "#374151", fontSize: 11 }}>
+              background: "#0089C5", border: "1.5px solid #0089C5", flexShrink: 0 }} />
+            <span style={{ color: "#545454", fontSize: 11 }}>
               {scopeCount} intervention zone{scopeCount > 1 ? "s" : ""}
             </span>
           </div>
         )}
-        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #f0f0ee" }}>
+        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #ECEBE8" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3"
-              stroke="#7a9420" strokeWidth="1.5" strokeDasharray="4,2"/></svg>
-            <span style={{ fontSize: 10, color: "#9ca3af" }}>Admin 1 (region)</span>
+              stroke="#09815F" strokeWidth="1.5" strokeDasharray="4,2"/></svg>
+            <span style={{ fontSize: 10, color: "#A7A7A7" }}>Admin 1 (region)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3"
-              stroke="#1B5A8C" strokeWidth="1.5"/></svg>
-            <span style={{ fontSize: 10, color: "#9ca3af" }}>Admin 2 (district)</span>
+              stroke="#0089C5" strokeWidth="1.5"/></svg>
+            <span style={{ fontSize: 10, color: "#A7A7A7" }}>Admin 2 (district)</span>
           </div>
         </div>
       </div>
@@ -306,8 +305,8 @@ export default function ProjectMap({ projectId, countries = [] }) {
       {/* Loading */}
       {isLoading && (
         <div style={{ position: "absolute", inset: 0, zIndex: 5,
-          background: "#EDEDEA", display: "flex",
-          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>
+          background: "#F7F6F6", display: "flex",
+          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#A7A7A7" }}>
           <span className="spinner" style={{ marginRight: 8 }} /> Loading map…
         </div>
       )}
@@ -316,7 +315,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
 
       {/* Attribution */}
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
-        color: "#9ca3af", zIndex: 5, background: "rgba(255,255,255,0.7)",
+        color: "#A7A7A7", zIndex: 5, background: "rgba(255,255,255,0.7)",
         padding: "2px 6px", borderRadius: 4 }}>
         {ATTRIBUTION}
       </div>

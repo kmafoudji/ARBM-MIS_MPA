@@ -13,10 +13,10 @@ import { useEffect, useRef } from "react";
 import Icon from "./Icon.jsx";
 
 const TYPE_CONFIG = {
-  success: { icon: "circle-check",   color: "#16a34a", bg: "#f0fdf4", border: "#86efac" },
-  info:    { icon: "info-circle",     color: "#1B5A8C", bg: "#dbeafe", border: "#93c5fd" },
-  warning: { icon: "alert-triangle",  color: "#d97706", bg: "#fef9c3", border: "#fde047" },
-  error:   { icon: "circle-x",        color: "#dc2626", bg: "#fef2f2", border: "#fca5a5" },
+  success: { icon: "circle-check",   color: "var(--lime)", bg: "var(--lime-pale)", border: "var(--lime-soft)" },
+  info:    { icon: "info-circle",     color: "var(--blue)", bg: "var(--sec-climate-pale)", border: "var(--blue-soft)" },
+  warning: { icon: "alert-triangle",  color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)" },
+  error:   { icon: "circle-x",        color: "var(--rose)", bg: "var(--sec-health-pale)", border: "var(--rose-soft)" },
 };
 
 export default function Toast({ toast, onClose, duration = 6000 }) {
@@ -70,12 +70,12 @@ export default function Toast({ toast, onClose, duration = 6000 }) {
           </div>
         )}
         {toast.message && (
-          <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.55 }}>
+          <div style={{ fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.55 }}>
             {toast.message}
           </div>
         )}
         {toast.bullets && (
-          <ul style={{ margin: "6px 0 0", padding: "0 0 0 16px", fontSize: 12, color: "#374151", lineHeight: 1.7 }}>
+          <ul style={{ margin: "6px 0 0", padding: "0 0 0 16px", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.7 }}>
             {toast.bullets.map((b, i) => <li key={i}>{b}</li>)}
           </ul>
         )}
@@ -85,7 +85,7 @@ export default function Toast({ toast, onClose, duration = 6000 }) {
         onClick={onClose}
         style={{
           background: "none", border: "none", cursor: "pointer",
-          padding: 2, color: "#9ca3af", flexShrink: 0, lineHeight: 1,
+          padding: 2, color: "var(--subtle)", flexShrink: 0, lineHeight: 1,
         }}
         title="Dismiss"
       >

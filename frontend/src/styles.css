@@ -78,9 +78,9 @@
   --shadow-1: none;
   --shadow-2: none;
   --shadow-3: none;
-  /* Except the indicator catalogue's card hover — a declared exception
-     (docs/design.md, "Exceptions in force"). Nothing else may use it. */
-  --shadow-card-hover: 0 4px 14px rgba(43, 43, 43, 0.10);
+  /* One exception, and only for hover: an interactive surface lifts under the
+     pointer. Resting surfaces stay flat (design.md). */
+  --shadow-hover: 0 4px 14px rgba(43, 43, 43, 0.10);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -461,6 +461,9 @@ input, select, textarea { font: inherit; color: inherit; }
   box-shadow: var(--shadow-1);
 }
 .card-flush { padding: 0; }
+/* A card that is itself a control: it lifts under the pointer. */
+.card-click { cursor: pointer; transition: box-shadow 0.12s, border-color 0.12s; }
+.card-click:hover { box-shadow: var(--shadow-hover); }
 @media (max-width: 600px) {
   .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .card-header .btn { align-self: flex-start; }
@@ -772,28 +775,38 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .tabs {
   display: flex;
-  gap: 2px;
-  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: var(--s-4);
   overflow-x: auto;
 }
 .tab {
-  padding: 10px 14px;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  font-size: 12.5px;
   font-weight: 500;
-  color: var(--muted);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  line-height: 1;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
   white-space: nowrap;
   font-family: var(--font-body);
 }
-.tab:hover { color: var(--ink); }
-.tab.active { color: var(--lime-darker); border-bottom-color: var(--lime); }
-.tab-count { margin-left: 6px; font-size: 11px; color: var(--subtle); font-weight: 600; }
-.tab.active .tab-count { color: var(--lime-dark); }
+.tab:hover { border-color: var(--subtle); color: var(--ink); }
+.tab.active {
+  background: var(--tab-color, var(--ink));
+  border-color: var(--tab-color, var(--ink));
+  color: #fff;
+  font-weight: 700;
+}
+.tab.empty { opacity: 0.5; }
+.tab-count { margin-left: 4px; font-size: 11px; color: var(--subtle); font-weight: 600; }
+.tab.active .tab-count { color: rgba(255, 255, 255, 0.85); }
 
 /* Tables */
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -804,11 +817,12 @@ input, select, textarea { font: inherit; color: inherit; }
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
-  padding: 12px var(--s-3);
-  border-bottom: 1px solid var(--rule);
-  background: var(--paper);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 11px var(--s-3);
+  background: var(--sidebar);
 }
+.table th:first-child { border-radius: var(--r-2) 0 0 0; }
+.table th:last-child { border-radius: 0 var(--r-2) 0 0; }
 .table td {
   padding: 12px var(--s-3);
   border-bottom: 1px solid var(--rule-soft);
@@ -1153,8 +1167,10 @@ input, select, textarea { font: inherit; color: inherit; }
   overflow-y: auto;
 }
 .modal-header {
-  padding: var(--s-4) var(--s-4) var(--s-3);
-  border-bottom: 1px solid var(--rule-soft);
+  padding: var(--s-3) var(--s-4);
+  background: var(--sidebar);
+  color: #fff;
+  border-radius: var(--r-4) var(--r-4) 0 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1167,17 +1183,17 @@ input, select, textarea { font: inherit; color: inherit; }
   letter-spacing: -0.015em;
   margin: 0;
 }
-.modal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.modal-sub { font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-top: 2px; }
 .modal-close {
   background: transparent;
   border: none;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 20px;
   line-height: 1;
   padding: 2px 6px;
   border-radius: var(--r-1);
 }
-.modal-close:hover { background: var(--rule-soft); color: var(--ink); }
+.modal-close:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
 .modal-body { padding: var(--s-4); }
 .modal-footer {
   padding: var(--s-3) var(--s-4);
@@ -1904,30 +1920,6 @@ input, select, textarea { font: inherit; color: inherit; }
   margin-bottom: var(--s-2);
 }
 .cat-stats b { color: var(--ink); font-weight: 700; }
-.cat-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-body);
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--ink-soft);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 7px 14px;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.cat-tab:hover { border-color: var(--subtle); color: var(--ink); }
-.cat-tab.active {
-  background: var(--tab-color, var(--ink));
-  border-color: var(--tab-color, var(--ink));
-  color: #fff;
-  font-weight: 700;
-}
-.cat-tab.empty { opacity: 0.5; }
 
 /* Filter chips */
 .filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -1956,11 +1948,10 @@ input, select, textarea { font: inherit; color: inherit; }
 .filter-chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 600; }
 .filter-chip-sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
 
-/* Sections inside a tab. The solid sector-coloured bar and the card's left
-   stripe are the two documented exceptions to docs/design.md, scoped to this
-   page — see "Exceptions in force" there. */
 .cat-section { margin-bottom: var(--s-4); }
-.cat-section-bar {
+/* A section band: the heading of a run of rows, filled with the colour that
+   names the run. Shared — see "Colour as structure" in docs/design.md. */
+.section-bar {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -1971,7 +1962,7 @@ input, select, textarea { font: inherit; color: inherit; }
   padding: 8px 14px;
   margin-bottom: var(--s-1);
 }
-.cat-section-bar .count { margin-left: auto; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); }
+.section-bar .count { margin-left: auto; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); }
 .cat-group-title {
   display: flex;
   align-items: center;
@@ -1992,8 +1983,8 @@ input, select, textarea { font: inherit; color: inherit; }
   border-radius: var(--r-2);
   transition: box-shadow 0.12s, border-color 0.12s;
 }
-.ind-row:hover { box-shadow: var(--shadow-card-hover); }
-.ind-row.open { box-shadow: var(--shadow-card-hover); }
+.ind-row:hover { box-shadow: var(--shadow-hover); }
+.ind-row.open { box-shadow: var(--shadow-hover); }
 .ind-row-head {
   display: flex;
   align-items: center;

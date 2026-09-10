@@ -54,14 +54,14 @@ function StepIndicator({ current, maxReached }) {
               <div style={{
                 width: 32, height: 32, borderRadius: "50%",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                background: done ? "var(--lime, #A4C53F)" : active ? "var(--navy, #1B5A8C)" : "var(--rule)",
-                color: (done || active) ? "#fff" : "var(--text-muted)",
+                background: done ? "var(--lime, var(--lime))" : active ? "var(--navy, var(--blue))" : "var(--rule)",
+                color: (done || active) ? "var(--paper)" : "var(--text-muted)",
                 fontWeight: 700, fontSize: 13, flexShrink: 0,
               }}>
                 {done ? <Icon name="check" size={14} /> : s.id}
               </div>
               <div style={{ textAlign: "center", minWidth: 80 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: active ? "var(--navy, #1B5A8C)" : "var(--text-muted)" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: active ? "var(--navy, var(--blue))" : "var(--text-muted)" }}>
                   {s.label}
                 </div>
               </div>
@@ -69,7 +69,7 @@ function StepIndicator({ current, maxReached }) {
             {i < STEPS.length - 1 && (
               <div style={{
                 flex: 1, height: 2, margin: "0 8px", marginBottom: 20,
-                background: done ? "var(--lime, #A4C53F)" : "var(--rule)",
+                background: done ? "var(--lime, var(--lime))" : "var(--rule)",
               }} />
             )}
           </div>
@@ -320,9 +320,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
             {/* Section Basic Identity */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase",
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase",
                 letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <Icon name="tag" size={12} style={{ color: "#A4C53F" }} /> Basic Identity
+                <Icon name="tag" size={12} style={{ color: "var(--lime)" }} /> Basic Identity
               </div>
               <div className="dl">
                 <div><div className="dl-term">Project name</div><div className="dl-desc" style={{ fontWeight: 600 }}>{f.name}</div></div>
@@ -346,10 +346,10 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
             </div>
 
             {/* Section Classification */}
-            <div style={{ marginBottom: 20, paddingTop: 16, borderTop: "1px solid #f0f0ee" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase",
+            <div style={{ marginBottom: 20, paddingTop: 16, borderTop: "1px solid var(--rule)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--subtle)", textTransform: "uppercase",
                 letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <Icon name="layers" size={12} style={{ color: "#A4C53F" }} /> Classification & Alignment
+                <Icon name="layers" size={12} style={{ color: "var(--lime)" }} /> Classification & Alignment
               </div>
               <div className="dl">
                 <div><div className="dl-term">WE Category</div>

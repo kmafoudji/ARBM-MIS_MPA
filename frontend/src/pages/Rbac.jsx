@@ -187,7 +187,7 @@ function TabUsers({ currentUser }) {
                   return (
                     <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
                       <td>
-                        <div className="avatar-sm" style={{ background: isMe ? "var(--lime)" : "#1B5A8C" }}>
+                        <div className="avatar-sm" style={{ background: isMe ? "var(--lime)" : "var(--blue)" }}>
                           {initials(u)}
                         </div>
                       </td>
@@ -547,7 +547,7 @@ function TabAssignments({ currentUser }) {
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div className="avatar-sm" style={{
-                            background: a.user_email === currentUser?.email ? "var(--lime)" : "#1B5A8C",
+                            background: a.user_email === currentUser?.email ? "var(--lime)" : "var(--blue)",
                             flexShrink: 0,
                           }}>
                             {initials({ first_name: a.user_name?.split(" ")[0] || "", last_name: a.user_name?.split(" ").slice(1).join(" ") || "", email: a.user_email })}

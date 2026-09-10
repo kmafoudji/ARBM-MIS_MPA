@@ -33,10 +33,10 @@ const FREQ_CHOICES = [
 function SectionHeader({ icon, title, action }) {
   return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-      padding:"8px 0 6px", borderBottom:"1px solid #f0f0ee", marginBottom:10 }}>
+      padding:"8px 0 6px", borderBottom:"1px solid var(--rule)", marginBottom:10 }}>
       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-        <Icon name={icon} size={13} style={{ color:"#A4C53F" }} />
-        <span style={{ fontSize:11, fontWeight:700, color:"#374151",
+        <Icon name={icon} size={13} style={{ color:"var(--lime)" }} />
+        <span style={{ fontSize:11, fontWeight:700, color:"var(--ink-soft)",
           textTransform:"uppercase", letterSpacing:"0.07em" }}>{title}</span>
       </div>
       {action}
@@ -164,20 +164,20 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
 
   /* ── Render ── */
   return (
-    <div style={{ background:"#fafaf8", border:"1px solid #e5e5e2", borderRadius:10,
+    <div style={{ background:"var(--surface)", border:"1px solid var(--surface-2)", borderRadius:10,
       padding:"12px 14px", marginTop:10 }}>
       <DialogModal {...dialog.dialogProps} />
 
       {/* ── En-tête panneau ── */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-        <span style={{ fontSize:11, fontWeight:700, color:"#9ca3af",
+        <span style={{ fontSize:11, fontWeight:700, color:"var(--subtle)",
           textTransform:"uppercase", letterSpacing:"0.07em" }}>
-          <Icon name="bar-chart-2" size={12} style={{ marginRight:5, color:"#A4C53F" }} />
+          <Icon name="bar-chart-2" size={12} style={{ marginRight:5, color:"var(--lime)" }} />
           Indicator &amp; Measurement
         </span>
         <div style={{ display:"flex", gap:5 }}>
           {hasIndicator && !readOnly && (
-            <button className="btn btn-ghost btn-sm" style={{ fontSize:10, color:"#dc2626" }}
+            <button className="btn btn-ghost btn-sm" style={{ fontSize:10, color:"var(--rose)" }}
               onClick={async () => {
                 const ok = await dialog.confirm("The logframe row and targets will be preserved.", {
                   title:"Detach indicator?", confirmLabel:"Detach", danger:true,
@@ -198,7 +198,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
 
       {/* ── Mode : attacher ── */}
       {showAttach && (
-        <div style={{ background:"#f0f6dc", border:"1px solid #A4C53F", borderRadius:8,
+        <div style={{ background:"var(--lime-pale)", border:"1px solid var(--lime)", borderRadius:8,
           padding:12, marginBottom:12 }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
             <span style={{ fontSize:12, fontWeight:600 }}>Select from LLF2 catalogue</span>
@@ -233,15 +233,15 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
         <>
           {/* Identité */}
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14,
-            padding:"8px 10px", background:"#fff", borderRadius:8, border:"1px solid #e5e7eb" }}>
-            <span style={{ fontFamily:"monospace", fontSize:11, color:"#9ca3af",
-              background:"#f3f4f6", padding:"1px 6px", borderRadius:4 }}>
+            padding:"8px 10px", background:"var(--paper)", borderRadius:8, border:"1px solid var(--rule)" }}>
+            <span style={{ fontFamily:"monospace", fontSize:11, color:"var(--subtle)",
+              background:"var(--surface-2)", padding:"1px 6px", borderRadius:4 }}>
               {node.logframe_indicator_code}
             </span>
-            <span style={{ fontSize:13, fontWeight:600, flex:1, color:"#111" }}>
+            <span style={{ fontSize:13, fontWeight:600, flex:1, color:"var(--ink)" }}>
               {node.logframe_indicator_name}
             </span>
-            <span style={{ fontSize:11, color:"#9ca3af" }}>({node.logframe_indicator_unit})</span>
+            <span style={{ fontSize:11, color:"var(--subtle)" }}>({node.logframe_indicator_unit})</span>
           </div>
 
           {/* ── Section Fréquence & Désagrégation ── */}
@@ -251,7 +251,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
               <label className="field-label" style={{ fontSize:11 }}>
                 Reporting frequency
                 {node.catalogue_frequency && currentFreq !== node.catalogue_frequency && (
-                  <span style={{ marginLeft:6, fontSize:10, color:"#9ca3af" }}>
+                  <span style={{ marginLeft:6, fontSize:10, color:"var(--subtle)" }}>
                     (catalogue: {node.catalogue_frequency})
                   </span>
                 )}
@@ -264,7 +264,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
                 disabled={readOnly || freqMutation.isPending}
               />
               {node.catalogue_frequency && (
-                <div style={{ fontSize:10, color:"#9ca3af", marginTop:3 }}>
+                <div style={{ fontSize:10, color:"var(--subtle)", marginTop:3 }}>
                   Catalogue default: <strong>{node.catalogue_frequency}</strong>
                 </div>
               )}
@@ -272,17 +272,17 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
             <div>
               <label className="field-label" style={{ fontSize:11 }}>Disaggregation dimensions</label>
               {disaggDims.length === 0 ? (
-                <div style={{ fontSize:12, color:"#9ca3af", fontStyle:"italic" }}>
+                <div style={{ fontSize:12, color:"var(--subtle)", fontStyle:"italic" }}>
                   No dimensions in catalogue
                 </div>
               ) : (
                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                   {disaggDims.map(d => (
                     <span key={d.id} style={{ fontSize:11, padding:"2px 8px", borderRadius:99,
-                      background:"#f0f6dc", color:"#7a9420", border:"1px solid #A4C53F30" }}>
+                      background:"var(--lime-pale)", color:"var(--lime-darker)", border:"1px solid var(--lime-soft)" }}>
                       {d.name}
                       {d.categories?.length > 0 && (
-                        <span style={{ color:"#9ca3af", marginLeft:4 }}>
+                        <span style={{ color:"var(--subtle)", marginLeft:4 }}>
                           ({d.categories.slice(0,2).join(", ")}{d.categories.length > 2 ? "…" : ""})
                         </span>
                       )}
@@ -314,9 +314,9 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
 
           {!editBaseline ? (
             <div style={{ display:"flex", gap:20, fontSize:13, marginBottom:14,
-              padding:"8px 10px", background:"#fff", borderRadius:8, border:"1px solid #e5e7eb" }}>
+              padding:"8px 10px", background:"var(--paper)", borderRadius:8, border:"1px solid var(--rule)" }}>
               <div>
-                <span style={{ fontSize:11, color:"#9ca3af" }}>Value </span>
+                <span style={{ fontSize:11, color:"var(--subtle)" }}>Value </span>
                 <strong>
                   {node.logframe_baseline_value != null
                     ? `${fmtNum(node.logframe_baseline_value)} ${node.logframe_indicator_unit}`
@@ -324,18 +324,18 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
                 </strong>
               </div>
               <div>
-                <span style={{ fontSize:11, color:"#9ca3af" }}>Year </span>
+                <span style={{ fontSize:11, color:"var(--subtle)" }}>Year </span>
                 <strong>{node.logframe_baseline_year ?? "—"}</strong>
               </div>
               {existingRow?.baseline_source && (
                 <div>
-                  <span style={{ fontSize:11, color:"#9ca3af" }}>Source </span>
+                  <span style={{ fontSize:11, color:"var(--subtle)" }}>Source </span>
                   <strong>{existingRow.baseline_source}</strong>
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ background:"#f0f6dc", border:"1px solid #A4C53F40", borderRadius:8,
+            <div style={{ background:"var(--lime-pale)", border:"1px solid var(--lime-soft)", borderRadius:8,
               padding:12, marginBottom:14 }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
                 <div>
@@ -386,7 +386,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
 
           {/* Liste des cibles */}
           {rowTargets.length === 0 && !addingTarget && (
-            <div style={{ fontSize:12, color:"#9ca3af", fontStyle:"italic", marginBottom:10 }}>
+            <div style={{ fontSize:12, color:"var(--subtle)", fontStyle:"italic", marginBottom:10 }}>
               No targets defined yet.
             </div>
           )}
@@ -396,27 +396,27 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
                 <div key={t.id} style={{
                   display:"flex", alignItems:"center", gap:10,
                   padding:"6px 10px", borderRadius:8,
-                  background: t.status === "approved" ? "#dcfce7" : t.status === "revised" ? "#f3f4f6" : "#fff",
-                  border: `1px solid ${t.status === "approved" ? "#86efac" : "#e5e7eb"}`,
+                  background: t.status === "approved" ? "var(--lime-pale)" : t.status === "revised" ? "var(--surface-2)" : "var(--paper)",
+                  border: `1px solid ${t.status === "approved" ? "var(--lime-soft)" : "var(--rule)"}`,
                   textDecoration: t.status === "revised" ? "line-through" : "none",
                 }}>
                   {t.is_original_pad && (
-                    <span style={{ fontSize:9, fontWeight:700, color:"#1B5A8C",
-                      background:"#e0ebf6", padding:"1px 5px", borderRadius:99 }}>PAD</span>
+                    <span style={{ fontSize:9, fontWeight:700, color:"var(--blue)",
+                      background:"var(--rule)", padding:"1px 5px", borderRadius:99 }}>PAD</span>
                   )}
-                  <span style={{ fontSize:12, color:"#6b7280", minWidth:60 }}>
+                  <span style={{ fontSize:12, color:"var(--muted)", minWidth:60 }}>
                     {t.label || (t.target_date ? new Date(t.target_date).getFullYear() : "—")}
                   </span>
-                  <span style={{ fontSize:13, fontWeight:700, color:"#111", flex:1 }}>
-                    {fmtNum(t.target_value)} <span style={{ fontSize:11, color:"#9ca3af" }}>{node.logframe_indicator_unit}</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:"var(--ink)", flex:1 }}>
+                    {fmtNum(t.target_value)} <span style={{ fontSize:11, color:"var(--subtle)" }}>{node.logframe_indicator_unit}</span>
                   </span>
                   <span style={{ fontSize:10, fontWeight:600,
-                    color: t.status === "approved" ? "#16a34a" : t.status === "revised" ? "#9ca3af" : "#d97706" }}>
+                    color: t.status === "approved" ? "var(--lime)" : t.status === "revised" ? "var(--subtle)" : "var(--orange)" }}>
                     {t.status}
                   </span>
                   {!t.is_original_pad && t.status !== "revised" && !readOnly && (
                     <button style={{ border:"none", background:"none", cursor:"pointer",
-                      color:"#dc2626", fontSize:14, padding:"0 2px" }}
+                      color:"var(--rose)", fontSize:14, padding:"0 2px" }}
                       onClick={async () => {
                         const ok = await dialog.confirm("This target will be permanently deleted.", {
                           title:"Delete target?", confirmLabel:"Delete", danger:true,
@@ -431,7 +431,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
 
           {/* Formulaire ajout cible */}
           {addingTarget && (
-            <div style={{ background:"#f0f6dc", border:"1px solid #A4C53F40", borderRadius:8,
+            <div style={{ background:"var(--lime-pale)", border:"1px solid var(--lime-soft)", borderRadius:8,
               padding:12, marginBottom:10 }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
                 <div>
@@ -469,7 +469,7 @@ function IndicatorPanel({ projectId, node, onSaved, readOnly = false }) {
       )}
 
       {!hasIndicator && !showAttach && (
-        <div style={{ fontSize:12, color:"#9ca3af", fontStyle:"italic" }}>
+        <div style={{ fontSize:12, color:"var(--subtle)", fontStyle:"italic" }}>
           No indicator attached — click "Attach indicator" to link one from the LLF2 catalogue.
         </div>
       )}
@@ -561,7 +561,7 @@ function NodeCard({ node, projectId, onSaved, onDeleted, readOnly = false }) {
               </>
             )}
             {readOnly && (
-              <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 11, color: "var(--subtle)", display: "flex", alignItems: "center", gap: 4 }}>
                 <Icon name="lock" size={11} /> Locked at Effective
               </span>
             )}
@@ -800,14 +800,14 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false, ca
       {embedded && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Icon name="globe" size={16} style={{ color: "#A4C53F" }} />
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>Theory of Change</span>
-            <span style={{ fontSize: 11, background: "#f0f6dc", color: "#7a9420", padding: "2px 10px", borderRadius: 99, fontWeight: 600 }}>
+            <Icon name="globe" size={16} style={{ color: "var(--lime)" }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Theory of Change</span>
+            <span style={{ fontSize: 11, background: "var(--lime-pale)", color: "var(--lime-darker)", padding: "2px 10px", borderRadius: 99, fontWeight: 600 }}>
               {toc.status_display}
             </span>
           </div>
           {isLocked && (
-            <span style={{ fontSize: 11, color: "#d97706", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 11, color: "var(--orange)", display: "flex", alignItems: "center", gap: 4 }}>
               <Icon name="lock" size={12} /> Locked — structural changes disabled
             </span>
           )}

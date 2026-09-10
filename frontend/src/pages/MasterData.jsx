@@ -648,10 +648,10 @@ export default function MasterData({ canEdit }) {
                     />
                   ) : f.type === "color" ? (
                     <div className="row" style={{ gap: 8 }}>
-                      <input id={`f-${f.name}`} type="color" value={value || "#A4C53F"}
+                      <input id={`f-${f.name}`} type="color" value={value || "var(--lime)"}
                         onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })}
                         style={{ width: 44, height: 36, padding: 2, border: "1px solid var(--rule)", borderRadius: "var(--r-2)", background: "var(--surface)" }} />
-                      <input className="field-input text-mono" value={value} placeholder="#A4C53F"
+                      <input className="field-input text-mono" value={value} placeholder="var(--lime)"
                         onChange={(e) => setEditing({ ...editing, [f.name]: e.target.value })} />
                     </div>
                   ) : (

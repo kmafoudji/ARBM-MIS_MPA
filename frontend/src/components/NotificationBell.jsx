@@ -9,22 +9,22 @@ import { apiFetch } from "../api";
 import Icon from "./Icon";
 
 const CAT_CONFIG = {
-  escalation: { icon: "alert-triangle", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  overdue:    { icon: "clock",          color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
-  milestone:  { icon: "check-square",   color: "#9333ea", bg: "#fdf4ff", border: "#e9d5ff" },
-  pending:    { icon: "clock",          color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
+  escalation: { icon: "alert-triangle", color: "#FB563B", bg: "#FDF3F3", border: "#FDD4CE" },
+  overdue:    { icon: "clock",          color: "#F49D07", bg: "#FFFAF0", border: "#FDE7C1" },
+  milestone:  { icon: "check-square",   color: "#7E46B8", bg: "#F7F0FF", border: "#DFCEF1" },
+  pending:    { icon: "clock",          color: "#0089C5", bg: "#DBF4FF", border: "#AFDFF3" },
 };
 
 const ALERT_TYPE_COLOR = {
-  escalation_l3:    "#dc2626",
-  escalation_l2:    "#ea580c",
-  escalation_l1:    "#ca8a04",
-  activity_overdue: "#ea580c",
-  milestone_missed: "#dc2626",
-  milestone_t0:     "#ca8a04",
-  milestone_t7:     "#9333ea",
-  milestone_t30:    "#64748b",
-  delay_pending:    "#2563eb",
+  escalation_l3:    "#FB563B",
+  escalation_l2:    "#F49D07",
+  escalation_l1:    "#F49D07",
+  activity_overdue: "#F49D07",
+  milestone_missed: "#FB563B",
+  milestone_t0:     "#F49D07",
+  milestone_t7:     "#7E46B8",
+  milestone_t30:    "#7E7E7E",
+  delay_pending:    "#0089C5",
 };
 
 export default function NotificationBell({ onNavigateProject }) {
@@ -80,27 +80,27 @@ export default function NotificationBell({ onNavigateProject }) {
         onClick={() => setOpen(o => !o)}
         style={{
           position: "relative", padding: "6px", border: "none", borderRadius: 8,
-          background: open ? "#f1f5f9" : "transparent",
+          background: open ? "#F7F6F6" : "transparent",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           transition: "background .15s",
         }}
         title="Notifications"
       >
         <svg width={20} height={20} viewBox="0 0 24 24" fill="none"
-          stroke={total > 0 ? "#dc2626" : "#64748b"} strokeWidth={2}
+          stroke={total > 0 ? "#FB563B" : "#7E7E7E"} strokeWidth={2}
           strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          {total > 0 && <circle cx={18} cy={5} r={4} fill="#dc2626" stroke="#fff" strokeWidth={1.5} />}
+          {total > 0 && <circle cx={18} cy={5} r={4} fill="#FB563B" stroke="#FFFFFF" strokeWidth={1.5} />}
         </svg>
         {total > 0 && (
           <span style={{
             position: "absolute", top: 2, right: 2,
             minWidth: 16, height: 16, borderRadius: 8,
-            background: "#dc2626", color: "#fff",
+            background: "#FB563B", color: "#FFFFFF",
             fontSize: 9, fontWeight: 800,
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "0 3px", border: "1.5px solid #fff",
+            padding: "0 3px", border: "1.5px solid #FFFFFF",
           }}>
             {total > 99 ? "99+" : total}
           </span>
@@ -117,49 +117,49 @@ export default function NotificationBell({ onNavigateProject }) {
           <div style={{
             position: "fixed", top: 52, right: 12, zIndex: 300,
             width: 380, maxHeight: "80vh",
-            background: "#fff", borderRadius: 14,
+            background: "#FFFFFF", borderRadius: 14,
             boxShadow: "0 8px 40px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08)",
-            border: "1px solid #e2e8f0",
+            border: "1px solid #ECEBE8",
             display: "flex", flexDirection: "column",
             overflow: "hidden",
           }}>
             {/* Header */}
             <div style={{
-              padding: "14px 16px 12px", borderBottom: "1px solid #f1f5f9",
+              padding: "14px 16px 12px", borderBottom: "1px solid #F7F6F6",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               background: "#fafafa",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
-                  stroke={total > 0 ? "#dc2626" : "#64748b"} strokeWidth={2}
+                  stroke={total > 0 ? "#FB563B" : "#7E7E7E"} strokeWidth={2}
                   strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#2B2B2B" }}>
                   Notifications
                 </span>
                 {total > 0 && (
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10,
-                    background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca",
+                    background: "#FDF3F3", color: "#FB563B", border: "1px solid #FDD4CE",
                   }}>{total} active</span>
                 )}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 {total > 0 && (
                   <button onClick={() => ackAll.mutate()} style={{
-                    fontSize: 11, fontWeight: 600, color: "#64748b", border: "1px solid #e2e8f0",
-                    background: "#fff", borderRadius: 6, padding: "3px 8px", cursor: "pointer",
+                    fontSize: 11, fontWeight: 600, color: "#7E7E7E", border: "1px solid #ECEBE8",
+                    background: "#FFFFFF", borderRadius: 6, padding: "3px 8px", cursor: "pointer",
                   }}>
                     Acknowledge all
                   </button>
                 )}
                 <button onClick={() => refetch()} style={{
-                  padding: "3px 6px", border: "1px solid #e2e8f0",
-                  background: "#fff", borderRadius: 6, cursor: "pointer",
+                  padding: "3px 6px", border: "1px solid #ECEBE8",
+                  background: "#FFFFFF", borderRadius: 6, cursor: "pointer",
                 }}>
-                  <Icon name="refresh" size={11} style={{ color: "#64748b" }} />
+                  <Icon name="refresh" size={11} style={{ color: "#7E7E7E" }} />
                 </button>
               </div>
             </div>
@@ -167,9 +167,9 @@ export default function NotificationBell({ onNavigateProject }) {
             {/* Body */}
             <div style={{ overflowY: "auto", flex: 1 }}>
               {total === 0 ? (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#94a3b8" }}>
+                <div style={{ padding: "40px 24px", textAlign: "center", color: "#A7A7A7" }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>All clear!</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#7E7E7E" }}>All clear!</div>
                   <div style={{ fontSize: 12, marginTop: 4 }}>No active alerts across your portfolio.</div>
                 </div>
               ) : (
@@ -179,26 +179,26 @@ export default function NotificationBell({ onNavigateProject }) {
                   const expanded = expandedCat === catKey;
 
                   return (
-                    <div key={catKey} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <div key={catKey} style={{ borderBottom: "1px solid #F7F6F6" }}>
                       {/* Category header */}
                       <button
                         onClick={() => setExpandedCat(expanded ? null : catKey)}
                         style={{
                           width: "100%", padding: "10px 16px",
                           display: "flex", alignItems: "center", gap: 10,
-                          border: "none", background: expanded ? cfg.bg : "#fff",
+                          border: "none", background: expanded ? cfg.bg : "#FFFFFF",
                           cursor: "pointer", transition: "background .15s",
                           borderLeft: `3px solid ${expanded ? cfg.color : "transparent"}`,
                         }}>
                         <Icon name={cfg.icon} size={14} style={{ color: cfg.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", flex: 1, textAlign: "left" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#2B2B2B", flex: 1, textAlign: "left" }}>
                           {cat.label}
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10,
                           background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
                         }}>{cat.count}</span>
-                        <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} style={{ color: "#94a3b8" }} />
+                        <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} style={{ color: "#A7A7A7" }} />
                       </button>
 
                       {/* Alert list */}
@@ -209,7 +209,7 @@ export default function NotificationBell({ onNavigateProject }) {
                             return (
                               <div key={alert.id} style={{
                                 padding: "10px 16px 10px 24px",
-                                borderTop: "1px solid #f1f5f9",
+                                borderTop: "1px solid #F7F6F6",
                                 display: "flex", gap: 10, alignItems: "flex-start",
                               }}>
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -217,7 +217,7 @@ export default function NotificationBell({ onNavigateProject }) {
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>
                                     <span style={{
                                       fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 6,
-                                      background: "#f1f5f9", color: "#64748b",
+                                      background: "#F7F6F6", color: "#7E7E7E",
                                     }}>
                                       {alert.project_code || `Project #${alert.project}`}
                                     </span>
@@ -229,7 +229,7 @@ export default function NotificationBell({ onNavigateProject }) {
                                   </div>
                                   {/* Message */}
                                   <div style={{
-                                    fontSize: 12, color: "#374151", lineHeight: 1.45,
+                                    fontSize: 12, color: "#545454", lineHeight: 1.45,
                                     overflow: "hidden", textOverflow: "ellipsis",
                                     display: "-webkit-box", WebkitLineClamp: 2,
                                     WebkitBoxOrient: "vertical",
@@ -237,7 +237,7 @@ export default function NotificationBell({ onNavigateProject }) {
                                     {alert.message}
                                   </div>
                                   {/* Time */}
-                                  <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
+                                  <div style={{ fontSize: 10, color: "#A7A7A7", marginTop: 3 }}>
                                     {new Date(alert.created_at).toLocaleDateString("en-GB", {
                                       day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
                                     })}
@@ -262,8 +262,8 @@ export default function NotificationBell({ onNavigateProject }) {
                                     onClick={() => ackAlert.mutate({ projectId: alert.project, alertId: alert.id })}
                                     style={{
                                       fontSize: 10, fontWeight: 600, padding: "2px 8px",
-                                      border: "1px solid #e2e8f0", borderRadius: 5,
-                                      background: "#fff", color: "#64748b", cursor: "pointer",
+                                      border: "1px solid #ECEBE8", borderRadius: 5,
+                                      background: "#FFFFFF", color: "#7E7E7E", cursor: "pointer",
                                     }}>
                                     ✓ Ack
                                   </button>
@@ -272,7 +272,7 @@ export default function NotificationBell({ onNavigateProject }) {
                             );
                           })}
                           {cat.count > 10 && (
-                            <div style={{ padding: "8px 16px", fontSize: 11, color: "#94a3b8", textAlign: "center" }}>
+                            <div style={{ padding: "8px 16px", fontSize: 11, color: "#A7A7A7", textAlign: "center" }}>
                               +{cat.count - 10} more in this category
                             </div>
                           )}
@@ -286,8 +286,8 @@ export default function NotificationBell({ onNavigateProject }) {
 
             {/* Footer */}
             <div style={{
-              padding: "10px 16px", borderTop: "1px solid #f1f5f9",
-              background: "#fafafa", fontSize: 11, color: "#94a3b8", textAlign: "center",
+              padding: "10px 16px", borderTop: "1px solid #F7F6F6",
+              background: "#fafafa", fontSize: 11, color: "#A7A7A7", textAlign: "center",
             }}>
               Alerts are refreshed automatically every 60 seconds
             </div>
