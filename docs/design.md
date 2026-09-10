@@ -108,9 +108,13 @@ mockup carry structure the flat rules cannot, and are scoped to that page by
 their class names (`.cat-*`, `.ind-card`, `.drawer*` in `styles.css`):
 
 - **Solid sector-coloured section bars** (`.cat-section-bar`) and a **4 px
-  colour stripe** on the left edge of each indicator card — against "no
+  colour stripe** on the left edge of each indicator row — against "no
   vertical colour stripes, no header bars". The colour is the sector's, taken
   from the pillar mapping, so it carries meaning.
+- **A ground one step darker than the rest of the application**: the page sits
+  on `--rule` instead of the body's `--surface-2`, so the white rows and the
+  pale pillar cards read as raised. Both are palette neutrals; only the role of
+  `--rule` as a surface is new.
 - **A shadow on card hover** — against "no shadows anywhere". It is declared as
   its own token, `--shadow-card-hover`; `--shadow-1` … `--shadow-3` stay
   `none`, and nothing outside this page may use the new one.

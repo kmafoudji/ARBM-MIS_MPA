@@ -1810,6 +1810,11 @@ input, select, textarea { font: inherit; color: inherit; }
    Tab bar grouped by pillar, filter chips, indicator card grid, detail drawer.
 --------------------------------------------------------------------------- */
 
+/* This page sits on a ground one step darker than the application's
+   (--surface-2), so white rows and cards read as raised. `--rule` is the
+   palette's next neutral down; nothing is invented. */
+.cat-view { background: var(--rule); border-radius: var(--r-3); }
+
 /* Page head: title block on the left, a compact search on the right. */
 .cat-head {
   display: flex;
@@ -1980,33 +1985,64 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .cat-group-title .count { font-size: 11px; font-weight: 500; color: var(--subtle); }
 
-/* Indicator cards */
-.ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s-2); }
-.ind-card {
+/* Indicator rows: one folded line each, the sheet unfolds underneath. */
+.ind-list { display: flex; flex-direction: column; gap: 4px; }
+.ind-row {
   background: var(--paper);
   border: 1px solid var(--rule);
   border-left: 4px solid var(--rule);
-  border-radius: var(--r-3);
-  padding: 11px 13px;
-  cursor: pointer;
-  text-align: left;
-  font-family: var(--font-body);
+  border-radius: var(--r-2);
   transition: box-shadow 0.12s, border-color 0.12s;
 }
-.ind-card:hover { box-shadow: var(--shadow-card-hover); }
-.ind-card.open { border-color: var(--lime); background: var(--lime-pale); }
-.ind-card-top { display: flex; align-items: center; gap: 8px; }
-.ind-card-code { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
-.ind-card-name { font-size: 12.5px; line-height: 1.3; margin-top: 5px; color: var(--ink); }
-.ind-card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.ind-card-meta span {
-  font-size: 10.5px;
+.ind-row:hover { box-shadow: var(--shadow-card-hover); }
+.ind-row.open { box-shadow: var(--shadow-card-hover); }
+.ind-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 13px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: var(--font-body);
   color: var(--muted);
-  background: var(--surface-2);
+}
+.ind-row-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  width: 74px;
+  flex-shrink: 0;
+}
+.ind-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ind-row.open .ind-row-name { white-space: normal; }
+.ind-row-unit { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.ind-row-tag {
+  font-size: 10px;
+  font-weight: 600;
   border-radius: 999px;
   padding: 1px 8px;
+  flex-shrink: 0;
 }
-.ind-card-sdgs { margin-top: 8px; }
+.ind-row-body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--rule-soft);
+  margin: 0 0 0 0;
+}
+@media (max-width: 700px) {
+  .ind-row-unit, .ind-row-tag { display: none; }
+  .ind-row-code { width: auto; }
+}
 
 /* Detail drawer — three quarters of the window, dark header */
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(10, 10, 10, 0.35); z-index: 100; }
