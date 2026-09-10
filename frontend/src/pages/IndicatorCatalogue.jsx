@@ -676,11 +676,21 @@ const typeLabel = (ind) =>
   TYPE_LABELS[ind.indicator_type] || ind.indicator_type_display || ind.indicator_type;
 
 const CCT_TAGS = ["gender", "climate", "youth", "disability", "idp_refugee", "equity"];
-// Onglets transversaux demandes en plus des secteurs.
+// Onglets transversaux demandes en plus des secteurs. `cct:all` est leur
+// entree de groupe, comme "All <pilier>" pour un pilier.
 const CCT_TABS = [
-  { key: "cct:gender",  tag: "gender",  label: "Gender" },
-  { key: "cct:climate", tag: "climate", label: "Climate" },
+  { key: "cct:all",     tags: ["gender", "climate"], label: "Cross-cutting", title: "Gender and climate" },
+  { key: "cct:gender",  tags: ["gender"],  label: "Gender",  title: "Gender" },
+  { key: "cct:climate", tags: ["climate"], label: "Climate", title: "Climate adaptation" },
 ];
+
+// Les noms de pilier sont trop longs pour une barre compacte ; le nom complet
+// reste dans le `title` de l'onglet.
+const PILLAR_SHORT = {
+  INFRA: "Infrastructure",
+  SOC:   "Human capital",
+  RES:   "Resilience",
+};
 
 const CHAIN_LEVEL_LABELS = {
   activity:             "Activity",
@@ -749,8 +759,14 @@ export default function IndicatorCatalogue() {
       .map(([pillar, children]) => ({
         pillar,
         color: PILLAR_TOKEN[pillar.code] || DEFAULT_SECTOR_TOKEN,
+        // Le premier onglet est l'entree du groupe : le pilier entier.
         tabs: [
-          { key: `p:${pillar.id}`, label: "All", title: `All ${pillar.name}`, sectorIds: [pillar.id, ...children.map((c) => c.id)] },
+          {
+            key: `p:${pillar.id}`,
+            label: PILLAR_SHORT[pillar.code] || pillar.name,
+            title: `All ${pillar.name}`,
+            sectorIds: [pillar.id, ...children.map((c) => c.id)],
+          },
           ...[...children].sort(bySeq).map((c) => ({ key: `s:${c.id}`, label: c.name, title: c.name, sectorIds: [c.id] })),
         ],
       }));
@@ -766,8 +782,8 @@ export default function IndicatorCatalogue() {
   }, [pillarGroups]);
 
   const countFor = (t) =>
-    t.tag
-      ? all.filter((i) => (i.cross_cutting_tags || []).includes(t.tag)).length
+    t.tags
+      ? all.filter((i) => t.tags.some((tag) => (i.cross_cutting_tags || []).includes(tag))).length
       : all.filter((i) => t.sectorIds.includes(i.sector)).length;
 
   // Onglet par defaut : celui qui porte le plus d'indicateurs.
@@ -799,7 +815,9 @@ export default function IndicatorCatalogue() {
   // --- Contenu de l'onglet ------------------------------------------------
   const tabItems = useMemo(() => {
     if (!activeTab) return [];
-    if (activeTab.tag) return all.filter((i) => (i.cross_cutting_tags || []).includes(activeTab.tag));
+    if (activeTab.tags) {
+      return all.filter((i) => activeTab.tags.some((t) => (i.cross_cutting_tags || []).includes(t)));
+    }
     return all.filter((i) => activeTab.sectorIds.includes(i.sector));
   }, [all, activeTab]);
 
@@ -822,48 +840,32 @@ export default function IndicatorCatalogue() {
     return map;
   }, [sdgs]);
 
-  // Un indicateur porte souvent plusieurs ODD : il figure sous chacun d'eux,
-  // pas seulement sous le premier. `sdg` null = le groupe sans ODD, range en
-  // dernier et rotule par le sous-secteur.
+  // Sections : type d'indicateur, puis sous-secteur. Pas de regroupement par
+  // ODD : un indicateur en porte souvent plusieurs et sortait autant de fois.
+  // Les ODD restent sur la fiche, en logo.
   const sections = useMemo(() => {
     const byType = new Map();
     for (const ind of items) {
       if (!byType.has(ind.indicator_type)) byType.set(ind.indicator_type, new Map());
       const groups = byType.get(ind.indicator_type);
-      const keys = (ind.related_sdg_numbers || []).length
-        ? ind.related_sdg_numbers.map((n) => `sdg:${n}`)
-        : [`sub:${ind.subsector || ""}`];
-      for (const key of keys) {
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(ind);
-      }
+      const key = ind.subsector || "";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(ind);
     }
-    const groupSort = (a, b) => {
-      const [ka, kb] = [a[0], b[0]];
-      const [sa, sb] = [ka.startsWith("sdg:"), kb.startsWith("sdg:")];
-      if (sa !== sb) return sa ? -1 : 1;                       // les ODD d'abord
-      if (sa) return Number(ka.slice(4)) - Number(kb.slice(4)); // puis par numero
-      return ka.localeCompare(kb);
-    };
     return [...byType.entries()]
       .sort((a, b) => TYPE_ORDER.indexOf(a[0]) - TYPE_ORDER.indexOf(b[0]))
       .map(([type, groups]) => ({
         type,
         label: TYPE_LABELS[type] || type,
-        groups: [...groups.entries()].sort(groupSort).map(([key, rows]) => ({
-          key,
-          sdg: key.startsWith("sdg:") ? Number(key.slice(4)) : null,
-          label: key.startsWith("sdg:")
-            ? `SDG ${key.slice(4)}${sdgName[key.slice(4)] ? ` · ${sdgName[key.slice(4)]}` : ""}`
-            : (key.slice(4) || "No SDG linked"),
-          rows,
-        })),
-        count: [...new Set([...groups.values()].flat())].length,
+        groups: [...groups.entries()]
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([key, rows]) => ({ key: key || "_", label: key, rows })),
+        count: [...groups.values()].reduce((n, g) => n + g.length, 0),
       }));
-  }, [items, sdgName]);
+  }, [items]);
 
   // Couleur de l'onglet actif : elle habille les barres de section.
-  const tabColor = activeTab?.tag
+  const tabColor = activeTab?.tags
     ? "var(--sec-women)"
     : (sectorColor[activeTab?.sectorIds?.[activeTab.sectorIds.length - 1]] || DEFAULT_SECTOR_TOKEN);
 
@@ -904,42 +906,29 @@ export default function IndicatorCatalogue() {
         </div>
       </div>
 
-      {/* Onglets : un groupe par pilier, puis les transversaux */}
+      {/* Onglets sur une seule ligne : un pilier par pastille ; les secteurs du
+          pilier actif se deplient a sa suite, les autres restent replies. */}
       <div className="cat-tabbar">
-        <div className="cat-tabbar-inner">
-          {pillarGroups.map(({ pillar, color, tabs }) => (
-            <div key={pillar.id} className="cat-pillar">
-              <span className="cat-pillar-label" style={{ color }}>{pillar.name}</span>
-              <div className="cat-pillar-tabs">
-                {tabs.map((t) => {
-                  const n = countFor(t);
-                  return (
-                    <button key={t.key} title={t.title}
-                      className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
-                      onClick={() => selectTab(t.key)}>
-                      {t.label}<span className="tab-count">{n}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-          <div className="cat-pillar">
-            <span className="cat-pillar-label" style={{ color: "var(--sec-women)" }}>Cross-cutting</span>
-            <div className="cat-pillar-tabs">
-              {CCT_TABS.map((t) => {
+        {[...pillarGroups.map(({ pillar, color, tabs }) => ({ id: `p${pillar.id}`, color, tabs })),
+          { id: "cct", color: "var(--sec-women)", tabs: CCT_TABS }].map((group) => {
+          const open = group.tabs.some((t) => t.key === activeKey);
+          const shown = open ? group.tabs : group.tabs.slice(0, 1);
+          return (
+            <span key={group.id} className="cat-tabgroup" style={{ "--tab-color": group.color }}>
+              {shown.map((t, i) => {
                 const n = countFor(t);
                 return (
-                  <button key={t.key} title={t.label}
-                    className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                  <button key={t.key} title={t.title || t.label}
+                    className={`cat-tab${activeKey === t.key ? " active" : ""}`
+                      + (i === 0 ? " lead" : "") + (n === 0 ? " empty" : "")}
                     onClick={() => selectTab(t.key)}>
-                    {t.label}<span className="tab-count">{n}</span>
+                    {t.label}<span className="cat-tab-count">{n}</span>
                   </button>
                 );
               })}
-            </div>
-          </div>
-        </div>
+            </span>
+          );
+        })}
       </div>
 
       {/* KPI de l'onglet */}
@@ -986,8 +975,8 @@ export default function IndicatorCatalogue() {
       {!isLoading && items.length === 0 && (
         <div className="card card-flush">
           <div className="text-muted text-sm" style={{ padding: 16 }}>
-            {activeTab?.tag
-              ? `No indicator carries the "${activeTab.tag}" tag yet — tag them from the indicator sheet.`
+            {activeTab?.tags
+              ? `No indicator carries the ${activeTab.tags.join(" or ")} tag yet — tag them from the indicator sheet.`
               : "No indicator matches the current filters."}
           </div>
         </div>
@@ -1000,13 +989,12 @@ export default function IndicatorCatalogue() {
           </div>
           {sec.groups.map((group) => (
             <div key={group.key}>
-              <div className="cat-group-title">
-                {group.sdg && (
-                  <img src={`/logos/sdg/${group.sdg}.png`} alt="" style={{ width: 22, height: 22, borderRadius: 3 }} />
-                )}
-                {group.label}
-                <span className="count">{group.rows.length}</span>
-              </div>
+              {group.label && (
+                <div className="cat-group-title">
+                  {group.label}
+                  <span className="count">{group.rows.length}</span>
+                </div>
+              )}
               <div className="ind-grid">
                 {group.rows.map((ind) => (
                   <button key={ind.id} type="button"
