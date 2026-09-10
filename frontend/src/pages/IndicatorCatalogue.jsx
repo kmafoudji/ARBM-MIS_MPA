@@ -1003,7 +1003,7 @@ export default function IndicatorCatalogue() {
             const n = countFor(t);
             return (
               <button key={t.key} title={t.title || t.label}
-                className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " tab-off" : ""}`}
                 onClick={() => selectTab(t.key)}>
                 {t.label} · {n}
               </button>
