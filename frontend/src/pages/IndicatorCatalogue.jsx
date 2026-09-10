@@ -693,16 +693,21 @@ function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
 
 // Les couleurs de `Sector.color` en base datent de l'ere lime et sortent de la
 // palette LLF (docs/design.md) : on remappe par pilier sur les tokens.
+// Une teinte par pilier, plus une pour l'entree "tout" : les cinq entrees de la
+// premiere rangee doivent se distinguer, donc chacune prend une des couleurs
+// LLF et aucune ne se repete. Le corail reste libre pour "All indicators" :
+// le vert est Resilience, le bleu Infrastructure, le jaune Human capital et le
+// violet le transversal (docs/design.md, mapping des secteurs).
 const PILLAR_TOKEN = {
   INFRA: "var(--sec-climate)",
-  SOC:   "var(--sec-health)",
+  SOC:   "var(--sec-infra)",
   RES:   "var(--sec-agri)",
 };
 // Fond des cartes : le niveau L5 de la meme teinte (design.md §2.2), pas une
 // nuance inventee.
 const PILLAR_PALE = {
   INFRA: "var(--sec-climate-pale)",
-  SOC:   "var(--sec-health-pale)",
+  SOC:   "var(--sec-infra-pale)",
   RES:   "var(--sec-agri-pale)",
 };
 const DEFAULT_SECTOR_TOKEN = "var(--muted)";
@@ -840,7 +845,7 @@ export default function IndicatorCatalogue() {
         })),
       }));
     return [
-      { id: "all", color: "var(--lime-darker)", pale: "var(--lime-pale)", lead: ALL_TAB, tabs: [] },
+      { id: "all", color: "var(--sec-health)", pale: "var(--sec-health-pale)", lead: ALL_TAB, tabs: [] },
       ...pillars,
       { id: "cct", color: "var(--sec-women)", pale: "var(--sec-women-pale)", lead: CCT_TABS[0], tabs: CCT_TABS.slice(1) },
     ];
