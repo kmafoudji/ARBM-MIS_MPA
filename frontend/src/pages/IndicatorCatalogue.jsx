@@ -315,11 +315,137 @@ function ComboField({ label, choices, value, onChange, textarea }) {
 
 
 // ---------------------------------------------------------------------------
-// Fiche IRS dans le tiroir : lecture + formulaire d'edition inline
+// Fiche IRS en lecture — le corps deplie d'une ligne d'indicateur
 // ---------------------------------------------------------------------------
-function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {} }) {
+function IndicatorSheet({ detail, canEdit, onEdit }) {
+  return (
+    <>
+        <div className="drawer-note row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <span>
+            Institutional codebook (POL-2.01): the definition, the method and the
+            disaggregation are the same for every project — only baselines and
+            targets vary.
+          </span>
+          {canEdit && (
+            <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={onEdit}>
+              <Icon name="pencil" size={13} /> Edit
+            </button>
+          )}
+        </div>
+
+        <div className="dl">
+          {FIELD_ROWS.map(({ key, label }) =>
+            detail[key] ? (
+              <div key={key}>
+                <div className="dl-term">{label}</div>
+                <div className="dl-desc">{detail[key]}</div>
+              </div>
+            ) : null
+          )}
+          {detail.unit && (
+            <div>
+              <div className="dl-term">Unit of Measure</div>
+              <div className="dl-desc">{detail.unit}</div>
+            </div>
+          )}
+          {detail.responsible && (
+            <div>
+              <div className="dl-term">Responsible</div>
+              <div className="dl-desc">{detail.responsible}</div>
+            </div>
+          )}
+          {detail.reporting_frequency_display && (
+            <div>
+              <div className="dl-term">Reporting Frequency</div>
+              <div className="dl-desc">{detail.reporting_frequency_display}</div>
+            </div>
+          )}
+          {detail.aggregation_rule && (
+            <div>
+              <div className="dl-term">Aggregation rule</div>
+              <div className="dl-desc">{detail.aggregation_rule_display || detail.aggregation_rule}</div>
+            </div>
+          )}
+          {detail.chain_level && (
+            <div>
+              <div className="dl-term">Chain level</div>
+              <div className="dl-desc">{detail.chain_level_display || detail.chain_level}</div>
+            </div>
+          )}
+          {detail.cross_cutting_tags?.length > 0 && (
+            <div>
+              <div className="dl-term">Cross-cutting tags</div>
+              <div className="dl-desc row" style={{ gap: 6, flexWrap: "wrap" }}>
+                {detail.cross_cutting_tags.map((t) => {
+                  const style = CCT_COLORS[t] || {};
+                  return (
+                    <span key={t} style={{
+                      fontSize: 11, fontWeight: 600, padding: "2px 8px",
+                      borderRadius: 99, background: style.bg, color: style.color,
+                    }}>{t}</span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SF-6 : dimensions de désagrégation */}
+        <DisaggregationDimensionsPanel indicatorId={detail.id} />
+
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ligne d'indicateur : une ligne repliee, la fiche dessous quand on l'ouvre
+// ---------------------------------------------------------------------------
+function IndicatorRow({ ind, expanded, onToggle, onEdit, sdgName, color, canEdit }) {
+  const { data: detail, isLoading } = useQuery({
+    queryKey: ["indicator", ind.id],
+    queryFn: () => apiFetch(`/api/results/indicators/${ind.id}/`),
+    enabled: expanded,
+  });
+
+  return (
+    <div className={`ind-row${expanded ? " open" : ""}`} style={{ borderLeftColor: color }}>
+      <button type="button" className="ind-row-head" onClick={onToggle} aria-expanded={expanded}>
+        <span className="ind-row-code" style={{ color }}>{ind.code}</span>
+        <span className={TYPE_COLOR[ind.indicator_type] || "badge"} style={{ fontSize: 10, flexShrink: 0 }}>
+          {typeLabel(ind)}
+        </span>
+        <span className="ind-row-name">{ind.name}</span>
+        {ind.unit && <span className="ind-row-unit">{ind.unit}</span>}
+        {(ind.cross_cutting_tags || []).map((t) => {
+          const style = CCT_COLORS[t] || {};
+          return (
+            <span key={t} className="ind-row-tag" style={{ background: style.bg, color: style.color }}>
+              {t.replace("_", " ")}
+            </span>
+          );
+        })}
+        {ind.related_sdg_numbers?.length > 0 && (
+          <SdgLogos numbers={ind.related_sdg_numbers} names={sdgName} size={17} />
+        )}
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size={14} />
+      </button>
+
+      {expanded && (
+        <div className="ind-row-body">
+          {isLoading && <div className="text-muted text-sm"><span className="spinner" /> Loading...</div>}
+          {detail && <IndicatorSheet detail={detail} canEdit={canEdit} onEdit={() => onEdit(ind.id)} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tiroir d'edition : la fiche se lit dans la ligne, le formulaire ici, ou il a
+// la place de deux colonnes.
+// ---------------------------------------------------------------------------
+function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
 
   const { data: detail, isLoading } = useQuery({
@@ -330,7 +456,6 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {
   const { data: choices } = useQuery({
     queryKey: ["indicator-choices"],
     queryFn: () => apiFetch("/api/results/indicators/choices/"),
-    enabled: editing,
   });
 
   const updateMutation = useMutation({
@@ -342,25 +467,18 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["indicator", indicatorId] });
       queryClient.invalidateQueries({ queryKey: ["indicators"] });
-      setEditing(false);
+      onClose();
     },
   });
 
-  // Escape ferme le tiroir ; l'edition en cours a la priorite.
+  // Le formulaire part de la fiche des qu'elle arrive.
+  useEffect(() => { if (detail && !form) setForm({ ...detail }); }, [detail, form]);
+
   useEffect(() => {
-    function onKey(e) {
-      if (e.key !== "Escape") return;
-      if (editing) setEditing(false);
-      else onClose();
-    }
+    function onKey(e) { if (e.key === "Escape") onClose(); }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, onClose]);
-
-  function startEdit() {
-    setForm({ ...detail });
-    setEditing(true);
-  }
+  }, [onClose]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -370,7 +488,7 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-label="Indicator sheet">
+      <aside className="drawer" role="dialog" aria-label="Edit indicator">
         <div className="drawer-header">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div style={{ minWidth: 0 }}>
@@ -397,85 +515,7 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {
         <div className="drawer-body">
           {isLoading && <div className="text-muted text-sm"><span className="spinner" /> Loading...</div>}
 
-          {detail && !editing && (
-            <>
-              <div className="drawer-note row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                <span>
-                  Institutional codebook (POL-2.01): the definition, the method and the
-                  disaggregation are the same for every project — only baselines and
-                  targets vary.
-                </span>
-                {canEdit && (
-                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={startEdit}>
-                    <Icon name="pencil" size={13} /> Edit
-                  </button>
-                )}
-              </div>
-
-              <div className="dl">
-                {FIELD_ROWS.map(({ key, label }) =>
-                  detail[key] ? (
-                    <div key={key}>
-                      <div className="dl-term">{label}</div>
-                      <div className="dl-desc">{detail[key]}</div>
-                    </div>
-                  ) : null
-                )}
-                {detail.unit && (
-                  <div>
-                    <div className="dl-term">Unit of Measure</div>
-                    <div className="dl-desc">{detail.unit}</div>
-                  </div>
-                )}
-                {detail.responsible && (
-                  <div>
-                    <div className="dl-term">Responsible</div>
-                    <div className="dl-desc">{detail.responsible}</div>
-                  </div>
-                )}
-                {detail.reporting_frequency_display && (
-                  <div>
-                    <div className="dl-term">Reporting Frequency</div>
-                    <div className="dl-desc">{detail.reporting_frequency_display}</div>
-                  </div>
-                )}
-                {detail.aggregation_rule && (
-                  <div>
-                    <div className="dl-term">Aggregation rule</div>
-                    <div className="dl-desc">{detail.aggregation_rule_display || detail.aggregation_rule}</div>
-                  </div>
-                )}
-                {detail.chain_level && (
-                  <div>
-                    <div className="dl-term">Chain level</div>
-                    <div className="dl-desc">{detail.chain_level_display || detail.chain_level}</div>
-                  </div>
-                )}
-                {detail.cross_cutting_tags?.length > 0 && (
-                  <div>
-                    <div className="dl-term">Cross-cutting tags</div>
-                    <div className="dl-desc row" style={{ gap: 6, flexWrap: "wrap" }}>
-                      {detail.cross_cutting_tags.map((t) => {
-                        const style = CCT_COLORS[t] || {};
-                        return (
-                          <span key={t} style={{
-                            fontSize: 11, fontWeight: 600, padding: "2px 8px",
-                            borderRadius: 99, background: style.bg, color: style.color,
-                          }}>{t}</span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* SF-6 : dimensions de désagrégation */}
-              <DisaggregationDimensionsPanel indicatorId={detail.id} />
-
-            </>
-          )}
-
-          {detail && editing && (
+          {detail && form && (
             <form onSubmit={handleSubmit}>
               <div className="grid grid-2" style={{ gap: 8, marginBottom: 8 }}>
                 <div className="field" style={{ marginBottom: 0 }}>
@@ -635,7 +675,7 @@ function IndicatorDrawer({ indicatorId, onClose, canEdit, sdgs = [], sdgName = {
                   <Icon name="check" size={13} /> {updateMutation.isPending ? "Saving..." : "Save"}
                 </button>
                 <button className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
-                  type="button" onClick={() => setEditing(false)}>
+                  type="button" onClick={onClose}>
                   <Icon name="x" size={13} /> Cancel
                 </button>
               </div>
@@ -694,7 +734,7 @@ const CCT_TABS = [
 
 // Entree "tout le catalogue" : premier groupe de la barre, onglet par defaut,
 // et le seul moyen de lever le filtre de secteur.
-const ALL_TAB = { key: "all", label: "All", title: "The whole catalogue", all: true };
+const ALL_TAB = { key: "all", label: "All indicators", title: "The whole catalogue", all: true };
 
 // Pictogramme de chaque entree de la premiere rangee. Les piliers portent bien
 // un `icon` en base, mais deux valent "generic" : le choix se fait ici.
@@ -749,7 +789,9 @@ export default function IndicatorCatalogue() {
   const [typeChips, setTypeChips] = useState([]);
   const [levelChips, setLevelChips] = useState([]);
   const [subChips, setSubChips] = useState([]);
-  const [openId, setOpenId] = useState(null);
+  // Plusieurs lignes peuvent rester ouvertes ; le tiroir ne sert qu'a editer.
+  const [openIds, setOpenIds] = useState(() => new Set());
+  const [editId, setEditId] = useState(null);
 
   const { data: indicators, isLoading } = useQuery({
     queryKey: ["indicators", search],
@@ -798,7 +840,7 @@ export default function IndicatorCatalogue() {
         })),
       }));
     return [
-      { id: "all", color: "var(--ink)", pale: "var(--surface)", lead: ALL_TAB, tabs: [] },
+      { id: "all", color: "var(--lime-darker)", pale: "var(--lime-pale)", lead: ALL_TAB, tabs: [] },
       ...pillars,
       { id: "cct", color: "var(--sec-women)", pale: "var(--sec-women-pale)", lead: CCT_TABS[0], tabs: CCT_TABS.slice(1) },
     ];
@@ -894,13 +936,20 @@ export default function IndicatorCatalogue() {
   function selectTab(key) {
     setTab(key);
     setTypeChips([]); setLevelChips([]); setSubChips([]);
-    setOpenId(null);
+    setOpenIds(new Set());
+  }
+  function toggleRow(id) {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }
   const toggle = (setter) => (v) =>
     setter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
   return (
-    <div className="view">
+    <div className="view cat-view">
       <div className="cat-head">
         <div>
           <div className="view-eyebrow">Module 2 · LLF2</div>
@@ -1013,36 +1062,13 @@ export default function IndicatorCatalogue() {
                   <span className="count">{group.rows.length}</span>
                 </div>
               )}
-              <div className="ind-grid">
+              <div className="ind-list">
                 {group.rows.map((ind) => (
-                  <button key={ind.id} type="button"
-                    className={`ind-card${openId === ind.id ? " open" : ""}`}
-                    style={{ borderLeftColor: sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN }}
-                    onClick={() => setOpenId(ind.id)}>
-                    <div className="ind-card-top">
-                      <span className="ind-card-code" style={{ color: sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN }}>
-                        {ind.code}
-                      </span>
-                      <span className={TYPE_COLOR[ind.indicator_type] || "badge"} style={{ fontSize: 10, marginLeft: "auto" }}>
-                        {typeLabel(ind)}
-                      </span>
-                    </div>
-                    <div className="ind-card-name">{ind.name}</div>
-                    <div className="ind-card-meta">
-                      {ind.subsector && <span>{ind.subsector}</span>}
-                      {ind.unit && <span>{ind.unit}</span>}
-                      {ind.chain_level && <span>{CHAIN_LEVEL_LABELS[ind.chain_level] || ind.chain_level}</span>}
-                      {(ind.cross_cutting_tags || []).map((t) => {
-                        const style = CCT_COLORS[t] || {};
-                        return <span key={t} style={{ background: style.bg, color: style.color }}>{t.replace("_", " ")}</span>;
-                      })}
-                    </div>
-                    {ind.related_sdg_numbers?.length > 0 && (
-                      <div className="ind-card-sdgs">
-                        <SdgLogos numbers={ind.related_sdg_numbers} names={sdgName} size={18} />
-                      </div>
-                    )}
-                  </button>
+                  <IndicatorRow key={ind.id} ind={ind} sdgName={sdgName} canEdit={canEdit}
+                    color={sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN}
+                    expanded={openIds.has(ind.id)}
+                    onToggle={() => toggleRow(ind.id)}
+                    onEdit={setEditId} />
                 ))}
               </div>
             </div>
@@ -1050,9 +1076,9 @@ export default function IndicatorCatalogue() {
         </div>
       ))}
 
-      {openId && (
-        <IndicatorDrawer indicatorId={openId} canEdit={canEdit} sdgs={sdgs || []} sdgName={sdgName}
-          onClose={() => setOpenId(null)} />
+      {editId && (
+        <IndicatorDrawer indicatorId={editId} sdgs={sdgs || []} sdgName={sdgName}
+          onClose={() => setEditId(null)} />
       )}
     </div>
   );
