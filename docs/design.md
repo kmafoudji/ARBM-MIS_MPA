@@ -33,6 +33,11 @@ than literal values.
 | Gender equality | `--sec-women` | `#7E46B8` purple | `--sec-women-bg` |
 | Climate adaptation | `--sec-climate` | `#0089C5` blue | `--sec-climate-bg` |
 
+Each sector hue also has a `--sec-*-pale` token holding the L5 step of its
+tonal scale (`#FDF3F3`, `#EFFFFA`, `#FFFAF0`, `#F7F0FF`, `#DBF4FF`), for large
+tinted surfaces such as the catalogue's pillar cards. Use it rather than mixing
+a tint of your own.
+
 ### Status (fixed mapping)
 
 | Meaning | Token | Value |

@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import Icon from "../components/Icon";
 import Select from "../components/Select";
 import MultiSelect from "../components/MultiSelect";
+import SectorIcon from "../components/SectorIcon";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import { groupSectorOptions } from "../utils.js";
 
@@ -657,6 +658,13 @@ const PILLAR_TOKEN = {
   SOC:   "var(--sec-health)",
   RES:   "var(--sec-agri)",
 };
+// Fond des cartes : le niveau L5 de la meme teinte (design.md §2.2), pas une
+// nuance inventee.
+const PILLAR_PALE = {
+  INFRA: "var(--sec-climate-pale)",
+  SOC:   "var(--sec-health-pale)",
+  RES:   "var(--sec-agri-pale)",
+};
 const DEFAULT_SECTOR_TOKEN = "var(--muted)";
 
 // Ordre d'affichage des sections d'un onglet (BRQ-2.02).
@@ -687,6 +695,16 @@ const CCT_TABS = [
 // Entree "tout le catalogue" : premier groupe de la barre, onglet par defaut,
 // et le seul moyen de lever le filtre de secteur.
 const ALL_TAB = { key: "all", label: "All", title: "The whole catalogue", all: true };
+
+// Pictogramme de chaque entree de la premiere rangee. Les piliers portent bien
+// un `icon` en base, mais deux valent "generic" : le choix se fait ici.
+const GROUP_ICON = {
+  all:   "generic",
+  INFRA: "infrastructure",
+  SOC:   "education",
+  RES:   "agriculture",
+  cct:   "gender",
+};
 
 // Les noms de pilier sont trop longs pour une barre compacte ; le nom complet
 // reste dans le `title` de l'onglet.
@@ -768,6 +786,7 @@ export default function IndicatorCatalogue() {
         id: `p${pillar.id}`,
         pillar,
         color: PILLAR_TOKEN[pillar.code] || DEFAULT_SECTOR_TOKEN,
+        pale: PILLAR_PALE[pillar.code] || "var(--surface)",
         lead: {
           key: `p:${pillar.id}`,
           label: PILLAR_SHORT[pillar.code] || pillar.name,
@@ -779,9 +798,9 @@ export default function IndicatorCatalogue() {
         })),
       }));
     return [
-      { id: "all", color: "var(--ink)", lead: ALL_TAB, tabs: [] },
+      { id: "all", color: "var(--ink)", pale: "var(--surface)", lead: ALL_TAB, tabs: [] },
       ...pillars,
-      { id: "cct", color: "var(--sec-women)", lead: CCT_TABS[0], tabs: CCT_TABS.slice(1) },
+      { id: "cct", color: "var(--sec-women)", pale: "var(--sec-women-pale)", lead: CCT_TABS[0], tabs: CCT_TABS.slice(1) },
     ];
   }, [sectors]);
   const pillarGroups = useMemo(() => tabGroups.filter((g) => g.pillar), [tabGroups]);
@@ -882,87 +901,73 @@ export default function IndicatorCatalogue() {
 
   return (
     <div className="view">
-      <div className="view-header">
-        <div className="view-eyebrow">Module 2 · LLF2</div>
-        <h1 className="view-title">Indicator Catalogue</h1>
-        <p className="view-lead">
-          The central codebook every project selects from — same definition, same
-          method, same disaggregation; only baselines and targets vary by project.
-          Maintained by LLFMU only.
-        </p>
-      </div>
-
-      {/* Recherche : elle porte sur tout le catalogue, pas sur l'onglet seul */}
-      <div className="card card-flush mb-3">
-        <div className="card-body">
-          <div className="field" style={{ marginBottom: 0, maxWidth: 420 }}>
-            <label className="field-label">Search</label>
-            <input className="field-input" placeholder="Code (A001.1) or keyword..."
-              value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <div className="text-muted text-sm" style={{ marginTop: 8 }}>
-            {isLoading ? "Loading..." : `${all.length} indicator${all.length !== 1 ? "s" : ""} in the catalogue`}
-          </div>
+      <div className="cat-head">
+        <div>
+          <div className="view-eyebrow">Module 2 · LLF2</div>
+          <h1 className="view-title">Indicator Catalogue</h1>
+          <p className="view-lead">
+            Same definition, method and disaggregation for every project ·{" "}
+            {isLoading ? "loading…" : `${all.length} indicators`} · maintained by LLFMU
+          </p>
+        </div>
+        <div className="cat-search">
+          <Icon name="search" size={15} />
+          <input placeholder="Code (A001.1) or keyword..."
+            aria-label="Search the catalogue"
+            value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
-      {/* Deux rangees : les piliers, puis les secteurs du pilier actif. */}
-      <div className="cat-tabbar">
-        <div className="cat-tabrow">
-          {tabGroups.map((g) => {
-            const n = countFor(g.lead);
-            const on = activeGroup?.id === g.id;
+      {/* Premiere rangee : une carte par pilier, plus "tout" et le transversal */}
+      <div className="cat-cards">
+        {tabGroups.map((g) => {
+          const n = countFor(g.lead);
+          const on = activeGroup?.id === g.id;
+          const code = g.pillar ? g.pillar.code : g.id;
+          return (
+            <button key={g.id} title={g.lead.title || g.lead.label}
+              style={{ "--tab-color": g.color, "--tab-pale": g.pale }}
+              className={`cat-card${on ? " active" : ""}${g.id === "cct" ? " dashed" : ""}`}
+              onClick={() => selectTab(g.lead.key)}>
+              <SectorIcon name={GROUP_ICON[code] || "generic"} color={g.color} size={34} />
+              <span className="cat-card-name">{g.lead.label}</span>
+              {g.id === "cct"
+                ? <span className="cat-card-sub">applies across all pillars</span>
+                : <span className="cat-card-value">{n}</span>}
+              {on && <span className="cat-card-dot" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Seconde rangee : les entrees du groupe actif */}
+      {activeGroup?.tabs.length > 0 && (
+        <div className="cat-tabrow" style={{ "--tab-color": activeGroup.color }}>
+          <button
+            className={`cat-tab${activeKey === activeGroup.lead.key ? " active" : ""}`}
+            title={activeGroup.lead.title}
+            onClick={() => selectTab(activeGroup.lead.key)}>
+            {activeGroup.id === "cct" ? "All themes" : "All sectors"} · {countFor(activeGroup.lead)}
+          </button>
+          {activeGroup.tabs.map((t) => {
+            const n = countFor(t);
             return (
-              <button key={g.id} title={g.lead.title || g.lead.label}
-                style={{ "--tab-color": g.color }}
-                className={`cat-tab lead${on ? " active" : ""}${n === 0 ? " empty" : ""}`}
-                onClick={() => selectTab(g.lead.key)}>
-                {g.lead.label}<span className="cat-tab-count">{n}</span>
+              <button key={t.key} title={t.title || t.label}
+                className={`cat-tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                onClick={() => selectTab(t.key)}>
+                {t.label} · {n}
               </button>
             );
           })}
         </div>
-        {activeGroup?.tabs.length > 0 && (
-          <div className="cat-tabrow sub" style={{ "--tab-color": activeGroup.color }}>
-            <button
-              className={`cat-tab${activeKey === activeGroup.lead.key ? " active" : ""}`}
-              title={activeGroup.lead.title}
-              onClick={() => selectTab(activeGroup.lead.key)}>
-              All<span className="cat-tab-count">{countFor(activeGroup.lead)}</span>
-            </button>
-            {activeGroup.tabs.map((t) => {
-              const n = countFor(t);
-              return (
-                <button key={t.key} title={t.title || t.label}
-                  className={`cat-tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
-                  onClick={() => selectTab(t.key)}>
-                  {t.label}<span className="cat-tab-count">{n}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* KPI de l'onglet */}
-      <div className="kpi-strip mb-3">
-        <div className="kpi">
-          <div className="kpi-label">Indicators</div>
-          <div className="kpi-value">{items.length}</div>
-          <div className="kpi-extra">{activeTab?.title || activeTab?.label || ""}</div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">Sub-sectors</div>
-          <div className="kpi-value">{uniq(items.map((i) => i.subsector)).length}</div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">With an SDG</div>
-          <div className="kpi-value">{withSdg}</div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">No chain level</div>
-          <div className="kpi-value">{noLevel}</div>
-        </div>
+      {/* Chiffres de la selection courante, sur une ligne */}
+      <div className="cat-stats">
+        <span><b>{items.length}</b> indicator{items.length !== 1 ? "s" : ""}</span>
+        <span><b>{uniq(items.map((i) => i.subsector)).length}</b> sub-sector{uniq(items.map((i) => i.subsector)).length !== 1 ? "s" : ""}</span>
+        <span><b>{withSdg}</b> with SDG</span>
+        <span><b>{noLevel}</b> without chain level</span>
       </div>
 
       {/* Chips */}
