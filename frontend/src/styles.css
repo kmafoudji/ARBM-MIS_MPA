@@ -28,6 +28,7 @@
   --surface:     #FAFAFA; /* card.fill */
   --surface-2:   #F7F6F6; /* bg.panel */
   --rule:        #ECEBE8; /* card.border (mockup) */
+  --ground:      #ECEBE8; /* page ground behind the cards — same neutral step */
   --rule-soft:   #F7F6F6;
   --sidebar:     #2B2B2B; /* bg.dark */
 
@@ -89,7 +90,7 @@ body {
   font-size: 14px;
   line-height: 1.35;
   color: var(--ink);
-  background: var(--surface-2);
+  background: var(--ground);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11", "ss01", "ss03";
 }
@@ -334,7 +335,9 @@ input, select, textarea { font: inherit; color: inherit; }
 .user-signout:hover { background: var(--paper); color: var(--ink); }
 
 /* Main + topbar */
-.main { display: flex; flex-direction: column; min-width: 0; }
+/* The content column carries the application ground: one step darker than
+   the cards, so every white surface reads as raised (docs/design.md). */
+.main { display: flex; flex-direction: column; min-width: 0; background: var(--ground); }
 .topbar {
   height: 56px;
   background: var(--surface);
@@ -1809,11 +1812,6 @@ input, select, textarea { font: inherit; color: inherit; }
    Indicator catalogue — library explorer (LLF mockup, view A)
    Tab bar grouped by pillar, filter chips, indicator card grid, detail drawer.
 --------------------------------------------------------------------------- */
-
-/* This page sits on a ground one step darker than the application's
-   (--surface-2), so white rows and cards read as raised. `--rule` is the
-   palette's next neutral down; nothing is invented. */
-.cat-view { background: var(--rule); border-radius: var(--r-3); }
 
 /* Page head: title block on the left, a compact search on the right. */
 .cat-head {
