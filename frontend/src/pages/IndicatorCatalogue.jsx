@@ -724,6 +724,20 @@ const TYPE_LABELS = {
   yes_no:     "Yes / No",
   count:      "Count",
 };
+// Couleur de la barre de section : celle du niveau de resultat, comme dans le
+// mockup LLF (`const LV` de aRBM-MIS_Indicator_Library_LLF.html) — violet pour
+// l'impact, vert pour l'outcome, bleu pour l'output, charbon pour les types de
+// mesure. Elle ne depend plus de l'onglet actif, qui pouvait etre gris.
+const TYPE_BAR = {
+  impact:     "var(--violet)",
+  outcome:    "var(--sec-agri)",
+  output:     "var(--sec-climate)",
+  numeric:    "var(--ink)",
+  percentage: "var(--ink)",
+  yes_no:     "var(--ink)",
+  count:      "var(--ink)",
+};
+
 const typeLabel = (ind) =>
   TYPE_LABELS[ind.indicator_type] || ind.indicator_type_display || ind.indicator_type;
 
@@ -931,9 +945,6 @@ export default function IndicatorCatalogue() {
       }));
   }, [items]);
 
-  // Couleur de l'onglet actif : elle habille les barres de section.
-  const tabColor = activeGroup?.color || DEFAULT_SECTOR_TOKEN;
-
   const withSdg  = items.filter((i) => i.related_sdg_numbers?.length > 0).length;
   const noLevel  = items.filter((i) => !i.chain_level).length;
 
@@ -1055,7 +1066,7 @@ export default function IndicatorCatalogue() {
 
       {!isLoading && sections.map((sec) => (
         <div key={sec.type} className="cat-section">
-          <div className="cat-section-bar" style={{ background: tabColor }}>
+          <div className="cat-section-bar" style={{ background: TYPE_BAR[sec.type] || "var(--ink)" }}>
             {sec.label}<span className="count">{sec.count}</span>
           </div>
           {sec.groups.map((group) => (
