@@ -817,7 +817,9 @@ input, select, textarea { font: inherit; color: inherit; }
   color: #fff;
   font-weight: 700;
 }
-.tab.empty { opacity: 0.5; }
+/* `tab-off`, not `empty`: a bare `.empty` is the page-level empty state
+   (48px of padding), and a tab carrying it inflated into a balloon. */
+.tab.tab-off { opacity: 0.5; }
 .tab-count { margin-left: 4px; font-size: 11px; color: var(--subtle); font-weight: 600; }
 .tab.active .tab-count { color: rgba(255, 255, 255, 0.85); }
 
