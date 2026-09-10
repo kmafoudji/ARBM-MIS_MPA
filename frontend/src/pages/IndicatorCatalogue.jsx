@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
@@ -293,19 +293,18 @@ function ComboField({ label, choices, value, onChange, textarea }) {
   );
 }
 
+
 // ---------------------------------------------------------------------------
-// Ligne expandable : fiche IRS en lecture + formulaire d'edition inline
+// Fiche IRS dans le tiroir : lecture + formulaire d'edition inline
 // ---------------------------------------------------------------------------
-function IndicatorRow({ ind, isLast, canEdit }) {
+function IndicatorDrawer({ indicatorId, onClose, canEdit }) {
   const queryClient = useQueryClient();
-  const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
 
   const { data: detail, isLoading } = useQuery({
-    queryKey: ["indicator", ind.id],
-    queryFn: () => apiFetch(`/api/results/indicators/${ind.id}/`),
-    enabled: expanded,
+    queryKey: ["indicator", indicatorId],
+    queryFn: () => apiFetch(`/api/results/indicators/${indicatorId}/`),
   });
 
   const { data: choices } = useQuery({
@@ -316,16 +315,27 @@ function IndicatorRow({ ind, isLast, canEdit }) {
 
   const updateMutation = useMutation({
     mutationFn: (payload) =>
-      apiFetch(`/api/results/indicators/${ind.id}/`, {
+      apiFetch(`/api/results/indicators/${indicatorId}/`, {
         method: "PATCH",
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["indicator", ind.id] });
+      queryClient.invalidateQueries({ queryKey: ["indicator", indicatorId] });
       queryClient.invalidateQueries({ queryKey: ["indicators"] });
       setEditing(false);
     },
   });
+
+  // Escape ferme le tiroir ; l'edition en cours a la priorite.
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key !== "Escape") return;
+      if (editing) setEditing(false);
+      else onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, onClose]);
 
   function startEdit() {
     setForm({ ...detail });
@@ -339,63 +349,34 @@ function IndicatorRow({ ind, isLast, canEdit }) {
 
   return (
     <>
-      {/* Ligne principale */}
-      <div
-        onClick={() => { setExpanded(!expanded); setEditing(false); }}
-        style={{
-          padding: "10px 16px",
-          cursor: "pointer",
-          borderBottom: "1px solid var(--rule-soft)",
-          background: expanded ? "var(--lime-pale)" : "transparent",
-          display: "flex", gap: 12, alignItems: "center",
-        }}
-      >
-        <span className="text-mono" style={{ fontSize: 11, color: "var(--muted)", width: 64, flexShrink: 0 }}>
-          {ind.code}
-        </span>
-        <span className={TYPE_COLOR[ind.indicator_type] || "badge"} style={{ fontSize: 10, flexShrink: 0 }}>
-          {ind.indicator_type_display}
-        </span>
-        <span style={{ flex: 1, fontSize: 13 }}>{ind.name}</span>
-        <span className="text-muted text-sm" style={{ flexShrink: 0 }}>{ind.unit}</span>
-        {ind.chain_level && (
-          <span className="badge" style={{ fontSize: 10, flexShrink: 0, opacity: 0.75 }}>
-            {ind.chain_level.replace("_", " ")}
-          </span>
-        )}
-        {ind.cross_cutting_tags?.length > 0 && ind.cross_cutting_tags.map((t) => {
-          const style = CCT_COLORS[t] || {};
-          return <span key={t} style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: style.bg, color: style.color, flexShrink: 0 }}>{t}</span>;
-        })}
-        <Icon
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={14}
-          style={{ color: "var(--muted)", flexShrink: 0 }}
-        />
-      </div>
+      <div className="drawer-backdrop" onClick={onClose} />
+      <aside className="drawer" role="dialog" aria-label="Indicator sheet">
+        <div className="drawer-header row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div className="text-mono text-sm text-muted">{detail?.code || ""}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, lineHeight: 1.3 }}>
+              {detail?.name || "Loading..."}
+            </div>
+          </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+        </div>
 
-      {/* Fiche inline juste sous la ligne */}
-      {expanded && (
-        <div style={{
-          borderBottom: isLast ? "none" : "1px solid var(--rule)",
-          background: "var(--surface)",
-          padding: "16px 16px 16px 24px",
-        }}>
+        <div className="drawer-body">
           {isLoading && <div className="text-muted text-sm"><span className="spinner" /> Loading...</div>}
 
           {detail && !editing && (
             <>
-              <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-                <div className="row" style={{ gap: 8 }}>
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   <span className={TYPE_COLOR[detail.indicator_type] || "badge"}>
-                    {detail.indicator_type_display}
+                    {typeLabel(detail)}
                   </span>
                   <span className="text-muted text-sm">{detail.sector_name}</span>
                   {detail.subsector && <span className="text-muted text-sm">· {detail.subsector}</span>}
                   <span className="text-muted text-sm">{DIRECTION_LABEL[detail.direction]}</span>
                 </div>
                 {canEdit && (
-                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={(e) => { e.stopPropagation(); startEdit(); }}>
+                  <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={startEdit}>
                     <Icon name="pencil" size={13} /> Edit
                   </button>
                 )}
@@ -484,7 +465,7 @@ function IndicatorRow({ ind, isLast, canEdit }) {
           )}
 
           {detail && editing && (
-            <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleSubmit}>
               <div className="grid grid-2" style={{ gap: 8, marginBottom: 8 }}>
                 <div className="field" style={{ marginBottom: 0 }}>
                   <label className="field-label">Code</label>
@@ -606,7 +587,7 @@ function IndicatorRow({ ind, isLast, canEdit }) {
               <div className="field">
                 <label className="field-label">Cross-cutting tags</label>
                 <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-                  {["gender","climate","youth","disability","idp_refugee","equity"].map((tag) => {
+                  {CCT_TAGS.map((tag) => {
                     const tags = form.cross_cutting_tags || [];
                     const checked = tags.includes(tag);
                     return (
@@ -639,30 +620,89 @@ function IndicatorRow({ ind, isLast, canEdit }) {
             </form>
           )}
         </div>
-      )}
+      </aside>
     </>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Page principale
+// Explorateur : onglets par secteur, chips de filtre, grille de fiches
 // ---------------------------------------------------------------------------
-const PAGE_SIZE = 20;
+
+// Les couleurs de `Sector.color` en base datent de l'ere lime et sortent de la
+// palette LLF (docs/design.md) : on remappe par pilier sur les tokens.
+const PILLAR_TOKEN = {
+  INFRA: "var(--sec-climate)",
+  SOC:   "var(--sec-health)",
+  RES:   "var(--sec-agri)",
+};
+const DEFAULT_SECTOR_TOKEN = "var(--muted)";
+
+// Ordre d'affichage des sections d'un onglet (BRQ-2.02).
+const TYPE_ORDER = ["impact", "outcome", "output", "numeric", "percentage", "yes_no", "count"];
+// Les donnees portent output/outcome/impact, absents de INDICATOR_TYPE_CHOICES :
+// get_indicator_type_display renvoie alors la valeur brute, en minuscules.
+const TYPE_LABELS = {
+  impact:     "Impact",
+  outcome:    "Outcome",
+  output:     "Output",
+  numeric:    "Numeric",
+  percentage: "Percentage",
+  yes_no:     "Yes / No",
+  count:      "Count",
+};
+const typeLabel = (ind) =>
+  TYPE_LABELS[ind.indicator_type] || ind.indicator_type_display || ind.indicator_type;
+
+const CCT_TAGS = ["gender", "climate", "youth", "disability", "idp_refugee", "equity"];
+// Onglets transversaux demandes en plus des secteurs.
+const CCT_TABS = [
+  { key: "cct:gender",  tag: "gender",  label: "Gender" },
+  { key: "cct:climate", tag: "climate", label: "Climate" },
+];
+
+const CHAIN_LEVEL_LABELS = {
+  activity:             "Activity",
+  output:               "Output",
+  immediate_outcome:    "Immediate outcome",
+  intermediate_outcome: "Intermediate outcome",
+  ultimate_outcome:     "Ultimate outcome",
+};
+
+/** Chips de filtre additifs : un ensemble vide ne filtre rien. */
+function ChipGroup({ label, values, selected, onToggle, labelFor }) {
+  if (values.length < 2) return null;
+  return (
+    <>
+      <span className="filter-chip-label">{label}</span>
+      {values.map((v) => (
+        <button
+          key={v}
+          type="button"
+          className={`filter-chip${selected.includes(v) ? " on" : ""}`}
+          onClick={() => onToggle(v)}
+        >
+          {labelFor ? labelFor(v) : v}
+        </button>
+      ))}
+      <span className="filter-chip-sep" />
+    </>
+  );
+}
 
 export default function IndicatorCatalogue() {
   const [search, setSearch] = useState("");
-  const [sectorFilter, setSectorFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [viewMode, setViewMode] = useState("sector"); // "sector" | "flat"
-  const [page, setPage] = useState(1);
+  const [tab, setTab] = useState(null);
+  const [typeChips, setTypeChips] = useState([]);
+  const [levelChips, setLevelChips] = useState([]);
+  const [subChips, setSubChips] = useState([]);
+  const [openId, setOpenId] = useState(null);
 
   const { data: indicators, isLoading } = useQuery({
-    queryKey: ["indicators", search, sectorFilter, typeFilter],
+    queryKey: ["indicators", search],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) params.set("q", search);
-      if (sectorFilter) params.set("sector", sectorFilter);
-      if (typeFilter) params.set("type", typeFilter);
       return apiFetch(`/api/results/indicators/?${params}`);
     },
   });
@@ -672,25 +712,125 @@ export default function IndicatorCatalogue() {
     queryFn: () => apiFetch("/api/reference/sectors/"),
   });
 
+  const { data: sdgs } = useQuery({
+    queryKey: ["sdgs"],
+    queryFn: () => apiFetch("/api/reference/sdgs/"),
+  });
+
   const canEdit = true;
-  const total = indicators?.length ?? 0;
+  const all = useMemo(() => indicators || [], [indicators]);
 
-  // Réinitialiser la page quand les filtres changent
-  const resetPage = () => setPage(1);
+  // --- Onglets : pilier -> "All <pilier>" + ses secteurs (ADR 0007) --------
+  const pillarGroups = useMemo(() => {
+    const bySeq = (a, b) => (a.sequence || 0) - (b.sequence || 0) || a.name.localeCompare(b.name);
+    return groupSectorOptions(sectors)
+      .sort((a, b) => bySeq(a[0], b[0]))
+      .map(([pillar, children]) => ({
+        pillar,
+        color: PILLAR_TOKEN[pillar.code] || DEFAULT_SECTOR_TOKEN,
+        tabs: [
+          { key: `p:${pillar.id}`, label: "All", title: `All ${pillar.name}`, sectorIds: [pillar.id, ...children.map((c) => c.id)] },
+          ...[...children].sort(bySeq).map((c) => ({ key: `s:${c.id}`, label: c.name, title: c.name, sectorIds: [c.id] })),
+        ],
+      }));
+  }, [sectors]);
 
-  // Vue plate paginée
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const flatSlice = (indicators || []).slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const sectorColor = useMemo(() => {
+    const map = {};
+    for (const { pillar, color, tabs } of pillarGroups) {
+      map[pillar.id] = color;
+      for (const t of tabs) for (const id of t.sectorIds) map[id] = color;
+    }
+    return map;
+  }, [pillarGroups]);
 
-  // Vue par secteur : grouper les indicateurs
-  const bySector = (indicators || []).reduce((acc, ind) => {
-    const key = ind.sector_name || "Other";
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(ind);
-    return acc;
-  }, {});
-  const sectorKeys = Object.keys(bySector).sort();
+  const countFor = (t) =>
+    t.tag
+      ? all.filter((i) => (i.cross_cutting_tags || []).includes(t.tag)).length
+      : all.filter((i) => t.sectorIds.includes(i.sector)).length;
+
+  // Onglet par defaut : celui qui porte le plus d'indicateurs.
+  const firstTab = pillarGroups[0]?.tabs[0]?.key;
+  const defaultTab = useMemo(() => {
+    let best = null, bestN = -1;
+    for (const g of pillarGroups) {
+      for (const t of g.tabs) {
+        if (t.key.startsWith("p:")) continue;
+        const n = countFor(t);
+        if (n > bestN) { best = t.key; bestN = n; }
+      }
+    }
+    return best;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pillarGroups, all]);
+
+  const activeKey = tab || defaultTab || firstTab;
+  const activeTab = useMemo(() => {
+    const cct = CCT_TABS.find((t) => t.key === activeKey);
+    if (cct) return cct;
+    for (const g of pillarGroups) {
+      const t = g.tabs.find((x) => x.key === activeKey);
+      if (t) return t;
+    }
+    return null;
+  }, [activeKey, pillarGroups]);
+
+  // --- Contenu de l'onglet ------------------------------------------------
+  const tabItems = useMemo(() => {
+    if (!activeTab) return [];
+    if (activeTab.tag) return all.filter((i) => (i.cross_cutting_tags || []).includes(activeTab.tag));
+    return all.filter((i) => activeTab.sectorIds.includes(i.sector));
+  }, [all, activeTab]);
+
+  const uniq = (list) => [...new Set(list.filter(Boolean))];
+  const typeValues  = useMemo(() => uniq(tabItems.map((i) => i.indicator_type))
+    .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b)), [tabItems]);
+  const levelValues = useMemo(() => uniq(tabItems.map((i) => i.chain_level)).sort(), [tabItems]);
+  const subValues   = useMemo(() => uniq(tabItems.map((i) => i.subsector)).sort(), [tabItems]);
+
+  const items = useMemo(() => tabItems.filter((i) =>
+    (typeChips.length  === 0 || typeChips.includes(i.indicator_type)) &&
+    (levelChips.length === 0 || levelChips.includes(i.chain_level)) &&
+    (subChips.length   === 0 || subChips.includes(i.subsector))
+  ), [tabItems, typeChips, levelChips, subChips]);
+
+  // Sections : type d'indicateur, puis ODS (a defaut le sous-secteur).
+  const sdgName = useMemo(() => {
+    const map = {};
+    for (const s of sdgs || []) map[s.number] = s.name;
+    return map;
+  }, [sdgs]);
+
+  const sections = useMemo(() => {
+    const byType = new Map();
+    for (const ind of items) {
+      if (!byType.has(ind.indicator_type)) byType.set(ind.indicator_type, new Map());
+      const groups = byType.get(ind.indicator_type);
+      const n = ind.related_sdg_numbers?.[0];
+      const key = n ? `SDG ${n}${sdgName[n] ? `: ${sdgName[n]}` : ""}` : (ind.subsector || "");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(ind);
+    }
+    return [...byType.entries()]
+      .sort((a, b) => TYPE_ORDER.indexOf(a[0]) - TYPE_ORDER.indexOf(b[0]))
+      .map(([type, groups]) => ({
+        type,
+        label: TYPE_LABELS[type] || type,
+        groups: [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+        count: [...groups.values()].reduce((n, g) => n + g.length, 0),
+      }));
+  }, [items, sdgName]);
+
+  const withSdg  = items.filter((i) => i.related_sdg_numbers?.length > 0).length;
+  const noLevel  = items.filter((i) => !i.chain_level).length;
+
+  function selectTab(key) {
+    setTab(key);
+    setTypeChips([]); setLevelChips([]); setSubChips([]);
+    setOpenId(null);
+  }
+  const toggle = (setter) => (v) =>
+    setter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
   return (
     <div className="view">
@@ -698,123 +838,156 @@ export default function IndicatorCatalogue() {
         <div className="view-eyebrow">Module 2 · LLF2</div>
         <h1 className="view-title">Indicator Catalogue</h1>
         <p className="view-lead">
-          LLF2 institutional library — Agriculture, Health, Infrastructure.
+          The central codebook every project selects from — same definition, same
+          method, same disaggregation; only baselines and targets vary by project.
           Maintained by LLFMU only.
         </p>
       </div>
 
-      {/* Filtres + toggle vue */}
+      {/* Recherche : elle porte sur tout le catalogue, pas sur l'onglet seul */}
       <div className="card card-flush mb-3">
         <div className="card-body">
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-            <div className="field" style={{ marginBottom: 0, flex: "2 1 200px" }}>
-              <label className="field-label">Search</label>
-              <input className="field-input" placeholder="Code (A001.1) or keyword..."
-                value={search} onChange={(e) => { setSearch(e.target.value); resetPage(); }} />
-            </div>
-            <div className="field" style={{ marginBottom: 0, flex: "1 1 140px" }}>
-              <label className="field-label">Sector</label>
-              <select className="field-select" value={sectorFilter}
-                onChange={(e) => { setSectorFilter(e.target.value); resetPage(); }}>
-                <option value="">All</option>
-                {groupSectorOptions(sectors).map(([pillar, children]) => (
-                  <optgroup key={pillar.id} label={pillar.name}>
-                    <option value={pillar.id}>All {pillar.name}</option>
-                    {children.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </optgroup>
-                ))}
-              </select>
-            </div>
-            <div className="field" style={{ marginBottom: 0, flex: "1 1 120px" }}>
-              <label className="field-label">Type</label>
-              <select className="field-select" value={typeFilter}
-                onChange={(e) => { setTypeFilter(e.target.value); resetPage(); }}>
-                <option value="">All</option>
-                <option value="output">Output</option>
-                <option value="outcome">Outcome</option>
-                <option value="impact">Impact</option>
-              </select>
-            </div>
-            <div style={{ display: "flex", gap: 4, paddingBottom: 2 }}>
-              <button
-                className={`btn btn-sm${viewMode === "sector" ? " btn-primary" : " btn-ghost"}`}
-                onClick={() => setViewMode("sector")}
-                title="Group by sector"
-              ><Icon name="layers" size={13} /> By sector</button>
-              <button
-                className={`btn btn-sm${viewMode === "flat" ? " btn-primary" : " btn-ghost"}`}
-                onClick={() => setViewMode("flat")}
-                title="Flat list with pagination"
-              ><Icon name="list" size={13} /> List</button>
-            </div>
+          <div className="field" style={{ marginBottom: 0, maxWidth: 420 }}>
+            <label className="field-label">Search</label>
+            <input className="field-input" placeholder="Code (A001.1) or keyword..."
+              value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="text-muted text-sm" style={{ marginTop: 8 }}>
-            {isLoading ? "Loading..." : `${total} indicator${total !== 1 ? "s" : ""}${viewMode === "flat" ? ` · page ${safePage} of ${pageCount}` : ""}`}
+            {isLoading ? "Loading..." : `${all.length} indicator${all.length !== 1 ? "s" : ""} in the catalogue`}
           </div>
         </div>
       </div>
 
-      {/* Vue par secteur */}
-      {!isLoading && viewMode === "sector" && (
-        total === 0
-          ? <div className="card card-flush"><div className="text-muted text-sm" style={{ padding: 16 }}>No indicators found.</div></div>
-          : sectorKeys.map((sectorName) => (
-            <div key={sectorName} className="card card-flush mb-3">
-              <div className="card-header" style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Icon name="bar-chart" size={14} />
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>{sectorName}</span>
-                  <span className="badge" style={{ fontSize: 10 }}>{bySector[sectorName].length}</span>
-                </div>
-              </div>
-              <div style={{ padding: 0 }}>
-                {bySector[sectorName].map((ind, i) => (
-                  <IndicatorRow
-                    key={ind.id}
-                    ind={ind}
-                    isLast={i === bySector[sectorName].length - 1}
-                    canEdit={canEdit}
-                  />
-                ))}
+      {/* Onglets : un groupe par pilier, puis les transversaux */}
+      <div className="cat-tabbar">
+        <div className="cat-tabbar-inner">
+          {pillarGroups.map(({ pillar, color, tabs }) => (
+            <div key={pillar.id} className="cat-pillar">
+              <span className="cat-pillar-label" style={{ color }}>{pillar.name}</span>
+              <div className="cat-pillar-tabs">
+                {tabs.map((t) => {
+                  const n = countFor(t);
+                  return (
+                    <button key={t.key} title={t.title}
+                      className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                      onClick={() => selectTab(t.key)}>
+                      {t.label}<span className="tab-count">{n}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          ))
-      )}
-
-      {/* Vue plate paginée */}
-      {!isLoading && viewMode === "flat" && (
-        <div className="card card-flush">
-          <div style={{ padding: 0 }}>
-            {total === 0 && (
-              <div className="text-muted text-sm" style={{ padding: 16 }}>No indicators found.</div>
-            )}
-            {flatSlice.map((ind, i) => (
-              <IndicatorRow
-                key={ind.id}
-                ind={ind}
-                isLast={i === flatSlice.length - 1}
-                canEdit={canEdit}
-              />
-            ))}
+          ))}
+          <div className="cat-pillar">
+            <span className="cat-pillar-label" style={{ color: "var(--sec-women)" }}>Cross-cutting</span>
+            <div className="cat-pillar-tabs">
+              {CCT_TABS.map((t) => {
+                const n = countFor(t);
+                return (
+                  <button key={t.key} title={t.label}
+                    className={`tab${activeKey === t.key ? " active" : ""}${n === 0 ? " empty" : ""}`}
+                    onClick={() => selectTab(t.key)}>
+                    {t.label}<span className="tab-count">{n}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          {pageCount > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
-              <button className="btn btn-sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}>
-                ← Previous
-              </button>
-              <span className="text-sm text-muted">Page {safePage} of {pageCount}</span>
-              <button className="btn btn-sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={safePage === pageCount}>
-                Next →
-              </button>
-            </div>
-          )}
         </div>
-      )}
+      </div>
 
+      {/* KPI de l'onglet */}
+      <div className="kpi-strip mb-3">
+        <div className="kpi">
+          <div className="kpi-label">Indicators</div>
+          <div className="kpi-value">{items.length}</div>
+          <div className="kpi-extra">{activeTab?.title || activeTab?.label || ""}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Sub-sectors</div>
+          <div className="kpi-value">{uniq(items.map((i) => i.subsector)).length}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">With an SDG</div>
+          <div className="kpi-value">{withSdg}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">No chain level</div>
+          <div className="kpi-value">{noLevel}</div>
+        </div>
+      </div>
+
+      {/* Chips */}
+      <div className="filter-chips mb-3">
+        <ChipGroup label="Type" values={typeValues} selected={typeChips}
+          onToggle={toggle(setTypeChips)}
+          labelFor={(v) => TYPE_LABELS[v] || v} />
+        <ChipGroup label="Chain level" values={levelValues} selected={levelChips}
+          onToggle={toggle(setLevelChips)}
+          labelFor={(v) => CHAIN_LEVEL_LABELS[v] || v} />
+        <ChipGroup label="Sub-sector" values={subValues} selected={subChips}
+          onToggle={toggle(setSubChips)} />
+        <span className="text-muted text-sm">{items.length} shown</span>
+      </div>
+
+      {/* Grille */}
       {isLoading && (
         <div className="card card-flush">
           <div style={{ padding: 24, textAlign: "center" }}><span className="spinner" /> Loading...</div>
         </div>
+      )}
+
+      {!isLoading && items.length === 0 && (
+        <div className="card card-flush">
+          <div className="text-muted text-sm" style={{ padding: 16 }}>
+            {activeTab?.tag
+              ? `No indicator carries the "${activeTab.tag}" tag yet — tag them from the indicator sheet.`
+              : "No indicator matches the current filters."}
+          </div>
+        </div>
+      )}
+
+      {!isLoading && sections.map((sec) => (
+        <div key={sec.type} className="cat-section">
+          <div className="cat-section-title">
+            {sec.label}<span className="count">{sec.count}</span>
+          </div>
+          {sec.groups.map(([group, rows]) => (
+            <div key={group || "_"}>
+              {group && <div className="cat-group-title">{group}</div>}
+              <div className="ind-grid">
+                {rows.map((ind) => (
+                  <button key={ind.id} type="button"
+                    className={`ind-card${openId === ind.id ? " open" : ""}`}
+                    onClick={() => setOpenId(ind.id)}>
+                    <div className="ind-card-top">
+                      <span className="ind-card-code" style={{ color: sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN }}>
+                        {ind.code}
+                      </span>
+                      <span className={TYPE_COLOR[ind.indicator_type] || "badge"} style={{ fontSize: 10, marginLeft: "auto" }}>
+                        {typeLabel(ind)}
+                      </span>
+                    </div>
+                    <div className="ind-card-name">{ind.name}</div>
+                    <div className="ind-card-meta">
+                      {ind.subsector && <span>{ind.subsector}</span>}
+                      {ind.unit && <span>{ind.unit}</span>}
+                      {ind.chain_level && <span>{CHAIN_LEVEL_LABELS[ind.chain_level] || ind.chain_level}</span>}
+                      {(ind.cross_cutting_tags || []).map((t) => {
+                        const style = CCT_COLORS[t] || {};
+                        return <span key={t} style={{ background: style.bg, color: style.color }}>{t.replace("_", " ")}</span>;
+                      })}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      {openId && (
+        <IndicatorDrawer indicatorId={openId} canEdit={canEdit} onClose={() => setOpenId(null)} />
       )}
     </div>
   );

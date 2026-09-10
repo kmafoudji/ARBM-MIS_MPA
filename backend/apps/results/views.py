@@ -56,7 +56,9 @@ class IndicatorListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = Indicator.objects.filter(is_active=True).select_related("sector")
+        qs = (Indicator.objects.filter(is_active=True)
+              .select_related("sector")
+              .prefetch_related("related_sdgs"))
         sector = request.query_params.get("sector")
         if sector:
             # Un pilier (ADR 0007) englobe ses secteurs.
