@@ -176,6 +176,19 @@ input, select, textarea { font: inherit; color: inherit; }
 /* legacy — conservé pour compatibilité */
 /* Nom du produit (aRBM-MIS) : casse d'origine, pas de capitales */
 .brand-product { text-transform: none; letter-spacing: 0.02em; }
+/* The logo doubles as the home link; the button adds no box of its own. */
+.brand-home {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--r-2);
+  transition: opacity 0.15s ease;
+}
+.brand-home:hover { opacity: 0.8; }
+.brand-home:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
 .brand-mark { display: none; }
 .brand-text-wrap { display: none; }
 .brand-name { display: none; }
@@ -1731,19 +1744,37 @@ input, select, textarea { font: inherit; color: inherit; }
   border-radius: var(--r-2);
   padding: 10px 11px;
 }
+/* Leaving the project is the one escape from sidebar B: it reads as a real
+   button, not as a caption. */
 .ctx-back {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
   font: inherit;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--lime);
-  background: none;
-  border: none;
-  padding: 0;
+  background: rgba(164,197,63,0.14);
+  border: 1px solid rgba(164,197,63,0.45);
+  border-radius: var(--r-2);
+  padding: 7px 9px;
+  margin-bottom: 3px;
   cursor: pointer;
   text-align: left;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.ctx-back:hover { color: #fff; }
+.ctx-back-arrow { font-size: 13px; line-height: 1; }
+.ctx-back:hover {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #14210a;
+}
+.ctx-back:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
 .ctx-toggle {
   display: flex;
   align-items: center;

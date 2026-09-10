@@ -292,7 +292,8 @@ export default function AppShell({
             className="ctx-back"
             onClick={() => { onNavigate(returnTo); closeSidebar(); }}
           >
-            ← {t("nav.back_to")} {CRUMBS[returnTo]?.label || CRUMBS.projects.label}
+            <span className="ctx-back-arrow" aria-hidden="true">←</span>
+            <span>{t("nav.back_to")} {CRUMBS[returnTo]?.label || CRUMBS.projects.label}</span>
           </button>
         )}
         <button
@@ -414,7 +415,15 @@ export default function AppShell({
 
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="brand">
-          <LogoFull dark={true} width="100%" />
+          {/* The logo is the way home: same target as the Dashboard entry. */}
+          <button
+            className="brand-home"
+            onClick={() => { onNavigate("overview"); closeSidebar(); }}
+            aria-label={t("nav.dashboard")}
+            title={t("nav.dashboard")}
+          >
+            <LogoFull dark={true} width="100%" />
+          </button>
           <div className="brand-sub-wrap">
             <div className="brand-sub"><span className="brand-product">{t("app.title")}</span> · {t("app.console")}</div>
           </div>
