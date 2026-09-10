@@ -19,6 +19,7 @@ than literal values.
 | `--lime-soft`, `--lime-pale` | `#C2F0E2`, `#EFFFFA` | Light tints of the accent for fills. |
 | `--paper` | `#FFFFFF` | Page background. |
 | `--surface`, `--surface-2` | `#FAFAFA`, `#F7F6F6` | Card fill; tinted panel. |
+| `--ground` | `#ECEBE8` | The ground the content column sits on — one neutral step below the cards, so a white card reads as raised. Same value as `--rule`. |
 | `--rule`, `--rule-soft` | `#EFEFEF`, `#F7F6F6` | Card and table borders. |
 | `--sidebar` | `#2B2B2B` | Dark navigation background. |
 | `--navy` | `#0089C5` | Hyperlinks. |
@@ -111,10 +112,6 @@ their class names (`.cat-*`, `.ind-card`, `.drawer*` in `styles.css`):
   colour stripe** on the left edge of each indicator row — against "no
   vertical colour stripes, no header bars". The colour is the sector's, taken
   from the pillar mapping, so it carries meaning.
-- **A ground one step darker than the rest of the application**: the page sits
-  on `--rule` instead of the body's `--surface-2`, so the white rows and the
-  pale pillar cards read as raised. Both are palette neutrals; only the role of
-  `--rule` as a surface is new.
 - **A shadow on card hover** — against "no shadows anywhere". It is declared as
   its own token, `--shadow-card-hover`; `--shadow-1` … `--shadow-3` stay
   `none`, and nothing outside this page may use the new one.
