@@ -157,8 +157,7 @@ export default function App() {
       {nav === "portfolio-overview" && (
         <ProjectList
           views={["map", "list"]}
-          title="Portfolio Overview"
-          lead="Where the portfolio's projects are, on the map and as a list."
+          header={false}
           onCreateClick={() => setNav("new-project")}
           onProjectClick={(id) => openProject(id)}
         />
