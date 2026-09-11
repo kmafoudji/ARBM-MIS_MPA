@@ -57,7 +57,13 @@ a tint of your own.
   and `-pale` tokens being the light ends); do not invent intermediate tints.
 - On a dark `--sidebar` background, headings are yellow (`--orange`) and
   secondary text is white.
-- Text on a solid accent fill is white and bold.
+- Text on a solid accent fill is white and bold; on green that fill is
+  `--lime-darker` (white on `--lime` reaches only 2.6:1).
+- Green text on a green tint is `--lime-darker` on `--lime-pale` (4.8:1,
+  WCAG AA). `--lime` on any tint, or anything on `--lime-soft`, falls below
+  4.5:1: a badge wanting that tint carries it as its border. Orange, rose,
+  violet and blue text on their own tints has the same problem and no dark
+  step in the palette yet.
 - No gradients, no cream or beige backgrounds, no colours outside the palette.
 
 ## Typography

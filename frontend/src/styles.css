@@ -282,8 +282,9 @@ input, select, textarea { font: inherit; color: inherit; }
 .user-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
-  background: var(--lime);
-  color: var(--lime-darker);
+  /* White on the accent's dark step: 4.9:1 (lime-darker on lime was 1.8:1) */
+  background: var(--lime-darker);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -404,9 +405,10 @@ input, select, textarea { font: inherit; color: inherit; }
   gap: 6px;
   font-size: 11px;
   font-weight: 600;
-  padding: 5px 11px;
-  background: var(--lime-soft);
+  padding: 4px 10px;
+  background: var(--lime-pale);
   color: var(--lime-darker);
+  border: 1px solid var(--lime-soft);
   border-radius: 100px;
   letter-spacing: 0.04em;
 }
@@ -716,7 +718,9 @@ input, select, textarea { font: inherit; color: inherit; }
   color: var(--ink-soft);
   white-space: nowrap;
 }
-.badge-lime { background: var(--lime-soft); color: var(--lime-darker); }
+/* Green text on green reads only as lime-darker on lime-pale (4.8:1); the
+   soft tint moves to the border. */
+.badge-lime { background: var(--lime-pale); color: var(--lime-darker); box-shadow: inset 0 0 0 1px var(--lime-soft); }
 .badge-orange { background: var(--orange-soft); color: var(--orange); }
 .badge-violet { background: var(--violet-soft); color: var(--violet); }
 .badge-red { background: var(--rose-soft); color: var(--rose); }
@@ -735,7 +739,7 @@ input, select, textarea { font: inherit; color: inherit; }
   color: var(--navy); text-decoration: underline; font-size: inherit;
 }
 .btn-link:hover { color: var(--lime-darker); }
-.badge-green { background: var(--green-soft); color: var(--green); }
+.badge-green { background: var(--lime-pale); color: var(--lime-darker); box-shadow: inset 0 0 0 1px var(--lime-soft); }
 .badge-rose { background: var(--rose-soft); color: var(--rose); }
 .badge-blue { background: var(--blue-soft); color: var(--blue); }
 .badge-dot::before {

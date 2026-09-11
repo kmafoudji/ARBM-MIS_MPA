@@ -12,8 +12,8 @@ import { DQScoreBadge } from "../components/DQScoreWidget";
 import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.jsx";
 
 const GRADE_CONFIG = {
-  A: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Excellent", range: "≥ 80%" },
-  B: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Good",      range: "60–79%" },
+  A: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Excellent", range: "≥ 80%" },
+  B: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Good",      range: "60–79%" },
   C: { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "Fair",      range: "40–59%" },
   D: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Poor",      range: "< 40%" },
 };

@@ -781,7 +781,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
                     {d.delay_category_display}
                     <span style={{ marginLeft: 8, fontWeight: 400, color: d.variance_days > 0 ? "var(--rose)" : "var(--lime)" }}>{d.variance_days > 0 ? "+" : ""}{d.variance_days}d</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: d.approval_status === "approved" ? "var(--lime-pale)" : d.approval_status === "rejected" ? "var(--sec-health-pale)" : "var(--sec-infra-pale)", color: d.approval_status === "approved" ? "var(--lime)" : d.approval_status === "rejected" ? "var(--rose)" : "var(--orange)" }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: d.approval_status === "approved" ? "var(--lime-pale)" : d.approval_status === "rejected" ? "var(--sec-health-pale)" : "var(--sec-infra-pale)", color: d.approval_status === "approved" ? "var(--lime-darker)" : d.approval_status === "rejected" ? "var(--rose)" : "var(--orange)" }}>
                     {d.approval_status_display}
                   </span>
                 </div>

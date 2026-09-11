@@ -14,7 +14,7 @@ import { useState, useCallback, useRef } from "react";
 import Icon from "./Icon.jsx";
 
 const TYPE_CONFIG = {
-  success: { icon: "circle-check",  color: "var(--lime)", bg: "var(--lime-pale)", border: "var(--lime-soft)" },
+  success: { icon: "circle-check",  color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)" },
   info:    { icon: "info-circle",   color: "var(--blue)", bg: "var(--sec-climate-pale)", border: "var(--blue-soft)" },
   warning: { icon: "alert-triangle",color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)" },
   error:   { icon: "circle-x",      color: "var(--rose)", bg: "var(--sec-health-pale)", border: "var(--rose-soft)" },

@@ -74,7 +74,8 @@ function StagePill({ stage, label: stageLabel }) {
     <span title={name} style={{
       display: "inline-flex", alignItems: "center", gap: 5,
       fontSize: 11, fontWeight: 700, padding: "2px 8px",
-      borderRadius: 99, background: color + "22", color: color, whiteSpace: "nowrap",
+      // Charcoal text: the phase colour on its own translucent tint was unreadable.
+      borderRadius: 99, background: color + "22", color: "var(--ink)", whiteSpace: "nowrap",
     }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
       {STAGE_SHORT[stage] || name}
