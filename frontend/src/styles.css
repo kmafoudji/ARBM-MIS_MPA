@@ -393,7 +393,6 @@ input, select, textarea { font: inherit; color: inherit; }
 @media (max-width: 860px) {
   .burger-btn { display: flex; align-items: center; }
   .topbar { padding: 0 var(--s-3); gap: var(--s-2); }
-  .api-pill { display: none; }
 }
 @media (max-width: 480px) {
   .topbar-actions { gap: var(--s-2); }
@@ -416,15 +415,6 @@ input, select, textarea { font: inherit; color: inherit; }
   width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--lime-dark);
-}
-.api-pill {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-1);
-  padding: 4px 8px;
 }
 
 /* Views */
