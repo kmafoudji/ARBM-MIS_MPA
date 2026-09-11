@@ -324,30 +324,25 @@ function sectorFilterOptions(sectors) {
 
 // What each filter shows while it filters nothing.
 const FILTER_PLACEHOLDERS = {
-  hub: "All hubs", country: "All countries", sector: "All sectors",
+  country: "All countries", sector: "All sectors",
   donor: "All donors", chain_level: "All levels", rag: "All statuses",
 };
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
 export default function Portfolio() {
-  const [filters, setFilters] = useState({ hub: "", sector: "", chain_level: "", country: "", donor: "", rag: "" });
+  // No hub filter: the hub is the session scope chosen in the top bar,
+  // which already narrows every portfolio figure.
+  const [filters, setFilters] = useState({ sector: "", chain_level: "", country: "", donor: "", rag: "" });
 
-  // Quand le hub change, réinitialiser le pays
   function setFilter(key, value) {
-    setFilters(f => ({
-      ...f,
-      [key]: value,
-      ...(key === "hub" ? { country: "" } : {}),
-    }));
+    setFilters(f => ({ ...f, [key]: value }));
   }
 
-  const { data: hubs     = [] } = useQuery({ queryKey: ["hubs"],     queryFn: () => apiFetch("/api/reference/hubs/") });
   const { data: sectors  = [] } = useQuery({ queryKey: ["sectors"],  queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: countries= [] } = useQuery({ queryKey: ["countries"],queryFn: () => apiFetch("/api/reference/countries/") });
   const { data: donors   = [] } = useQuery({ queryKey: ["ref","donors"], queryFn: () => apiFetch("/api/reference/donors/") });
 
   const params = new URLSearchParams();
-  if (filters.hub)         params.set("hub",         filters.hub);
   if (filters.sector)      params.set("sector",      filters.sector);
   if (filters.chain_level) params.set("chain_level", filters.chain_level);
   if (filters.country)     params.set("country",     filters.country);
@@ -365,10 +360,7 @@ export default function Portfolio() {
   const indicators = data?.indicators || [];
 
   // Grouper par niveau
-  // Pays filtrés selon le hub sélectionné
-  const filteredCountries = filters.hub
-    ? countries.filter(c => c.is_active && String(c.hub) === filters.hub)
-    : countries.filter(c => c.is_active);
+  const filteredCountries = countries.filter(c => c.is_active);
 
   const byLevel = {};
   CHAIN_LEVELS.forEach(l => { byLevel[l.key] = []; });
@@ -471,8 +463,7 @@ export default function Portfolio() {
         <Icon name="filter" size={14} style={{ color: "var(--subtle)", flexShrink: 0 }} />
 
         {[
-          { key: "hub",       label: "Hub",       options: hubs.map(h => ({ value: String(h.id), label: h.name })) },
-          { key: "country",   label: filters.hub ? "Country (Hub)" : "Country", options: filteredCountries.map(c => ({ value: String(c.id), label: c.name })) },
+          { key: "country",   label: "Country",   options: filteredCountries.map(c => ({ value: String(c.id), label: c.name })) },
           // ADR 0007: the backend expands a pillar to its sectors, so the
           // pillar is itself an option ("All <pillar>") above its sectors.
           { key: "sector",    label: "Sector",    options: sectorFilterOptions(sectors) },
@@ -501,7 +492,7 @@ export default function Portfolio() {
 
         {Object.values(filters).some(Boolean) && (
           <button
-            onClick={() => setFilters({ hub: "", sector: "", chain_level: "", country: "", donor: "", rag: "" })}
+            onClick={() => setFilters({ sector: "", chain_level: "", country: "", donor: "", rag: "" })}
             style={{
               height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
               border: "1px solid var(--rose-soft)", borderRadius: 8,
