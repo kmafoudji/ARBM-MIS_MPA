@@ -130,3 +130,44 @@ def test_map_point_carries_the_extent_of_the_intervention_area(auth_client):
     assert feature["properties"]["bbox"] == [2, 9, 4, 11]
     lng, lat = feature["geometry"]["coordinates"]
     assert 2 <= lng <= 4 and 9 <= lat <= 11
+
+
+@pytest.mark.django_db
+def test_map_point_carries_physical_progress_and_indicator_performance(auth_client):
+    """The two measures the portfolio map can colour by."""
+    from datetime import date
+    from decimal import Decimal
+    from django.contrib.gis.geos import MultiPolygon, Polygon
+    from apps.project.models import ProjectGadmScope, ReportingPeriod
+    from apps.results.models import Indicator, LogframeRow, ResultsData
+    from apps.workplan.models import Activity, WorkplanComponent, WorkplanSubComponent
+    from tests.factories import SectorFactory
+
+    client, _ = auth_client
+    project = ProjectFactory()
+    area = make_gadm_area(CountryFactory(), uid="PRF.1_1")
+    area.geometry = MultiPolygon(Polygon(((2, 9), (4, 9), (4, 11), (2, 11), (2, 9))), srid=4326)
+    area.save()
+    ProjectGadmScope.objects.create(project=project, area=area)
+
+    component = WorkplanComponent.objects.create(project=project, code="C1", name="Component")
+    sub = WorkplanSubComponent.objects.create(component=component, code="C1.1", name="Sub")
+    for code, progress in (("A1", 20), ("A2", 60)):
+        Activity.objects.create(sub_component=sub, code=code, name=code, progress=progress,
+                                planned_start=date(2026, 1, 1), planned_end=date(2026, 12, 31))
+
+    indicator = Indicator.objects.create(code="PRF-IND-01", sector=SectorFactory(), name="Reached",
+                                         indicator_type="output", direction="increase",
+                                         definition="A definition.", unit="Number")
+    row = LogframeRow.objects.create(project=project, indicator=indicator, chain_level="output")
+    for n, (end, rate) in enumerate(((date(2026, 3, 31), "40"), (date(2026, 6, 30), "75")), start=1):
+        period = ReportingPeriod.objects.create(project=project, period_number=n, start_date=date(2026, 1, 1),
+                                                end_date=end, due_date=end)
+        ResultsData.objects.create(logframe_row=row, reporting_period=period, actual_value=Decimal("1"),
+                                   status="approved", achievement_rate=Decimal(rate))
+
+    resp = client.get("/api/projects/map/")
+    props = next(f["properties"] for f in resp.data["features"] if f["properties"]["id"] == project.id)
+    assert props["physical_progress"] == 40.0
+    assert props["indicator_performance"] == 75.0  # the latest value, not the mean of both
+    assert props["indicator_rag"] == "amber"

@@ -3,13 +3,14 @@
  * portfolio map mockup (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
  *
  * One circle per project (points from /api/projects/map/), coloured by the
- * lens the page picks — primary sector, lifecycle group or risk level (the
- * mockup's "Colour by"). Projects that fall on the same spot — two projects in one
+ * lens the page picks — primary sector, lifecycle group, physical progress
+ * or indicator performance (the mockup's "Colour by"). Projects that fall on the same spot — two projects in one
  * country share its point — are a ring of their sectors with the count in
  * the middle; while any such ring is on screen, single points take the same
  * shape with a 1, so every marker reads the same way. Clicking opens a card
  * next to the marker; the full map also shows a strip of totals (top left)
- * and takes the height of the window.
+ * and takes the height of the window. The map opens on the mockup's view,
+ * and a control brings it back there.
  * Basemap shared with ProjectMap (mapStyle.js).
  */
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -26,10 +27,25 @@ const FALLBACK_COLOR = "#0EB584";
 const POINT_RADIUS = 7;
 const RING_RADIUS = 13;
 
-// Colour lenses. Each returns [legend label, colour] for a project; colours
-// are literal because CSS variables cannot reach the WebGL canvas (--blue,
-// --lime, --rose, --muted, --subtle).
-const RISK_COLORS = {};  // no colour yet: the risk scale is still "To be defined"
+// The mockup's opening view; the reset control returns to it.
+const HOME_VIEW = { center: [28, 18], zoom: 2.35 };
+
+// Colour lenses. Each returns [legend label, colour] for a project, from the
+// project list row and the map point's properties; colours are literal
+// because CSS variables cannot reach the WebGL canvas (--blue, --lime,
+// --lime-soft/-dark/-darker, --orange, --rose, --subtle).
+const NO_DATA = "#A7A7A7";
+const PROGRESS_BANDS = [   // the green tonal scale: a quantity, not a verdict
+  [75, "75–100%", "#09815F"],
+  [50, "50–74%", "#0C9A71"],
+  [25, "25–49%", "#0EB584"],
+  [0,  "0–24%",  "#C2F0E2"],
+];
+const PERFORMANCE = {      // ResultsData.compute_and_save_rag thresholds
+  green: ["On track · ≥ 90%", "#0EB584"],
+  amber: ["At risk · 60–89%", "#F49D07"],
+  red:   ["Off track · < 60%", "#FB563B"],
+};
 const LENSES = {
   sector: {
     title: "Primary sector",
@@ -43,13 +59,43 @@ const LENSES = {
       : ["Origination · 1–11", "#0089C5"],
     order: ["Origination · 1–11", "Implementation · 12–16", "Suspended / cancelled"],
   },
-  risk: {
-    title: "Risk level",
-    of: (p) => p.risk_rating
-      ? [p.risk_rating_display || p.risk_rating, RISK_COLORS[p.risk_rating] || "#7E7E7E"]
-      : ["Not rated", "#A7A7A7"],
+  progress: {
+    title: "Physical progress",
+    of: (p, props) => {
+      if (props.physical_progress == null) return ["No workplan", NO_DATA];
+      const [, label, color] = PROGRESS_BANDS.find(([min]) => props.physical_progress >= min);
+      return [label, color];
+    },
+    order: [...PROGRESS_BANDS.map(([, label]) => label).reverse(), "No workplan"],
+  },
+  performance: {
+    title: "Indicator performance",
+    of: (p, props) => PERFORMANCE[props.indicator_rag] || ["No value against a target", NO_DATA],
+    order: [...Object.values(PERFORMANCE).map(([label]) => label), "No value against a target"],
   },
 };
+
+// "Reset view": back to the opening view, in the controls' own style.
+class ResetViewControl {
+  onAdd(map) {
+    this.box = document.createElement("div");
+    this.box.className = "maplibregl-ctrl maplibregl-ctrl-group";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "pmap-reset";
+    button.title = "Reset view";
+    button.setAttribute("aria-label", "Reset view");
+    button.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>';
+    button.addEventListener("click", () => map.flyTo({ ...HOME_VIEW, duration: 900 }));
+    this.box.append(button);
+    return this.box;
+  }
+  onRemove() {
+    this.box.remove();
+  }
+}
 
 function toMillions(value) {
   const n = Number(value);
@@ -84,22 +130,14 @@ function clusterElement(leaves) {
   return el;
 }
 
-function getBbox(features) {
-  let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
-  features.forEach(f => {
-    const [lng, lat] = f.geometry?.coordinates || [];
-    if (typeof lng !== "number") return;
-    minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
-    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
-  });
-  return [[minLng - 2, minLat - 2], [maxLng + 2, maxLat + 2]];
-}
-
 function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
   const country = (project.lead_country_name || "").toUpperCase();
   const chips = [project.lifecycle_stage_display, project.primary_sector_name, project.hub_name].filter(Boolean);
   const millions = toMillions(project.envelope_total);
   const pillar = point?.properties.pillar_name;
+  const progress = point?.properties.physical_progress ?? null;
+  const performance = point?.properties.indicator_performance ?? null;
+  const rag = point?.properties.indicator_rag;
   return (
     <>
       <div className="pmap-card-head">
@@ -132,8 +170,18 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
           </div>
         )}
         <div className="pmap-row">
-          <span className="pmap-row-k">Risk level</span>
-          <span className="pmap-row-v">{project.risk_rating_display || "Not rated"}</span>
+          <span className="pmap-row-k">Physical progress</span>
+          {progress != null && <span className="pmap-track"><i style={{ width: `${Math.min(progress, 100)}%` }} /></span>}
+          <span className="pmap-row-v">{progress != null ? `${progress}%` : "No workplan"}</span>
+        </div>
+        <div className="pmap-row">
+          <span className="pmap-row-k">Indicators</span>
+          {performance != null && (
+            <span className="pmap-track">
+              <i style={{ width: `${Math.min(performance, 100)}%`, background: PERFORMANCE[rag]?.[1] }} />
+            </span>
+          )}
+          <span className="pmap-row-v">{performance != null ? `${performance}% of target` : "No value against a target"}</span>
         </div>
       </div>
       <div className="pmap-card-foot">
@@ -188,7 +236,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const [selected, setSelected] = useState(null);
   const cardRef = useRef(null);
   const [cardPos, setCardPos] = useState(null);
-  const fitKeyRef = useRef(null);
   const [height, setHeight] = useState(560);
 
   const { data: geojson, isLoading } = useQuery({
@@ -218,14 +265,14 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     const map = new maplibregl.Map({
       container: mapRef.current,
       style: BASEMAP_STYLE,
-      center: [20, 10],
-      zoom: 2.5,
+      ...HOME_VIEW,
       attributionControl: false,
     });
     mapInst.current = map;
     // Bottom right as in the mockup; top left on the short dashboard map,
     // where the card would cover the bottom-right corner.
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), compact ? "top-left" : "bottom-right");
+    map.addControl(new ResetViewControl(), compact ? "top-left" : "bottom-right");
     if (compact) {
       map.scrollZoom.disable();
     } else {
@@ -318,7 +365,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const feats = (geojson?.features || [])
     .filter(f => byId.has(f.properties.id))
     .map(f => {
-      const [label, color] = lens.of(byId.get(f.properties.id));
+      const [label, color] = lens.of(byId.get(f.properties.id), f.properties);
       return { ...f, properties: { ...f.properties, lens_label: label, lens_color: color } };
     });
   const pointById = new Map(feats.map(f => [f.properties.id, f]));
@@ -431,12 +478,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     map.on("moveend", syncClusters);
     syncClusters();
 
-    // Re-frame only when the set of projects changes, not on a new lens.
-    const fitKey = feats.map(f => f.properties.id).join(",");
-    if (feats.length && fitKeyRef.current !== fitKey) {
-      map.fitBounds(getBbox(feats), { padding: 60, maxZoom: 6, duration: 900 });
-    }
-    fitKeyRef.current = fitKey;
     return () => {
       map.off("data", onData);
       map.off("moveend", syncClusters);

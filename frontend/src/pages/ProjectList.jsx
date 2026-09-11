@@ -242,7 +242,8 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
   const [search,      setSearch]      = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [sectorFilter,setSectorFilter]= useState("");
-  // Map colouring (the mockup's "Colour by"): sector, lifecycle or risk.
+  // Map colouring (the mockup's "Colour by"): sector, lifecycle, physical
+  // progress or indicator performance.
   const [colourBy,    setColourBy]    = useState("sector");
 
   const { data = [], isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
@@ -391,7 +392,8 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
               <select style={selectStyle(false)} value={colourBy} onChange={e => setColourBy(e.target.value)}>
                 <option value="sector">Sector</option>
                 <option value="lifecycle">Lifecycle</option>
-                <option value="risk">Risk level</option>
+                <option value="progress">Physical progress</option>
+                <option value="performance">Indicator performance</option>
               </select>
             </label>
           )}

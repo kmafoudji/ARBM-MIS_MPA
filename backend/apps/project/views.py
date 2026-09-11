@@ -921,6 +921,15 @@ class ProjectMapPointsView(APIView):
     omis. `bbox` [ouest, sud, est, nord] est l'emprise de cette meme
     geometrie : la fiche projet de la carte s'y cadre (« Zoom to area »).
 
+    Deux mesures par projet pour le « Colour by » de la carte :
+      - physical_progress : moyenne simple de l'avancement des activites
+        actives, comme WorkplanSummaryView (overall_progress) ; None sans
+        workplan.
+      - indicator_performance : moyenne des taux d'atteinte de la derniere
+        valeur approuvee de chaque indicateur, et son RAG aux seuils de
+        ResultsData.compute_and_save_rag (vert >= 90, ambre >= 60, rouge
+        sinon) ; None sans valeur approuvee ayant une cible.
+
     PORTEE : comme ProjectViewSet, la visibilite passe par
     Project.objects.in_scope() — un PMU ne voit que ses projets, un hub
     que sa region. (Fixup d'integration : la branche est ecrite contre
@@ -953,6 +962,41 @@ class ProjectMapPointsView(APIView):
 
         if not meta:
             return Response({"type": "FeatureCollection", "features": []})
+
+        from django.db.models import Avg
+        from apps.results.models import ResultsData
+        from apps.workplan.models import Activity
+
+        ids = list(meta.keys())
+        progress = dict(
+            Activity.objects.filter(is_active=True, sub_component__component__project_id__in=ids)
+            .values("sub_component__component__project_id")
+            .annotate(avg=Avg("progress"))
+            .values_list("sub_component__component__project_id", "avg")
+        )
+        # Derniere valeur approuvee par indicateur (ligne logframe), puis
+        # moyenne des taux par projet.
+        latest = {}
+        for row_id, project_id, rate in (
+            ResultsData.objects.filter(
+                logframe_row__project_id__in=ids, status="approved", achievement_rate__isnull=False,
+            )
+            .order_by("logframe_row_id", "reporting_period__end_date")
+            .values_list("logframe_row_id", "logframe_row__project_id", "achievement_rate")
+        ):
+            latest[row_id] = (project_id, float(rate))
+        rates = {}
+        for project_id, rate in latest.values():
+            rates.setdefault(project_id, []).append(rate)
+        for pid, m in meta.items():
+            avg = progress.get(pid)
+            m["physical_progress"] = round(float(avg), 1) if avg is not None else None
+            perf = round(sum(rates[pid]) / len(rates[pid]), 1) if pid in rates else None
+            m["indicator_performance"] = perf
+            m["indicator_rag"] = (
+                None if perf is None
+                else "green" if perf >= 90 else "amber" if perf >= 60 else "red"
+            )
 
         with connection.cursor() as cur:
             cur.execute("""
