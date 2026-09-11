@@ -2,8 +2,9 @@
  * PortfolioMap — portfolio-wide project map, in the style of the LLF
  * portfolio map mockup (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
  *
- * One circle per project (points from /api/projects/map/), coloured by
- * primary sector. Projects that fall on the same spot — two projects in one
+ * One circle per project (points from /api/projects/map/), coloured by the
+ * lens the page picks — primary sector, lifecycle group or risk level (the
+ * mockup's "Colour by"). Projects that fall on the same spot — two projects in one
  * country share its point — are a ring of their sectors with the count in
  * the middle; while any such ring is on screen, single points take the same
  * shape with a 1, so every marker reads the same way. Clicking opens a card
@@ -25,6 +26,31 @@ const FALLBACK_COLOR = "#0EB584";
 const POINT_RADIUS = 7;
 const RING_RADIUS = 13;
 
+// Colour lenses. Each returns [legend label, colour] for a project; colours
+// are literal because CSS variables cannot reach the WebGL canvas (--blue,
+// --lime, --rose, --muted, --subtle).
+const RISK_COLORS = {};  // no colour yet: the risk scale is still "To be defined"
+const LENSES = {
+  sector: {
+    title: "Primary sector",
+    of: (p) => [p.primary_sector_name || "Sector not set", p.primary_sector_color || FALLBACK_COLOR],
+  },
+  lifecycle: {
+    title: "Lifecycle",
+    // Origination runs to Signature (LS011), implementation from Effective.
+    of: (p) => ["LS017", "LS018"].includes(p.lifecycle_stage) ? ["Suspended / cancelled", "#FB563B"]
+      : Number(p.lifecycle_stage?.slice(2)) >= 12 ? ["Implementation · 12–16", "#0EB584"]
+      : ["Origination · 1–11", "#0089C5"],
+    order: ["Origination · 1–11", "Implementation · 12–16", "Suspended / cancelled"],
+  },
+  risk: {
+    title: "Risk level",
+    of: (p) => p.risk_rating
+      ? [p.risk_rating_display || p.risk_rating, RISK_COLORS[p.risk_rating] || "#7E7E7E"]
+      : ["Not rated", "#A7A7A7"],
+  },
+};
+
 function toMillions(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n / 1_000_000 : 0;
@@ -40,7 +66,7 @@ function formatCommitment(millions) {
 function clusterElement(leaves) {
   const counts = new Map();
   leaves.forEach((l) => {
-    const c = l.properties.primary_sector_color || FALLBACK_COLOR;
+    const c = l.properties.lens_color || FALLBACK_COLOR;
     counts.set(c, (counts.get(c) || 0) + 1);
   });
   let acc = 0;
@@ -105,6 +131,10 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
             <span className="pmap-row-v">{project.country_names.join(", ")}</span>
           </div>
         )}
+        <div className="pmap-row">
+          <span className="pmap-row-k">Risk level</span>
+          <span className="pmap-row-v">{project.risk_rating_display || "Not rated"}</span>
+        </div>
       </div>
       <div className="pmap-card-foot">
         <button type="button" className="pmap-btn pmap-btn-primary" onClick={onOpen}>Open project →</button>
@@ -116,7 +146,7 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
   );
 }
 
-function GroupCard({ projects, onPick, onClose }) {
+function GroupCard({ projects, colorOf, onPick, onClose }) {
   const country = (projects[0]?.lead_country_name || "").toUpperCase();
   return (
     <>
@@ -128,7 +158,7 @@ function GroupCard({ projects, onPick, onClose }) {
       <div className="pmap-card-body">
         {projects.map((p) => (
           <button key={p.id} type="button" className="pmap-group-row" onClick={() => onPick(p.id)}>
-            <span className="pmap-dot" style={{ background: p.primary_sector_color || FALLBACK_COLOR }} />
+            <span className="pmap-dot" style={{ background: colorOf(p.id) || FALLBACK_COLOR }} />
             <span style={{ minWidth: 0 }}>
               <span className="pmap-group-code">{p.official_reference_number}</span>
               <span className="pmap-group-name">{p.name}</span>
@@ -143,7 +173,7 @@ function GroupCard({ projects, onPick, onClose }) {
 // `compact` renders a shorter, quieter map for dashboards: no totals strip,
 // no fullscreen or scale control and no scroll-wheel zoom, so the page keeps
 // scrolling.
-export default function PortfolioMap({ projects = [], onProjectClick, compact = false }) {
+export default function PortfolioMap({ projects = [], onProjectClick, compact = false, colourBy = "sector" }) {
   const wrapRef = useRef(null);
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
@@ -158,6 +188,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const [selected, setSelected] = useState(null);
   const cardRef = useRef(null);
   const [cardPos, setCardPos] = useState(null);
+  const fitKeyRef = useRef(null);
   const [height, setHeight] = useState(560);
 
   const { data: geojson, isLoading } = useQuery({
@@ -280,16 +311,22 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     };
   }, [compact]);
 
-  // Project points — re-filtered whenever the page filters change
+  // Project points — re-filtered whenever the page filters change, each
+  // carrying the colour and legend label of the current lens.
+  const lens = LENSES[colourBy] || LENSES.sector;
   const byId = new Map(projects.map(p => [p.id, p]));
-  const feats = (geojson?.features || []).filter(f => byId.has(f.properties.id));
+  const feats = (geojson?.features || [])
+    .filter(f => byId.has(f.properties.id))
+    .map(f => {
+      const [label, color] = lens.of(byId.get(f.properties.id));
+      return { ...f, properties: { ...f.properties, lens_label: label, lens_color: color } };
+    });
   const pointById = new Map(feats.map(f => [f.properties.id, f]));
 
-  // Legend: the sectors present among the displayed points, in the point colour
-  const legend = [...new Map(
-    feats.map(f => [f.properties.primary_sector_name || "Sector not set",
-                    f.properties.primary_sector_color || FALLBACK_COLOR])
-  )].sort((a, b) => a[0].localeCompare(b[0]));
+  // Legend: the values present among the displayed points, in the point colour
+  const rank = (label) => (lens.order ? lens.order.indexOf(label) : -1);
+  const legend = [...new Map(feats.map(f => [f.properties.lens_label, f.properties.lens_color]))]
+    .sort((a, b) => (lens.order ? rank(a[0]) - rank(b[0]) : a[0].localeCompare(b[0])));
 
   // Totals strip: the projects the page filters let through.
   const committed = projects.reduce((sum, p) => sum + toMillions(p.envelope_total), 0);
@@ -329,7 +366,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       filter: ["!", ["has", "point_count"]],
       paint: {
         "circle-radius": POINT_RADIUS,
-        "circle-color": ["coalesce", ["get", "primary_sector_color"], FALLBACK_COLOR],
+        "circle-color": ["coalesce", ["get", "lens_color"], FALLBACK_COLOR],
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 2,
       } });
@@ -394,14 +431,17 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     map.on("moveend", syncClusters);
     syncClusters();
 
-    if (feats.length) {
+    // Re-frame only when the set of projects changes, not on a new lens.
+    const fitKey = feats.map(f => f.properties.id).join(",");
+    if (feats.length && fitKeyRef.current !== fitKey) {
       map.fitBounds(getBbox(feats), { padding: 60, maxZoom: 6, duration: 900 });
     }
+    fitKeyRef.current = fitKey;
     return () => {
       map.off("data", onData);
       map.off("moveend", syncClusters);
     };
-  }, [mapReady, geojson, projects]);
+  }, [mapReady, geojson, projects, colourBy]);
 
   // A selection the filters have since removed closes the card.
   const selectedProject = selected?.kind === "project" ? byId.get(selected.id) : null;
@@ -466,7 +506,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
       {legend.length > 0 && !isLoading && (
         <div className="pmap-legend">
-          <h5>Primary sector</h5>
+          <h5>{lens.title}</h5>
           {legend.map(([name, color]) => (
             <div key={name} className="pmap-legend-item">
               <span className="pmap-dot" style={{ background: color }} />
@@ -490,6 +530,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
           ) : (
             <GroupCard
               projects={groupProjects}
+              colorOf={(id) => pointById.get(id)?.properties.lens_color}
               onPick={(id) => setSelected({ kind: "project", id, lngLat: selected.lngLat })}
               onClose={() => setSelected(null)}
             />
