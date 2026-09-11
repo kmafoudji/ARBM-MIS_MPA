@@ -24,8 +24,11 @@ copy of the style, and the copies had drifted.
   of label points), because Martin publishes whole tables and cannot filter
   rows per zoom.
 - One style module, `frontend/src/components/mapStyle.js`, is the basemap for
-  every map. Its look is a reduced CARTO Positron: neutral light greys so the
-  project overlays and sector colours stay the loudest thing on the map.
+  every map. Its look is a reduced CARTO Voyager, after the LLF portfolio map
+  mockup: warm land, soft blue water, lavender borders, kept light so the
+  project overlays and sector colours stay the loudest thing on the map. The
+  Voyager tiles themselves are not used: they would be a map request leaving
+  the stack, and the maps must work offline.
   Country fills switch from 50m to 10m at zoom 5; cities appear in zoom bands
   driven by Natural Earth's `min_zoom`.
 

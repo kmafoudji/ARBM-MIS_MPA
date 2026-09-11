@@ -316,11 +316,12 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
       </div>
 
       {/* ── KPI bar ─────────────────────────────────────────────────── */}
-      {isLoading ? (
+      {/* The map carries its own strip of totals, so the bar is left out there. */}
+      {viewMode !== "map" && (isLoading ? (
         <div style={{ marginBottom: 20 }}><SkeletonCard height={72} /></div>
       ) : data.length > 0 && (
         <KpiBar projects={data} />
-      )}
+      ))}
 
       {/* ── Filtres ─────────────────────────────────────────────────── */}
       <div style={{

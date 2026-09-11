@@ -108,3 +108,25 @@ class TestGadmScope:
         resp = client.get(f"/api/reference/gadm/?parent={parent.id}&level=2")
         assert resp.status_code == 200
         assert len(resp.data) == 2
+
+
+@pytest.mark.django_db
+def test_map_point_carries_the_extent_of_the_intervention_area(auth_client):
+    """The portfolio map frames a project on this bbox ("Zoom to area")."""
+    from django.contrib.gis.geos import MultiPolygon, Polygon
+    from apps.project.models import ProjectGadmScope
+
+    client, _ = auth_client
+    country = CountryFactory()
+    project = ProjectFactory()
+    area = make_gadm_area(country, uid="BBX.1_1")
+    area.geometry = MultiPolygon(Polygon(((2, 9), (4, 9), (4, 11), (2, 11), (2, 9))), srid=4326)
+    area.save()
+    ProjectGadmScope.objects.create(project=project, area=area)
+
+    resp = client.get("/api/projects/map/")
+    assert resp.status_code == 200
+    feature = next(f for f in resp.data["features"] if f["properties"]["id"] == project.id)
+    assert feature["properties"]["bbox"] == [2, 9, 4, 11]
+    lng, lat = feature["geometry"]["coordinates"]
+    assert 2 <= lng <= 4 and 9 <= lat <= 11

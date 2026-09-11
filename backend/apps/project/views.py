@@ -918,7 +918,8 @@ class ProjectMapPointsView(APIView):
     portefeuille. Le point est ST_PointOnSurface de l'union des zones
     d'intervention (project_gadm_scope) ; a defaut, repli sur l'union des
     Admin 1 du pays chef de file. Les projets sans aucune geometrie sont
-    omis.
+    omis. `bbox` [ouest, sud, est, nord] est l'emprise de cette meme
+    geometrie : la fiche projet de la carte s'y cadre (« Zoom to area »).
 
     PORTEE : comme ProjectViewSet, la visibilite passe par
     Project.objects.in_scope() — un PMU ne voit que ses projets, un hub
@@ -955,7 +956,8 @@ class ProjectMapPointsView(APIView):
 
         with connection.cursor() as cur:
             cur.execute("""
-                SELECT p.id, ST_AsGeoJSON(ST_PointOnSurface(g.geom))::json
+                SELECT p.id, ST_AsGeoJSON(ST_PointOnSurface(g.geom))::json,
+                       ST_XMin(g.geom), ST_YMin(g.geom), ST_XMax(g.geom), ST_YMax(g.geom)
                 FROM project p
                 CROSS JOIN LATERAL (
                     SELECT COALESCE(
@@ -979,7 +981,11 @@ class ProjectMapPointsView(APIView):
             rows = cur.fetchall()
 
         features = [
-            {"type": "Feature", "geometry": geom, "properties": meta[pid]}
-            for pid, geom in rows
+            {
+                "type": "Feature",
+                "geometry": geom,
+                "properties": {**meta[pid], "bbox": [xmin, ymin, xmax, ymax]},
+            }
+            for pid, geom, xmin, ymin, xmax, ymax in rows
         ]
         return Response({"type": "FeatureCollection", "features": features})

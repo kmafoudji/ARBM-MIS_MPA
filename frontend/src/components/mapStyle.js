@@ -4,8 +4,9 @@
  * Every source is a Martin vector tile set from PostGIS (see
  * infra/martin/config.yaml): Natural Earth countries (50m below zoom 5, 10m
  * from zoom 5), country label points, populated places, lakes, and the GADM
- * Admin 1 outlines. Look: a reduced CARTO Positron — neutral light greys so
- * the project fills and sector colours stay the loudest thing on the map.
+ * Admin 1 outlines. Look: a reduced CARTO Voyager, as in the LLF portfolio
+ * map mockup — warm land, soft blue water, lavender borders — kept light so
+ * the project circles and sector colours stay the loudest thing on the map.
  */
 
 export const MARTIN_URL = "/martin";
@@ -14,14 +15,14 @@ export const MARTIN_URL = "/martin";
 export const LABELS_LAYER_ID = "lake-labels";
 export const ATTRIBUTION = "© Natural Earth · GADM · aRBM-MIS";
 
-const WATER = "#D4DADC";
-const LAND = "#F5F5F3";
-const BORDER = "#C8CBCD";
-const ADMIN1 = "#DCDEE0";
-const LABEL = "#8A8F94";
-const LABEL_DARK = "#4A4F54";
-const LABEL_MID = "#6E7378";
-const LAKE_LABEL = "#8FA5B0";
+const WATER = "#C9DEEA";
+const LAND = "#F8F5EF";
+const BORDER = "#C3B6CF";
+const ADMIN1 = "#E3DCE8";
+const LABEL = "#7D7390";
+const LABEL_DARK = "#3F4650";
+const LABEL_MID = "#5E6670";
+const LAKE_LABEL = "#5E93B0";
 const HALO = "#FFFFFF";
 
 const FONT = ["Noto Sans Regular"];

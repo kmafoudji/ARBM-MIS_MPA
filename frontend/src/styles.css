@@ -2258,3 +2258,139 @@ input, select, textarea { font: inherit; color: inherit; }
   letter-spacing: 0.06em;
   color: var(--green);
 }
+
+/* ============================================================
+   Portfolio map — LLF portfolio map mockup
+   (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
+   Everything here floats over the map, so it may carry a soft
+   shadow of its own (see docs/design.md).
+   ============================================================ */
+.pmap { position: relative; border-radius: var(--r-3); overflow: hidden; border: 1px solid var(--ground); }
+.pmap-loading {
+  position: absolute; inset: 0; z-index: 7;
+  background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--subtle);
+}
+.pmap-empty {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: rgba(255, 255, 255, 0.96); border: 1px solid var(--ground); border-radius: 10px;
+  padding: 8px 14px; font-size: 12px; color: var(--muted);
+}
+
+.pmap-strip { position: absolute; left: 16px; top: 14px; z-index: 5; display: flex; gap: 9px; flex-wrap: wrap; }
+.pmap-stat {
+  background: rgba(255, 255, 255, 0.96); border: 1px solid var(--ground); border-radius: 11px;
+  padding: 9px 14px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.09);
+}
+.pmap-stat b { display: block; font-size: 18px; font-weight: 800; line-height: 1.1; color: var(--ink); }
+.pmap-stat span { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; color: var(--muted); text-transform: uppercase; }
+
+.pmap-legend {
+  position: absolute; left: 16px; bottom: 26px; z-index: 5;
+  background: rgba(255, 255, 255, 0.97); border: 1px solid var(--ground); border-radius: 11px;
+  padding: 12px 15px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1); min-width: 180px; max-width: 240px;
+}
+.pmap-legend h5 {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.9px; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 8px;
+}
+.pmap-legend-item { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-soft); font-weight: 600; margin-bottom: 5px; }
+.pmap-legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmap-legend-size { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); font-size: 10px; color: var(--muted); }
+.pmap-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.pmap-compact .pmap-legend { left: 10px; bottom: 22px; padding: 8px 10px; min-width: 0; }
+.pmap-compact .pmap-legend h5 { margin-bottom: 4px; }
+.pmap-compact .pmap-legend-item { margin-bottom: 2px; font-size: 11px; }
+
+.pmap-attribution {
+  position: absolute; bottom: 4px; left: 10px; z-index: 5;
+  font-size: 9px; color: var(--subtle); background: rgba(255, 255, 255, 0.7);
+  padding: 1px 6px; border-radius: 4px;
+}
+
+.pmap-cluster {
+  position: relative; border-radius: 50%; cursor: pointer; opacity: 0.92;
+  box-shadow: 0 0 0 2px #fff, 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+.pmap-cluster-count {
+  position: absolute; inset: 22%; border-radius: 50%; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font: 800 11px/1 var(--font-display); color: var(--ink);
+}
+
+.pmap-hover { display: flex; gap: 6px; align-items: baseline; padding: 6px 10px; white-space: nowrap; }
+.pmap-hover b { font-size: 12px; font-weight: 700; color: var(--ink); }
+.pmap-hover span { font-size: 11px; color: var(--muted); }
+
+.pmap-card {
+  position: absolute; right: 16px; top: 14px; z-index: 6; width: 325px; max-width: calc(100% - 32px);
+  max-height: calc(100% - 28px); overflow-y: auto;
+  background: var(--paper); border: 1px solid var(--ground); border-radius: 13px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.14);
+}
+.pmap-card-head { background: var(--sidebar); color: #fff; padding: 13px 16px; position: relative; }
+.pmap-card-close {
+  position: absolute; right: 10px; top: 8px; background: transparent; border: none;
+  color: var(--subtle); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px;
+}
+.pmap-card-close:hover { color: #fff; }
+.pmap-card-code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; font-weight: 800; color: var(--green); letter-spacing: 0.6px; padding-right: 20px; }
+.pmap-card-name { font-size: 13.5px; font-weight: 800; margin-top: 3px; line-height: 1.3; padding-right: 18px; }
+.pmap-card-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.pmap-card-chip { font-size: 9.5px; font-weight: 700; border-radius: 12px; padding: 2px 8px; background: #3d3d3d; color: #e6e6e3; }
+.pmap-card-body { padding: 10px 16px; }
+.pmap-row { display: flex; align-items: baseline; gap: 9px; font-size: 11.5px; padding: 6px 0; border-bottom: 1px dashed var(--rule); }
+.pmap-row:last-child { border-bottom: none; }
+.pmap-row-k { width: 96px; flex-shrink: 0; color: var(--muted); font-weight: 600; }
+.pmap-row-v { font-weight: 700; color: var(--ink); min-width: 0; }
+.pmap-card-foot { display: flex; gap: 8px; padding: 0 16px 14px; }
+.pmap-btn {
+  flex: 1; border-radius: 8px; padding: 8px 13px; font: inherit; font-weight: 700; font-size: 12px; cursor: pointer;
+  background: var(--paper); border: 1.3px solid var(--rule); color: var(--ink);
+}
+.pmap-btn:hover { border-color: var(--ink-soft); }
+.pmap-btn-primary { background: var(--lime); border-color: var(--lime); color: #fff; }
+.pmap-btn-primary:hover { background: var(--lime-dark); border-color: var(--lime-dark); }
+.pmap-group-row {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  background: none; border: none; border-bottom: 1px dashed var(--rule);
+  padding: 8px 0; cursor: pointer; font: inherit;
+}
+.pmap-group-row:last-child { border-bottom: none; }
+.pmap-group-row:hover .pmap-group-name { color: var(--lime-darker); }
+.pmap-group-code { display: block; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; font-weight: 800; color: var(--green); }
+.pmap-group-name { display: block; font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+
+/* Native MapLibre controls and popups, shared by the maps */
+.maplibregl-ctrl-group {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10) !important;
+  border: 1px solid var(--ground) !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-group button {
+  width: 32px !important; height: 32px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--ground) !important;
+}
+.maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
+.maplibregl-ctrl-group button:hover { background: var(--lime-pale) !important; }
+.maplibregl-ctrl-group button span { filter: none !important; }
+.maplibregl-ctrl-scale {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid var(--ground) !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  color: var(--muted) !important;
+  padding: 1px 5px !important;
+}
+.arbm-popup .maplibregl-popup-content {
+  border-radius: 10px !important;
+  padding: 0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid var(--ground) !important;
+}
+.arbm-popup .maplibregl-popup-tip { display: none !important; }
+.arbm-popup-hover { pointer-events: none; }
