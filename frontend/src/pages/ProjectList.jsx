@@ -10,6 +10,7 @@ import SectorIcon from "../components/SectorIcon.jsx";
 import Icon from "../components/Icon.jsx";
 import RefreshBar, { SkeletonCard, SkeletonRow } from "../components/RefreshBar.jsx";
 import PortfolioMap from "../components/PortfolioMap.jsx";
+import Select from "../components/Select.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 /* Lifecycle codes (backend LIFECYCLE_STAGE_CHOICES): LS001 Concept Note …
@@ -292,15 +293,6 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
     setSearch(""); setStageFilter(""); setSectorFilter("");
   }
 
-  function selectStyle(active) {
-    return {
-      height: 32, padding: "0 10px", fontSize: 12, fontWeight: 500,
-      border: active ? "1px solid var(--lime)" : "1px solid var(--rule)",
-      borderRadius: 8, background: active ? "var(--lime-pale)" : "var(--surface)",
-      color: active ? "var(--ink-soft)" : "var(--subtle)",
-      fontFamily: "inherit", cursor: "pointer", outline: "none",
-    };
-  }
 
   return (
     <div className="view">
@@ -349,24 +341,33 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
         />
 
         {/* Stage */}
-        <select style={selectStyle(stageFilter)} value={stageFilter} onChange={e => setStageFilter(e.target.value)}>
-          <option value="">All stages</option>
-          {Object.entries(STAGE_GROUPS).map(([k, g]) => (
-            <option key={k} value={k}>{g.label}</option>
-          ))}
-        </select>
+        <Select variant="filter" style={{ width: 150 }} placeholder="All stages"
+          value={stageFilter} onChange={setStageFilter}
+          options={Object.entries(STAGE_GROUPS).map(([k, g]) => ({ value: k, label: g.label }))} />
 
-        {/* Sector */}
+        {/* Sector: each pillar is itself an option ("All <pillar>") above its sectors */}
         {sectorGroups.length > 0 && (
-          <select style={selectStyle(sectorFilter)} value={sectorFilter} onChange={e => setSectorFilter(e.target.value)}>
-            <option value="">All sectors</option>
-            {sectorGroups.map(([pillar, sectors]) => (
-              <optgroup key={pillar} label={pillar}>
-                <option value={`pillar:${pillar}`}>All {pillar}</option>
-                {sectors.map(s => <option key={s} value={`sector:${s}`}>{s}</option>)}
-              </optgroup>
-            ))}
-          </select>
+          <Select variant="filter" style={{ width: 210 }} placeholder="All sectors"
+            value={sectorFilter} onChange={setSectorFilter}
+            options={sectorGroups.flatMap(([pillar, sectors]) => [
+              { value: `pillar:${pillar}`, label: `All ${pillar}`, group: pillar },
+              ...sectors.map(s => ({ value: `sector:${s}`, label: s, group: pillar })),
+            ])} />
+        )}
+
+        {/* Map colouring, beside the filters it reads with */}
+        {viewMode === "map" && (
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--subtle)" }}>
+            Colour by
+            <Select variant="filter" required style={{ width: 190 }}
+              value={colourBy} onChange={setColourBy}
+              options={[
+                { value: "sector", label: "Sector" },
+                { value: "lifecycle", label: "Lifecycle" },
+                { value: "progress", label: "Physical progress" },
+                { value: "performance", label: "Indicator performance" },
+              ]} />
+          </span>
         )}
 
 
@@ -385,17 +386,6 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           {!header && (
             <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
-          )}
-          {viewMode === "map" && (
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--subtle)" }}>
-              Colour by
-              <select style={selectStyle(false)} value={colourBy} onChange={e => setColourBy(e.target.value)}>
-                <option value="sector">Sector</option>
-                <option value="lifecycle">Lifecycle</option>
-                <option value="progress">Physical progress</option>
-                <option value="performance">Indicator performance</option>
-              </select>
-            </label>
           )}
           <span style={{ fontSize: 11, color: "var(--subtle)" }}>
             {filtered.length}{hasFilter ? ` of ${data.length}` : ""} project{filtered.length !== 1 ? "s" : ""}

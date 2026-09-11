@@ -18,6 +18,11 @@ import Icon from "./Icon";
  *                compared with String(), returned as the original option value
  *   onChange     (value) => void — "" when cleared
  *   placeholder  default "Select…"
+ *   variant      "field" (default, a form field) or "filter": the compact
+ *                filter-bar look, outlined in the accent while it holds a
+ *                value; the placeholder names the unfiltered state ("All
+ *                sectors") and clearing returns to it
+ *   className, style  applied to the root (e.g. a width in a filter bar)
  *   id, name, required, disabled
  */
 export default function Select({
@@ -29,6 +34,9 @@ export default function Select({
   name,
   required = false,
   disabled = false,
+  variant = "field",
+  className = "",
+  style,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -116,10 +124,13 @@ export default function Select({
 
   const listId = id ? `${id}-listbox` : undefined;
   const rootClass =
-    "select" + (open ? " is-open" : "") + (disabled ? " is-disabled" : "");
+    "select" + (variant === "filter" ? " select-filter" : "") +
+    (variant === "filter" && !isEmpty && !required ? " is-active" : "") +
+    (open ? " is-open" : "") + (disabled ? " is-disabled" : "") +
+    (className ? ` ${className}` : "");
 
   return (
-    <div className={rootClass} ref={rootRef}>
+    <div className={rootClass} ref={rootRef} style={style}>
       <div
         className="field-input select-control"
         role="combobox"

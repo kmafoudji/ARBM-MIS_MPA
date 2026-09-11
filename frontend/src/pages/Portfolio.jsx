@@ -3,6 +3,7 @@
  * Cockpit de performance portefeuille LLF2 · IsDB
  */
 import { useState } from "react";
+import Select from "../components/Select.jsx";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
@@ -311,7 +312,7 @@ function LevelSection({ level, indicators }) {
   );
 }
 
-/** Pillars with their sectors nested, for a native <select> with <optgroup>. */
+/** Pillars with their sectors nested; the filter flattens them into groups. */
 function sectorFilterOptions(sectors) {
   const pillars = sectors.filter(s => s.parent === null || s.parent === undefined);
   return pillars.map(p => ({
@@ -320,6 +321,12 @@ function sectorFilterOptions(sectors) {
     children: sectors.filter(s => s.parent === p.id).map(s => ({ value: String(s.id), label: s.name })),
   }));
 }
+
+// What each filter shows while it filters nothing.
+const FILTER_PLACEHOLDERS = {
+  hub: "All hubs", country: "All countries", sector: "All sectors",
+  donor: "All donors", chain_level: "All levels", rag: "All statuses",
+};
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
 export default function Portfolio() {
@@ -477,29 +484,19 @@ export default function Portfolio() {
             { value: "red",   label: "🔴 Off track" },
             { value: "na",    label: "⚪ No data" },
           ]},
-        ].map(({ key, label, options }) => (
-          <select
+        ].map(({ key, options }) => (
+          <Select
             key={key}
-            style={{
-              height: 32, padding: "0 10px", fontSize: 12, fontWeight: 500,
-              border: filters[key] ? "1px solid var(--lime)" : "1px solid var(--rule)",
-              borderRadius: 8, background: filters[key] ? "var(--lime-pale)" : "var(--surface)",
-              color: filters[key] ? "var(--ink-soft)" : "var(--subtle)",
-              fontFamily: "inherit", cursor: "pointer", outline: "none",
-            }}
+            variant="filter"
+            style={{ width: 170 }}
+            placeholder={FILTER_PLACEHOLDERS[key]}
             value={filters[key]}
-            onChange={e => setFilter(key, e.target.value)}
-          >
-            <option value="">All {label}s</option>
-            {options.map(o => o.children ? (
-              <optgroup key={o.value} label={o.label}>
-                <option value={o.value}>All {o.label}</option>
-                {o.children.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </optgroup>
-            ) : (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            onChange={v => setFilter(key, v)}
+            options={options.flatMap(o => o.children ? [
+              { value: o.value, label: `All ${o.label}`, group: o.label },
+              ...o.children.map(c => ({ value: c.value, label: c.label, group: o.label })),
+            ] : [o])}
+          />
         ))}
 
         {Object.values(filters).some(Boolean) && (

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import Select from "./Select.jsx";
 
 /**
  * Tableau reutilisable : recherche plein texte, filtres par colonne,
@@ -93,18 +94,15 @@ export default function DataTable({
             />
           )}
           {filters.map((f) => (
-            <select
+            <Select
               key={f.key}
-              className="field-select table-filter"
+              variant="filter"
+              className="table-filter"
+              placeholder={`${f.label}: all`}
               value={active[f.key] || ""}
-              onChange={reset((e) => setActive({ ...active, [f.key]: e.target.value }))}
-              aria-label={f.label}
-            >
-              <option value="">{f.label} : tous</option>
-              {f.options.map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
+              onChange={reset((v) => setActive({ ...active, [f.key]: v }))}
+              options={f.options.map(([v, l]) => ({ value: v, label: l }))}
+            />
           ))}
           <span className="table-count">
             {filtered.length} / {rows.length}
