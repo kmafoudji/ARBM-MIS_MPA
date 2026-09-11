@@ -117,7 +117,7 @@ class ProjectFactory(DjangoModelFactory):
 
     name            = factory.Sequence(lambda n: f"Test Project {n}")
     official_reference_number = factory.Sequence(lambda n: f"TST{n:04d}")
-    lifecycle_stage = "concept_note"
+    lifecycle_stage = "LS001"
     primary_sector  = factory.SubFactory(SectorFactory)
     created_by      = factory.SubFactory(UserFactory)
 

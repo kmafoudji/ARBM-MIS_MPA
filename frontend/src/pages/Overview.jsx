@@ -12,14 +12,17 @@ function fmt(n) {
   return n.toLocaleString();
 }
 
+// Keyed by lifecycle code (backend LIFECYCLE_STAGE_CHOICES).
 const STAGE_PHASE = {
-  concept_note: "pre_approval", pipeline_taskforce_review: "pre_approval",
-  pipeline_taskforce_approved: "pre_approval", preparation_identification: "pre_approval",
-  trc_endorsed: "approval_gate", ic_approved: "approval_gate", bed_approved: "approval_gate",
-  appraisal: "implementation", effective: "implementation",
-  implementing: "implementation", mid_term_review: "implementation",
-  substantially_complete: "closure", closed: "closure",
-  suspended: "exception", cancelled: "exception",
+  LS001: "pre_approval",   LS002: "pre_approval",   // Concept Note, Pipeline Taskforce Review
+  LS003: "pre_approval",   LS004: "pre_approval",   // Pipeline Taskforce Selection, Preparation/LLF
+  LS005: "approval_gate",  LS006: "approval_gate",  // TRC clearance, IC endorsed
+  LS007: "pre_approval",   LS008: "pre_approval",   // IsDB AWP, Preparations
+  LS009: "implementation", LS010: "approval_gate",  // Appraisal, BED Approved
+  LS011: "implementation", LS012: "implementation", // Signature, Effective
+  LS013: "implementation", LS014: "implementation", // Implementing, Mid-Term Review
+  LS015: "closure",        LS016: "closure",        // Substantially Complete, Closed
+  LS017: "exception",      LS018: "exception",      // Suspended, Cancelled
 };
 const PHASE_META = {
   pre_approval:  { label: "Pre-Approval",  color: "var(--subtle)" },
@@ -58,25 +61,24 @@ function Bar({ pct, color }) {
 // Short labels for the dashboard pill (the mockup abbreviates the same way);
 // the full stage name stays in the tooltip.
 const STAGE_SHORT = {
-  pipeline_taskforce_review: "Pipeline TF Review",
-  pipeline_taskforce_approved: "Pipeline TF Approved",
-  preparation_identification: "Preparation",
-  substantially_complete: "Subst. Complete",
-  mid_term_review: "Mid-Term Review",
+  LS002: "Pipeline TF Review",
+  LS003: "Pipeline TF Selection",
+  LS007: "IsDB AWP",
+  LS015: "Subst. Complete",
 };
 
-function StagePill({ stage }) {
+function StagePill({ stage, label: stageLabel }) {
   const phase = STAGE_PHASE[stage] || "exception";
   const { color, label } = PHASE_META[phase] || {};
-  const slug = stage?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "—";
+  const name = stageLabel || stage || "—";
   return (
-    <span title={slug} style={{
+    <span title={name} style={{
       display: "inline-flex", alignItems: "center", gap: 5,
       fontSize: 11, fontWeight: 700, padding: "2px 8px",
       borderRadius: 99, background: color + "22", color: color, whiteSpace: "nowrap",
     }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      {STAGE_SHORT[stage] || slug}
+      {STAGE_SHORT[stage] || name}
     </span>
   );
 }
@@ -286,7 +288,7 @@ export default function Overview({ user, onProjectClick }) {
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
-                            <StagePill stage={p.lifecycle_stage} />
+                            <StagePill stage={p.lifecycle_stage} label={p.lifecycle_stage_display} />
                             <span className="text-mono text-xs" style={{ minWidth: 56, textAlign: "right" }}>
                               {p.budget_amount ? fmt(Number(p.budget_amount)) : "—"}
                             </span>

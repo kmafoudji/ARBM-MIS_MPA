@@ -1380,6 +1380,7 @@ class PIRSDataView(APIView):
                 "start_date":     str(project.start_date) if project.start_date else None,
                 "end_date":       str(project.end_date) if project.end_date else None,
                 "lifecycle_stage": project.lifecycle_stage,
+                "lifecycle_stage_display": project.get_lifecycle_stage_display(),
                 "pad_url":        pad_url,
                 "pad_name":       pad_name,
             },
@@ -1700,7 +1701,7 @@ class PIRSDataView(APIView):
             ("Hub",             proj.get("hub")),
             ("Country",         proj.get("country")),
             ("Period",          f"{proj.get('start_date','—')} → {proj.get('end_date','—')}"),
-            ("Stage",           (proj.get("lifecycle_stage") or "").replace("_"," ").upper()),
+            ("Stage",           proj.get("lifecycle_stage_display") or proj.get("lifecycle_stage") or "—"),
             ("PAD Document",    proj.get("pad_name") or "—"),
         ])
 

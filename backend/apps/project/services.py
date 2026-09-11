@@ -5,8 +5,8 @@ Regles appliquees (SFD Module 1) :
   - Progression avant uniquement par defaut (POL-1.09).
   - Tout retour arriere exige une justification ET une autorisation
     double (dual_authorized_by renseigne).
-  - Les transitions vers/depuis les gates d'approbation (TRC Endorsed,
-    IC Approved, BED Approved) exigent toujours une autorisation double,
+  - Les transitions vers/depuis les gates d'approbation (TRC clearance,
+    IC endorsed, BED Approved) exigent toujours une autorisation double,
     meme en progression avant.
   - Toute transition est journalisee dans ProjectStageTransition
     (RG-4.1, BRQ-1.20) — piste d'audit immuable (pas d'update/delete
@@ -168,7 +168,7 @@ def transition_stage(
                 "L'autorisation double exige un second approbateur distinct de l'auteur "
                 "de la transition (RG-3.5 / RG-4.1)."
             )
-    if to_stage == "bed_approved":
+    if to_stage == "LS010":  # BED Approved
         _check_bed_approved_prerequisites_complete(project)
 
     ProjectStageTransition.objects.create(
@@ -185,7 +185,7 @@ def transition_stage(
     project.save(update_fields=["lifecycle_stage", "updated_at"])
 
     # SF-10 : génération du workspace au passage à Effective
-    if to_stage == "effective":
+    if to_stage == "LS012":
         try:
             generate_workspace(project, actor)
         except Exception:
@@ -203,7 +203,7 @@ def _check_bed_approved_prerequisites_complete(project):
       acceptee en pre-pipeline" — BED Approved est le seul gate impose
       ailleurs dans le code (POL-1.10), donc c'est ce point qui sert ici de
       lecture de "l'approbation". A ajuster si le metier vise un stade plus
-      precoce (ex. Pipeline Taskforce Approved).
+      precoce (ex. Pipeline Taskforce Selection).
     """
     missing = []
     if not project.sdgs.exists():
@@ -252,35 +252,41 @@ LLFMU_TIER = {
 PMU_TIER = {"pmu_project_manager", "pmu_me_officer"}
 HUB_TIER = {"regional_hub"}
 
-# Etape visee -> roles autorises a la declencher
+# Etape visee -> roles autorises a la declencher. Les etapes ajoutees par la
+# liste de septembre 2026 (LS007 IsDB AWP, LS008 Preparations, LS011
+# Signature) n'ont pas d'acteur dans le SFD : palier LLFMU, meme choix
+# restrictif que pour les roles non definis ci-dessous.
 STAGE_ACTORS = {
-    "concept_note": {"llfmu_portfolio_analyst", "llfmu_arbm_specialist"},
-    "pipeline_taskforce_review": {"llfmu_portfolio_analyst"},
+    "LS001": {"llfmu_portfolio_analyst", "llfmu_arbm_specialist"},  # Concept Note
+    "LS002": {"llfmu_portfolio_analyst"},  # Pipeline Taskforce Review
     # SFD : « Pipeline Manager » — role non defini au §2.
-    "pipeline_taskforce_approved": LLFMU_TIER,
-    "preparation_identification": {"llfmu_arbm_specialist"},
-    "trc_endorsed": {"llfmu_arbm_specialist"},
+    "LS003": LLFMU_TIER,  # Pipeline Taskforce Selection
+    "LS004": {"llfmu_arbm_specialist"},  # Preparation/LLF
+    "LS005": {"llfmu_arbm_specialist"},  # TRC clearance
     # SFD : « Double » sans preciser les roles.
-    "ic_approved": LLFMU_TIER,
-    "appraisal": {"llfmu_arbm_specialist"},
+    "LS006": LLFMU_TIER,  # IC endorsed
+    "LS007": LLFMU_TIER,  # IsDB Annual Work Plan (AWP)
+    "LS008": LLFMU_TIER,  # Preparations
+    "LS009": {"llfmu_arbm_specialist"},  # Appraisal
     # SFD : « Double (Pipeline Mgr + Director) » — roles non definis au §2.
-    "bed_approved": LLFMU_TIER,
-    "effective": LLFMU_TIER,
-    "implementing": PMU_TIER | LLFMU_TIER,
-    "mid_term_review": LLFMU_TIER,
-    "substantially_complete": LLFMU_TIER,
-    "closed": LLFMU_TIER,
+    "LS010": LLFMU_TIER,  # BED Approved
+    "LS011": LLFMU_TIER,  # Signature
+    "LS012": LLFMU_TIER,  # Effective
+    "LS013": PMU_TIER | LLFMU_TIER,  # Implementing
+    "LS014": LLFMU_TIER,  # Mid-Term Review
+    "LS015": LLFMU_TIER,  # Substantially Complete
+    "LS016": LLFMU_TIER,  # Closed
     # SFD : « System Admin / LLFMU » — System Admin non defini au §2.
-    "suspended": LLFMU_TIER,
-    "cancelled": LLFMU_TIER,
+    "LS017": LLFMU_TIER,  # Suspended
+    "LS018": LLFMU_TIER,  # Cancelled
 }
 
 # Etape visee -> roles admissibles comme SECOND approbateur (autorisation double)
 STAGE_DUAL_ACTORS = {
-    "trc_endorsed": HUB_TIER,   # SFD : Specialist + Hub OTL
-    "appraisal": HUB_TIER,      # SFD : Specialist + Hub OTL
-    "ic_approved": LLFMU_TIER,
-    "bed_approved": LLFMU_TIER,
+    "LS005": HUB_TIER,    # TRC clearance — SFD : Specialist + Hub OTL
+    "LS009": HUB_TIER,    # Appraisal — SFD : Specialist + Hub OTL
+    "LS006": LLFMU_TIER,  # IC endorsed
+    "LS010": LLFMU_TIER,  # BED Approved
 }
 
 

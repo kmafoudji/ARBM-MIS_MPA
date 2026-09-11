@@ -16,7 +16,7 @@ def make_effective_project():
     from datetime import date
     sdg = SdgFactory(number=2)
     project = ProjectFactory(
-        lifecycle_stage="effective",  # forcé directement en base
+        lifecycle_stage="LS012",  # forcé directement en base
         we_category="WE001",
         risk_rating="tbd",
         start_date=date(2026, 1, 1),
@@ -37,8 +37,8 @@ class TestGenerateWorkspace:
 
     def test_workspace_not_created_on_other_stages(self):
         actor = UserFactory()
-        project = ProjectFactory(lifecycle_stage="concept_note")
-        transition_stage(project, "pipeline_taskforce_review", actor)
+        project = ProjectFactory(lifecycle_stage="LS001")
+        transition_stage(project, "LS002", actor)
         assert not ProjectWorkspace.objects.filter(project=project).exists()
 
     def test_workspace_is_idempotent(self):
@@ -105,7 +105,7 @@ class TestGenerateWorkspace:
         from tests.factories import SdgFactory
         sdg = SdgFactory(number=4)
         project = ProjectFactory(
-            lifecycle_stage="effective",
+            lifecycle_stage="LS012",
             we_category="WE001",
             risk_rating="tbd",
             start_date=date(2026, 1, 1),

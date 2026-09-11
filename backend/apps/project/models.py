@@ -4,7 +4,7 @@ Aligne sur la SFD Module 1 :
   - SF-1 Etape 1 (Identite de base / Core ID)
   - SF-1 Etape 3 (Cycle de vie)
   - SF-2 (Alignement strategique & classification)
-  - SF-4 (Gestion du cycle de vie — machine a etats 13 + 2 exceptions)
+  - SF-4 (Gestion du cycle de vie — machine a etats 16 + 2 exceptions)
 
 Non couvert dans cette passe (a construire plus tard) :
   - SF-1 Etape 2 : Theorie du Changement structuree (BRQ-1.35)
@@ -26,52 +26,43 @@ from apps.reference.models import (
 )
 
 
-# SF-4 : machine a etats a 13 etapes + 2 etats d'exception
+# SF-4 : machine a etats a 16 etapes + 2 etats d'exception. Liste definitive
+# de septembre 2026 (Lifecycle_Proposed_stages_SEPT2026.xlsx) : on stocke le
+# code LS0xx et on affiche la valeur canonique, comme pour les categories WE.
 LIFECYCLE_STAGE_CHOICES = [
-    # Pre-approbation
-    ("concept_note", "Concept Note"),
-    ("pipeline_taskforce_review", "Pipeline Taskforce Review"),
-    ("pipeline_taskforce_approved", "Pipeline Taskforce Approved"),
-    ("preparation_identification", "Preparation / Identification"),
-    # Gates d'approbation (autorisation double)
-    ("trc_endorsed", "TRC Endorsed"),
-    ("ic_approved", "IC Approved"),
-    # Mise en oeuvre (avant gate final)
-    ("appraisal", "Appraisal"),
-    ("bed_approved", "BED Approved"),
-    ("effective", "Effective"),
-    ("implementing", "Implementing"),
-    ("mid_term_review", "Mid-Term Review"),
-    # Cloture
-    ("substantially_complete", "Substantially Complete"),
-    ("closed", "Closed"),
-    # Etats d'exception
-    ("suspended", "Suspended (exception)"),
-    ("cancelled", "Cancelled (exception)"),
+    ("LS001", "Concept Note"),
+    ("LS002", "Pipeline Taskforce Review"),
+    ("LS003", "Pipeline Taskforce Selection"),
+    ("LS004", "Preparation/LLF"),
+    ("LS005", "TRC clearance"),
+    ("LS006", "IC endorsed"),
+    ("LS007", "IsDB Annual Work Plan (AWP)"),
+    ("LS008", "Preparations"),
+    ("LS009", "Appraisal"),
+    ("LS010", "BED Approved"),
+    ("LS011", "Signature"),
+    ("LS012", "Effective"),
+    ("LS013", "Implementing"),
+    ("LS014", "Mid-Term Review"),
+    ("LS015", "Substantially Complete"),
+    ("LS016", "Closed"),
+    # Etats d'exception, hors sequence
+    ("LS017", "Suspended"),
+    ("LS018", "Cancelled"),
 ]
 
-# Ordre lineaire des 13 etapes nominales (hors exceptions) — utilise pour
-# determiner si une transition est "avant" ou "arriere" (POL-1.09).
+EXCEPTION_STAGES = {"LS017", "LS018"}  # Suspended, Cancelled
+
+# Ordre lineaire des 16 etapes nominales (hors exceptions) — utilise pour
+# determiner si une transition est "avant" ou "arriere" (POL-1.09). C'est
+# l'ordre des codes.
 LIFECYCLE_ORDER = [
-    "concept_note",
-    "pipeline_taskforce_review",
-    "pipeline_taskforce_approved",
-    "preparation_identification",
-    "trc_endorsed",
-    "ic_approved",
-    "appraisal",
-    "bed_approved",
-    "effective",
-    "implementing",
-    "mid_term_review",
-    "substantially_complete",
-    "closed",
+    code for code, _label in LIFECYCLE_STAGE_CHOICES if code not in EXCEPTION_STAGES
 ]
 
-# Gates d'approbation exigeant une autorisation double (RG-4.1, POL-1.09)
-GATE_STAGES = {"trc_endorsed", "ic_approved", "bed_approved"}
-
-EXCEPTION_STAGES = {"suspended", "cancelled"}
+# Gates d'approbation exigeant une autorisation double (RG-4.1, POL-1.09) :
+# TRC clearance, IC endorsed, BED Approved.
+GATE_STAGES = {"LS005", "LS006", "LS010"}
 
 # Categorie d'autonomisation economique des femmes (remplace le marqueur
 # genre OECD-DAC, decision du 5 septembre 2026).
@@ -116,8 +107,8 @@ class Project(models.Model):
         "TODO : brancher Azure Blob Storage en production (pas de base64).",
     )
     lifecycle_stage = models.CharField(
-        max_length=30, choices=LIFECYCLE_STAGE_CHOICES, default="concept_note",
-        help_text="13 etapes + 2 exceptions (SF-4).",
+        max_length=30, choices=LIFECYCLE_STAGE_CHOICES, default="LS001",
+        help_text="16 etapes + 2 exceptions (SF-4), code LS0xx.",
     )
     countries = models.ManyToManyField(
         Country, through="ProjectCountry", related_name="projects",
