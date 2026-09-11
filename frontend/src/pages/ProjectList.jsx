@@ -235,7 +235,9 @@ function ProjectCard({ project, onClick }) {
 const VIEW_ICONS  = { cards: "grid", map: "map-pin", list: "align-center" };
 const VIEW_LABELS = { cards: "Cards", map: "Map", list: "List" };
 
-export default function ProjectList({ views = ["cards"], title = "Projects", lead, onCreateClick, onProjectClick }) {
+// `header={false}` (Portfolio Overview) drops the title block and the New
+// Project button; the refresh control then sits in the filter bar.
+export default function ProjectList({ views = ["cards"], title = "Projects", lead, header = true, onCreateClick, onProjectClick }) {
   const [viewMode,    setViewMode]    = useState(views[0]);
   const [search,      setSearch]      = useState("");
   const [stageFilter, setStageFilter] = useState("");
@@ -301,6 +303,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
   return (
     <div className="view">
       {/* ── Header ──────────────────────────────────────────────────── */}
+      {header && (
       <div className="row row-between mb-4" style={{ alignItems: "flex-start" }}>
         <div className="view-header" style={{ marginBottom: 0 }}>
           <div className="view-eyebrow">Projects &amp; monitoring</div>
@@ -314,6 +317,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
           <Icon name="plus" size={14} /> New Project
         </button>
       </div>
+      )}
 
       {/* ── KPI bar ─────────────────────────────────────────────────── */}
       {/* The map carries its own strip of totals, so the bar is left out there. */}
@@ -384,6 +388,9 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
         )}
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          {!header && (
+            <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
+          )}
           <span style={{ fontSize: 11, color: "var(--subtle)" }}>
             {filtered.length}{hasFilter ? ` of ${data.length}` : ""} project{filtered.length !== 1 ? "s" : ""}
           </span>
