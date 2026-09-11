@@ -1980,6 +1980,12 @@ input, select, textarea { font: inherit; color: inherit; }
 .filter-chip:hover { border-color: var(--subtle); color: var(--ink); }
 .filter-chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 600; }
 .filter-chip-sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+/* A MultiSelect inside the chip row (catalogue sub-sectors): as low as a chip. */
+.filter-multiselect { flex: 1 1 280px; max-width: 520px; min-width: 0; }
+.filter-multiselect .multiselect-control { min-height: 30px; padding: 3px 8px; border-radius: 15px; }
+.filter-multiselect .multiselect-input { font-size: 12px; min-width: 100px; }
+.filter-multiselect .multiselect-chip { font-size: 11px; }
+.filter-multiselect .multiselect-menu { max-height: 320px; }
 
 .cat-section { margin-bottom: var(--s-4); }
 /* A section band: the heading of a run of rows, filled with the colour that
