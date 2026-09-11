@@ -1989,6 +1989,28 @@ class DQPortfolioView(APIView):
 # BRQ-2.24 / RG-10.x
 # ---------------------------------------------------------------------------
 
+# Signatures des types acceptes, lues dans les premiers octets du fichier : le
+# controle porte sur le contenu, pas sur le nom ni sur le type declare par le
+# navigateur, sans dependre de libmagic.
+_EVIDENCE_SIGNATURES = [
+    (b"%PDF-", "application/pdf"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+]
+
+
+def _sniff_evidence_mime(head):
+    """Type MIME d'apres les premiers octets, ou None si non reconnu."""
+    for signature, mime in _EVIDENCE_SIGNATURES:
+        if head.startswith(signature):
+            return mime
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
 class EvidenceView(APIView):
     """
     GET    /api/projects/<pk>/logframe/<row_pk>/results/<rd_pk>/evidence/
@@ -1999,6 +2021,7 @@ class EvidenceView(APIView):
     parser_classes     = [MultiPartParser, FormParser, JSONParser]
 
     def _get_rd(self, pk, row_pk, rd_pk):
+        from .models import ResultsData
         return get_object_or_404(
             ResultsData,
             pk=rd_pk,
@@ -2041,18 +2064,19 @@ class EvidenceView(APIView):
             description   = request.data.get("description", ""),
             evidence_type = request.data.get("evidence_type", "pdf"),
             external_url  = request.data.get("external_url", ""),
-            uploaded_by   = request.user.appuser_profile if hasattr(request.user, "appuser_profile") else None,
+            uploaded_by   = request.user,
         )
 
         file = request.FILES.get("file")
         if file:
-            # Validation type MIME
-            import magic
-            mime = magic.from_buffer(file.read(2048), mime=True)
+            # Validation du type d'apres le contenu (PDF, JPEG, PNG, WebP, GIF)
+            mime = _sniff_evidence_mime(file.read(16))
             file.seek(0)
-            allowed = {"application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif"}
-            if mime not in allowed:
-                return Response({"detail": f"File type not allowed: {mime}"}, status=400)
+            if mime is None:
+                return Response(
+                    {"detail": "File type not allowed: only PDF, JPEG, PNG, WebP and GIF are accepted."},
+                    status=400,
+                )
             # Taille max : PDF 25MB, images 10MB
             max_size = 25 * 1024 * 1024 if "pdf" in mime else 10 * 1024 * 1024
             if file.size > max_size:
@@ -2086,7 +2110,7 @@ class EvidenceDetailView(APIView):
         action = request.data.get("action")
         if action == "verify":
             ev.status      = "verified"
-            ev.verified_by = request.user.appuser_profile if hasattr(request.user, "appuser_profile") else None
+            ev.verified_by = request.user
             ev.verified_at = timezone.now()
             ev.notes       = request.data.get("notes", ev.notes)
         elif action == "reject":
@@ -2142,7 +2166,7 @@ class ResultsWorkflowView(APIView):
         rd     = get_object_or_404(ResultsData, pk=rd_pk, logframe_row_id=row_pk, logframe_row__project_id=pk)
         action = request.data.get("action")
         notes  = request.data.get("notes", "")
-        user   = getattr(request.user, "appuser_profile", None)
+        user   = request.user
 
         if action not in self.TRANSITIONS:
             return Response({"detail": f"Unknown action: {action}"}, status=400)

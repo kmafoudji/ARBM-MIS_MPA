@@ -4,7 +4,7 @@
  */
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "../api";
+import { apiFetch, apiUpload } from "../api";
 import Icon from "./Icon";
 import Select from "./Select";
 
@@ -31,7 +31,7 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose, embedde
   const [verifyId, setVerifyId] = useState(null);
 
   const qKey = ["evidence", projectId, rowId, rdId];
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: qKey,
     queryFn:  () => apiFetch(`/api/projects/${projectId}/logframe/${rowId}/results/${rdId}/evidence/`),
   });
@@ -44,9 +44,8 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose, embedde
       fd.append("evidence_type", form.evidence_type);
       fd.append("external_url",  form.external_url);
       if (file) fd.append("file", file);
-      return fetch(`/api/projects/${projectId}/logframe/${rowId}/results/${rdId}/evidence/`, {
-        method: "POST", body: fd, credentials: "include",
-      }).then(r => r.json());
+      // apiUpload sends the CSRF token and throws on an error status.
+      return apiUpload(`/api/projects/${projectId}/logframe/${rowId}/results/${rdId}/evidence/`, fd);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qKey });
@@ -109,7 +108,10 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose, embedde
 
       {/* Liste des preuves */}
       {isLoading && <span className="spinner" />}
-      {evidences.length === 0 && !adding && (
+      {isError && (
+        <p style={{ fontSize: 12, color: "var(--rose)", margin: "0 0 8px" }}>Could not load the evidence.</p>
+      )}
+      {!isLoading && !isError && evidences.length === 0 && !adding && (
         <p style={{ fontSize: 12, color: "var(--subtle)", margin: 0, fontStyle: "italic" }}>No evidence attached yet.</p>
       )}
       {evidences.map(ev => {
@@ -224,6 +226,13 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose, embedde
             <input className="field-input" placeholder="https://…"
               value={form.external_url} onChange={e => setForm(f => ({ ...f, external_url: e.target.value }))} />
           </div>
+          {uploadMutation.isError && (
+            <p style={{ fontSize: 12, color: "var(--rose)", margin: "0 0 8px" }}>
+              {typeof uploadMutation.error?.detail?.detail === "string"
+                ? uploadMutation.error.detail.detail
+                : "Could not save the evidence."}
+            </p>
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setFile(null); }}>Cancel</button>
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
