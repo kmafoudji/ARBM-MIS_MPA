@@ -274,7 +274,8 @@ export default function Overview({ user, onProjectClick }) {
                 <thead>
                   <tr>
                     <th>Project</th>
-                    <th style={{ width: 220, textAlign: "right" }}>Stage · Budget</th>
+                    <th style={{ width: 150 }}>Stage</th>
+                    <th style={{ width: 76, textAlign: "right" }}>Budget</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -290,12 +291,10 @@ export default function Overview({ user, onProjectClick }) {
                           <div className="text-xs text-muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
-                            <StagePill stage={p.lifecycle_stage} label={p.lifecycle_stage_display} />
-                            <span className="text-mono text-xs" style={{ minWidth: 56, textAlign: "right" }}>
-                              {p.budget_amount ? fmt(Number(p.budget_amount)) : "—"}
-                            </span>
-                          </div>
+                          <StagePill stage={p.lifecycle_stage} label={p.lifecycle_stage_display} />
+                        </td>
+                        <td className="text-mono text-xs" style={{ whiteSpace: "nowrap", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                          {p.budget_amount ? fmt(Number(p.budget_amount)) : "—"}
                         </td>
                       </tr>
                     );
