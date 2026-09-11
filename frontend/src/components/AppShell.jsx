@@ -14,6 +14,7 @@ import {
 } from "./Icons.jsx";
 import { useTranslation } from "react-i18next";
 import Icon from "./Icon";
+import Select from "./Select.jsx";
 import i18n from "../i18n/index.js";
 import NotificationBell from "./NotificationBell";
 import { PROJECT_PILLARS, PROJECT_MODULES, screensOf, moduleOf, computeTabLocks } from "../pages/ProjectDetail.jsx";
@@ -71,15 +72,11 @@ function initials(user) {
 function HubScopeSelector({ scope }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   if (!scope || !["global", "hubs"].includes(scope.kind)) return null;
   const hubs = scope.allowed_hubs || [];
   if (hubs.length === 0) return null;
-
-  const selected = hubs.find((h) => h.id === scope.selected_hub_id) || null;
-  const label = selected ? selected.name : t("nav.all_hubs");
 
   if (hubs.length === 1 && scope.kind === "hubs") {
     // One hub in scope: an attribute, not a choice.
@@ -91,7 +88,6 @@ function HubScopeSelector({ scope }) {
   }
 
   async function choose(hubId) {
-    setOpen(false);
     if (saving) return;
     setSaving(true);
     try {
@@ -106,40 +102,28 @@ function HubScopeSelector({ scope }) {
     }
   }
 
+  // The searchable Select, as every other list in the app. A global scope
+  // may also span all hubs: that is the empty value (placeholder "All
+  // hubs"), reached by the explicit option or by clearing; a scope limited
+  // to several hubs always holds one.
+  const ALL = "__all__";
+  const group = t("nav.hub_scope");
+  const options = [
+    ...(scope.kind === "global" ? [{ value: ALL, label: t("nav.all_hubs"), group }] : []),
+    ...hubs.map((h) => ({ value: h.id, label: h.name, group })),
+  ];
   return (
-    <span className="hubsel">
-      <button
-        className="hubsel-btn"
-        onClick={() => setOpen((o) => !o)}
-        disabled={saving}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <Icon name="map-pin" size={12} /> {label} <span aria-hidden="true">▾</span>
-      </button>
-      {open && (
-        <div className="hubsel-drop" role="listbox">
-          <div className="hubsel-title">{t("nav.hub_scope")}</div>
-          {scope.kind === "global" && (
-            <button
-              className={`hubsel-opt${!selected ? " on" : ""}`}
-              onClick={() => choose(null)}
-            >
-              {t("nav.all_hubs")}
-            </button>
-          )}
-          {hubs.map((h) => (
-            <button
-              key={h.id}
-              className={`hubsel-opt${selected?.id === h.id ? " on" : ""}`}
-              onClick={() => choose(h.id)}
-            >
-              {h.name}
-            </button>
-          ))}
-        </div>
-      )}
-    </span>
+    <Select
+      variant="filter"
+      className="hubsel-select"
+      icon="map-pin"
+      placeholder={t("nav.all_hubs")}
+      options={options}
+      value={scope.selected_hub_id ?? ""}
+      required={scope.kind !== "global"}
+      disabled={saving}
+      onChange={(v) => choose(v === "" || v === ALL ? null : v)}
+    />
   );
 }
 
