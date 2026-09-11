@@ -11,6 +11,7 @@ import TheoryOfChange from "../pages/TheoryOfChange.jsx";
 import Logframe from "../pages/Logframe.jsx";
 import Workplan from "../pages/Workplan.jsx";
 import Toast from "../components/Toast";
+import ProjectBanner from "../components/ProjectBanner.jsx";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
@@ -830,8 +831,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       <Toast toast={toast} onClose={() => setToast(null)} />
       <DialogModal {...dialog.dialogProps} />
 
+      <ProjectBanner projectId={projectId} />
+
       <div className="view-header">
-        <div className="view-eyebrow text-mono">{project.official_reference_number}</div>
         <h1 className="view-title">{sectionLabel}</h1>
       </div>
 
