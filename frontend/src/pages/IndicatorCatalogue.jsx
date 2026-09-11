@@ -107,7 +107,7 @@ function DisaggregationDimensionsPanel({ indicatorId }) {
           <span style={{ fontWeight: 600, fontSize: 12, minWidth: 100, color: "var(--ink-soft)" }}>{dim.name}</span>
           <span style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 4 }}>
             {dim.categories.map(cat => (
-              <span key={cat} style={{ fontSize: 11, background: "var(--violet-soft)", color: "var(--violet)", padding: "2px 8px", borderRadius: 99 }}>{cat}</span>
+              <span key={cat} style={{ fontSize: 11, background: "var(--violet-soft)", color: "var(--violet-darker)", padding: "2px 8px", borderRadius: 99 }}>{cat}</span>
             ))}
           </span>
           <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "var(--rose)", flexShrink: 0 }}
@@ -260,9 +260,9 @@ const AGGREGATION_LABELS = {
 const CCT_COLORS = {
   gender:      { bg: "var(--sec-women-pale)", color: "var(--rose)" },
   climate:     { bg: "var(--lime-pale)", color: "var(--lime-darker)" },
-  youth:       { bg: "var(--sec-infra-pale)", color: "var(--orange)" },
-  disability:  { bg: "var(--violet-soft)", color: "var(--violet)" },
-  idp_refugee: { bg: "var(--rose-soft)", color: "var(--rose)" },
+  youth:       { bg: "var(--sec-infra-pale)", color: "var(--orange-darker)" },
+  disability:  { bg: "var(--violet-soft)", color: "var(--violet-darker)" },
+  idp_refugee: { bg: "var(--rose-soft)", color: "var(--rose-darker)" },
   equity:      { bg: "var(--sec-women-pale)", color: "var(--violet)" },
 };
 

@@ -14,9 +14,9 @@ const TYPE_ICONS = {
 };
 
 const STATUS_CONFIG = {
-  pending:  { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "Pending" },
+  pending:  { color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", label: "Pending" },
   verified: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Verified" },
-  rejected: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Rejected" },
+  rejected: { color: "var(--rose-darker)", bg: "var(--rose-soft)", label: "Rejected" },
 };
 
 // `embedded`: rendered inside a Modal that already carries the title and the

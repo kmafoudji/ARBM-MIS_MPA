@@ -9,10 +9,10 @@ import { apiFetch } from "../api";
 import Icon from "./Icon";
 
 const CAT_CONFIG = {
-  escalation: { icon: "alert-triangle", color: "#FB563B", bg: "#FDF3F3", border: "#FDD4CE" },
-  overdue:    { icon: "clock",          color: "#F49D07", bg: "#FFFAF0", border: "#FDE7C1" },
+  escalation: { icon: "alert-triangle", color: "var(--rose-darker)", bg: "#FDF3F3", border: "#FDD4CE" },
+  overdue:    { icon: "clock",          color: "var(--orange-darker)", bg: "#FFFAF0", border: "#FDE7C1" },
   milestone:  { icon: "check-square",   color: "#7E46B8", bg: "#F7F0FF", border: "#DFCEF1" },
-  pending:    { icon: "clock",          color: "#0089C5", bg: "#DBF4FF", border: "#AFDFF3" },
+  pending:    { icon: "clock",          color: "var(--blue-darker)", bg: "#DBF4FF", border: "#AFDFF3" },
 };
 
 const ALERT_TYPE_COLOR = {
@@ -142,7 +142,7 @@ export default function NotificationBell({ onNavigateProject }) {
                 {total > 0 && (
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10,
-                    background: "#FDF3F3", color: "#FB563B", border: "1px solid #FDD4CE",
+                    background: "#FDF3F3", color: "var(--rose-darker)", border: "1px solid #FDD4CE",
                   }}>{total} active</span>
                 )}
               </div>

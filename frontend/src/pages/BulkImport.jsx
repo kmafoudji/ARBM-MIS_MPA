@@ -15,11 +15,11 @@ const ENDPOINT = "/api/import/asis/";
 
 const ACTION_STYLE = {
   create:    { label: "Created",   color: "var(--lime-darker)", bg: "var(--lime-pale)" },
-  update:    { label: "Updated",   color: "var(--orange)", bg: "var(--sec-infra-pale)" },
+  update:    { label: "Updated",   color: "var(--orange-darker)", bg: "var(--sec-infra-pale)" },
   // The only destructive action, and the only one coloured as a warning:
   // rows the file dropped from a table that has no key to match on.
-  delete:    { label: "Deleted",   color: "var(--rose)", bg: "var(--rose-soft)" },
-  replace:   { label: "Replaced",  color: "var(--violet)", bg: "var(--violet-soft)" },
+  delete:    { label: "Deleted",   color: "var(--rose-darker)", bg: "var(--rose-soft)" },
+  replace:   { label: "Replaced",  color: "var(--violet-darker)", bg: "var(--violet-soft)" },
   unchanged: { label: "Unchanged", color: "var(--muted)", bg: "var(--surface-2)" },
 };
 

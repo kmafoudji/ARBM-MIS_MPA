@@ -758,7 +758,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       text: "This project is under implementation. Results entry is open. Structural fields are locked.",
     },
     LS015: { // Substantially Complete
-      color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)",
+      color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)",
       icon: "alert-triangle",
       text: "This project is substantially complete. Only evidence and final reports can be added.",
     },
@@ -1688,7 +1688,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               </div>
               {(!project.end_date) && (
                 <div style={{ padding:"8px 12px", background:"var(--sec-infra-pale)", border:"1px solid var(--orange-soft)",
-                  borderRadius:8, fontSize:12, color:"var(--orange)", marginBottom:8 }}>
+                  borderRadius:8, fontSize:12, color:"var(--orange-darker)", marginBottom:8 }}>
                   ⚠️ Project end date is not set — periods cannot be generated without it.
                 </div>
               )}
