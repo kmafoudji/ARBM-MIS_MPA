@@ -280,7 +280,10 @@ export default function Overview({ user, onProjectClick }) {
                   {recentProjects.map(p => {
                     const meta = [p.country_names?.slice(0, 2).join(", "), p.primary_sector_name].filter(Boolean).join(" · ");
                     return (
-                      <tr key={p.id}>
+                      <tr key={p.id} className="table-row-link" tabIndex={0}
+                        title={`Open ${p.official_reference_number || p.name}`}
+                        onClick={() => onProjectClick?.(p.id)}
+                        onKeyDown={e => { if (e.key === "Enter") onProjectClick?.(p.id); }}>
                         <td style={{ minWidth: 0 }}>
                           <div title={p.name} style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
                           <div className="text-xs text-muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
