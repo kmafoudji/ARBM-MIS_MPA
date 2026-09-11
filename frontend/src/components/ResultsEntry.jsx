@@ -534,9 +534,6 @@ export default function ResultsEntry({ projectId, canEdit }) {
       <p className="text-muted text-sm" style={{ margin: 0 }}>
         No indicators in the logframe. Add indicators to the Theory of Change first.
       </p>
-      <pre style={{ fontSize: 10, color: "var(--muted)", marginTop: 8 }}>
-        {JSON.stringify({ rows: data?.rows?.length, periods: data?.periods?.length }, null, 2)}
-      </pre>
     </div>
   );
 
