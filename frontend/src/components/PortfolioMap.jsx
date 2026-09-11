@@ -10,7 +10,7 @@
  * shape with a 1, so every marker reads the same way. Clicking opens a card
  * next to the marker; the full map also shows a strip of totals (top left)
  * and takes the height of the window. The map opens on the mockup's view,
- * and a control brings it back there.
+ * and a "Reset view" button (top right) brings it back there.
  * Basemap shared with ProjectMap (mapStyle.js).
  */
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -27,7 +27,7 @@ const FALLBACK_COLOR = "#0EB584";
 const POINT_RADIUS = 7;
 const RING_RADIUS = 13;
 
-// The mockup's opening view; the reset control returns to it.
+// The mockup's opening view; the "Reset view" button returns to it.
 const HOME_VIEW = { center: [28, 18], zoom: 2.35 };
 
 // Colour lenses. Each returns [legend label, colour] for a project, from the
@@ -74,28 +74,6 @@ const LENSES = {
     order: [...Object.values(PERFORMANCE).map(([label]) => label), "No value against a target"],
   },
 };
-
-// "Reset view": back to the opening view, in the controls' own style.
-class ResetViewControl {
-  onAdd(map) {
-    this.box = document.createElement("div");
-    this.box.className = "maplibregl-ctrl maplibregl-ctrl-group";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "pmap-reset";
-    button.title = "Reset view";
-    button.setAttribute("aria-label", "Reset view");
-    button.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
-      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>';
-    button.addEventListener("click", () => map.flyTo({ ...HOME_VIEW, duration: 900 }));
-    this.box.append(button);
-    return this.box;
-  }
-  onRemove() {
-    this.box.remove();
-  }
-}
 
 function toMillions(value) {
   const n = Number(value);
@@ -272,7 +250,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     // Bottom right as in the mockup; top left on the short dashboard map,
     // where the card would cover the bottom-right corner.
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), compact ? "top-left" : "bottom-right");
-    map.addControl(new ResetViewControl(), compact ? "top-left" : "bottom-right");
     if (compact) {
       map.scrollZoom.disable();
     } else {
@@ -577,6 +554,17 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
             />
           )}
         </div>
+      )}
+
+      {!isLoading && (
+        <button type="button" className="pmap-reset" title="Back to the opening view"
+          onClick={() => mapInst.current?.flyTo({ ...HOME_VIEW, duration: 900 })}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" />
+          </svg>
+          Reset view
+        </button>
       )}
 
       <div className="pmap-attribution">{ATTRIBUTION}</div>
