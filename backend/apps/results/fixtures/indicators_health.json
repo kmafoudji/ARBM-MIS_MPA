@@ -1,0 +1,2450 @@
+[
+ {
+  "code": "H01-OP-01",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities constructed, rehabilitated or upgraded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-02",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of constructed/rehabilitated health facilities that are operational",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-03",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities provided with reliable power source",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-04",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities reporting a power outage of 4 or more days in the past 7 days",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-05",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities equipped with basic/essential medical equipment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-06",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities equipped with blood transfusion equipment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-07",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities/laboratories equipped with essential laboratory equipment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-08",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities with adequate mobile network/data connectivity",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-09",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of health facilities reporting inadequate mobile data coverage for 4 or more days in the past 7 days",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-10",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of facilities meeting defined national infrastructure and equipment standards",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-11",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of facilities provided with improved infection prevention and control (IPC) infrastructure",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-12",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of hospital beds available in the reporting area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-13",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Number of bed-days occupied during the reporting period",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OP-14",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Total population of the catchment/district/national area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OC-01",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "Health facility density per 10,000 population",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OC-02",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "% of facilities with no stock-out of essential equipment/tracer items",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H01-OC-03",
+  "sector": "Health",
+  "subsector": "Health Infrastructure Development",
+  "name": "% of facilities meeting minimum national IPC infrastructure standards",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-01",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of skilled health professionals (doctors, clinical officers, nurses, midwives) recruited and deployed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-02",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of other health professionals (dentists, pharmacists, etc.) recruited and deployed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-03",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of health associate professionals (laboratory technicians and other technicians) recruited and deployed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-04",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of community/village health workers recruited and deployed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-05",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of approved/funded health worker posts (establishment)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-06",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of those approved posts currently filled",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-07",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of health facilities assessed for staffing levels",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-08",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Number of health facilities meeting minimum staffing norms",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OP-09",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Total population of the catchment area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OC-01",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Health workforce density per 10,000 population, by cadre",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OC-02",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "Skilled health worker-to-population ratio against WHO minimum threshold",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H02-OC-03",
+  "sector": "Health",
+  "subsector": "Health Workforce Recruitment and Deployment",
+  "name": "% of facilities meeting minimum national staffing norms",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-01",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Total number of healthcare workers trained",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-02",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare providers trained in Emergency Obstetric and Newborn Care (EmONC)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-03",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare providers trained in RMNCAH-N",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-04",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare providers trained in Integrated Management of Childhood Illness (IMCI)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-05",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare providers trained in HIV prevention, treatment and PMTCT services",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-06",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare workers trained in malaria case management, prevention and programme management",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-07",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare workers trained in infection prevention and control (IPC)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-08",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare workers trained in person-centred and integrated healthcare delivery",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-09",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of health information personnel trained in health data management, analysis and reporting",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-10",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of pharmaceutical and supply-chain personnel trained in health commodity supply-chain management",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-11",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of clinical mentors trained",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-12",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of health facility management committee members trained in health facility management",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-13",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of healthcare workers trained in emergency preparedness and continuity of essential health services",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-14",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of those trained health workers still in post at 12 months",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OP-15",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "Number of those facilities meeting the trained-staff norms",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OC-01",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "% of trained health workers retained in post 12 months after training",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H03-OC-02",
+  "sector": "Health",
+  "subsector": "Health Workforce Training and Capacity Development",
+  "name": "% of facilities meeting minimum trained-staff norms for priority services",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-01",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of people reached with health promotion, awareness and behaviour-change interventions",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-02",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of communities reached with health promotion and sensitisation activities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-03",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of households reached through community health promotion activities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-04",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of community health promotion and social mobilisation activities conducted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-05",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of people reached through community health worker home visits",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-06",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of health communication materials developed or adapted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-07",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of communication channels or platforms established or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OP-08",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Number of community or influential groups engaged in health promotion activities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OC-01",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "% of target population with correct knowledge of priority health topics",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OC-02",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "% of target population reporting adoption of recommended health-seeking behaviours",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OC-03",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "% of households practicing key recommended health/hygiene behaviours",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H04-OC-04",
+  "sector": "Health",
+  "subsector": "Community Health and Health Promotion",
+  "name": "Health facility utilisation rate among targeted communities",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-01",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of maternity and delivery facilities constructed or rehabilitated",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-02",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of health facilities supported to provide EmONC",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-03",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of health facilities supported to provide antenatal care (ANC) services",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-04",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of health facilities supported to provide skilled birth attendance",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-05",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of maternal and newborn health protocols, standards or guidelines developed, updated or adopted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-06",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of ANC consultations conducted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-07",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of pregnant women receiving their first ANC visit (ANC1)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-08",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of pregnant women receiving their fourth ANC visit (ANC4)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-09",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of deliveries attended by a skilled birth attendant",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-10",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of deliveries with complications managed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-11",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of Caesarean sections performed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-12",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of neonates receiving resuscitation",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-13",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of neonates who died following resuscitation",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-14",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of women who received postnatal care within two days after birth",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-15",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of newborns receiving postnatal care contact within 48 hours of birth",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-16",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of maternal deaths recorded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-17",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of live births recorded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-18",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of neonatal deaths recorded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-19",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Number of stillbirths recorded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-20",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Estimated total pregnancies expected in the area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OP-21",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Estimated number of obstetric complications expected",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-01",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Maternal Mortality Ratio",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-02",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Proportion of births attended by skilled health personnel",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-03",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Neonatal Mortality Rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-04",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Stillbirth rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-05",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Institutional delivery rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-06",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Minimum dietary diversity for women",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-07",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "ANC4+ coverage rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-08",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "Postnatal care coverage rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H05-OC-09",
+  "sector": "Health",
+  "subsector": "Maternal, Newborn and Reproductive Health Services",
+  "name": "EmONC met-need indicator",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-01",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of people reached with reproductive health and behaviour-change communication (BCC) campaigns",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-02",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women receiving injectable contraceptives (Depo-Provera)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-03",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women receiving implantable contraceptives (Jadelle/Implanon)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-04",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women receiving oral contraceptive pills",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-05",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women receiving intrauterine devices (IUDs)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-06",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women receiving bilateral tubal ligation",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-07",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of men receiving vasectomy",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-08",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women having sub-dermal implants removed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-09",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women having IUDs removed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-10",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Couple-Years of Protection (CYP) generated",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-11",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Total number of women of reproductive age (WRA) in the population",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-12",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women of reproductive age currently using any modern contraceptive method",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-13",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women wanting to avoid or delay pregnancy but not using contraception",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-14",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of live births to women aged 15–19",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OP-15",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Number of women aged 15–19 in the population",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OC-01",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Modern Contraceptive Prevalence Rate (mCPR)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OC-02",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Unmet need for family planning",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OC-03",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Total Fertility Rate (TFR)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OC-04",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Adolescent birth rate (girls aged 10–14; and 15-19 years)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H06-OC-05",
+  "sector": "Health",
+  "subsector": "Family Planning Services",
+  "name": "Proportion of women aged 15-49 years who make their own informed decisions regarding sexual relations, contraceptive use and reproductive health care",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-01",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children aged 6–59 months receiving vitamin A / micronutrient supplementation",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-02",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children aged 0–59 months receiving growth monitoring and promotion services",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-03",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of new children under-5 with MAM admitted to supplementary feeding",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-04",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of new children under-5 with SAM admitted to outpatient therapeutic care",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-05",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of new children under-5 with SAM admitted to inpatient therapeutic care",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-06",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children under-5 currently enrolled in therapeutic feeding",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-07",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children under-5 currently enrolled in supplementary feeding",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-08",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of pregnant and lactating women currently enrolled in supplementary feeding",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-09",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of parents/caregivers receiving infant and young child feeding (IYCF) counselling",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-10",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of community-based nutrition service delivery points established or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-11",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of health facilities supported to provide quality nutrition services",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-12",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of community health and nutrition workers trained in essential nutrition actions",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-13",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of households with children under five reached with community-based nutrition interventions",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-14",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of nutrition strategies, guidelines or protocols developed/updated and disseminated",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-15",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children screened for acute malnutrition (MUAC/weight-for-height measured)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-16",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of those screened children classified as Severe Acute Malnutrition (SAM)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-17",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children measured for height-for-age (stunting)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-18",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of those measured children found stunted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-19",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of infants who are exclusively breastfed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-20",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children aged 6–23 months surveyed for dietary diversity",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-21",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of children meeting minimum dietary diversity",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-22",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of women aged 15–49 tested for anaemia (haemoglobin test), by pregnancy status",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-23",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of those tested women found to be anaemic",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OP-24",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Number of pregnant women receiving iron and folic acid (IFA) supplementation",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OC-01",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Wasting prevalence",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OC-02",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Stunting prevalence",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OC-03",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Exclusive breastfeeding rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OC-04",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Minimum Dietary Diversity (MDD) rate of children 6-23 months",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H07-OC-05",
+  "sector": "Health",
+  "subsector": "Nutrition Services",
+  "name": "Prevalence of anaemia in women aged 15–49 years, by pregnancy status",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OP-01",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Number of under-5 children diagnosed with pneumonia",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OP-02",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Number of under-5 children with pneumonia who received appropriate antibiotic treatment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OP-03",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Number of under-5 pneumonia deaths recorded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OP-04",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Total number of under-5 deaths recorded (all causes)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OP-05",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Population of children under-5 in the reporting area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OC-01",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "% of children with pneumonia receiving appropriate antibiotics (among those taken for care)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OC-02",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Case fatality rate for under-5 pneumonia",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H08-OC-03",
+  "sector": "Health",
+  "subsector": "Pneumonia among Children Under-5",
+  "name": "Pneumonia's share of under-5 mortality",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-01",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of health facilities supported to provide HIV prevention, testing and treatment services",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-02",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV tests conducted at facility",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-03",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV tests conducted at facility with a positive result",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-04",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV tests conducted through door-to-door/mobile outreach",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-05",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV tests conducted through door-to-door/mobile outreach with a positive result",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-06",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Cumulative number of people who know their HIV-positive status",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-07",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Estimated total number of people living with HIV (PLHIV)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-08",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of newly diagnosed clients linked to and enrolled in HIV care",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-09",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of people living with HIV (PLHIV) currently receiving ART",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-10",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of PLHIV on ART who received a viral load test",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-11",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of PLHIV on ART whose viral load test result showed suppression",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-12",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of pregnant women tested for HIV or with known HIV status during ANC",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-13",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of pregnant women testing HIV-positive or with known HIV-positive status during ANC",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-14",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV-positive pregnant women who received ARVs during pregnancy and/or delivery",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-15",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV-exposed infants who received a virologic test within 2 months of birth",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-16",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV-exposed infants with a final HIV status confirmed (around 18 months or end of breastfeeding)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-17",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV-exposed infants confirmed HIV-positive",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-18",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of new HIV diagnoses tested and classified as a \"recent infection\"",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-19",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Estimated size of the HIV-negative / at-risk population, including key population size estimates",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-20",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of clients newly initiated on ART in a defined starting cohort",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-21",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of that ART cohort who are still alive and on treatment 12 months later",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-22",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of that ART cohort who died, stopped treatment, transferred out, or were lost to follow-up within 12 months",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-23",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV rapid diagnostic test (RDT) kits procured and distributed",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-24",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of laboratories equipped or upgraded for HIV diagnosis and monitoring",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-25",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of laboratories equipped for HIV sequencing/genotyping and drug-resistance monitoring",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-26",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of health facilities implementing case-based HIV surveillance",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-27",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of HIV surveillance systems established or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OP-28",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Number of health facilities connected to electronic HIV surveillance or reporting systems",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OC-01",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "% of PLHIV who know their HIV status (1st 95)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OC-02",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "% of people diagnosed with HIV who are currently receiving ART (2nd 95)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OC-03",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "% of people on ART who are virally suppressed (3rd 95)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OC-04",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "HIV incidence rate per 1,000",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OC-05",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "Mother-to-child transmission (MTCT) rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H09-OC-06",
+  "sector": "Health",
+  "subsector": "HIV/AIDS Prevention, Testing and Treatment",
+  "name": "12-month ART retention rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-01",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of presumptive TB cases tested",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-02",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of new and relapse TB cases notified",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-03",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of TB cases with a documented HIV test result",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-04",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of TB patients who tested HIV-positive",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-05",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of HIV-positive TB patients started on antiretroviral therapy (ART)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-06",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of HIV-positive TB patients who received co-trimoxazole preventive therapy (CPT)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-07",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Number of TB patients currently on treatment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-08",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB deaths recorded through vital registration / verbal autopsy",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OP-09",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "Population denominator (catchment/district/national)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-01",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB treatment success rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-02",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB case notification rate per 100,000",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-03",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB treatment coverage",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-04",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB incidence rate per 100,000 (SDG indicator 3.3.2)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-05",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB mortality rate per 100,000",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-06",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "% of notified TB cases with a documented HIV test result",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H10-OC-07",
+  "sector": "Health",
+  "subsector": "TB Prevention, Testing and Treatment",
+  "name": "TB-HIV co-treatment coverage",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-01",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of long-lasting insecticidal nets (LLINs) procured",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-02",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of LLINs distributed to target populations",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-03",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of malaria rapid diagnostic test (RDT) kits procured",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-04",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of malaria RDT kits distributed to health facilities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-05",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of doses of antimalarial medicines (ACTs) procured",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-06",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of doses of antimalarial medicines distributed to health facilities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-07",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of healthcare workers trained in malaria prevention, diagnosis, treatment and programme management",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-08",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of people reached with malaria prevention and treatment messages",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-09",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of under-5 children with fever who visited a health facility",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-10",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of under-5 children with fever tested by RDT or microscopy",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-11",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of under-5 children with confirmed malaria (positive by RDT or microscopy)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-12",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of under-5 children with fever treated as malaria without parasitological confirmation",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-13",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of children under-5 tested for malaria in a population-based survey",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-14",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of those surveyed children testing positive for malaria",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-15",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of households/people who own an LLIN",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-16",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of households/people who slept under an LLIN the previous night disaggregated by age and sex",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-17",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Number of malaria deaths recorded",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OP-18",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Total population at risk of malaria in the reporting area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OC-01",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Malaria test positivity rate (TPR)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OC-02",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Malaria incidence rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OC-03",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Malaria mortality rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OC-04",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "LLIN usage rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H11-OC-05",
+  "sector": "Health",
+  "subsector": "Malaria Prevention, Diagnosis and Treatment",
+  "name": "Malaria parasite prevalence",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-01",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of vaccine doses procured through project support",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-02",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of vaccine doses distributed through project support",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-03",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of immunisation campaigns conducted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-04",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of cold-chain facilities established, equipped or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-05",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of under-5 children immunised against measles (MCV1)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-06",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of under-5 children receiving vitamin A supplements",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-07",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of children completing the full national immunisation schedule",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-08",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of surviving infants in the catchment area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-09",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of infants receiving the first dose of DTP/Penta vaccine (DTP1/Penta1)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-10",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of infants receiving the third dose of DTP/Penta vaccine (DTP3/Penta3)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-11",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of children who received zero vaccine doses",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OP-12",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Number of measles cases reported",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OC-01",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "DTP3/Penta3 coverage rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OC-02",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "MCV1 coverage rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OC-03",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Fully Immunised Child (FIC) coverage rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OC-04",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "DTP1-to-DTP3 (Penta1-to-Penta3) dropout rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H12-OC-05",
+  "sector": "Health",
+  "subsector": "Immunisation and Vaccine Delivery",
+  "name": "Zero-dose children rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-01",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of under-5 outpatient visits at health facilities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-02",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of outpatient visits at health facilities by all ages, excluding ANC",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-03",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of under-5 inpatient admissions",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-04",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of inpatient admissions, all ages",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-05",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of patients who used the established emergency transportation system",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-06",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of patients referred to a higher-level facility, all ages",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-07",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of patients referred using the Emergency Response System, all ages",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-08",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Total population of the catchment area",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-09",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of hospital beds available",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OP-10",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Number of inpatient deaths",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OC-01",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Outpatient utilisation rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OC-02",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Bed occupancy rate per 1,000",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H13-OC-03",
+  "sector": "Health",
+  "subsector": "Health Facility Utilisation",
+  "name": "Inpatient case fatality rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-01",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of health facilities equipped with ICT equipment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-02",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of health facilities equipped with HIS tools and equipment",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-03",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of health facilities equipped to use the national HIS/DHIS2",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-04",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of health facilities using project-supported digital HIS",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-05",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of HIS or databases developed, upgraded or operationalised",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-06",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of disease surveillance systems established or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-07",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of health facilities connected to electronic health information or surveillance systems",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OP-08",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "Number of health and community health workers trained in electronic health data collection and reporting system",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H14-OC-01",
+  "sector": "Health",
+  "subsector": "Health Information Systems and Data Management",
+  "name": "% of facilities using national HIS/DHIS2",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H15-OP-01",
+  "sector": "Health",
+  "subsector": "Quality of Care and Clinical Standards",
+  "name": "Number of health facilities implementing approved clinical standards and protocols",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H15-OP-02",
+  "sector": "Health",
+  "subsector": "Quality of Care and Clinical Standards",
+  "name": "Number of health facilities implementing quality improvement programmes",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H15-OP-03",
+  "sector": "Health",
+  "subsector": "Quality of Care and Clinical Standards",
+  "name": "Number of health facilities implementing Infection Prevention and Control (IPC)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H15-OP-04",
+  "sector": "Health",
+  "subsector": "Quality of Care and Clinical Standards",
+  "name": "Number of clinical protocols, standards and guidelines developed, updated or adopted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H15-OP-05",
+  "sector": "Health",
+  "subsector": "Quality of Care and Clinical Standards",
+  "name": "Number of healthcare workers trained or retrained in quality assurance and quality improvement",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H15-OC-01",
+  "sector": "Health",
+  "subsector": "Quality of Care and Clinical Standards",
+  "name": "% of facilities meeting accreditation/certification standards",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OP-01",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Number of ambulances procured, deployed and functional",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OP-02",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Number of mobile clinics procured, equipped and operational",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OP-03",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Number of health facilities linked to a functional referral system",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OP-04",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Number of referral and counter-referral systems established",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OP-05",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Number of patients referred to a higher-level facility",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OP-06",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Number of referred emergency patients who died",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H16-OC-01",
+  "sector": "Health",
+  "subsector": "Referrals and Emergency Transport Services",
+  "name": "Case fatality rate among referred emergency patients",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-01",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Number of health policies, strategies, plans or regulatory instruments developed, updated or adopted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-02",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Number of health sector coordination mechanisms established or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-03",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Number of health sector coordination meetings conducted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-04",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Number of health programme review meetings conducted",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-05",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Number of health facility management committees established or strengthened",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-06",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Number of approved health policies/plans",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-07",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Total approved health budget for the reporting period",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OP-08",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Amount of that budget actually disbursed or spent",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H17-OC-01",
+  "sector": "Health",
+  "subsector": "Health Planning and Institutional Strengthening",
+  "name": "Health budget execution rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-01",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of healthcare facilities provided with an improved water supply",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-02",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of health facilities with a functional water source available 4+ days in the past 7 days",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-03",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of healthcare facilities provided with improved sanitation and hygiene facilities",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-04",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of health facilities with 5 or more improved toilets accessible to all users",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-05",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of healthcare facilities equipped with a healthcare waste management system",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-06",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of community sanitation facilities constructed or rehabilitated",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-07",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of faecal sludge treatment facilities constructed and operational",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-08",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of solid waste management systems established and operational",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-09",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of sanitation service providers trained in operation and maintenance",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-10",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of households reached with hygiene promotion and behaviour-change interventions",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-11",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of people reached with WASH and hygiene promotion interventions",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-12",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of those households with a \"basic\" sanitation service",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-13",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of people surveyed for open defecation practice",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-14",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of those households with a handwashing facility with water and soap present",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-15",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of deaths due to diarrhoeal disease recorded, by age",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-16",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Number of deaths due to other WASH-related diseases recorded, by age",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-17",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Total population without access to a basic drinking-water service",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-18",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Total population without access to a basic sanitation service",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OP-19",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Total population without access to a basic hygiene service (handwashing facility with water and soap)",
+  "indicator_type": "output",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-01",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "% of health facilities with a JMP \"basic\" water service",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-02",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "% of health facilities with a JMP \"basic\" sanitation service",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-03",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "% of health facilities with a JMP \"basic\" hygiene service",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-04",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "% of health facilities with a JMP \"basic\" healthcare waste management service",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-05",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "% of households with a basic sanitation service (SDG indicator 6.2.1)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-06",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Open defecation rate",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-07",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Handwashing with soap prevalence",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ },
+ {
+  "code": "H18-OC-08",
+  "sector": "Health",
+  "subsector": "Water, Sanitation and Hygiene (WASH) in Healthcare Facilities and Communities",
+  "name": "Mortality rate attributed to unsafe water, unsafe sanitation, and lack of hygiene (SDG indicator 3.9.2)",
+  "indicator_type": "outcome",
+  "direction": "neutral"
+ }
+]
