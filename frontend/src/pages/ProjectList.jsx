@@ -121,25 +121,26 @@ function daysColor(days, terminal) {
   return "var(--ink)";
 }
 
+// Same reading as the lifecycle headline in ProjectDetail: "N · Stage" is the
+// current position (highlighted), the detail after it is the phase.
 function stageSummary(project) {
   const idx = LIFECYCLE_ORDER.indexOf(project.lifecycle_stage);
-  if (idx < 0) return { idx, text: project.lifecycle_stage_display };
-  const num = idx + 1;
-  const name = project.lifecycle_stage_display;
+  if (idx < 0) return { idx, current: project.lifecycle_stage_display, detail: null };
   // Approval gates are not shown (ADR 0012): the detail is the phase only.
   let detail;
   if (project.lifecycle_stage === "LS016") detail = "closed";
   else if (idx >= SIGNATURE_INDEX) detail = "under implementation";
   else detail = "in origination";
-  return { idx, text: `${num} · ${name} — ${detail}` };
+  return { idx, current: `${idx + 1} · ${project.lifecycle_stage_display}`, detail };
 }
 
+// Passed stages in blue, the current one in orange, as in ProjectDetail.
 function StageBar({ idx, exception }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 3, opacity: exception ? 0.35 : 1 }}>
       {LIFECYCLE_ORDER.map((s, i) => {
         const done = i <= idx;
-        const color = !done ? "var(--rule)" : "var(--blue)";
+        const color = !done ? "var(--rule)" : i === idx ? "var(--orange)" : "var(--blue)";
         return (
           <span key={s} style={{ display: "contents" }}>
             {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 14, background: "var(--rule)", margin: "0 3px" }} />}
@@ -154,7 +155,7 @@ function StageBar({ idx, exception }) {
 function ProjectCard({ project, onClick }) {
   const sg = stageGroup(project.lifecycle_stage);
   const exception = sg.key === "suspended";
-  const { idx, text } = stageSummary(project);
+  const { idx, current, detail } = stageSummary(project);
   const terminal = ["LS016", "LS018"].includes(project.lifecycle_stage);   // Closed, Cancelled
   const days = daysSince(project.stage_entered_on);
   const stalled = !terminal && !exception && days != null && days >= DAYS_STALLED;
@@ -198,7 +199,8 @@ function ProjectCard({ project, onClick }) {
       <div style={{ minWidth: 0 }}>
         <StageBar idx={idx} exception={exception} />
         <div style={{ fontSize: 12, fontWeight: 600, color: exception ? sg.color : "var(--ink-soft)", marginTop: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {text}
+          <span style={exception ? undefined : { color: "var(--orange)", fontWeight: 700 }}>{current}</span>
+          {detail && <span style={{ fontWeight: 500 }}> — {detail}</span>}
         </div>
       </div>
 
