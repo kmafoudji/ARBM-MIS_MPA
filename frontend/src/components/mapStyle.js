@@ -71,7 +71,10 @@ function cityBands(bands) {
 
 export const BASEMAP_STYLE = {
   version: 8,
-  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+  // Glyphs are served from frontend/public/fonts, not from
+  // fonts.openmaptiles.org: the map must label itself offline. Only the
+  // ranges the label data uses are shipped — see public/fonts/README.md.
+  glyphs: "/fonts/{fontstack}/{range}.pbf",
   sources: {
     "ne-country-50m": martin("ne_country_50m", 0, 5),
     "ne-country-10m": martin("ne_country_10m", 4, 10),

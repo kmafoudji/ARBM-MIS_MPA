@@ -32,8 +32,6 @@ export default function SplashScreen({ exiting = false }) {
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap');
-
         @keyframes arbm-logo-in {
           from { opacity: 0; transform: scale(0.82); }
           to   { opacity: 1; transform: scale(1); }
