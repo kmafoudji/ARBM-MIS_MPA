@@ -2514,7 +2514,7 @@ def _plan_workspace(context):
 
     The importer writes `lifecycle_stage` as a plain field. The SF-4 state
     machine lives in `transition_stage()`, and so do its side effects — so a
-    file declaring `implementing` produced a project past Effective with no
+    file declaring `LS013` (Implementing) produced a project past Effective with no
     `ProjectWorkspace`, and `ProjectDetail` locks the Workplan and Results
     tabs on exactly that row. The data was all loaded and none of it was
     reachable.
@@ -2534,9 +2534,9 @@ def _plan_workspace(context):
         context.project.lifecycle_stage if context.project else None
     )
     if stage not in LIFECYCLE_ORDER:
-        # Exception stages (suspended / cancelled) imply nothing here.
+        # Exception stages (LS017 Suspended / LS018 Cancelled) imply nothing here.
         return
-    if LIFECYCLE_ORDER.index(stage) < LIFECYCLE_ORDER.index("effective"):
+    if LIFECYCLE_ORDER.index(stage) < LIFECYCLE_ORDER.index("LS012"):  # Effective
         return
 
     exists = context.project is not None and ProjectWorkspace.objects.filter(

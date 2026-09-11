@@ -80,7 +80,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         l'enregistrement au LLFMU Portfolio Analyst / aRBM Specialist.
         """
         try:
-            check_transition_authorization(self.request.user, "concept_note")
+            check_transition_authorization(self.request.user, "LS001")  # Concept Note
         except ValidationError as exc:
             raise DRFValidationError({"detail": exc.messages})
         serializer.save()

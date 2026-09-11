@@ -25,64 +25,84 @@ const REPORTING_FREQUENCY_CHOICES = [
   { value: "annual",      label: "Annual" },
 ];
 
+// Keyed by the stored lifecycle code (LS001…LS018, backend
+// LIFECYCLE_STAGE_CHOICES); the trailing comment names the stage.
 const STAGE_BADGE = {
-  concept_note: "badge",
-  pipeline_taskforce_review: "badge",
-  pipeline_taskforce_approved: "badge badge-violet",
-  preparation_identification: "badge badge-violet",
-  trc_endorsed: "badge badge-orange",
-  ic_approved: "badge badge-orange",
-  bed_approved: "badge badge-orange",
-  appraisal: "badge badge-blue",
-  effective: "badge badge-lime",
-  implementing: "badge badge-lime",
-  mid_term_review: "badge badge-lime",
-  substantially_complete: "badge badge-green",
-  closed: "badge badge-green",
-  suspended: "badge badge-rose",
-  cancelled: "badge badge-rose",
+  LS001: "badge",                 // Concept Note
+  LS002: "badge",                 // Pipeline Taskforce Review
+  LS003: "badge badge-violet",    // Pipeline Taskforce Selection
+  LS004: "badge badge-violet",    // Preparation/LLF
+  LS005: "badge badge-orange",    // TRC clearance
+  LS006: "badge badge-orange",    // IC endorsed
+  LS007: "badge badge-blue",      // IsDB Annual Work Plan (AWP)
+  LS008: "badge badge-blue",      // Preparations
+  LS009: "badge badge-blue",      // Appraisal
+  LS010: "badge badge-orange",    // BED Approved
+  LS011: "badge badge-blue",      // Signature
+  LS012: "badge badge-lime",      // Effective
+  LS013: "badge badge-lime",      // Implementing
+  LS014: "badge badge-lime",      // Mid-Term Review
+  LS015: "badge badge-green",     // Substantially Complete
+  LS016: "badge badge-green",     // Closed
+  LS017: "badge badge-rose",      // Suspended
+  LS018: "badge badge-rose",      // Cancelled
 };
 
 const STAGE_TOAST = {
-  pipeline_taskforce_review: {
+  LS002: {
     type: "info",
     title: "Pipeline Taskforce Review",
     message: "The project has entered the review pipeline. Ensure the concept note and basic identity are complete before the committee meeting.",
   },
-  pipeline_taskforce_approved: {
+  LS003: {
     type: "success",
-    title: "Pipeline Taskforce Approved",
-    message: "The project has been approved by the Taskforce. You can now proceed to the preparation and identification phase.",
+    title: "Pipeline Taskforce Selection",
+    message: "The project has been selected by the Taskforce. You can now proceed to the preparation phase.",
   },
-  preparation_identification: {
+  LS004: {
     type: "info",
-    title: "Preparation / Identification",
+    title: "Preparation/LLF",
     message: "Project is under preparation. Complete the Theory of Change, geographic scope, and financial envelope before the TRC.",
   },
-  trc_endorsed: {
+  LS005: {
     type: "success",
-    title: "TRC Endorsed",
-    message: "The Technical Review Committee has endorsed the project.",
-    bullets: ["Verify that all classification fields are complete.", "The IC Approval gate will require a second approver."],
+    title: "TRC Clearance",
+    message: "The Technical Review Committee has cleared the project.",
+    bullets: ["Verify that all classification fields are complete.", "The IC endorsement gate will require a second approver."],
   },
-  ic_approved: {
+  LS006: {
     type: "success",
-    title: "IC Approved",
-    message: "Investment Committee approval recorded.",
+    title: "IC Endorsed",
+    message: "Investment Committee endorsement recorded.",
     bullets: ["Ensure BED Approved prerequisites are met: SDGs, WE Category, Risk category, start and end dates."],
   },
-  appraisal: {
+  LS007: {
+    type: "info",
+    title: "IsDB Annual Work Plan (AWP)",
+    message: "The project is included in the IsDB Annual Work Plan.",
+  },
+  LS008: {
+    type: "info",
+    title: "Preparations",
+    message: "Project preparations are under way ahead of appraisal.",
+  },
+  LS009: {
     type: "info",
     title: "Appraisal",
     message: "Project is under appraisal. Review all technical and financial parameters before BED submission.",
   },
-  bed_approved: {
+  LS010: {
     type: "success",
     title: "BED Approved",
-    message: "Board / Executive Director approval recorded. The project is ready to become Effective.",
+    message: "Board / Executive Director approval recorded. The project is ready for signature.",
     bullets: ["Upload the final PAD if not already done.", "Confirm reporting dates are set before transitioning to Effective."],
   },
-  effective: {
+  LS011: {
+    type: "success",
+    title: "Signature",
+    message: "Signature recorded. The project is ready to become Effective.",
+  },
+  LS012: {
     type: "success",
     title: "⚡ Project is now Effective",
     message: "The workspace has been activated.",
@@ -93,32 +113,32 @@ const STAGE_TOAST = {
       "Results framework (Module 2) is ready for data entry.",
     ],
   },
-  implementing: {
+  LS013: {
     type: "info",
     title: "Implementing",
     message: "Project implementation phase has started. Reporting periods are open for data collection.",
   },
-  mid_term_review: {
+  LS014: {
     type: "warning",
     title: "Mid-Term Review",
     message: "The project is under mid-term review. Results data and evidence should be up to date before the review meeting.",
   },
-  substantially_complete: {
+  LS015: {
     type: "success",
     title: "Substantially Complete",
     message: "Project activities are substantially complete. Prepare the completion report and final evidence package.",
   },
-  closed: {
+  LS016: {
     type: "info",
     title: "Project Closed",
     message: "The project has been officially closed. All data is now read-only.",
   },
-  suspended: {
+  LS017: {
     type: "warning",
     title: "Project Suspended",
     message: "The project has been suspended. Document the reasons and define a reactivation plan.",
   },
-  cancelled: {
+  LS018: {
     type: "error",
     title: "Project Cancelled",
     message: "The project has been cancelled. Ensure all financial obligations are settled and the closure note is filed.",
@@ -196,7 +216,7 @@ const DEV_UNLOCK_ALL = import.meta.env.VITE_DEV_UNLOCK_ALL === "true";
 // stands.
 const DEV_SKIP_DUAL_APPROVAL = DEV_UNLOCK_ALL;
 
-// Ordered checklist of the 13 nominal stages: reached stages carry the
+// Ordered checklist of the 16 nominal stages: reached stages carry the
 // date of the (latest) transition into them and a document marker; the
 // rest are greyed out. Exception states are reported separately.
 function LifecyclePhaseList({ project, transitions, stageChoices }) {
@@ -263,10 +283,11 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
 }
 
 // Compact headline of the lifecycle position: "N · Stage · phase → next gate",
-// a 13-segment bar (gates in green, separator before implementation) and a
+// a 16-segment bar (gates in green, separator before implementation) and a
 // legend. Exception states show the bar dimmed.
-const GATE_STAGES = new Set(["trc_endorsed", "ic_approved", "bed_approved"]);
-const SIGNATURE_INDEX = 8; // index of "effective" in STAGE_ORDER
+// Gates: TRC clearance, IC endorsed, BED Approved.
+const GATE_STAGES = new Set(["LS005", "LS006", "LS010"]);
+const SIGNATURE_INDEX = 11; // index of Effective (LS012) in STAGE_ORDER: implementation starts there
 
 function LifecycleProgress({ project, transitions, stageChoices }) {
   const labelOf = (code) =>
@@ -307,7 +328,7 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
               {nextGate && (
                 <span> → next gate: {stageIdx(nextGate) + 1} · {labelOf(nextGate)}</span>
               )}
-              {!nextGate && current === "closed" && <span> · closed</span>}
+              {!nextGate && current === "LS016" && <span> · closed</span>}
             </>
           )}
         </div>
@@ -367,18 +388,18 @@ export const PROJECT_TABS = [
 export const screensOf = (moduleKey) => PROJECT_TABS.filter((tb) => tb.module === moduleKey);
 export const moduleOf  = (tabKey) => PROJECT_TABS.find((tb) => tb.key === tabKey)?.module;
 
-// Stage order for comparisons (SF-4 lifecycle)
+// Stage order for comparisons (SF-4 lifecycle): the 16 nominal stages,
+// LS001 Concept Note … LS016 Closed, in code order. The exception states
+// LS017 Suspended and LS018 Cancelled are off-sequence and not listed.
 const STAGE_ORDER = [
-  "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
-  "preparation_identification", "trc_endorsed", "ic_approved", "appraisal",
-  "bed_approved", "effective", "implementing", "mid_term_review",
-  "substantially_complete", "closed",
+  "LS001", "LS002", "LS003", "LS004", "LS005", "LS006", "LS007", "LS008",
+  "LS009", "LS010", "LS011", "LS012", "LS013", "LS014", "LS015", "LS016",
 ];
 const stageIdx = (s) => STAGE_ORDER.indexOf(s);
 
 // Per-section lock rules, derived from the project detail payload alone.
 export function computeTabLocks(project) {
-  const currentIdx = stageIdx(project?.lifecycle_stage || "concept_note");
+  const currentIdx = stageIdx(project?.lifecycle_stage || "LS001");
   const atLeast = (s) => currentIdx >= stageIdx(s);
   const hasWorkspace = !!project?.has_workspace;
   const hasTocNodes  = (project?.toc_node_count || 0) > 0;
@@ -388,14 +409,14 @@ export function computeTabLocks(project) {
     documents:  { locked: false },
     settings:   { locked: false },
     financial:  {
-      locked: !atLeast("pipeline_taskforce_review"),
+      locked: !atLeast("LS002"),
       reason: "Available from Pipeline Taskforce Review stage",
       depends: "Lifecycle stage: Pipeline Taskforce Review",
     },
     toc: {
-      locked: !atLeast("pipeline_taskforce_approved"),
-      reason: "Available from Pipeline Taskforce Approved stage",
-      depends: "Lifecycle stage: Pipeline Taskforce Approved",
+      locked: !atLeast("LS003"),
+      reason: "Available from Pipeline Taskforce Selection stage",
+      depends: "Lifecycle stage: Pipeline Taskforce Selection",
     },
     logframe: {
       // DEV-ONLY UNLOCK — see the block above STAGE_ORDER.
@@ -414,17 +435,17 @@ export function computeTabLocks(project) {
       depends: "Lifecycle stage: Effective (workspace activated)",
     },
     geographic: {
-      locked: !atLeast("preparation_identification"),
-      reason: "Available from Preparation/Identification stage",
-      depends: "Lifecycle stage: Preparation/Identification",
+      locked: !atLeast("LS004"),
+      reason: "Available from Preparation/LLF stage",
+      depends: "Lifecycle stage: Preparation/LLF",
     },
     partners: {
-      locked: !atLeast("appraisal"),
+      locked: !atLeast("LS009"),
       reason: "Available from Appraisal stage",
       depends: "Lifecycle stage: Appraisal",
     },
     reporting: {
-      locked: !atLeast("bed_approved"),
+      locked: !atLeast("LS010"),
       reason: "Available from BED Approved gate",
       depends: "Lifecycle stage: BED Approved",
     },
@@ -473,8 +494,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   const { data: sectors } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: refCountries } = useQuery({ queryKey: ["ref-countries"], queryFn: () => apiFetch("/api/reference/countries/") });
-  const GATE_STAGES_SET = ["trc_endorsed", "ic_approved", "bed_approved"];
-  const isGate = GATE_STAGES_SET.includes(tForm.to_stage);
+  const isGate = GATE_STAGES.has(tForm.to_stage);
   const needsDualAuth = isGate && !DEV_SKIP_DUAL_APPROVAL;
   const toIdx = stageIdx(tForm.to_stage);
   const fromIdx = stageIdx(project?.lifecycle_stage);
@@ -716,40 +736,40 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   // Sections et verrous : definis au niveau module (PROJECT_TABS,
   // computeTabLocks, DEV_UNLOCK_ALL) car la sidebar projet du AppShell les
   // affiche aussi.
-  const currentIdx = stageIdx(project?.lifecycle_stage || "concept_note");
+  const currentIdx = stageIdx(project?.lifecycle_stage || "LS001");
   const atLeast = (s) => currentIdx >= stageIdx(s);
   const TAB_LOCKS = computeTabLocks(project);
 
   // ── Règles de modification par section ──────────────────────────────────
   // Overview/Classification : modifiable avant Effective
-  const canEditClassification = DEV_UNLOCK_ALL || !atLeast("effective");
+  const canEditClassification = DEV_UNLOCK_ALL || !atLeast("LS012");
   // Basic Identity : modifiable avant BED Approved
-  const canEditBasicIdentity = DEV_UNLOCK_ALL || !atLeast("bed_approved");
+  const canEditBasicIdentity = DEV_UNLOCK_ALL || !atLeast("LS010");
   // Financial : modifiable avant BED Approved
-  const canEditFinancial = DEV_UNLOCK_ALL || !atLeast("bed_approved");
+  const canEditFinancial = DEV_UNLOCK_ALL || !atLeast("LS010");
   // Reporting config : modifiable avant Effective
-  const canEditReporting = DEV_UNLOCK_ALL || !atLeast("effective");
+  const canEditReporting = DEV_UNLOCK_ALL || !atLeast("LS012");
   // Geographic : modifiable avant Effective
-  const canEditGeographic = DEV_UNLOCK_ALL || !atLeast("effective");
+  const canEditGeographic = DEV_UNLOCK_ALL || !atLeast("LS012");
 
   // ── Bannière globale selon le stade ─────────────────────────────────────
   const STAGE_BANNERS = {
-    effective: {
+    LS012: { // Effective
       color: "var(--blue)", bg: "var(--rule)", border: "var(--blue-soft)",
       icon: "check-circle",
       text: "This project is Effective — the Theory of Change, classification and reporting configuration are now locked. Data entry and partners remain editable.",
     },
-    implementing: {
+    LS013: { // Implementing
       color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)",
       icon: "trending-up",
       text: "This project is under implementation. Results entry is open. Structural fields are locked.",
     },
-    substantially_complete: {
+    LS015: { // Substantially Complete
       color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)",
       icon: "alert-triangle",
       text: "This project is substantially complete. Only evidence and final reports can be added.",
     },
-    closed: {
+    LS016: { // Closed
       color: "var(--muted)", bg: "var(--surface-2)", border: "var(--rule)",
       icon: "lock",
       text: "This project is closed. All fields are read-only.",
@@ -1212,7 +1232,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             </div>
           </div>
         </div>
-        <ImplementingPartners projectId={project.id} canEdit={!atLeast("effective")} envelopeTotal={envelope?.total_amount_usd} />
+        <ImplementingPartners projectId={project.id} canEdit={!atLeast("LS012")} envelopeTotal={envelope?.total_amount_usd} />
       </div>
 
 

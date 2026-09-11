@@ -12,21 +12,25 @@ import RefreshBar, { SkeletonCard, SkeletonRow } from "../components/RefreshBar.
 import PortfolioMap from "../components/PortfolioMap.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
+/* Lifecycle codes (backend LIFECYCLE_STAGE_CHOICES): LS001 Concept Note …
+   LS016 Closed in order, LS017 Suspended and LS018 Cancelled as exceptions. */
 const STAGE_GROUPS = {
-  pipeline:      { label: "Pipeline",      color: "var(--violet)", bg: "var(--violet-soft)", keys: ["concept_note","pipeline_taskforce_review","pipeline_taskforce_approved","preparation_identification"] },
-  appraisal:     { label: "Appraisal",     color: "var(--orange)", bg: "var(--sec-infra-pale)", keys: ["trc_endorsed","ic_approved","bed_approved","appraisal"] },
-  implementation:{ label: "Active",        color: "var(--lime)", bg: "var(--lime-pale)", keys: ["effective","implementing","mid_term_review"] },
-  closing:       { label: "Closing",       color: "var(--lime)", bg: "var(--lime-pale)", keys: ["substantially_complete","closed"] },
-  suspended:     { label: "Suspended",     color: "var(--rose)", bg: "var(--rose-soft)", keys: ["suspended","cancelled"] },
+  pipeline:      { label: "Pipeline",      color: "var(--violet)", bg: "var(--violet-soft)", keys: ["LS001","LS002","LS003","LS004"] },
+  appraisal:     { label: "Appraisal",     color: "var(--orange)", bg: "var(--sec-infra-pale)", keys: ["LS005","LS006","LS007","LS008","LS009","LS010","LS011"] },
+  implementation:{ label: "Active",        color: "var(--lime)", bg: "var(--lime-pale)", keys: ["LS012","LS013","LS014"] },
+  closing:       { label: "Closing",       color: "var(--lime)", bg: "var(--lime-pale)", keys: ["LS015","LS016"] },
+  suspended:     { label: "Suspended",     color: "var(--rose)", bg: "var(--rose-soft)", keys: ["LS017","LS018"] },
 };
 
 const STAGE_BADGE = {
-  concept_note: "badge", pipeline_taskforce_review: "badge",
-  pipeline_taskforce_approved: "badge badge-violet", preparation_identification: "badge badge-violet",
-  trc_endorsed: "badge badge-orange", ic_approved: "badge badge-orange", bed_approved: "badge badge-orange",
-  appraisal: "badge badge-blue", effective: "badge badge-lime", implementing: "badge badge-lime",
-  mid_term_review: "badge badge-lime", substantially_complete: "badge badge-green",
-  closed: "badge badge-green", suspended: "badge badge-rose", cancelled: "badge badge-rose",
+  LS001: "badge", LS002: "badge",
+  LS003: "badge badge-violet", LS004: "badge badge-violet",
+  LS005: "badge badge-orange", LS006: "badge badge-orange",
+  LS007: "badge badge-blue", LS008: "badge badge-blue", LS009: "badge badge-blue",
+  LS010: "badge badge-orange", LS011: "badge badge-blue",
+  LS012: "badge badge-lime", LS013: "badge badge-lime", LS014: "badge badge-lime",
+  LS015: "badge badge-green", LS016: "badge badge-green",
+  LS017: "badge badge-rose", LS018: "badge badge-rose",
 };
 
 function formatBudget(value) {
@@ -51,7 +55,7 @@ function KpiBar({ projects }) {
   const total     = projects.length;
   const budget    = projects.reduce((s, p) => s + Number(p.envelope_total || p.budget_amount || 0), 0);
   const countries = new Set(projects.map(p => p.lead_country_iso2).filter(Boolean)).size;
-  const active    = projects.filter(p => ["effective","implementing","mid_term_review"].includes(p.lifecycle_stage)).length;
+  const active    = projects.filter(p => STAGE_GROUPS.implementation.keys.includes(p.lifecycle_stage)).length;
 
   const groupCounts = {};
   Object.keys(STAGE_GROUPS).forEach(k => { groupCounts[k] = 0; });
@@ -94,17 +98,16 @@ function KpiBar({ projects }) {
   );
 }
 
-/* Linear order of the 13 nominal stages (mirrors LIFECYCLE_ORDER in the
-   backend). Exception states (suspended / cancelled) are outside the order. */
+/* Linear order of the 16 nominal stages (mirrors LIFECYCLE_ORDER in the
+   backend). Exception states (LS017 Suspended / LS018 Cancelled) are outside
+   the order. */
 const LIFECYCLE_ORDER = [
-  "concept_note", "pipeline_taskforce_review", "pipeline_taskforce_approved",
-  "preparation_identification", "trc_endorsed", "ic_approved", "appraisal",
-  "bed_approved", "effective", "implementing", "mid_term_review",
-  "substantially_complete", "closed",
+  "LS001", "LS002", "LS003", "LS004", "LS005", "LS006", "LS007", "LS008",
+  "LS009", "LS010", "LS011", "LS012", "LS013", "LS014", "LS015", "LS016",
 ];
-const GATE_STAGES = new Set(["trc_endorsed", "ic_approved", "bed_approved"]);
-const SIGNATURE_INDEX = LIFECYCLE_ORDER.indexOf("effective");   // separator before implementation
-const GATE_LABEL = { trc_endorsed: "TRC", ic_approved: "IC", bed_approved: "BED" };
+const GATE_LABEL = { LS005: "TRC", LS006: "IC", LS010: "BED" };
+const GATE_STAGES = new Set(Object.keys(GATE_LABEL));
+const SIGNATURE_INDEX = LIFECYCLE_ORDER.indexOf("LS012");   // Effective: separator before implementation
 const DAYS_WARN = 30, DAYS_STALLED = 90;
 
 function daysSince(iso) {
@@ -127,7 +130,7 @@ function stageSummary(project) {
   const name = project.lifecycle_stage_display;
   const nextGate = LIFECYCLE_ORDER.slice(idx + 1).find(s => GATE_STAGES.has(s));
   let detail;
-  if (project.lifecycle_stage === "closed") detail = "closed";
+  if (project.lifecycle_stage === "LS016") detail = "closed";
   else if (idx >= SIGNATURE_INDEX) detail = "under implementation";
   else if (GATE_STAGES.has(project.lifecycle_stage)) detail = "at gate";
   else if (nextGate) detail = `next gate: ${GATE_LABEL[nextGate]}`;
@@ -155,7 +158,7 @@ function ProjectCard({ project, onClick }) {
   const sg = stageGroup(project.lifecycle_stage);
   const exception = sg.key === "suspended";
   const { idx, text } = stageSummary(project);
-  const terminal = ["closed", "cancelled"].includes(project.lifecycle_stage);
+  const terminal = ["LS016", "LS018"].includes(project.lifecycle_stage);   // Closed, Cancelled
   const days = daysSince(project.stage_entered_on);
   const stalled = !terminal && !exception && days != null && days >= DAYS_STALLED;
   const budget = formatBudget(project.envelope_total || project.budget_amount);

@@ -196,7 +196,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
         ["Hub",           project.hub],
         ["Country",       project.country],
         ["Period",        project.start_date ? `${project.start_date} → ${project.end_date || "—"}` : null],
-        ["Stage",         project.lifecycle_stage?.replace(/_/g, " ").toUpperCase()],
+        ["Stage",         project.lifecycle_stage_display || project.lifecycle_stage],
         ["PAD Document",  project.pad_name ? (
           <a href={project.pad_url} target="_blank" rel="noreferrer"
             style={{ color: "var(--blue)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>

@@ -179,7 +179,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         lead_country_id = validated_data.pop("lead_country_id").id
         sdg_ids = [s.number for s in validated_data.pop("sdg_ids", [])]
         contributing_sector_ids = [s.id for s in validated_data.pop("contributing_sector_ids", [])]
-        validated_data["lifecycle_stage"] = "concept_note"
+        validated_data["lifecycle_stage"] = "LS001"  # Concept Note
         request = self.context.get("request")
         if request and request.user.is_authenticated:
             validated_data["created_by"] = request.user

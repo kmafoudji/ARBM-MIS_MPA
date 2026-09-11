@@ -125,7 +125,7 @@ async function generatePIRS(data) {
     ["Hub",             project.hub || "—"],
     ["Country",         project.country || "—"],
     ["Period",          `${project.start_date || "—"} → ${project.end_date || "—"}`],
-    ["Stage",           (project.lifecycle_stage || "—").replace(/_/g, " ").toUpperCase()],
+    ["Stage",           project.lifecycle_stage_display || project.lifecycle_stage || "—"],
   ]));
 
   // ── Section B : Indicator Definition ──────────────────────────────────────

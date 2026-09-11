@@ -91,7 +91,7 @@ def base_rows(country_iso3, hub_code, sector_code):
         "01_project": [[
             "REF001", PROJECT_NAME, country_iso3, hub_code, sector_code,
             "1; 2; 5", "", "", "tbd", 1000, "USD", "quarterly",
-            "2025-03-31", "implementing", "2025-01-01", "2026-12-31",
+            "2025-03-31", "LS013", "2025-01-01", "2026-12-31",
         ]],
         "02a_envelope": [["REF001", "Envelope note"]],
         "02_financing_source": [
@@ -423,7 +423,7 @@ def test_a_stage_at_or_past_effective_activates_the_workspace(auth_client, rows)
     """
     from apps.project.models import Project, ProjectWorkspace
 
-    workbook = build_workbook(rows)  # 01_project declares `implementing`
+    workbook = build_workbook(rows)  # 01_project declares `LS013` (Implementing)
     validation = post(auth_client, workbook, mode="validate")
     assert validation.status_code == 200, validation.data
     planned = [c for c in validation.data["changes"] if c["sheet"] == "workspace"]
@@ -445,7 +445,7 @@ def test_a_stage_at_or_past_effective_activates_the_workspace(auth_client, rows)
 @pytest.mark.django_db
 def test_a_stage_before_effective_activates_nothing(auth_client, rows):
     """Below Effective the workspace is not implied and must not be invented."""
-    rows["01_project"][0][13] = "appraisal"  # lifecycle_stage
+    rows["01_project"][0][13] = "LS009"  # lifecycle_stage: Appraisal
     response = post(auth_client, build_workbook(rows))
     assert response.status_code == 200, response.data
     assert "workspace" not in response.data["summary"]

@@ -93,7 +93,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   const [f, setF] = useState({
     // Step 1
     name: "", official_reference_number: "", investment_cycle: "", countryIds: [], leadCountryId: "", primarySector: "",
-    contributingSectorIds: [], lifecycle_stage: "concept_note",
+    contributingSectorIds: [], lifecycle_stage: "LS001",
     // Step 2
     sdgIds: [],
     we_category: "", risk_rating: "", climate_marker: "",

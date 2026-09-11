@@ -66,7 +66,7 @@ def run_alert_engine(project=None):
         projects = Project.objects.filter(
             workspace__isnull=False,
         ).exclude(
-            lifecycle_stage__in=["cancelled", "closed", "concept_note"],
+            lifecycle_stage__in=["LS018", "LS016", "LS001"],  # Cancelled, Closed, Concept Note
         ).select_related("workspace")
 
     for proj in projects:

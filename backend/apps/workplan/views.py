@@ -802,7 +802,7 @@ class GlobalWorkplanNotificationsView(APIView):
         projects = Project.objects.in_scope(request).filter(
             workspace__isnull=False,
         ).exclude(
-            lifecycle_stage__in=["cancelled", "closed", "concept_note"],
+            lifecycle_stage__in=["LS018", "LS016", "LS001"],  # Cancelled, Closed, Concept Note
         ).values_list("id", flat=True)
 
         qs = WorkplanAlert.objects.filter(
