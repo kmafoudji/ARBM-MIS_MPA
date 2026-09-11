@@ -57,7 +57,6 @@ export default function DQPortfolio() {
   const [sortBy,      setSortBy]      = useState("composite_score");
   const [sortDir,     setSortDir]     = useState("desc");
   const [gradeFilter, setGradeFilter] = useState("");
-  const [hubFilter,   setHubFilter]   = useState("");
   const [sectorFilter,setSectorFilter]= useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [search,      setSearch]      = useState("");
@@ -74,13 +73,11 @@ export default function DQPortfolio() {
   const allResults = data?.results || [];
 
   // Options de filtre dynamiques depuis les données
-  const hubs    = useMemo(() => [...new Set(allResults.map(r => r.hub).filter(Boolean))].sort(), [allResults]);
   const sectors = useMemo(() => [...new Set(allResults.map(r => r.sector).filter(Boolean))].sort(), [allResults]);
   const levels  = useMemo(() => [...new Set(allResults.map(r => r.chain_level).filter(Boolean))].sort(), [allResults]);
 
   const filtered = useMemo(() => allResults
     .filter(r => !gradeFilter  || grade(r.composite_score) === gradeFilter)
-    .filter(r => !hubFilter    || r.hub    === hubFilter)
     .filter(r => !sectorFilter || r.sector === sectorFilter)
     .filter(r => !levelFilter  || r.chain_level === levelFilter)
     .filter(r => !search       || r.indicator_name.toLowerCase().includes(search.toLowerCase())
@@ -90,7 +87,7 @@ export default function DQPortfolio() {
       const va = parseFloat(a[sortBy]) || 0;
       const vb = parseFloat(b[sortBy]) || 0;
       return sortDir === "desc" ? vb - va : va - vb;
-    }), [allResults, gradeFilter, hubFilter, sectorFilter, levelFilter, search, sortBy, sortDir]);
+    }), [allResults, gradeFilter, sectorFilter, levelFilter, search, sortBy, sortDir]);
 
   function toggleSort(col) {
     if (sortBy === col) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -98,7 +95,7 @@ export default function DQPortfolio() {
   }
 
   function clearFilters() {
-    setGradeFilter(""); setHubFilter(""); setSectorFilter(""); setLevelFilter(""); setSearch("");
+    setGradeFilter(""); setSectorFilter(""); setLevelFilter(""); setSearch("");
   }
 
   const avg     = parseFloat(data?.portfolio_average || 0);
@@ -106,7 +103,8 @@ export default function DQPortfolio() {
   const cfgAvg   = GRADE_CONFIG[gradeAvg];
   const dist     = { A: 0, B: 0, C: 0, D: 0 };
   allResults.forEach(r => { dist[grade(r.composite_score)]++; });
-  const hasFilter = gradeFilter || hubFilter || sectorFilter || levelFilter || search;
+  // No hub filter: the hub is the session scope chosen in the top bar.
+  const hasFilter = gradeFilter || sectorFilter || levelFilter || search;
 
   return (
     <div className="view">
@@ -195,13 +193,6 @@ export default function DQPortfolio() {
             fontFamily: "inherit", outline: "none", minWidth: 180,
           }}
         />
-
-        {/* Hub */}
-        {hubs.length > 0 && (
-          <Select variant="filter" style={{ width: 160 }} placeholder="All hubs"
-            value={hubFilter} onChange={setHubFilter}
-            options={hubs.map(h => ({ value: h, label: h }))} />
-        )}
 
         {/* Sector */}
         {sectors.length > 0 && (
