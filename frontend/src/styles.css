@@ -2286,14 +2286,16 @@ input, select, textarea { font: inherit; color: inherit; }
 .pmap-stat b { display: block; font-size: 18px; font-weight: 800; line-height: 1.1; color: var(--ink); }
 .pmap-stat span { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; color: var(--muted); text-transform: uppercase; }
 
+/* Same look as the map's native control buttons (.maplibregl-ctrl-group below) */
 .pmap-reset {
   position: absolute; right: 16px; top: 14px; z-index: 5;
   display: flex; align-items: center; gap: 7px;
-  background: var(--sidebar); color: #fff; border: none; border-radius: 10px;
-  padding: 9px 14px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.95); color: var(--ink);
+  border: 1px solid var(--ground); border-radius: 8px;
+  padding: 8px 13px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
 }
-.pmap-reset:hover { background: var(--ink-soft); }
+.pmap-reset:hover { background: var(--lime-pale); }
 .pmap-compact .pmap-reset { top: 10px; right: 10px; padding: 7px 11px; }
 
 .pmap-legend {

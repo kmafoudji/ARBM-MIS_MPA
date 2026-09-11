@@ -10,7 +10,8 @@
  * shape with a 1, so every marker reads the same way. Clicking opens a card
  * next to the marker; the full map also shows a strip of totals (top left)
  * and takes the height of the window. The map opens on the mockup's view,
- * and a "Reset view" button (top right) brings it back there.
+ * and a "Reset view" button (top right), shown once the view has moved,
+ * brings it back there.
  * Basemap shared with ProjectMap (mapStyle.js).
  */
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -215,6 +216,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const cardRef = useRef(null);
   const [cardPos, setCardPos] = useState(null);
   const [height, setHeight] = useState(560);
+  const [atHome, setAtHome] = useState(true);
 
   const { data: geojson, isLoading } = useQuery({
     queryKey: ["projects", "map-points"],
@@ -267,6 +269,13 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       } else {
         map.once("idle", () => setMapReady(true));
       }
+    });
+    // The reset button only shows once the view has left the opening one.
+    map.on("moveend", () => {
+      const c = map.getCenter();
+      setAtHome(Math.abs(map.getZoom() - HOME_VIEW.zoom) < 0.01
+        && Math.abs(c.lng - HOME_VIEW.center[0]) < 0.01
+        && Math.abs(c.lat - HOME_VIEW.center[1]) < 0.01);
     });
     map.on("webglcontextlost", () => setMapReady(false));
     map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
@@ -556,7 +565,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
         </div>
       )}
 
-      {!isLoading && (
+      {!isLoading && !atHome && (
         <button type="button" className="pmap-reset" title="Back to the opening view"
           onClick={() => mapInst.current?.flyTo({ ...HOME_VIEW, duration: 900 })}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
