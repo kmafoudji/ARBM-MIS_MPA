@@ -14,7 +14,7 @@ import Icon from "../components/Icon";
 const ENDPOINT = "/api/import/asis/";
 
 const ACTION_STYLE = {
-  create:    { label: "Created",   color: "var(--lime)", bg: "var(--lime-pale)" },
+  create:    { label: "Created",   color: "var(--lime-darker)", bg: "var(--lime-pale)" },
   update:    { label: "Updated",   color: "var(--orange)", bg: "var(--sec-infra-pale)" },
   // The only destructive action, and the only one coloured as a warning:
   // rows the file dropped from a table that has no key to match on.

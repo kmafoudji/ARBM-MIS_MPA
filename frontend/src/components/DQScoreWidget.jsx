@@ -10,8 +10,8 @@ import { fmtNum } from "../utils.js";
 import Icon from "./Icon";
 
 const GRADE_CONFIG = {
-  A: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Excellent", min: 80 },
-  B: { color: "var(--lime)", bg: "var(--lime-pale)", label: "Good",      min: 60 },
+  A: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Excellent", min: 80 },
+  B: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Good",      min: 60 },
   C: { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "Fair",      min: 40 },
   D: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Poor",      min: 0  },
 };

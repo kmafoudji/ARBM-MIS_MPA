@@ -259,7 +259,7 @@ const AGGREGATION_LABELS = {
 
 const CCT_COLORS = {
   gender:      { bg: "var(--sec-women-pale)", color: "var(--rose)" },
-  climate:     { bg: "var(--lime-soft)", color: "var(--lime-darker)" },
+  climate:     { bg: "var(--lime-pale)", color: "var(--lime-darker)" },
   youth:       { bg: "var(--sec-infra-pale)", color: "var(--orange)" },
   disability:  { bg: "var(--violet-soft)", color: "var(--violet)" },
   idp_refugee: { bg: "var(--rose-soft)", color: "var(--rose)" },

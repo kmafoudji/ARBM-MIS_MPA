@@ -15,7 +15,7 @@ import Modal from "./Modal.jsx";
 import DQScoreWidget from "./DQScoreWidget.jsx";
 
 const RAG_CONFIG = {
-  green: { color: "var(--lime)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
+  green: { color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
   amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
   red:   { color: "var(--rose)", bg: "var(--rose-soft)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
   na:    { color: "var(--subtle)", bg: "var(--surface-2)", border: "var(--rule)", label: "No target", icon: "minus" },

@@ -18,8 +18,8 @@ import Select from "../components/Select.jsx";
 const STAGE_GROUPS = {
   pipeline:      { label: "Pipeline",      color: "var(--violet)", bg: "var(--violet-soft)", keys: ["LS001","LS002","LS003","LS004"] },
   appraisal:     { label: "Appraisal",     color: "var(--orange)", bg: "var(--sec-infra-pale)", keys: ["LS005","LS006","LS007","LS008","LS009","LS010","LS011"] },
-  implementation:{ label: "Active",        color: "var(--lime)", bg: "var(--lime-pale)", keys: ["LS012","LS013","LS014"] },
-  closing:       { label: "Closing",       color: "var(--lime)", bg: "var(--lime-pale)", keys: ["LS015","LS016"] },
+  implementation:{ label: "Active",        color: "var(--lime-darker)", bg: "var(--lime-pale)", keys: ["LS012","LS013","LS014"] },
+  closing:       { label: "Closing",       color: "var(--lime-darker)", bg: "var(--lime-pale)", keys: ["LS015","LS016"] },
   suspended:     { label: "Suspended",     color: "var(--rose)", bg: "var(--rose-soft)", keys: ["LS017","LS018"] },
 };
 

@@ -12,7 +12,7 @@ import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 const RAG = {
-  green: { color: "var(--lime)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
+  green: { color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
   amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
   red:   { color: "var(--rose)", bg: "var(--sec-health-pale)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
   na:    { color: "var(--subtle)", bg: "var(--surface-2)", border: "var(--subtle)", label: "No data",   icon: "minus" },
@@ -435,7 +435,7 @@ export default function Portfolio() {
           RAG Scale
         </span>
         {[
-          { color: "var(--lime)", bg: "var(--lime-pale)", label: "On track",  desc: "≥ 90% of target" },
+          { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "On track",  desc: "≥ 90% of target" },
           { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "At risk",   desc: "60–89% of target" },
           { color: "var(--rose)", bg: "var(--rose-soft)", label: "Off track", desc: "< 60% of target" },
           { color: "var(--subtle)", bg: "var(--surface-2)", label: "No data",   desc: "No approved data or target" },
