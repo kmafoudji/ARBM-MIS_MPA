@@ -3,32 +3,31 @@
  * portfolio map mockup (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
  *
  * One circle per project (points from /api/projects/map/), coloured by
- * primary sector and sized by the committed amount. Projects that fall on
- * the same spot — two projects in one country share its point — are a ring
- * of their sectors sized by their summed commitment, with the count in the
- * middle. Clicking opens a card over the map (top right); the full map also
- * shows a strip of totals (top left) and takes the height of the window.
+ * primary sector. Projects that fall on the same spot — two projects in one
+ * country share its point — are a ring of their sectors with the count in
+ * the middle; while any such ring is on screen, single points take the same
+ * shape with a 1, so every marker reads the same way. Clicking opens a card
+ * next to the marker; the full map also shows a strip of totals (top left)
+ * and takes the height of the window.
  * Basemap shared with ProjectMap (mapStyle.js).
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
 
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
+// Every project circle has the same size; in count mode it grows to the
+// cluster ring's size (26 px across, as .pmap-cluster).
+const POINT_RADIUS = 7;
+const RING_RADIUS = 13;
 
 function toMillions(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n / 1_000_000 : 0;
-}
-
-// Circle diameter in pixels for a commitment in USD millions: the square
-// root keeps area, not radius, proportional to the amount.
-function diameter(millions) {
-  return 10 + Math.sqrt(millions) * 1.8;
 }
 
 function formatCommitment(millions) {
@@ -37,8 +36,8 @@ function formatCommitment(millions) {
 }
 
 // Ring for a group of coinciding projects: sector colours in proportion,
-// the count in the middle, sized by the summed commitment.
-function clusterElement(leaves, millions) {
+// the count in the middle.
+function clusterElement(leaves) {
   const counts = new Map();
   leaves.forEach((l) => {
     const c = l.properties.primary_sector_color || FALLBACK_COLOR;
@@ -49,10 +48,9 @@ function clusterElement(leaves, millions) {
     const from = acc; acc += (n / leaves.length) * 360;
     return `${color} ${from}deg ${acc}deg`;
   });
-  const size = Math.max(26, diameter(millions));
   const el = document.createElement("div");
   el.className = "pmap-cluster";
-  el.style.cssText = `width:${size}px;height:${size}px;background:conic-gradient(${stops.join(",")})`;
+  el.style.background = `conic-gradient(${stops.join(",")})`;
   const inner = document.createElement("div");
   inner.className = "pmap-cluster-count";
   inner.textContent = String(leaves.length);
@@ -77,7 +75,7 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
   const millions = toMillions(project.envelope_total);
   const pillar = point?.properties.pillar_name;
   return (
-    <div className="pmap-card">
+    <>
       <div className="pmap-card-head">
         <button type="button" className="pmap-card-close" onClick={onClose} aria-label="Close">×</button>
         <div className="pmap-card-code">
@@ -114,14 +112,14 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
           <button type="button" className="pmap-btn" onClick={onZoom}>Zoom to area</button>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
 function GroupCard({ projects, onPick, onClose }) {
   const country = (projects[0]?.lead_country_name || "").toUpperCase();
   return (
-    <div className="pmap-card">
+    <>
       <div className="pmap-card-head">
         <button type="button" className="pmap-card-close" onClick={onClose} aria-label="Close">×</button>
         <div className="pmap-card-code">{[`${projects.length} projects`, country].filter(Boolean).join(" · ")}</div>
@@ -138,7 +136,7 @@ function GroupCard({ projects, onPick, onClose }) {
           </button>
         ))}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -155,8 +153,11 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const clusterClickRef = useRef(null);
   const clusterMarkersRef = useRef(new Map());
   const [mapReady, setMapReady] = useState(false);
-  // { kind: "project", id } or { kind: "group", ids }
+  // { kind: "project", id, lngLat } or { kind: "group", ids, lngLat }: the
+  // card opens next to the marker at lngLat and follows it as the map moves.
   const [selected, setSelected] = useState(null);
+  const cardRef = useRef(null);
+  const [cardPos, setCardPos] = useState(null);
   const [height, setHeight] = useState(560);
 
   const { data: geojson, isLoading } = useQuery({
@@ -240,16 +241,16 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       const f = e.features?.[0];
       if (!f) return;
       hover.remove();
-      setSelected({ kind: "project", id: Number(f.properties.id) });
+      setSelected({ kind: "project", id: Number(f.properties.id), lngLat: f.geometry.coordinates });
     });
     // A click on empty map closes the card.
     map.on("click", (e) => {
       if (!map.getLayer("proj-points")) return;
       if (map.queryRenderedFeatures(e.point, { layers: ["proj-points"] }).length === 0) setSelected(null);
     });
-    clusterClickRef.current = (leaves) => {
+    clusterClickRef.current = (leaves, lngLat) => {
       hover.remove();
-      setSelected({ kind: "group", ids: leaves.map((l) => Number(l.properties.id)) });
+      setSelected({ kind: "group", ids: leaves.map((l) => Number(l.properties.id)), lngLat });
     };
 
     // Hover: identification only — official reference and country, one line.
@@ -279,15 +280,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     };
   }, [compact]);
 
-  // Project points — re-filtered whenever the page filters change, and
-  // given their commitment (from the project list) for the circle size.
+  // Project points — re-filtered whenever the page filters change
   const byId = new Map(projects.map(p => [p.id, p]));
-  const feats = (geojson?.features || [])
-    .filter(f => byId.has(f.properties.id))
-    .map(f => {
-      const commit = toMillions(byId.get(f.properties.id).envelope_total);
-      return { ...f, properties: { ...f.properties, commit, radius: diameter(commit) / 2 } };
-    });
+  const feats = (geojson?.features || []).filter(f => byId.has(f.properties.id));
   const pointById = new Map(feats.map(f => [f.properties.id, f]));
 
   // Legend: the sectors present among the displayed points, in the point colour
@@ -305,28 +300,26 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     if (!map || !mapReady || !geojson) return;
     if (!map.isStyleLoaded()) return;
 
-    ["proj-points", "proj-points-shadow"].forEach(id => {
+    ["proj-points", "proj-points-shadow", "proj-points-inner", "proj-points-count"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     clusterMarkersRef.current.forEach(m => m.remove());
     clusterMarkersRef.current.clear();
     if (map.getSource("proj-points")) map.removeSource("proj-points");
 
-    // Points that coincide on screen are clustered at every zoom; a cluster
-    // carries the sum of its projects' commitments for its size.
+    // Points that coincide on screen are clustered at every zoom.
     map.addSource("proj-points", {
       type: "geojson",
       data: { type: "FeatureCollection", features: feats },
       cluster: true,
       clusterRadius: 14,
       clusterMaxZoom: 24,
-      clusterProperties: { commit: ["+", ["get", "commit"]] },
     });
     // The mockup's drop shadow: a blurred dark disc just under each circle.
     map.addLayer({ id: "proj-points-shadow", type: "circle", source: "proj-points",
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-radius": ["+", ["get", "radius"], 2],
+        "circle-radius": POINT_RADIUS + 2,
         "circle-color": "#000000",
         "circle-opacity": 0.22,
         "circle-blur": 0.8,
@@ -335,12 +328,35 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     map.addLayer({ id: "proj-points", type: "circle", source: "proj-points",
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-radius": ["get", "radius"],
+        "circle-radius": POINT_RADIUS,
         "circle-color": ["coalesce", ["get", "primary_sector_color"], FALLBACK_COLOR],
-        "circle-opacity": 0.85,
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 2,
       } });
+    // "Count mode": while any cluster is on screen, single points take the
+    // cluster's ring shape with a 1, so every marker reads the same way.
+    map.addLayer({ id: "proj-points-inner", type: "circle", source: "proj-points",
+      filter: ["!", ["has", "point_count"]],
+      layout: { visibility: "none" },
+      paint: { "circle-radius": 7, "circle-color": "#ffffff" } });
+    map.addLayer({ id: "proj-points-count", type: "symbol", source: "proj-points",
+      filter: ["!", ["has", "point_count"]],
+      layout: {
+        visibility: "none",
+        "text-field": "1",
+        "text-font": ["Noto Sans Bold"],
+        "text-size": 10,
+        "text-allow-overlap": true,
+        "text-ignore-placement": true,
+      },
+      paint: { "text-color": "#2B2B2B" } });
+    const setCountMode = (on) => {
+      if (!map.getLayer("proj-points")) return;
+      map.setPaintProperty("proj-points", "circle-radius", on ? RING_RADIUS : POINT_RADIUS);
+      map.setPaintProperty("proj-points-shadow", "circle-radius", (on ? RING_RADIUS : POINT_RADIUS) + 2);
+      map.setLayoutProperty("proj-points-inner", "visibility", on ? "visible" : "none");
+      map.setLayoutProperty("proj-points-count", "visibility", on ? "visible" : "none");
+    };
 
     // Cluster markers change with the zoom, so they are rebuilt whenever the
     // source settles.
@@ -352,18 +368,20 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.querySourceFeatures("proj-points").forEach((f) => {
         if (f.properties.cluster_id != null) clusters.set(f.properties.cluster_id, f);
       });
+      setCountMode(clusters.size > 0);
       for (const [id, f] of clusters) {
         seen.add(id);
         if (markers.has(id)) continue;
         const leaves = await source.getClusterLeaves(id, 50, 0);
         if (markers.has(id)) continue;
-        const el = clusterElement(leaves, Number(f.properties.commit) || 0);
+        const el = clusterElement(leaves);
         el.title = `${leaves.length} projects`;
+        const lngLat = f.geometry.coordinates;
         el.addEventListener("click", (ev) => {
           ev.stopPropagation();
-          clusterClickRef.current?.(leaves);
+          clusterClickRef.current?.(leaves, lngLat);
         });
-        markers.set(id, new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map));
+        markers.set(id, new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map));
       }
       markers.forEach((m, id) => {
         if (!seen.has(id)) { m.remove(); markers.delete(id); }
@@ -388,6 +406,33 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   // A selection the filters have since removed closes the card.
   const selectedProject = selected?.kind === "project" ? byId.get(selected.id) : null;
   const groupProjects = selected?.kind === "group" ? selected.ids.map(id => byId.get(id)).filter(Boolean) : [];
+  const cardOpen = !!selectedProject || groupProjects.length > 0;
+
+  // Card placement: beside the marker, on its right unless there is no room,
+  // kept inside the map; re-placed as the map moves or the card resizes.
+  const placeCard = useCallback(() => {
+    const map = mapInst.current;
+    const card = cardRef.current;
+    if (!map || !card || !selected) return;
+    const pt = map.project(selected.lngLat);
+    const { clientWidth: w, clientHeight: h } = map.getContainer();
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const gap = 20, margin = 8;
+    let x = pt.x + gap;
+    if (x + cw > w - margin) x = pt.x - gap - cw;
+    x = Math.max(margin, Math.min(x, w - cw - margin));
+    const y = Math.max(margin, Math.min(pt.y - 32, h - ch - margin));
+    setCardPos({ x, y });
+  }, [selected]);
+  useLayoutEffect(() => {
+    const map = mapInst.current;
+    if (!cardOpen || !map) { setCardPos(null); return; }
+    placeCard();
+    map.on("move", placeCard);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(placeCard) : null;
+    if (cardRef.current) ro?.observe(cardRef.current);
+    return () => { map.off("move", placeCard); ro?.disconnect(); };
+  }, [cardOpen, placeCard]);
 
   function zoomTo(id) {
     const bbox = pointById.get(id)?.properties.bbox;
@@ -428,25 +473,28 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
               <span className="pmap-legend-name">{name}</span>
             </div>
           ))}
-          <div className="pmap-legend-size">Circle size = commitment value</div>
         </div>
       )}
 
-      {selectedProject && (
-        <ProjectCard
-          project={selectedProject}
-          point={pointById.get(selectedProject.id)}
-          onOpen={() => onProjectClick?.(selectedProject.id)}
-          onZoom={() => zoomTo(selectedProject.id)}
-          onClose={() => setSelected(null)}
-        />
-      )}
-      {groupProjects.length > 0 && (
-        <GroupCard
-          projects={groupProjects}
-          onPick={(id) => setSelected({ kind: "project", id })}
-          onClose={() => setSelected(null)}
-        />
+      {cardOpen && (
+        <div ref={cardRef} className="pmap-card"
+          style={{ left: cardPos?.x ?? 0, top: cardPos?.y ?? 0, visibility: cardPos ? "visible" : "hidden" }}>
+          {selectedProject ? (
+            <ProjectCard
+              project={selectedProject}
+              point={pointById.get(selectedProject.id)}
+              onOpen={() => onProjectClick?.(selectedProject.id)}
+              onZoom={() => zoomTo(selectedProject.id)}
+              onClose={() => setSelected(null)}
+            />
+          ) : (
+            <GroupCard
+              projects={groupProjects}
+              onPick={(id) => setSelected({ kind: "project", id, lngLat: selected.lngLat })}
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </div>
       )}
 
       <div className="pmap-attribution">{ATTRIBUTION}</div>
