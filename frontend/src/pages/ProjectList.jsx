@@ -25,9 +25,9 @@ const STAGE_GROUPS = {
 const STAGE_BADGE = {
   LS001: "badge", LS002: "badge",
   LS003: "badge badge-violet", LS004: "badge badge-violet",
-  LS005: "badge badge-orange", LS006: "badge badge-orange",
+  LS005: "badge badge-blue", LS006: "badge badge-blue",
   LS007: "badge badge-blue", LS008: "badge badge-blue", LS009: "badge badge-blue",
-  LS010: "badge badge-orange", LS011: "badge badge-blue",
+  LS010: "badge badge-blue", LS011: "badge badge-blue",
   LS012: "badge badge-lime", LS013: "badge badge-lime", LS014: "badge badge-lime",
   LS015: "badge badge-green", LS016: "badge badge-green",
   LS017: "badge badge-rose", LS018: "badge badge-rose",
@@ -105,8 +105,6 @@ const LIFECYCLE_ORDER = [
   "LS001", "LS002", "LS003", "LS004", "LS005", "LS006", "LS007", "LS008",
   "LS009", "LS010", "LS011", "LS012", "LS013", "LS014", "LS015", "LS016",
 ];
-const GATE_LABEL = { LS005: "TRC", LS006: "IC", LS010: "BED" };
-const GATE_STAGES = new Set(Object.keys(GATE_LABEL));
 const SIGNATURE_INDEX = LIFECYCLE_ORDER.indexOf("LS012");   // Effective: separator before implementation
 const DAYS_WARN = 30, DAYS_STALLED = 90;
 
@@ -128,12 +126,11 @@ function stageSummary(project) {
   if (idx < 0) return { idx, text: project.lifecycle_stage_display };
   const num = idx + 1;
   const name = project.lifecycle_stage_display;
-  const nextGate = LIFECYCLE_ORDER.slice(idx + 1).find(s => GATE_STAGES.has(s));
+  // Approval gates are not shown (ADR 0012): the detail is the phase only.
   let detail;
   if (project.lifecycle_stage === "LS016") detail = "closed";
   else if (idx >= SIGNATURE_INDEX) detail = "under implementation";
-  else if (GATE_STAGES.has(project.lifecycle_stage)) detail = "at gate";
-  else if (nextGate) detail = `next gate: ${GATE_LABEL[nextGate]}`;
+  else detail = "in origination";
   return { idx, text: `${num} · ${name} — ${detail}` };
 }
 
@@ -142,7 +139,7 @@ function StageBar({ idx, exception }) {
     <div style={{ display: "flex", alignItems: "center", gap: 3, opacity: exception ? 0.35 : 1 }}>
       {LIFECYCLE_ORDER.map((s, i) => {
         const done = i <= idx;
-        const color = !done ? "var(--rule)" : GATE_STAGES.has(s) ? "var(--lime)" : "var(--blue)";
+        const color = !done ? "var(--rule)" : "var(--blue)";
         return (
           <span key={s} style={{ display: "contents" }}>
             {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 14, background: "var(--rule)", margin: "0 3px" }} />}
