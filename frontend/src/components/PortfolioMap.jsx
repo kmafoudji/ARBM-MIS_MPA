@@ -1,12 +1,18 @@
 /**
- * PortfolioMap — portfolio-wide project map
- * One point per project (from /api/projects/map/); clicking a point opens
- * a popup linking to the project detail. Basemap shared with ProjectMap
- * (mapStyle.js); the points sit on top of every label.
+ * PortfolioMap — portfolio-wide project map, in the style of the LLF
+ * portfolio map mockup (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
+ *
+ * One circle per project (points from /api/projects/map/), coloured by
+ * primary sector and sized by the committed amount. Projects that fall on
+ * the same spot — two projects in one country share its point — are a ring
+ * of their sectors sized by their summed commitment, with the count in the
+ * middle. Clicking opens a card over the map (top right); the full map also
+ * shows a strip of totals (top left) and takes the height of the window.
+ * Basemap shared with ProjectMap (mapStyle.js).
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
@@ -14,8 +20,25 @@ import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
 
-// Donut for a cluster: sector colours in proportion, the count in the middle.
-function clusterElement(leaves) {
+function toMillions(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n / 1_000_000 : 0;
+}
+
+// Circle diameter in pixels for a commitment in USD millions: the square
+// root keeps area, not radius, proportional to the amount.
+function diameter(millions) {
+  return 10 + Math.sqrt(millions) * 1.8;
+}
+
+function formatCommitment(millions) {
+  if (!millions) return "—";
+  return millions >= 1000 ? `${(millions / 1000).toFixed(2)} bn` : `${millions.toFixed(1)} M`;
+}
+
+// Ring for a group of coinciding projects: sector colours in proportion,
+// the count in the middle, sized by the summed commitment.
+function clusterElement(leaves, millions) {
   const counts = new Map();
   leaves.forEach((l) => {
     const c = l.properties.primary_sector_color || FALLBACK_COLOR;
@@ -26,15 +49,13 @@ function clusterElement(leaves) {
     const from = acc; acc += (n / leaves.length) * 360;
     return `${color} ${from}deg ${acc}deg`;
   });
+  const size = Math.max(26, diameter(millions));
   const el = document.createElement("div");
-  el.style.cssText = "position:relative;width:26px;height:26px;border-radius:50%;cursor:pointer;" +
-    "box-shadow:0 0 0 2px #FFFFFF, 0 1px 4px rgba(0,0,0,0.25);" +
-    `background:conic-gradient(${stops.join(",")})`;
+  el.className = "pmap-cluster";
+  el.style.cssText = `width:${size}px;height:${size}px;background:conic-gradient(${stops.join(",")})`;
   const inner = document.createElement("div");
+  inner.className = "pmap-cluster-count";
   inner.textContent = String(leaves.length);
-  inner.style.cssText = "position:absolute;inset:6px;border-radius:50%;background:#FFFFFF;" +
-    "display:flex;align-items:center;justify-content:center;" +
-    "font:700 10px/1 system-ui,sans-serif;color:#2B2B2B";
   el.append(inner);
   return el;
 }
@@ -42,40 +63,122 @@ function clusterElement(leaves) {
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   features.forEach(f => {
-    function walk(c) {
-      if (typeof c[0] === "number") {
-        minLng = Math.min(minLng, c[0]); maxLng = Math.max(maxLng, c[0]);
-        minLat = Math.min(minLat, c[1]); maxLat = Math.max(maxLat, c[1]);
-      } else c.forEach(walk);
-    }
-    if (f.geometry?.coordinates) walk(f.geometry.coordinates);
+    const [lng, lat] = f.geometry?.coordinates || [];
+    if (typeof lng !== "number") return;
+    minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
+    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
   });
   return [[minLng - 2, minLat - 2], [maxLng + 2, maxLat + 2]];
 }
 
-// `compact` renders a shorter, quieter map for dashboards: no fullscreen or
-// scale control and no scroll-wheel zoom, so the page keeps scrolling.
+function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
+  const country = (project.lead_country_name || "").toUpperCase();
+  const chips = [project.lifecycle_stage_display, project.primary_sector_name, project.hub_name].filter(Boolean);
+  const millions = toMillions(project.envelope_total);
+  const pillar = point?.properties.pillar_name;
+  return (
+    <div className="pmap-card">
+      <div className="pmap-card-head">
+        <button type="button" className="pmap-card-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="pmap-card-code">
+          {[project.official_reference_number, country].filter(Boolean).join(" · ")}
+        </div>
+        <div className="pmap-card-name">{project.name}</div>
+        {chips.length > 0 && (
+          <div className="pmap-card-chips">
+            {chips.map((c) => <span key={c} className="pmap-card-chip">{c}</span>)}
+          </div>
+        )}
+      </div>
+      <div className="pmap-card-body">
+        <div className="pmap-row">
+          <span className="pmap-row-k">Commitment</span>
+          <span className="pmap-row-v">{millions ? `US$ ${formatCommitment(millions)}` : "—"}</span>
+        </div>
+        {pillar && pillar !== project.primary_sector_name && (
+          <div className="pmap-row">
+            <span className="pmap-row-k">Pillar</span>
+            <span className="pmap-row-v">{pillar}</span>
+          </div>
+        )}
+        {project.country_names?.length > 0 && (
+          <div className="pmap-row">
+            <span className="pmap-row-k">{project.country_names.length > 1 ? "Countries" : "Country"}</span>
+            <span className="pmap-row-v">{project.country_names.join(", ")}</span>
+          </div>
+        )}
+      </div>
+      <div className="pmap-card-foot">
+        <button type="button" className="pmap-btn pmap-btn-primary" onClick={onOpen}>Open project →</button>
+        {point?.properties.bbox && (
+          <button type="button" className="pmap-btn" onClick={onZoom}>Zoom to area</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GroupCard({ projects, onPick, onClose }) {
+  const country = (projects[0]?.lead_country_name || "").toUpperCase();
+  return (
+    <div className="pmap-card">
+      <div className="pmap-card-head">
+        <button type="button" className="pmap-card-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="pmap-card-code">{[`${projects.length} projects`, country].filter(Boolean).join(" · ")}</div>
+        <div className="pmap-card-name">Projects at this location</div>
+      </div>
+      <div className="pmap-card-body">
+        {projects.map((p) => (
+          <button key={p.id} type="button" className="pmap-group-row" onClick={() => onPick(p.id)}>
+            <span className="pmap-dot" style={{ background: p.primary_sector_color || FALLBACK_COLOR }} />
+            <span style={{ minWidth: 0 }}>
+              <span className="pmap-group-code">{p.official_reference_number}</span>
+              <span className="pmap-group-name">{p.name}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// `compact` renders a shorter, quieter map for dashboards: no totals strip,
+// no fullscreen or scale control and no scroll-wheel zoom, so the page keeps
+// scrolling.
 export default function PortfolioMap({ projects = [], onProjectClick, compact = false }) {
+  const wrapRef = useRef(null);
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
-  const popupRef = useRef(null);
   const hoverRef = useRef(null);
-  // Clusters are HTML markers (a donut of sector colours cannot be drawn by
-  // a circle layer); the handlers are set at map init, the markers later.
-  const clusterHandlersRef = useRef({});
+  // Clusters are HTML markers (a ring of sector colours cannot be drawn by a
+  // circle layer); the handler is set at map init, the markers later.
+  const clusterClickRef = useRef(null);
   const clusterMarkersRef = useRef(new Map());
   const [mapReady, setMapReady] = useState(false);
-
-  // The popup DOM lives outside React — keep the latest callback in a ref
-  // so its click handler never goes stale.
-  const onProjectClickRef = useRef(onProjectClick);
-  useEffect(() => { onProjectClickRef.current = onProjectClick; });
+  // { kind: "project", id } or { kind: "group", ids }
+  const [selected, setSelected] = useState(null);
+  const [height, setHeight] = useState(560);
 
   const { data: geojson, isLoading } = useQuery({
     queryKey: ["projects", "map-points"],
     queryFn:  () => apiFetch("/api/projects/map/"),
     staleTime: 5 * 60_000,
   });
+
+  // The full map runs from where it starts to the bottom of the window.
+  useLayoutEffect(() => {
+    if (compact) return;
+    const fit = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setHeight(Math.max(480, Math.round(window.innerHeight - top - 24)));
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [compact]);
+  useEffect(() => { mapInst.current?.resize(); }, [height]);
 
   // Map init
   useEffect(() => {
@@ -88,12 +191,14 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       attributionControl: false,
     });
     mapInst.current = map;
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
+    // Bottom right as in the mockup; top left on the short dashboard map,
+    // where the card would cover the bottom-right corner.
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), compact ? "top-left" : "bottom-right");
     if (compact) {
       map.scrollZoom.disable();
     } else {
+      map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
       map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
-      map.addControl(new maplibregl.FullscreenControl(), "top-left");
     }
     // In compact mode the container is sized by flex layout, which may
     // settle after the map measured itself: follow the container's size.
@@ -112,109 +217,50 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
     // MapLibre stringifies feature properties in event payloads: null → "null".
     const clean = (v) => (v && v !== "null" ? v : null);
-    const div = (text, css) => {
-      const d = document.createElement("div");
-      d.textContent = text;
-      d.style.cssText = css;
-      return d;
-    };
-
     const hover = new maplibregl.Popup({
       offset: 12, className: "arbm-popup arbm-popup-hover",
       closeButton: false, closeOnClick: false,
     });
     hoverRef.current = hover;
-    const sectorDot = (color) => {
-      const dot = document.createElement("span");
-      dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;flex:none;background:${clean(color) || FALLBACK_COLOR}`;
-      return dot;
-    };
-    const openCard = (lngLat, el) => {
-      hoverRef.current?.remove();
-      popupRef.current?.remove();
-      popupRef.current = new maplibregl.Popup({ offset: 12, className: "arbm-popup", maxWidth: "320px" })
-        .setLngLat(lngLat)
-        .setDOMContent(el)
-        .addTo(map);
-      popupRef.current.on("close", () => { popupRef.current = null; });
+    const hoverContent = (title, sub) => {
+      const el = document.createElement("div");
+      el.className = "pmap-hover";
+      const b = document.createElement("b");
+      b.textContent = title;
+      el.append(b);
+      if (sub) {
+        const s = document.createElement("span");
+        s.textContent = sub;
+        el.append(s);
+      }
+      return el;
     };
 
-    // Click: the project card — full name, reference, pillar › sector with
-    // the sector colour (the same colour as the point), stage, and the link.
     map.on("click", "proj-points", (e) => {
       const f = e.features?.[0];
       if (!f) return;
-      const p = f.properties;
-      const el = document.createElement("div");
-      el.style.cssText = "font-family:inherit;padding:12px 14px;min-width:220px;max-width:280px";
-      el.append(div(p.name || "—", "font-size:13px;font-weight:600;color:#2B2B2B;line-height:1.3"));
-      const ref = [clean(p.official_reference_number), clean(p.lead_country_name)].filter(Boolean).join(" · ");
-      if (ref) el.append(div(ref, "font-size:11px;color:#A7A7A7;margin-top:2px"));
-
-      const sector = clean(p.primary_sector_name);
-      if (sector) {
-        const row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:#545454";
-        const pillar = clean(p.pillar_name);
-        row.append(sectorDot(p.primary_sector_color), div(pillar ? `${pillar} › ${sector}` : sector, ""));
-        el.append(row);
-      }
-      const stage = clean(p.lifecycle_stage_display);
-      if (stage) {
-        el.append(div(stage, "display:inline-block;margin-top:8px;font-size:10px;font-weight:600;color:#545454;background:#F7F6F6;border-radius:999px;padding:2px 8px"));
-      }
-
-      const btn = document.createElement("button");
-      btn.textContent = "Open project →";
-      btn.style.cssText = "display:block;margin-top:10px;font-size:12px;font-weight:600;color:#0C9A71;background:none;border:none;padding:0;cursor:pointer";
-      btn.addEventListener("click", () => onProjectClickRef.current?.(Number(p.id)));
-      el.append(btn);
-      openCard(f.geometry.coordinates, el);
+      hover.remove();
+      setSelected({ kind: "project", id: Number(f.properties.id) });
     });
-
-    // Cluster card (projects whose points coincide, e.g. two projects
-    // covering the same country): a list, one row per project.
-    clusterHandlersRef.current.click = (lngLat, leaves) => {
-      const el = document.createElement("div");
-      el.style.cssText = "font-family:inherit;padding:10px 14px;min-width:240px";
-      el.append(div(`${leaves.length} projects`, "font-size:11px;color:#A7A7A7;margin-bottom:6px"));
-      leaves.forEach((leaf) => {
-        const p = leaf.properties;
-        const row = document.createElement("button");
-        row.style.cssText = "display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-top:1px solid #ECEBE8;padding:8px 0;cursor:pointer;font-family:inherit";
-        const text = document.createElement("div");
-        text.style.cssText = "min-width:0";
-        text.append(div(p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B;line-height:1.3"));
-        const meta = [clean(p.official_reference_number), clean(p.primary_sector_name)].filter(Boolean).join(" · ");
-        if (meta) text.append(div(meta, "font-size:11px;color:#7E7E7E;margin-top:1px"));
-        row.append(sectorDot(p.primary_sector_color), text);
-        row.addEventListener("click", () => onProjectClickRef.current?.(Number(p.id)));
-        el.append(row);
-      });
-      openCard(lngLat, el);
+    // A click on empty map closes the card.
+    map.on("click", (e) => {
+      if (!map.getLayer("proj-points")) return;
+      if (map.queryRenderedFeatures(e.point, { layers: ["proj-points"] }).length === 0) setSelected(null);
+    });
+    clusterClickRef.current = (leaves) => {
+      hover.remove();
+      setSelected({ kind: "group", ids: leaves.map((l) => Number(l.properties.id)) });
     };
-    clusterHandlersRef.current.enter = (lngLat, count) => {
-      if (popupRef.current) return;
-      const el = document.createElement("div");
-      el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap";
-      el.append(div(`${count} projects · click to list`, "font-size:11px;color:#545454"));
-      hover.setLngLat(lngLat).setDOMContent(el).addTo(map);
-    };
-    clusterHandlersRef.current.leave = () => hover.remove();
 
     // Hover: identification only — official reference and country, one line.
-    // The click card replaces it and hover stays quiet while a card is open.
     map.on("mousemove", "proj-points", (e) => {
       map.getCanvas().style.cursor = "pointer";
       const f = e.features?.[0];
-      if (!f || popupRef.current) return;
+      if (!f) return;
       const p = f.properties;
-      const el = document.createElement("div");
-      el.style.cssText = "font-family:inherit;padding:6px 10px;white-space:nowrap;display:flex;gap:6px;align-items:baseline";
-      el.append(div(clean(p.official_reference_number) || p.name || "—", "font-size:12px;font-weight:600;color:#2B2B2B"));
-      const country = clean(p.lead_country_name);
-      if (country) el.append(div(country, "font-size:11px;color:#7E7E7E"));
-      hover.setLngLat(f.geometry.coordinates).setDOMContent(el).addTo(map);
+      hover.setLngLat(f.geometry.coordinates)
+        .setDOMContent(hoverContent(clean(p.official_reference_number) || p.name || "—", clean(p.lead_country_name)))
+        .addTo(map);
     });
     map.on("mouseleave", "proj-points", () => {
       map.getCanvas().style.cursor = "";
@@ -226,18 +272,23 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       clusterMarkersRef.current.clear();
       hoverRef.current?.remove();
       hoverRef.current = null;
-      popupRef.current?.remove();
-      popupRef.current = null;
       ro?.disconnect();
       map.remove();
       mapInst.current = null;
       setMapReady(false);
     };
-  }, []);
+  }, [compact]);
 
-  // Project points — re-filtered whenever the page filters change
-  const ids = new Set(projects.map(p => p.id));
-  const feats = (geojson?.features || []).filter(f => ids.has(f.properties.id));
+  // Project points — re-filtered whenever the page filters change, and
+  // given their commitment (from the project list) for the circle size.
+  const byId = new Map(projects.map(p => [p.id, p]));
+  const feats = (geojson?.features || [])
+    .filter(f => byId.has(f.properties.id))
+    .map(f => {
+      const commit = toMillions(byId.get(f.properties.id).envelope_total);
+      return { ...f, properties: { ...f.properties, commit, radius: diameter(commit) / 2 } };
+    });
+  const pointById = new Map(feats.map(f => [f.properties.id, f]));
 
   // Legend: the sectors present among the displayed points, in the point colour
   const legend = [...new Map(
@@ -245,75 +296,54 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
                     f.properties.primary_sector_color || FALLBACK_COLOR])
   )].sort((a, b) => a[0].localeCompare(b[0]));
 
+  // Totals strip: the projects the page filters let through.
+  const committed = projects.reduce((sum, p) => sum + toMillions(p.envelope_total), 0);
+  const countries = new Set(projects.flatMap(p => p.country_names?.length ? p.country_names : [p.lead_country_name]).filter(Boolean));
+
   useEffect(() => {
     const map = mapInst.current;
     if (!map || !mapReady || !geojson) return;
     if (!map.isStyleLoaded()) return;
 
-    popupRef.current?.remove();
-    popupRef.current = null;
-
-    ["proj-points", "proj-points-halo", "proj-points-inner", "proj-points-count"].forEach(id => {
+    ["proj-points", "proj-points-shadow"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     clusterMarkersRef.current.forEach(m => m.remove());
     clusterMarkersRef.current.clear();
     if (map.getSource("proj-points")) map.removeSource("proj-points");
 
-    // Points that coincide on screen (projects covering the same country get
-    // the same point-on-surface) are clustered at every zoom; a cluster is a
-    // count badge whose card lists its projects.
+    // Points that coincide on screen are clustered at every zoom; a cluster
+    // carries the sum of its projects' commitments for its size.
     map.addSource("proj-points", {
       type: "geojson",
       data: { type: "FeatureCollection", features: feats },
       cluster: true,
       clusterRadius: 14,
       clusterMaxZoom: 24,
+      clusterProperties: { commit: ["+", ["get", "commit"]] },
     });
-    map.addLayer({ id: "proj-points-halo", type: "circle", source: "proj-points",
+    // The mockup's drop shadow: a blurred dark disc just under each circle.
+    map.addLayer({ id: "proj-points-shadow", type: "circle", source: "proj-points",
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-radius": 11,
-        "circle-color": ["coalesce", ["get", "primary_sector_color"], FALLBACK_COLOR],
-        "circle-opacity": 0.25,
+        "circle-radius": ["+", ["get", "radius"], 2],
+        "circle-color": "#000000",
+        "circle-opacity": 0.22,
+        "circle-blur": 0.8,
+        "circle-translate": [0, 1],
       } });
     map.addLayer({ id: "proj-points", type: "circle", source: "proj-points",
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-radius": 6,
+        "circle-radius": ["get", "radius"],
         "circle-color": ["coalesce", ["get", "primary_sector_color"], FALLBACK_COLOR],
+        "circle-opacity": 0.85,
         "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 1.5,
+        "circle-stroke-width": 2,
       } });
-    // "Count mode": while any cluster is on screen, single points take the
-    // same donut shape with a 1, so every marker reads the same way.
-    map.addLayer({ id: "proj-points-inner", type: "circle", source: "proj-points",
-      filter: ["!", ["has", "point_count"]],
-      layout: { visibility: "none" },
-      paint: { "circle-radius": 7, "circle-color": "#ffffff" } });
-    map.addLayer({ id: "proj-points-count", type: "symbol", source: "proj-points",
-      filter: ["!", ["has", "point_count"]],
-      layout: {
-        visibility: "none",
-        "text-field": "1",
-        "text-font": ["Noto Sans Bold"],
-        "text-size": 10,
-        "text-allow-overlap": true,
-        "text-ignore-placement": true,
-      },
-      paint: { "text-color": "#2B2B2B" } });
-    const setCountMode = (on) => {
-      if (!map.getLayer("proj-points")) return;
-      map.setPaintProperty("proj-points", "circle-radius", on ? 13 : 6);
-      map.setPaintProperty("proj-points", "circle-stroke-width", on ? 2 : 1.5);
-      map.setLayoutProperty("proj-points-halo", "visibility", on ? "none" : "visible");
-      map.setLayoutProperty("proj-points-inner", "visibility", on ? "visible" : "none");
-      map.setLayoutProperty("proj-points-count", "visibility", on ? "visible" : "none");
-    };
 
-    // Cluster markers: a ring split by sector in proportion (one colour when
-    // every project shares the sector), the count in the middle. Clusters
-    // change with the zoom, so they are rebuilt whenever the source settles.
+    // Cluster markers change with the zoom, so they are rebuilt whenever the
+    // source settles.
     const source = map.getSource("proj-points");
     const markers = clusterMarkersRef.current;
     const syncClusters = async () => {
@@ -322,21 +352,18 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.querySourceFeatures("proj-points").forEach((f) => {
         if (f.properties.cluster_id != null) clusters.set(f.properties.cluster_id, f);
       });
-      setCountMode(clusters.size > 0);
       for (const [id, f] of clusters) {
         seen.add(id);
         if (markers.has(id)) continue;
         const leaves = await source.getClusterLeaves(id, 50, 0);
         if (markers.has(id)) continue;
-        const el = clusterElement(leaves);
-        const lngLat = f.geometry.coordinates;
+        const el = clusterElement(leaves, Number(f.properties.commit) || 0);
+        el.title = `${leaves.length} projects`;
         el.addEventListener("click", (ev) => {
           ev.stopPropagation();
-          clusterHandlersRef.current.click?.(lngLat, leaves);
+          clusterClickRef.current?.(leaves);
         });
-        el.addEventListener("mouseenter", () => clusterHandlersRef.current.enter?.(lngLat, leaves.length));
-        el.addEventListener("mouseleave", () => clusterHandlersRef.current.leave?.());
-        markers.set(id, new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map));
+        markers.set(id, new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates).addTo(map));
       }
       markers.forEach((m, id) => {
         if (!seen.has(id)) { m.remove(); markers.delete(id); }
@@ -350,7 +377,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     syncClusters();
 
     if (feats.length) {
-      map.fitBounds(getBbox(feats), { padding: 48, maxZoom: 6, duration: 900 });
+      map.fitBounds(getBbox(feats), { padding: 60, maxZoom: 6, duration: 900 });
     }
     return () => {
       map.off("data", onData);
@@ -358,95 +385,71 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     };
   }, [mapReady, geojson, projects]);
 
+  // A selection the filters have since removed closes the card.
+  const selectedProject = selected?.kind === "project" ? byId.get(selected.id) : null;
+  const groupProjects = selected?.kind === "group" ? selected.ids.map(id => byId.get(id)).filter(Boolean) : [];
+
+  function zoomTo(id) {
+    const bbox = pointById.get(id)?.properties.bbox;
+    if (!bbox || !mapInst.current) return;
+    mapInst.current.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 60, maxZoom: 8, duration: 900 });
+  }
+
   return (
-    <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
-      border: "1px solid #ECEBE8",
-      // compact: fixed dashboard height so the row does not stretch with its neighbour
-      ...(compact ? { height: 320, display: "flex" } : {}) }}>
+    <div ref={wrapRef} className={`pmap${compact ? " pmap-compact" : ""}`}
+      style={compact ? { height: 320, display: "flex" } : undefined}>
 
-      {/* Style overrides for native MapLibre controls */}
-      <style>{`
-        .maplibregl-ctrl-group {
-          border-radius: 8px !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
-          border: 1px solid #ECEBE8 !important;
-          overflow: hidden;
-        }
-        .maplibregl-ctrl-group button {
-          width: 32px !important; height: 32px !important;
-          background: rgba(255,255,255,0.95) !important;
-          border: none !important;
-          border-bottom: 1px solid #ECEBE8 !important;
-        }
-        .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
-        .maplibregl-ctrl-group button:hover { background: #EFFFFA !important; }
-        .maplibregl-ctrl-group button span { filter: none !important; }
-        .maplibregl-ctrl-scale {
-          background: rgba(255,255,255,0.85) !important;
-          border: 1px solid #ECEBE8 !important;
-          border-radius: 4px !important;
-          font-size: 10px !important;
-          color: #7E7E7E !important;
-          padding: 1px 5px !important;
-        }
-        .arbm-popup .maplibregl-popup-content {
-          border-radius: 10px !important;
-          padding: 0 !important;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-          border: 1px solid #ECEBE8 !important;
-        }
-        .arbm-popup .maplibregl-popup-tip { display: none !important; }
-        .arbm-popup-hover { pointer-events: none; }
-      `}</style>
-
-      {/* Loading */}
       {isLoading && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 5,
-          background: "#F7F6F6", display: "flex",
-          alignItems: "center", justifyContent: "center", fontSize: 12, color: "#A7A7A7" }}>
+        <div className="pmap-loading">
           <span className="spinner" style={{ marginRight: 8 }} /> Loading map…
         </div>
       )}
 
-      {/* Empty state (loaded, but no project matches the filters) */}
       {!isLoading && geojson && feats.length === 0 && (
-        <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
-          zIndex: 5, background: "rgba(255,255,255,0.95)", borderRadius: 10,
-          padding: "8px 14px", fontSize: 12, color: "#7E7E7E",
-          border: "1px solid #ECEBE8" }}>
-          No projects to display on the map
+        <div className="pmap-empty">No projects to display on the map</div>
+      )}
+
+      <div ref={mapRef} style={compact ? { height: "100%", width: "100%" } : { height, width: "100%" }} />
+
+      {!compact && !isLoading && (
+        <div className="pmap-strip">
+          <div className="pmap-stat"><b>{projects.length}</b><span>Projects</span></div>
+          <div className="pmap-stat"><b>{formatCommitment(committed)}</b><span>Committed USD</span></div>
+          <div className="pmap-stat"><b>{countries.size}</b><span>Countries</span></div>
         </div>
       )}
 
-      <div ref={mapRef} style={compact ? { height: "100%", width: "100%" } : { height: 520, width: "100%" }} />
-
-      {/* Legend — colour = primary sector */}
       {legend.length > 0 && !isLoading && (
-        <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5,
-          background: "rgba(255,255,255,0.92)", border: "1px solid #ECEBE8",
-          borderRadius: 8, padding: compact ? "6px 8px" : "8px 10px",
-          fontSize: 11, color: "#545454", maxWidth: 200, }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
-            textTransform: "uppercase", color: "#A7A7A7", marginBottom: 4 }}>
-            Primary sector
-          </div>
+        <div className="pmap-legend">
+          <h5>Primary sector</h5>
           {legend.map(([name, color]) => (
-            <div key={name} style={{ display: "flex", alignItems: "center", gap: 6,
-              lineHeight: compact ? "16px" : "18px" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none",
-                background: color, border: "1px solid rgba(0,0,0,0.08)" }} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+            <div key={name} className="pmap-legend-item">
+              <span className="pmap-dot" style={{ background: color }} />
+              <span className="pmap-legend-name">{name}</span>
             </div>
           ))}
+          <div className="pmap-legend-size">Circle size = commitment value</div>
         </div>
       )}
 
-      {/* Attribution */}
-      <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,
-        color: "#A7A7A7", zIndex: 5, background: "rgba(255,255,255,0.7)",
-        padding: "2px 6px", borderRadius: 4 }}>
-        {ATTRIBUTION}
-      </div>
+      {selectedProject && (
+        <ProjectCard
+          project={selectedProject}
+          point={pointById.get(selectedProject.id)}
+          onOpen={() => onProjectClick?.(selectedProject.id)}
+          onZoom={() => zoomTo(selectedProject.id)}
+          onClose={() => setSelected(null)}
+        />
+      )}
+      {groupProjects.length > 0 && (
+        <GroupCard
+          projects={groupProjects}
+          onPick={(id) => setSelected({ kind: "project", id })}
+          onClose={() => setSelected(null)}
+        />
+      )}
+
+      <div className="pmap-attribution">{ATTRIBUTION}</div>
     </div>
   );
 }
