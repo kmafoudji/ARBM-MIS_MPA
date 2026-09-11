@@ -508,11 +508,12 @@ export default function ResultsEntry({ projectId, canEdit }) {
   const [docsFor, setDocsFor] = useState(null);         // { rowId, rdId, subtitle }
   const qc = useQueryClient();
 
-  const { data, isLoading, error } = useQuery({
+  // Default retries (3, with backoff): a blip — a redeploy, a proxy timeout —
+  // must not leave the grid stuck on an error until the page is reloaded.
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["results-summary", projectId],
     queryFn: () => apiFetch(`/api/projects/${projectId}/results/summary/`),
     staleTime: 30_000,
-    retry: false,
   });
 
   if (isLoading) return (
@@ -521,13 +522,20 @@ export default function ResultsEntry({ projectId, canEdit }) {
     </div>
   );
 
-  if (error) return (
-    <div className="card-body">
-      <p className="text-muted text-sm" style={{ margin: 0, color: "var(--rose)" }}>
-        Error loading results: {JSON.stringify(error?.detail || error?.message || error)}
-      </p>
-    </div>
-  );
+  if (error) {
+    const detail = typeof error?.detail?.detail === "string" ? error.detail.detail : "";
+    return (
+      <div className="card-body">
+        <p className="text-sm" style={{ margin: "0 0 8px", color: "var(--rose)" }}>
+          Could not load the results.{detail ? ` ${detail}` : ""}
+        </p>
+        <button type="button" className="btn btn-ghost btn-sm row" style={{ gap: 6 }}
+          onClick={() => refetch()} disabled={isFetching}>
+          <Icon name="refresh" size={13} /> {isFetching ? "Retrying…" : "Retry"}
+        </button>
+      </div>
+    );
+  }
 
   if (!data?.rows?.length) return (
     <div className="card-body">
