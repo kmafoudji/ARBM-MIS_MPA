@@ -63,6 +63,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
     hub_name = serializers.SerializerMethodField()
     envelope_total = serializers.SerializerMethodField()
     stage_entered_on = serializers.SerializerMethodField()
+    risk_rating_display = serializers.CharField(source="get_risk_rating_display", read_only=True)
 
     def get_stage_entered_on(self, obj):
         """Date of entry into the current stage (last transition to it),
@@ -101,6 +102,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "lifecycle_stage", "lifecycle_stage_display",
             "budget_amount", "envelope_total", "created_at",
             "hub_name", "stage_entered_on",
+            "risk_rating", "risk_rating_display",
         ]
 
     def get_pillar_id(self, obj):

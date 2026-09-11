@@ -242,7 +242,8 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
   const [search,      setSearch]      = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [sectorFilter,setSectorFilter]= useState("");
-  const [hubFilter,   setHubFilter]   = useState("");
+  // Map colouring (the mockup's "Colour by"): sector, lifecycle or risk.
+  const [colourBy,    setColourBy]    = useState("sector");
 
   const { data = [], isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["projects"],
@@ -265,7 +266,6 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
       .map(([pillar, set]) => [pillar, [...set].sort()]);
   }, [data]);
-  const hubs    = useMemo(() => [...new Set(data.map(p => p.hub_name).filter(Boolean))].sort(), [data]);
 
   // Filtrage
   const filtered = useMemo(() => data.filter(p => {
@@ -280,14 +280,15 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
       const value = kind === "pillar" ? (p.pillar_name || p.primary_sector_name) : p.primary_sector_name;
       if (value !== name) return false;
     }
-    if (hubFilter    && p.hub_name !== hubFilter)               return false;
     return true;
-  }), [data, search, stageFilter, sectorFilter, hubFilter]);
+  }), [data, search, stageFilter, sectorFilter]);
 
-  const hasFilter = search || stageFilter || sectorFilter || hubFilter;
+  // No hub filter here: the hub is the session scope chosen in the top bar,
+  // which already narrows every portfolio figure.
+  const hasFilter = search || stageFilter || sectorFilter;
 
   function clearFilters() {
-    setSearch(""); setStageFilter(""); setSectorFilter(""); setHubFilter("");
+    setSearch(""); setStageFilter(""); setSectorFilter("");
   }
 
   function selectStyle(active) {
@@ -367,13 +368,6 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
           </select>
         )}
 
-        {/* Hub */}
-        {hubs.length > 0 && (
-          <select style={selectStyle(hubFilter)} value={hubFilter} onChange={e => setHubFilter(e.target.value)}>
-            <option value="">All hubs</option>
-            {hubs.map(h => <option key={h} value={h}>{h}</option>)}
-          </select>
-        )}
 
         {hasFilter && (
           <button onClick={clearFilters} style={{
@@ -390,6 +384,16 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           {!header && (
             <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
+          )}
+          {viewMode === "map" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--subtle)" }}>
+              Colour by
+              <select style={selectStyle(false)} value={colourBy} onChange={e => setColourBy(e.target.value)}>
+                <option value="sector">Sector</option>
+                <option value="lifecycle">Lifecycle</option>
+                <option value="risk">Risk level</option>
+              </select>
+            </label>
           )}
           <span style={{ fontSize: 11, color: "var(--subtle)" }}>
             {filtered.length}{hasFilter ? ` of ${data.length}` : ""} project{filtered.length !== 1 ? "s" : ""}
@@ -515,7 +519,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
 
       {/* ── Carte ───────────────────────────────────────────────────── */}
       {!isLoading && viewMode === "map" && (
-        <PortfolioMap projects={filtered} onProjectClick={onProjectClick} />
+        <PortfolioMap projects={filtered} onProjectClick={onProjectClick} colourBy={colourBy} />
       )}
 
       {/* ── Aucun résultat après filtre ─────────────────────────────── */}

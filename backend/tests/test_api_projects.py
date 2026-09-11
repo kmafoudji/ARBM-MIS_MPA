@@ -251,3 +251,15 @@ class TestProjectDelete:
         assert resp.status_code in (401, 403)
         from apps.project.models import Project
         assert Project.objects.filter(pk=project.pk).exists()
+
+
+@pytest.mark.django_db
+def test_project_list_carries_the_risk_rating(auth_client):
+    """The portfolio map colours by risk level from the list payload."""
+    client, _ = auth_client
+    ProjectFactory(risk_rating="tbd")
+    response = client.get("/api/projects/")
+    assert response.status_code == 200
+    rows = response.data["results"] if isinstance(response.data, dict) else response.data
+    assert rows[0]["risk_rating"] == "tbd"
+    assert rows[0]["risk_rating_display"] == "To be defined"
