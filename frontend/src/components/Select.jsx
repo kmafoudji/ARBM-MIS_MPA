@@ -22,6 +22,7 @@ import Icon from "./Icon";
  *                filter-bar look, outlined in the accent while it holds a
  *                value; the placeholder names the unfiltered state ("All
  *                sectors") and clearing returns to it
+ *   icon         name of an Icon shown before the value (e.g. "map-pin")
  *   className, style  applied to the root (e.g. a width in a filter bar)
  *   id, name, required, disabled
  */
@@ -37,6 +38,7 @@ export default function Select({
   variant = "field",
   className = "",
   style,
+  icon,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -148,6 +150,9 @@ export default function Select({
           }
         }}
       >
+        {icon && (
+          <span className="select-icon" aria-hidden="true"><Icon name={icon} size={12} /></span>
+        )}
         {selected?.iso2 !== undefined && (
           <Flag iso2={selected.iso2} size={16} title={selected.label} />
         )}
