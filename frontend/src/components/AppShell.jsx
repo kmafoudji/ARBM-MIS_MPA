@@ -5,6 +5,7 @@ import {
   LogoFull,
   IconCatalogue,
   IconDashboard,
+  IconPortfolioOverview,
   IconPortfolio,
   IconMasterData,
   IconNewProject,
@@ -23,19 +24,20 @@ import { apiFetch } from "../api";
 const PROJECT_VIEWS = new Set(["project-detail", "pirs"]);
 
 // Breadcrumb chain: each view declares its parent, so a clickable trail up to
-// the dashboard can be rebuilt.
+// the home view (Portfolio Overview) can be rebuilt.
 const CRUMBS = {
-  overview: { label: "Dashboard", parent: null },
-  masterdata: { label: "Reference Data", parent: "overview" },
-  projects: { label: "Projects", parent: "overview" },
+  "portfolio-overview": { label: "Portfolio Overview", parent: null },
+  overview: { label: "Executive Dashboard", parent: "portfolio-overview" },
+  masterdata: { label: "Reference Data", parent: "portfolio-overview" },
+  projects: { label: "Projects", parent: "portfolio-overview" },
   "new-project": { label: "New Project", parent: "projects" },
   "project-detail": { label: "Project", parent: "projects" },
-  "indicator-catalogue": { label: "Indicator Catalogue", parent: "overview" },
-  portfolio: { label: "Portfolio Results", parent: "overview" },
-  "dq-portfolio": { label: "Data Quality", parent: "overview" },
+  "indicator-catalogue": { label: "Indicator Catalogue", parent: "portfolio-overview" },
+  portfolio: { label: "Portfolio Results", parent: "portfolio-overview" },
+  "dq-portfolio": { label: "Data Quality", parent: "portfolio-overview" },
   "bulk-import": { label: "Bulk Import", parent: "projects" },
   pirs:      { label: "PIRS", parent: "project-detail" },
-  rbac: { label: "Users & Roles", parent: "overview" },
+  rbac: { label: "Users & Roles", parent: "portfolio-overview" },
 };
 
 function crumbTrail(view) {
@@ -49,6 +51,7 @@ function crumbTrail(view) {
 }
 
 const API_PATHS = {
+  "portfolio-overview": "/api/projects",
   overview: "/api/overview",
   masterdata: "/api/reference",
   projects: "/api/projects",
@@ -255,8 +258,11 @@ export default function AppShell({
 
   const NAV_GROUPS_T = [
     {
-      label: t("nav.dashboard"),
-      items: [{ key: "overview", label: t("nav.dashboard"), Icon: IconDashboard }],
+      label: t("nav.overview"),
+      items: [
+        { key: "portfolio-overview", label: t("nav.portfolio_overview"), Icon: IconPortfolioOverview },
+        { key: "overview", label: t("nav.dashboard"), Icon: IconDashboard },
+      ],
     },
     {
       label: t("nav.portfolio"),
@@ -415,12 +421,12 @@ export default function AppShell({
 
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="brand">
-          {/* The logo is the way home: same target as the Dashboard entry. */}
+          {/* The logo is the way home: same target as the Portfolio Overview entry. */}
           <button
             className="brand-home"
-            onClick={() => { onNavigate("overview"); closeSidebar(); }}
-            aria-label={t("nav.dashboard")}
-            title={t("nav.dashboard")}
+            onClick={() => { onNavigate("portfolio-overview"); closeSidebar(); }}
+            aria-label={t("nav.portfolio_overview")}
+            title={t("nav.portfolio_overview")}
           >
             <LogoFull dark={true} width="100%" />
           </button>

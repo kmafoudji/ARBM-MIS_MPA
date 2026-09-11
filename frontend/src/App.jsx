@@ -43,14 +43,14 @@ class ErrorBoundary extends Component {
 // Portfolio-scope views: entering a project remembers which one we came from,
 // so the project sidebar's back link returns there — not to the dashboard.
 const PORTFOLIO_VIEWS = new Set([
-  "overview", "masterdata", "projects", "new-project", "bulk-import",
+  "portfolio-overview", "overview", "masterdata", "projects", "new-project", "bulk-import",
   "indicator-catalogue", "portfolio", "dq-portfolio", "rbac",
 ]);
 
 export default function App() {
   const [authState, setAuthState] = useState("checking");
   const [user, setUser] = useState(null);
-  const [nav, setNav] = useState("overview");
+  const [nav, setNav] = useState("portfolio-overview");
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [projectTab, setProjectTab] = useState("overview");
@@ -154,10 +154,23 @@ export default function App() {
       onProjectTab={(tab) => { setProjectTab(tab); setNav("project-detail"); }}
       returnTo={returnTo}
     >
+      {nav === "portfolio-overview" && (
+        <ProjectList
+          views={["map", "list"]}
+          title="Portfolio Overview"
+          lead="Where the portfolio's projects are, on the map and as a list."
+          onCreateClick={() => setNav("new-project")}
+          onProjectClick={(id) => openProject(id)}
+        />
+      )}
+
       {nav === "overview" && <Overview user={user} onProjectClick={(id) => openProject(id)} />}
 
       {nav === "projects" && (
         <ProjectList
+          views={["cards"]}
+          title="Projects"
+          lead="Projects registered in the system, from Concept Note to closure."
           onCreateClick={() => setNav("new-project")}
           onProjectClick={(id) => openProject(id)}
         />
