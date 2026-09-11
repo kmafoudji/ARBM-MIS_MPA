@@ -274,7 +274,9 @@ export default function Overview({ user, onProjectClick }) {
                 <thead>
                   <tr>
                     <th>Project</th>
-                    <th style={{ width: 150 }}>Stage</th>
+                    {/* Indented by the pill's padding + dot + gap (8 + 6 + 5 px) so the
+                        heading lines up with the stage names, not with the dots. */}
+                    <th style={{ width: 150, paddingLeft: "calc(var(--s-3) + 19px)" }}>Stage</th>
                     <th style={{ width: 76, textAlign: "right" }}>Budget</th>
                   </tr>
                 </thead>
