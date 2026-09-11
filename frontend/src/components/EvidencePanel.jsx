@@ -19,7 +19,9 @@ const STATUS_CONFIG = {
   rejected: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Rejected" },
 };
 
-export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
+// `embedded`: rendered inside a Modal that already carries the title and the
+// close button, so the panel drops its own box, title and close button.
+export default function EvidencePanel({ projectId, rowId, rdId, onClose, embedded = false }) {
   const qc = useQueryClient();
   const fileRef = useRef();
   const [form, setForm] = useState({ title: "", description: "", evidence_type: "pdf", external_url: "" });
@@ -73,27 +75,35 @@ export default function EvidencePanel({ projectId, rowId, rdId, onClose }) {
   const evidences = data?.results || [];
 
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: 10, padding: 16, marginTop: 8 }}>
+    <div style={embedded ? undefined : { background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: 10, padding: 16, marginTop: 8 }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <span style={{ fontWeight: 700, fontSize: 12, color: "var(--ink-soft)" }}>
-          <Icon name="folder" size={13} style={{ marginRight: 6, color: "var(--lime)" }} />
-          Evidence & Supporting Documents
-          {evidences.length > 0 && (
-            <span style={{ marginLeft: 8, fontSize: 11, background: "var(--lime-pale)", color: "var(--lime-darker)", padding: "1px 8px", borderRadius: 99 }}>
-              {evidences.length}
-            </span>
-          )}
-        </span>
+        {embedded ? (
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>
+            {evidences.length} document{evidences.length === 1 ? "" : "s"}
+          </span>
+        ) : (
+          <span style={{ fontWeight: 700, fontSize: 12, color: "var(--ink-soft)" }}>
+            <Icon name="folder" size={13} style={{ marginRight: 6, color: "var(--lime)" }} />
+            Evidence & Supporting Documents
+            {evidences.length > 0 && (
+              <span style={{ marginLeft: 8, fontSize: 11, background: "var(--lime-pale)", color: "var(--lime-darker)", padding: "1px 8px", borderRadius: 99 }}>
+                {evidences.length}
+              </span>
+            )}
+          </span>
+        )}
         <div style={{ display: "flex", gap: 8 }}>
           {!adding && (
             <button className="btn btn-ghost btn-sm row" style={{ gap: 5, fontSize: 11 }} onClick={() => setAdding(true)}>
               <Icon name="plus" size={12} /> Add evidence
             </button>
           )}
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>
-            <Icon name="x" size={12} />
-          </button>
+          {!embedded && (
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>
+              <Icon name="x" size={12} />
+            </button>
+          )}
         </div>
       </div>
 

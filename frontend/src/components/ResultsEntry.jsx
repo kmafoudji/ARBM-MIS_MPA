@@ -3,13 +3,15 @@
  * Grille de saisie des valeurs réelles par indicateur et par période.
  * RAG calculé automatiquement côté serveur après chaque saisie.
  */
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "./Icon.jsx";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import { fmtNum, fmtPct, fmtCurrency } from "../utils.js";
 import EvidencePanel from "./EvidencePanel.jsx";
+import Modal from "./Modal.jsx";
 import DQScoreWidget from "./DQScoreWidget.jsx";
 
 const RAG_CONFIG = {
@@ -161,10 +163,108 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
   );
 }
 
-function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggregate, disaggActive }) {
+// Workflow status tag shown in the cell and in the popover header.
+const STATUS_STYLE = {
+  draft:     { bg: "var(--surface-2)",       color: "var(--subtle)" },
+  submitted: { bg: "var(--violet-soft)",     color: "var(--violet)" },
+  reviewed:  { bg: "var(--sec-infra-pale)",  color: "var(--orange)" },
+  rejected:  { bg: "var(--rose-soft)",       color: "var(--rose)" },
+};
+
+function StatusTag({ status }) {
+  if (!status) return null;
+  if (status === "approved") {
+    return <Icon name="lock" size={11} style={{ color: "var(--subtle)" }} title="Approved" />;
+  }
+  const st = STATUS_STYLE[status] || STATUS_STYLE.draft;
+  return <span className="rf-status" style={{ background: st.bg, color: st.color }}>{status}</span>;
+}
+
+function errorText(err, fallback) {
+  const detail = err?.detail;
+  if (!detail) return fallback;
+  return typeof detail === "string" ? detail : JSON.stringify(detail);
+}
+
+function normaliseValue(v) {
+  if (v === null || v === undefined || v === "") return "";
+  const n = parseFloat(v);
+  return isNaN(n) ? String(v) : (Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(10))));
+}
+
+// Floating layer anchored to a cell. Rendered in document.body so the
+// table's horizontal scroll does not clip it; follows the anchor on scroll
+// and resize, opens above when there is no room below, and closes on
+// Escape or on a pointer press outside it and its anchor.
+function CellPopover({ anchorRef, onClose, width = 260, children }) {
+  const popRef = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  useLayoutEffect(() => {
+    function place() {
+      const a = anchorRef.current?.getBoundingClientRect();
+      const pop = popRef.current;
+      if (!a || !pop) return;
+      const margin = 8;
+      const height = pop.offsetHeight;
+      let left = a.left + a.width / 2 - width / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+      let top = a.bottom + 6;
+      if (top + height > window.innerHeight - margin && a.top - 6 - height > margin) {
+        top = a.top - 6 - height;
+      }
+      setPos({ top, left });
+    }
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(popRef.current);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [anchorRef, width]);
+
+  useEffect(() => {
+    function onPointerDown(e) {
+      if (popRef.current?.contains(e.target) || anchorRef.current?.contains(e.target)) return;
+      onClose();
+    }
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [anchorRef, onClose]);
+
+  return createPortal(
+    <div
+      ref={popRef}
+      className="rf-pop"
+      role="dialog"
+      style={{ width, top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? "visible" : "hidden" }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+}
+
+function EntryCell({ projectId, rowId, period, unit, existingData, onSaved, onDisaggregate, disaggActive, onOpenDocs }) {
   const isLocked = period.period_status === "upcoming";  // overdue = saisissable, approved = via workflow
-  const [open, setOpen]           = useState(false);
-  const [showEvidence, setShowEvidence] = useState(false);
+  const [open, setOpen]       = useState(false);  // popover shown
+  const [editing, setEditing] = useState(false);  // popover shows the entry form
+  const anchorRef = useRef(null);
+  const dialog = useDialog();
+  const qc = useQueryClient();
+
+  const close = useCallback(() => { setOpen(false); setEditing(false); }, []);
 
   const workflowMutation = useMutation({
     mutationFn: ({ action, notes }) => apiFetch(
@@ -173,18 +273,12 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
     ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["results-summary", projectId] });
+      close();
       onSaved?.();
     },
   });
-  const [value, setValue] = useState(() => {
-    const v = existingData?.actual_value ?? "";
-    if (v === "") return "";
-    const n = parseFloat(v);
-    return isNaN(n) ? v : (Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(10))));
-  });
+  const [value, setValue] = useState(() => normaliseValue(existingData?.actual_value));
   const [narrative, setNarrative] = useState(existingData?.narrative ?? "");
-  const dialog = useDialog();
-  const qc = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: (payload) => apiFetch(`/api/projects/${projectId}/results/`, {
@@ -193,7 +287,7 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["results-summary", projectId] });
-      setOpen(false);
+      close();
       onSaved?.();
     },
   });
@@ -204,130 +298,115 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["results-summary", projectId] });
+      close();
       onSaved?.();
     },
   });
 
-  function handleSave(approve) {
+  function handleSave() {
     if (value === "" || value === null) return;
     mutation.mutate({
       logframe_row:     rowId,
       reporting_period: period.period_id,
       actual_value:     value,
       narrative,
-      approve,
+      approve:          false,
     });
   }
 
   const data = existingData;
   const hasData = !!data?.actual_value;
+  const rag = RAG_CONFIG[data?.rag_status] || RAG_CONFIG.na;
 
-  if (!open) {
-    return (
-      <td style={{ padding: "6px 8px", textAlign: "center", minWidth: 120, opacity: isLocked && !hasData ? 0.4 : 1 }}>
-        <DialogModal {...dialog.dialogProps} />
-        {hasData ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>
-              {fmtNum(data.actual_value)}
-            </span>
-            <RagBadge rag={data.rag_status} rate={data.achievement_rate} />
-            {/* Badge statut workflow */}
-            {data.status && data.status !== "approved" && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99,
-                background: data.status === "submitted" ? "var(--violet-soft)" : data.status === "reviewed" ? "var(--sec-infra-pale)" : data.status === "rejected" ? "var(--rose-soft)" : "var(--surface-2)",
-                color: data.status === "submitted" ? "var(--violet)" : data.status === "reviewed" ? "var(--orange)" : data.status === "rejected" ? "var(--rose)" : "var(--subtle)",
-              }}>{data.status}</span>
-            )}
-            {data.status === "approved" && (
-              <Icon name="lock" size={11} style={{ color: "var(--subtle)" }} title="Approved" />
-            )}
-            {/* Boutons workflow selon statut */}
-            {data.status === "draft" && !isLocked && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", marginTop: 2 }}
-                onClick={() => { setValue(data.actual_value); setNarrative(data.narrative || ""); setOpen(true); }}>
-                <Icon name="pencil" size={10} /> Edit
-              </button>
-            )}
-            {data.status === "draft" && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--violet)" }}
-                onClick={() => workflowMutation.mutate({ action: "submit" })}
-                disabled={workflowMutation.isPending}>
-                <Icon name="arrow-right" size={10} /> Submit
-              </button>
-            )}
-            {data.status === "submitted" && (
-              <>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--lime)" }}
-                  onClick={() => workflowMutation.mutate({ action: "approve" })}
-                  disabled={workflowMutation.isPending}>
-                  <Icon name="check" size={10} /> Approve
-                </button>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--rose)" }}
-                  onClick={() => workflowMutation.mutate({ action: "reject" })}
-                  disabled={workflowMutation.isPending}>
-                  <Icon name="x" size={10} /> Reject
-                </button>
-              </>
-            )}
-            {data.status === "approved" && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: "var(--orange)" }}
-                onClick={() => workflowMutation.mutate({ action: "reopen" })}
-                disabled={workflowMutation.isPending}>
-                <Icon name="edit" size={10} /> Reopen
-              </button>
-            )}
-            {/* Evidence */}
-            {data && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 6px", color: showEvidence ? "var(--lime)" : "var(--muted)" }}
-                onClick={() => setShowEvidence(s => !s)}>
-                <Icon name="folder" size={10} /> Docs
-              </button>
-            )}
-            {data && (
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ fontSize: 10, padding: "1px 6px", color: disaggActive ? "var(--lime)" : "var(--blue)", fontWeight: disaggActive ? 700 : 400 }}
-                onClick={() => onDisaggregate({ id: data.id, actual_value: data.actual_value })}
-              >
-                <Icon name="layers" size={10} /> {disaggActive ? "▲ Close" : "Disaggregate"}
-              </button>
-            )}
-
-            {/* EvidencePanel inline */}
-            {showEvidence && data && (
-              <EvidencePanel
-                projectId={projectId}
-                rowId={rowId}
-                rdId={data.id}
-                onClose={() => setShowEvidence(false)}
-              />
-            )}
-          </div>
-        ) : isLocked ? (
-          <span style={{ fontSize: 10, color: "var(--rule)" }}>
-            "🔒 Not open yet"
-          </span>
-        ) : (
-          <button
-            className="btn btn-ghost btn-sm"
-            style={{ fontSize: 11, color: "var(--subtle)" }}
-            onClick={() => { setValue(""); setNarrative(""); setOpen(true); }}
-          >
-            + Enter
-          </button>
-        )}
-      </td>
-    );
+  function openView() {
+    setEditing(false);
+    setOpen(true);
+  }
+  function openEdit() {
+    setValue(normaliseValue(data?.actual_value));
+    setNarrative(data?.narrative || "");
+    setEditing(true);
+    setOpen(true);
   }
 
-  return (
-    <td style={{ padding: "6px 8px", background: "var(--lime-pale)", minWidth: 180 }}>
-      <DialogModal {...dialog.dialogProps} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+  const popoverView = hasData && (
+    <>
+      <div className="rf-pop-head">
+        <div className="rf-pop-label">{period.period_label} · Reported value</div>
+        <div className="rf-pop-value-row">
+          <span className="rf-pop-value">{fmtNum(data.actual_value)}</span>
+          {unit && <span className="rf-pop-unit">{unit}</span>}
+          <span style={{ marginLeft: "auto" }}><StatusTag status={data.status} /></span>
+        </div>
+      </div>
+      {data.rag_status && data.rag_status !== "na" ? (
+        <div className="rf-pop-rag"><RagBadge rag={data.rag_status} rate={data.achievement_rate} /></div>
+      ) : (
+        <div className="rf-pop-warn">
+          <Icon name="alert-triangle" size={13} /> No target defined — can't classify on/off track
+        </div>
+      )}
+      <div className="rf-pop-menu">
+        {data.status === "draft" && !isLocked && (
+          <button type="button" className="rf-pop-item" onClick={openEdit}>
+            <Icon name="pencil" size={13} /> Edit
+          </button>
+        )}
+        <button type="button" className="rf-pop-item" onClick={() => { close(); onOpenDocs(); }}>
+          <Icon name="folder" size={13} /> Docs
+        </button>
+        <button
+          type="button"
+          className="rf-pop-item"
+          onClick={() => { close(); onDisaggregate({ id: data.id, actual_value: data.actual_value }); }}
+        >
+          <Icon name="layers" size={13} /> {disaggActive ? "Close disaggregation" : "Disaggregate"}
+        </button>
+        {["draft", "submitted", "approved"].includes(data.status) && <div className="rf-pop-sep" />}
+        {data.status === "draft" && (
+          <button type="button" className="rf-pop-item is-primary"
+            onClick={() => workflowMutation.mutate({ action: "submit" })}
+            disabled={workflowMutation.isPending}>
+            <Icon name="arrow-right" size={13} /> Submit
+          </button>
+        )}
+        {data.status === "submitted" && (
+          <>
+            <button type="button" className="rf-pop-item is-primary"
+              onClick={() => workflowMutation.mutate({ action: "approve" })}
+              disabled={workflowMutation.isPending}>
+              <Icon name="check" size={13} /> Approve
+            </button>
+            <button type="button" className="rf-pop-item is-danger"
+              onClick={() => workflowMutation.mutate({ action: "reject" })}
+              disabled={workflowMutation.isPending}>
+              <Icon name="x" size={13} /> Reject
+            </button>
+          </>
+        )}
+        {data.status === "approved" && (
+          <button type="button" className="rf-pop-item is-warning"
+            onClick={() => workflowMutation.mutate({ action: "reopen" })}
+            disabled={workflowMutation.isPending}>
+            <Icon name="edit" size={13} /> Reopen
+          </button>
+        )}
+      </div>
+      {workflowMutation.isError && (
+        <div className="rf-pop-error">{errorText(workflowMutation.error, "The action failed.")}</div>
+      )}
+    </>
+  );
+
+  const popoverForm = (
+    <>
+      <div className="rf-pop-head">
+        <div className="rf-pop-label">{period.period_label} · {hasData ? "Edit value" : "New value"}</div>
+      </div>
+      <div className="rf-pop-form">
         <input
           autoFocus
+          className="field-input"
           type="text"
           inputMode="decimal"
           value={value}
@@ -335,30 +414,26 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
             const v = e.target.value;
             if (v === "" || v === "-" || /^-?\d*\.?\d*$/.test(v)) setValue(v);
           }}
-          placeholder="Actual value"
-          style={{
-            border: "1px solid var(--lime)", borderRadius: 6,
-            padding: "4px 8px", fontSize: 13, width: "100%",
-            outline: "none", fontFamily: "inherit",
-          }}
-          onKeyDown={(e) => { if (e.key === "Enter") handleSave(false); if (e.key === "Escape") setOpen(false); }}
+          placeholder={unit ? `Actual value (${unit})` : "Actual value"}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
         />
         <textarea
+          className="field-textarea"
           value={narrative}
           onChange={(e) => setNarrative(e.target.value)}
           placeholder="Narrative (optional)"
           rows={2}
-          style={{
-            border: "1px solid var(--rule)", borderRadius: 6,
-            padding: "4px 8px", fontSize: 11, width: "100%",
-            fontFamily: "inherit", resize: "none", outline: "none",
-          }}
         />
-        <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+        {mutation.isError && (
+          <div className="rf-pop-error">{errorText(mutation.error, "Could not save the value.")}</div>
+        )}
+        <div className="rf-pop-actions">
           {hasData && data.status !== "approved" && (
             <button
+              type="button"
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: 10, color: "var(--rose)", padding: "2px 6px" }}
+              style={{ color: "var(--rose)", marginRight: "auto" }}
+              title="Delete value"
               onClick={async () => {
                 const ok = await dialog.confirm("This value will be permanently deleted.", {
                   title: "Delete value?", confirmLabel: "Delete", danger: true,
@@ -366,40 +441,72 @@ function EntryCell({ projectId, rowId, period, existingData, onSaved, onDisaggre
                 if (ok) deleteMutation.mutate();
               }}
             >
-              <Icon name="trash" size={10} />
+              <Icon name="trash" size={12} />
             </button>
           )}
-          <button
-            className="btn btn-ghost btn-sm"
-            style={{ fontSize: 10, padding: "2px 6px" }}
-            onClick={() => setOpen(false)}
-          >
+          <button type="button" className="btn btn-ghost btn-sm" onClick={hasData ? () => setEditing(false) : close}>
             Cancel
           </button>
           <button
-            className="btn btn-ghost btn-sm"
-            style={{ fontSize: 10, padding: "2px 6px" }}
-            onClick={() => handleSave(false)}
-            disabled={mutation.isPending || value === ""}
-          >
-            Save draft
-          </button>
-          <button
+            type="button"
             className="btn btn-primary btn-sm"
-            style={{ fontSize: 10, padding: "2px 8px" }}
-            onClick={() => handleSave(false)}
+            onClick={handleSave}
             disabled={mutation.isPending || value === ""}
           >
-            {mutation.isPending ? "…" : "✓ Save"}
+            {mutation.isPending ? "Saving…" : "Save"}
           </button>
         </div>
       </div>
+      {/* Inside the popover so the confirm dialog counts as a click within it. */}
+      <DialogModal {...dialog.dialogProps} />
+    </>
+  );
+
+  return (
+    <td style={{ padding: "6px 8px", textAlign: "center", minWidth: 120, opacity: isLocked && !hasData ? 0.4 : 1 }}>
+      {hasData ? (
+        <button
+          ref={anchorRef}
+          type="button"
+          className={`rf-cell-btn${open ? " is-open" : ""}`}
+          onClick={() => (open ? close() : openView())}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          <span className="rf-rag-dot" style={{ background: rag.color }} title={rag.label} />
+          <span className="rf-cell-value">{fmtNum(data.actual_value)}</span>
+          <StatusTag status={data.status} />
+        </button>
+      ) : isLocked ? (
+        <span style={{ fontSize: 10, color: "var(--rule)" }}>
+          🔒 Not open yet
+        </span>
+      ) : (
+        <button
+          ref={anchorRef}
+          type="button"
+          className="btn btn-ghost btn-sm"
+          style={{ fontSize: 11, color: "var(--subtle)" }}
+          onClick={() => (open ? close() : openEdit())}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          + Enter
+        </button>
+      )}
+      {open && (
+        <CellPopover anchorRef={anchorRef} onClose={close}>
+          {editing ? popoverForm : popoverView}
+        </CellPopover>
+      )}
     </td>
   );
 }
 
 export default function ResultsEntry({ projectId, canEdit }) {
   const [disaggState, setDisaggState] = useState(null); // { rowId, periodId, rd }
+  const [docsFor, setDocsFor] = useState(null);         // { rowId, rdId, subtitle }
+  const qc = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["results-summary", projectId],
@@ -444,6 +551,7 @@ export default function ResultsEntry({ projectId, canEdit }) {
   const periods = data.periods;
 
   return (
+    <>
     <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
       <table style={{
         width: "100%", borderCollapse: "collapse",
@@ -517,9 +625,15 @@ export default function ResultsEntry({ projectId, canEdit }) {
                       projectId={projectId}
                       rowId={row.row_id}
                       period={p}
+                      unit={row.indicator_unit}
                       existingData={p.data}
                       onSaved={() => qc.invalidateQueries({ queryKey: ["results-summary", projectId] })}
                       disaggActive={disaggState?.rowId === row.row_id && disaggState?.periodId === p.period_id}
+                      onOpenDocs={() => setDocsFor({
+                        rowId: row.row_id,
+                        rdId: p.data.id,
+                        subtitle: `${row.indicator_code} · ${p.period_label}`,
+                      })}
                       onDisaggregate={(rd) => {
                         if (disaggState?.rowId === row.row_id && disaggState?.periodId === p.period_id) {
                           setDisaggState(null);
@@ -547,5 +661,15 @@ export default function ResultsEntry({ projectId, canEdit }) {
         </tbody>
       </table>
     </div>
+    {docsFor && (
+      <Modal
+        title="Evidence & supporting documents"
+        subtitle={docsFor.subtitle}
+        onClose={() => setDocsFor(null)}
+      >
+        <EvidencePanel projectId={projectId} rowId={docsFor.rowId} rdId={docsFor.rdId} embedded />
+      </Modal>
+    )}
+    </>
   );
 }
