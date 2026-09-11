@@ -227,8 +227,14 @@ function ProjectCard({ project, onClick }) {
 }
 
 /* ── Page principale ─────────────────────────────────────────────────────── */
-export default function ProjectList({ onCreateClick, onProjectClick }) {
-  const [viewMode,    setViewMode]    = useState("cards");
+// The same page serves two entries: Portfolio Overview (map, then list) and
+// Projects (the scorecard cards). `views` lists the modes offered, in order;
+// the first is the default and the toggle only shows when there is a choice.
+const VIEW_ICONS  = { cards: "grid", map: "map-pin", list: "align-center" };
+const VIEW_LABELS = { cards: "Cards", map: "Map", list: "List" };
+
+export default function ProjectList({ views = ["cards"], title = "Projects", lead, onCreateClick, onProjectClick }) {
+  const [viewMode,    setViewMode]    = useState(views[0]);
   const [search,      setSearch]      = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [sectorFilter,setSectorFilter]= useState("");
@@ -296,10 +302,8 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
       <div className="row row-between mb-4" style={{ alignItems: "flex-start" }}>
         <div className="view-header" style={{ marginBottom: 0 }}>
           <div className="view-eyebrow">Projects &amp; monitoring</div>
-          <h1 className="view-title">Portfolio</h1>
-          <p className="view-lead">
-            Projects registered in the system, from Concept Note to closure.
-          </p>
+          <h1 className="view-title">{title}</h1>
+          {lead && <p className="view-lead">{lead}</p>}
           <div style={{ marginTop: 6 }}>
             <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
           </div>
@@ -381,23 +385,21 @@ export default function ProjectList({ onCreateClick, onProjectClick }) {
             {filtered.length}{hasFilter ? ` of ${data.length}` : ""} project{filtered.length !== 1 ? "s" : ""}
           </span>
           {/* Toggle view mode */}
+          {views.length > 1 && (
           <div style={{ display: "flex", border: "1px solid var(--rule)", borderRadius: 8, overflow: "hidden" }}>
-            {[
-              { mode: "cards", icon: "grid" },
-              { mode: "map", icon: "map-pin" },
-              { mode: "list", icon: "align-center" },
-            ].map(({ mode, icon }) => (
-              <button key={mode} onClick={() => setViewMode(mode)}
+            {views.map((mode) => (
+              <button key={mode} onClick={() => setViewMode(mode)} title={VIEW_LABELS[mode]}
                 style={{
                   width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
                   background: viewMode === mode ? "var(--lime)" : "var(--paper)",
                   color: viewMode === mode ? "var(--paper)" : "var(--subtle)",
                   border: "none", cursor: "pointer",
                 }}>
-                <Icon name={icon} size={14} />
+                <Icon name={VIEW_ICONS[mode]} size={14} />
               </button>
             ))}
           </div>
+          )}
         </div>
       </div>
 
