@@ -394,24 +394,20 @@ function AddRowsForm({ projectId, existingIndicatorIds, onAdded, onCancel }) {
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="field-label">Sector</label>
-            <select className="field-select" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
-              <option value="">All</option>
-              {groupSectorOptions(sectors).map(([pillar, children]) => (
-                <optgroup key={pillar.id} label={pillar.name}>
-                  <option value={pillar.id}>All {pillar.name}</option>
-                  {children.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </optgroup>
-              ))}
-            </select>
+            <Select placeholder="All" value={sectorFilter} onChange={setSectorFilter}
+              options={groupSectorOptions(sectors).flatMap(([pillar, children]) => [
+                { value: pillar.id, label: `All ${pillar.name}`, group: pillar.name },
+                ...children.map((s) => ({ value: s.id, label: s.name, group: pillar.name })),
+              ])} />
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="field-label">Type</label>
-            <select className="field-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-              <option value="">All</option>
-              <option value="output">Output</option>
-              <option value="outcome">Outcome</option>
-              <option value="impact">Impact</option>
-            </select>
+            <Select placeholder="All" value={typeFilter} onChange={setTypeFilter}
+              options={[
+                { value: "output", label: "Output" },
+                { value: "outcome", label: "Outcome" },
+                { value: "impact", label: "Impact" },
+              ]} />
           </div>
         </div>
 

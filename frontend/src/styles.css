@@ -669,6 +669,16 @@ input, select, textarea { font: inherit; color: inherit; }
   position: absolute; left: 8px; bottom: 0; width: 1px; height: 1px;
   opacity: 0; pointer-events: none; margin: 0; padding: 0; border: 0;
 }
+/* Filter-bar variant (variant="filter"): compact, outlined in the accent
+   while it filters; its menu may be wider than a narrow control. */
+.select-filter .select-control {
+  min-height: 32px; padding: 2px 8px; font-size: 12px; font-weight: 500;
+  background: var(--surface); border-color: var(--rule); border-radius: 8px;
+}
+.select-filter .select-input::placeholder { color: var(--subtle); }
+.select-filter.is-active .select-control { border-color: var(--lime); background: var(--lime-pale); color: var(--ink-soft); }
+.select-filter .select-menu { right: auto; min-width: 100%; width: max-content; max-width: 320px; }
+.select-filter .multiselect-option { font-size: 12px; padding: 6px 8px; }
 
 /* Editeur riche (RichTextEditor) : contentEditable stylise comme un
    field-textarea, avec placeholder simule (aucun attribut natif pour
@@ -1347,7 +1357,7 @@ input, select, textarea { font: inherit; color: inherit; }
   flex-wrap: wrap;
 }
 .table-search { max-width: 260px; }
-.table-filter { max-width: 200px; }
+.table-filter { width: 180px; max-width: 200px; }
 .table-count {
   margin-left: auto;
   font-family: var(--font-mono);

@@ -3,6 +3,7 @@
  * Vue agrégée du Data Quality Score · Filtres + méthodes de calcul
  */
 import React, { useState, useMemo } from "react";
+import Select from "../components/Select.jsx";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { fmtNum } from "../utils.js";
@@ -197,26 +198,23 @@ export default function DQPortfolio() {
 
         {/* Hub */}
         {hubs.length > 0 && (
-          <select style={selectStyle(hubFilter)} value={hubFilter} onChange={e => setHubFilter(e.target.value)}>
-            <option value="">All Hubs</option>
-            {hubs.map(h => <option key={h} value={h}>{h}</option>)}
-          </select>
+          <Select variant="filter" style={{ width: 160 }} placeholder="All hubs"
+            value={hubFilter} onChange={setHubFilter}
+            options={hubs.map(h => ({ value: h, label: h }))} />
         )}
 
         {/* Sector */}
         {sectors.length > 0 && (
-          <select style={selectStyle(sectorFilter)} value={sectorFilter} onChange={e => setSectorFilter(e.target.value)}>
-            <option value="">All Sectors</option>
-            {sectors.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <Select variant="filter" style={{ width: 200 }} placeholder="All sectors"
+            value={sectorFilter} onChange={setSectorFilter}
+            options={sectors.map(s => ({ value: s, label: s }))} />
         )}
 
         {/* Chain level */}
         {levels.length > 0 && (
-          <select style={selectStyle(levelFilter)} value={levelFilter} onChange={e => setLevelFilter(e.target.value)}>
-            <option value="">All Levels</option>
-            {levels.map(l => <option key={l} value={l}>{CHAIN_LEVEL_LABELS[l] || l}</option>)}
-          </select>
+          <Select variant="filter" style={{ width: 180 }} placeholder="All levels"
+            value={levelFilter} onChange={setLevelFilter}
+            options={levels.map(l => ({ value: l, label: CHAIN_LEVEL_LABELS[l] || l }))} />
         )}
 
         {hasFilter && (
@@ -417,14 +415,4 @@ export default function DQPortfolio() {
       </div>
     </div>
   );
-}
-
-function selectStyle(active) {
-  return {
-    height: 32, padding: "0 10px", fontSize: 12, fontWeight: 500,
-    border: active ? "1px solid var(--lime)" : "1px solid var(--rule)",
-    borderRadius: 8, background: active ? "var(--lime-pale)" : "var(--surface)",
-    color: active ? "var(--ink-soft)" : "var(--subtle)",
-    fontFamily: "inherit", cursor: "pointer", outline: "none",
-  };
 }

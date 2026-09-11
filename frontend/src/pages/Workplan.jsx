@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import Select from "../components/Select.jsx";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
@@ -244,7 +245,6 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
   });
   const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const sel = { ...inputStyle, appearance: "auto", cursor: "pointer" };
 
   async function handleSave() {
     setErr(null);
@@ -291,10 +291,10 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
         </div>
         <div style={fieldStyle}>
           <label style={labelStyle}>Responsible Party</label>
-          <select style={sel}
+          <Select
+            placeholder="— Select —"
             value={form.responsible_user != null ? String(form.responsible_user) : (form.responsible_party ? "__external__" : "")}
-            onChange={e => {
-              const val = e.target.value;
+            onChange={val => {
               if (!val) { set("responsible_user", null); set("responsible_party", ""); }
               else if (val === "__external__") { set("responsible_user", null); if (!form.responsible_party) set("responsible_party", " "); }
               else {
@@ -302,13 +302,11 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
                 set("responsible_user", Number(val));
                 set("responsible_party", u ? (u.full_name || u.email) : "");
               }
-            }}>
-            <option value="">— Select —</option>
-            {users.map(u => (
-              <option key={u.id} value={String(u.id)}>{u.full_name || u.email}</option>
-            ))}
-            <option value="__external__">⤷ External / Other (free text)</option>
-          </select>
+            }}
+            options={[
+              ...users.map(u => ({ value: String(u.id), label: u.full_name || u.email })),
+              { value: "__external__", label: "⤷ External / Other (free text)" },
+            ]} />
           {form.responsible_user != null && (
             <div style={{ fontSize: 11, color: "var(--blue)", padding: "4px 8px", background: "var(--sec-climate-pale)", borderRadius: 6, border: "1px solid var(--blue-soft)", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
               <Icon name="user" size={11} />
@@ -340,9 +338,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
         <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 10 }}>
           <div style={fieldStyle}>
             <label style={labelStyle}>Status</label>
-            <select style={sel} value={form.status} onChange={e => set("status", e.target.value)}>
-              {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
+            <Select required value={form.status} onChange={v => set("status", v)} options={ACTIVITY_STATUSES} />
           </div>
           <div style={fieldStyle}>
             <label style={labelStyle}>Progress %</label>
@@ -363,14 +359,11 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
           </div>
         ) : (
           <>
-            <select style={{ ...sel, background: "var(--paper)" }} value={form.output_node} onChange={e => set("output_node", e.target.value)}>
-              <option value="">— No output linked —</option>
-              {outputNodes.map(n => (
-                <option key={n.id} value={n.id}>
-                  {n.code} · {stripHtml(n.statement).substring(0, 60)}{stripHtml(n.statement).length > 60 ? "…" : ""}
-                </option>
-              ))}
-            </select>
+            <Select placeholder="— No output linked —" value={form.output_node} onChange={v => set("output_node", v)}
+              options={outputNodes.map(n => ({
+                value: n.id,
+                label: `${n.code} · ${stripHtml(n.statement).substring(0, 60)}${stripHtml(n.statement).length > 60 ? "…" : ""}`,
+              }))} />
             {selectedOutput && (
               <div style={{ fontSize: 12, color: "var(--lime-darker)", marginTop: 4, padding: "6px 10px", background: "var(--lime-pale)", borderRadius: 6 }}>
                 ↳ {stripHtml(selectedOutput.statement)}
@@ -419,7 +412,6 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
   const [form, setForm] = useState({ name: "", category: "programmatic", planned_date: "", status: "pending", is_gate: false, evidence_url: "", activity: activityId });
   const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const sel = { ...inputStyle, appearance: "auto", cursor: "pointer" };
 
   async function handleSave() {
     setErr(null);
@@ -457,9 +449,8 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div style={fieldStyle}>
           <label style={labelStyle}>Category</label>
-          <select style={sel} value={form.category} onChange={e => set("category", e.target.value)}>
-            {MILESTONE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{CAT_ICONS[c.value]} {c.label}</option>)}
-          </select>
+          <Select required value={form.category} onChange={v => set("category", v)}
+            options={MILESTONE_CATEGORIES.map(c => ({ value: c.value, label: `${CAT_ICONS[c.value]} ${c.label}` }))} />
         </div>
         <div style={fieldStyle}>
           <label style={labelStyle}>Planned Date *</label>
@@ -515,7 +506,6 @@ function DelayForm({ activity, onSave, onCancel }) {
   const [form, setForm] = useState({ previous_end: activity.revised_end || activity.planned_end || "", revised_end: "", delay_category: "procurement", delay_subcategory: "", justification: "", cascade_applied: false });
   const [err, setErr] = useState(null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const sel = { ...inputStyle, appearance: "auto", cursor: "pointer" };
 
   async function handleSave() {
     setErr(null);
@@ -582,9 +572,7 @@ function DelayForm({ activity, onSave, onCancel }) {
       {/* Delay category */}
       <div style={fieldStyle}>
         <label style={labelStyle}>Delay Category * <span style={{ color: "var(--subtle)", fontWeight: 400, fontSize: 11 }}>(RG-7.2 standardized taxonomy)</span></label>
-        <select style={sel} value={form.delay_category} onChange={e => set("delay_category", e.target.value)}>
-          {DELAY_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
+        <Select required value={form.delay_category} onChange={v => set("delay_category", v)} options={DELAY_CATEGORIES} />
       </div>
 
       {/* Justification */}
@@ -706,10 +694,9 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
               <div style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 12 }}>
                 <div style={fieldStyle}>
                   <label style={{ ...labelStyle, fontSize: 11 }}>Status</label>
-                  <select style={{ ...inputStyle, appearance: "auto", cursor: "pointer" }} defaultValue={activity.status}
-                    onChange={e => updateProgress.mutate({ status: e.target.value, progress: activity.progress })}>
-                    {ACTIVITY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
+                  <Select required value={activity.status}
+                    onChange={v => updateProgress.mutate({ status: v, progress: activity.progress })}
+                    options={ACTIVITY_STATUSES} />
                 </div>
                 <div style={fieldStyle}>
                   <label style={{ ...labelStyle, fontSize: 11 }}>Progress %</label>
