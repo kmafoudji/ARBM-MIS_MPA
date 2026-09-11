@@ -173,12 +173,15 @@ function ProjectCard({ project, onClick }) {
         background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 12,
         padding: "14px 20px",
         borderLeft: `4px solid ${sg.color}`,
-        display: "grid", gridTemplateColumns: "minmax(260px, 1fr) minmax(280px, 1.1fr) 90px 130px",
-        gap: 24, alignItems: "center",
+        // Half-width card (two per row): identity and stage pill on top, the
+        // lifecycle bar and the days in stage below.
+        display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto",
+        gridTemplateAreas: '"identity action" "stage days"',
+        columnGap: 20, rowGap: 12, alignItems: "center",
       }}
     >
       {/* Identity */}
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, gridArea: "identity" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "monospace", fontSize: 11, color: sg.color, fontWeight: 700, letterSpacing: .5 }}>
           <span>{project.official_reference_number}</span>
           <span style={{ color: "var(--rule)" }}>·</span>
@@ -197,7 +200,7 @@ function ProjectCard({ project, onClick }) {
       </div>
 
       {/* Stage progress */}
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, gridArea: "stage" }}>
         <StageBar idx={idx} exception={exception} />
         <div style={{ fontSize: 12, fontWeight: 600, color: exception ? sg.color : "var(--ink-soft)", marginTop: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           <span style={exception ? undefined : { color: "var(--orange)", fontWeight: 700 }}>{current}</span>
@@ -206,7 +209,7 @@ function ProjectCard({ project, onClick }) {
       </div>
 
       {/* Days in stage */}
-      <div style={{ textAlign: "right" }}>
+      <div style={{ textAlign: "right", gridArea: "days" }}>
         <div style={{ fontSize: 20, fontWeight: 700, color: daysColor(days, terminal || exception), lineHeight: 1.1 }}>
           {days ?? "—"}
         </div>
@@ -214,7 +217,7 @@ function ProjectCard({ project, onClick }) {
       </div>
 
       {/* Action */}
-      <div style={{ textAlign: "right" }}>
+      <div style={{ textAlign: "right", gridArea: "action", alignSelf: "start" }}>
         {stalled ? (
           <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: "var(--rose-soft)", color: "var(--rose)" }}>
             ⚑ Stalled
@@ -502,7 +505,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
 
       {/* ── Cards ───────────────────────────────────────────────────── */}
       {!isLoading && filtered.length > 0 && viewMode === "cards" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+        <div className="project-cards">
           {filtered.map(p => (
             <ProjectCard key={p.id} project={p} onClick={onProjectClick} />
           ))}
