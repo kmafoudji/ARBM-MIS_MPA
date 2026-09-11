@@ -14,8 +14,8 @@ import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.
 const GRADE_CONFIG = {
   A: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Excellent", range: "≥ 80%" },
   B: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "Good",      range: "60–79%" },
-  C: { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "Fair",      range: "40–59%" },
-  D: { color: "var(--rose)", bg: "var(--rose-soft)", label: "Poor",      range: "< 40%" },
+  C: { color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", label: "Fair",      range: "40–59%" },
+  D: { color: "var(--rose-darker)", bg: "var(--rose-soft)", label: "Poor",      range: "< 40%" },
 };
 
 const DIMENSIONS = [
@@ -213,7 +213,7 @@ export default function DQPortfolio() {
             style={{
               height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
               border: "1px solid var(--rose-soft)", borderRadius: 8,
-              background: "var(--sec-health-pale)", color: "var(--rose)",
+              background: "var(--sec-health-pale)", color: "var(--rose-darker)",
               fontFamily: "inherit", cursor: "pointer",
               display: "flex", alignItems: "center", gap: 6,
             }}>

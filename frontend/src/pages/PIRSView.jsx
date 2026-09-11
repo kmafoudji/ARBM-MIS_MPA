@@ -15,8 +15,8 @@ function stripHtml(html) {
 
 const RAG = {
   green: { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "On Track",  icon: "circle-check" },
-  amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "At Risk",   icon: "alert-triangle" },
-  red:   { color: "var(--rose)", bg: "var(--rose-soft)", label: "Off Track", icon: "circle-x" },
+  amber: { color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", label: "At Risk",   icon: "alert-triangle" },
+  red:   { color: "var(--rose-darker)", bg: "var(--rose-soft)", label: "Off Track", icon: "circle-x" },
   na:    { color: "var(--muted)", bg: "var(--surface-2)", label: "No Data",   icon: "minus" },
 };
 

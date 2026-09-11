@@ -16,11 +16,11 @@ import Select from "../components/Select.jsx";
 /* Lifecycle codes (backend LIFECYCLE_STAGE_CHOICES): LS001 Concept Note …
    LS016 Closed in order, LS017 Suspended and LS018 Cancelled as exceptions. */
 const STAGE_GROUPS = {
-  pipeline:      { label: "Pipeline",      color: "var(--violet)", bg: "var(--violet-soft)", keys: ["LS001","LS002","LS003","LS004"] },
-  appraisal:     { label: "Appraisal",     color: "var(--orange)", bg: "var(--sec-infra-pale)", keys: ["LS005","LS006","LS007","LS008","LS009","LS010","LS011"] },
+  pipeline:      { label: "Pipeline",      color: "var(--violet-darker)", bg: "var(--violet-soft)", keys: ["LS001","LS002","LS003","LS004"] },
+  appraisal:     { label: "Appraisal",     color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", keys: ["LS005","LS006","LS007","LS008","LS009","LS010","LS011"] },
   implementation:{ label: "Active",        color: "var(--lime-darker)", bg: "var(--lime-pale)", keys: ["LS012","LS013","LS014"] },
   closing:       { label: "Closing",       color: "var(--lime-darker)", bg: "var(--lime-pale)", keys: ["LS015","LS016"] },
-  suspended:     { label: "Suspended",     color: "var(--rose)", bg: "var(--rose-soft)", keys: ["LS017","LS018"] },
+  suspended:     { label: "Suspended",     color: "var(--rose-darker)", bg: "var(--rose-soft)", keys: ["LS017","LS018"] },
 };
 
 const STAGE_BADGE = {
@@ -219,7 +219,7 @@ function ProjectCard({ project, onClick }) {
       {/* Action */}
       <div style={{ textAlign: "right", gridArea: "action", alignSelf: "start" }}>
         {stalled ? (
-          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: "var(--rose-soft)", color: "var(--rose)" }}>
+          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 99, background: "var(--rose-soft)", color: "var(--rose-darker)" }}>
             ⚑ Stalled
           </span>
         ) : (
@@ -378,7 +378,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
           <button onClick={clearFilters} style={{
             height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
             border: "1px solid var(--rose-soft)", borderRadius: 8,
-            background: "var(--sec-health-pale)", color: "var(--rose)",
+            background: "var(--sec-health-pale)", color: "var(--rose-darker)",
             fontFamily: "inherit", cursor: "pointer",
             display: "flex", alignItems: "center", gap: 6,
           }}>

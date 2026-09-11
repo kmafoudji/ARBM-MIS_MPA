@@ -101,7 +101,7 @@ function OverduePill() {
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 3,
       padding: "1px 6px", borderRadius: 10, fontSize: 10, fontWeight: 700,
-      background: "var(--sec-health-pale)", color: "var(--rose)", border: "1px solid var(--rose-soft)",
+      background: "var(--sec-health-pale)", color: "var(--rose-darker)", border: "1px solid var(--rose-soft)",
     }}>
       <Icon name="alert-circle" size={9} /> OVERDUE
     </span>
@@ -145,7 +145,7 @@ function ComponentForm({ onSave, onCancel }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {err && <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)" }}>{err}</div>}
+      {err && <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose-darker)" }}>{err}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
         <div style={fieldStyle}>
           <label style={labelStyle}>Code *</label>
@@ -197,7 +197,7 @@ function SubComponentForm({ componentId, componentName, onSave, onCancel }) {
         </span>
       </div>
 
-      {err && <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)" }}>{err}</div>}
+      {err && <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose-darker)" }}>{err}</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 12 }}>
         <div style={fieldStyle}>
@@ -267,7 +267,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
       {err && (
-        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose-darker)", display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alert-circle" size={13} /> {err}
         </div>
       )}
@@ -308,7 +308,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
               { value: "__external__", label: "⤷ External / Other (free text)" },
             ]} />
           {form.responsible_user != null && (
-            <div style={{ fontSize: 11, color: "var(--blue)", padding: "4px 8px", background: "var(--sec-climate-pale)", borderRadius: 6, border: "1px solid var(--blue-soft)", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--blue-darker)", padding: "4px 8px", background: "var(--sec-climate-pale)", borderRadius: 6, border: "1px solid var(--blue-soft)", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
               <Icon name="user" size={11} />
               {users.find(u => u.id === form.responsible_user)?.email}
             </div>
@@ -436,7 +436,7 @@ function MilestoneForm({ activityId, onSave, onCancel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {err && (
-        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose-darker)", display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alert-circle" size={13} /> {err}
         </div>
       )}
@@ -525,7 +525,7 @@ function DelayForm({ activity, onSave, onCancel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {err && (
-        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ padding: "8px 12px", background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 6, fontSize: 13, color: "var(--rose-darker)", display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="alert-circle" size={13} /> {err}
         </div>
       )}
@@ -781,7 +781,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
                     {d.delay_category_display}
                     <span style={{ marginLeft: 8, fontWeight: 400, color: d.variance_days > 0 ? "var(--rose)" : "var(--lime)" }}>{d.variance_days > 0 ? "+" : ""}{d.variance_days}d</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: d.approval_status === "approved" ? "var(--lime-pale)" : d.approval_status === "rejected" ? "var(--sec-health-pale)" : "var(--sec-infra-pale)", color: d.approval_status === "approved" ? "var(--lime-darker)" : d.approval_status === "rejected" ? "var(--rose)" : "var(--orange)" }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: d.approval_status === "approved" ? "var(--lime-pale)" : d.approval_status === "rejected" ? "var(--sec-health-pale)" : "var(--sec-infra-pale)", color: d.approval_status === "approved" ? "var(--lime-darker)" : d.approval_status === "rejected" ? "var(--rose-darker)" : "var(--orange-darker)" }}>
                     {d.approval_status_display}
                   </span>
                 </div>

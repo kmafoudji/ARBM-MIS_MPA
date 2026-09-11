@@ -13,8 +13,8 @@ import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 const RAG = {
   green: { color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
-  amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
-  red:   { color: "var(--rose)", bg: "var(--sec-health-pale)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
+  amber: { color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
+  red:   { color: "var(--rose-darker)", bg: "var(--sec-health-pale)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
   na:    { color: "var(--subtle)", bg: "var(--surface-2)", border: "var(--subtle)", label: "No data",   icon: "minus" },
 };
 const CHAIN_LEVELS = [
@@ -436,8 +436,8 @@ export default function Portfolio() {
         </span>
         {[
           { color: "var(--lime-darker)", bg: "var(--lime-pale)", label: "On track",  desc: "≥ 90% of target" },
-          { color: "var(--orange)", bg: "var(--sec-infra-pale)", label: "At risk",   desc: "60–89% of target" },
-          { color: "var(--rose)", bg: "var(--rose-soft)", label: "Off track", desc: "< 60% of target" },
+          { color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", label: "At risk",   desc: "60–89% of target" },
+          { color: "var(--rose-darker)", bg: "var(--rose-soft)", label: "Off track", desc: "< 60% of target" },
           { color: "var(--subtle)", bg: "var(--surface-2)", label: "No data",   desc: "No approved data or target" },
         ].map(({ color, bg, label, desc }) => (
           <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -496,7 +496,7 @@ export default function Portfolio() {
             style={{
               height: 32, padding: "0 12px", fontSize: 12, fontWeight: 600,
               border: "1px solid var(--rose-soft)", borderRadius: 8,
-              background: "var(--sec-health-pale)", color: "var(--rose)",
+              background: "var(--sec-health-pale)", color: "var(--rose-darker)",
               fontFamily: "inherit", cursor: "pointer",
               display: "flex", alignItems: "center", gap: 6,
             }}
@@ -512,7 +512,7 @@ export default function Portfolio() {
 
       {/* ── Erreur ──────────────────────────────────────────────────────── */}
       {error && (
-        <div style={{ padding: 16, background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 10, color: "var(--rose)", fontSize: 13, marginBottom: 20 }}>
+        <div style={{ padding: 16, background: "var(--sec-health-pale)", border: "1px solid var(--rose-soft)", borderRadius: 10, color: "var(--rose-darker)", fontSize: 13, marginBottom: 20 }}>
           <Icon name="circle-x" size={14} style={{ marginRight: 8 }} />
           {JSON.stringify(error?.detail || error?.message)}
         </div>

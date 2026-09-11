@@ -61,9 +61,13 @@ a tint of your own.
   `--lime-darker` (white on `--lime` reaches only 2.6:1).
 - Green text on a green tint is `--lime-darker` on `--lime-pale` (4.8:1,
   WCAG AA). `--lime` on any tint, or anything on `--lime-soft`, falls below
-  4.5:1: a badge wanting that tint carries it as its border. Orange, rose,
-  violet and blue text on their own tints has the same problem and no dark
-  step in the palette yet.
+  4.5:1: a badge wanting that tint carries it as its border.
+- Rose, orange, violet and blue text on their own tints uses the dark step of
+  the hue — `--rose-darker` `#BC1E04`, `--orange-darker` `#915D04`,
+  `--violet-darker` `#7541AA`, `--blue-darker` `#00638F` — which reaches 4.6:1
+  on both the `-pale` and `-soft` tints. The LLF palette defines no dark
+  steps; these keep each colour's hue and saturation with the lightness
+  lowered. The L0 colour stays for fills, dots, bars and borders.
 - No gradients, no cream or beige backgrounds, no colours outside the palette.
 
 ## Typography

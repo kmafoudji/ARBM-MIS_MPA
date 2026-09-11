@@ -16,8 +16,8 @@ import DQScoreWidget from "./DQScoreWidget.jsx";
 
 const RAG_CONFIG = {
   green: { color: "var(--lime-darker)", bg: "var(--lime-pale)", border: "var(--lime-soft)", label: "On track",  icon: "circle-check" },
-  amber: { color: "var(--orange)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
-  red:   { color: "var(--rose)", bg: "var(--rose-soft)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
+  amber: { color: "var(--orange-darker)", bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", label: "At risk",   icon: "alert-triangle" },
+  red:   { color: "var(--rose-darker)", bg: "var(--rose-soft)", border: "var(--rose-soft)", label: "Off track", icon: "circle-x" },
   na:    { color: "var(--subtle)", bg: "var(--surface-2)", border: "var(--rule)", label: "No target", icon: "minus" },
 };
 
@@ -103,7 +103,7 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 
       {/* Avertissements */}
       {data.warnings?.map((w, i) => (
-        <div key={i} style={{ background: "var(--sec-infra-pale)", border: "1px solid var(--orange-soft)", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 10, color: "var(--orange)" }}>
+        <div key={i} style={{ background: "var(--sec-infra-pale)", border: "1px solid var(--orange-soft)", borderRadius: 6, padding: "6px 10px", fontSize: 11, marginBottom: 10, color: "var(--orange-darker)" }}>
           ⚠️ {w.message}
         </div>
       ))}
@@ -166,9 +166,9 @@ function DisaggregationPanel({ projectId, rd, onClose }) {
 // Workflow status tag shown in the cell and in the popover header.
 const STATUS_STYLE = {
   draft:     { bg: "var(--surface-2)",       color: "var(--subtle)" },
-  submitted: { bg: "var(--violet-soft)",     color: "var(--violet)" },
-  reviewed:  { bg: "var(--sec-infra-pale)",  color: "var(--orange)" },
-  rejected:  { bg: "var(--rose-soft)",       color: "var(--rose)" },
+  submitted: { bg: "var(--violet-soft)",     color: "var(--violet-darker)" },
+  reviewed:  { bg: "var(--sec-infra-pale)",  color: "var(--orange-darker)" },
+  rejected:  { bg: "var(--rose-soft)",       color: "var(--rose-darker)" },
 };
 
 function StatusTag({ status }) {

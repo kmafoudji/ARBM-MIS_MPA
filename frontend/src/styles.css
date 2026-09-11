@@ -58,6 +58,13 @@
   --violet:      #7E46B8;
   --violet-soft: #DFCEF1;
   --rose:        #FB563B;
+  /* Dark steps for text on a tint of the same hue (WCAG AA 4.5:1 on both the
+     -pale and -soft tints; docs/design.md). The LLF palette has none: these
+     are the hue and saturation of each colour with its lightness lowered. */
+  --rose-darker:   #BC1E04;
+  --orange-darker: #915D04;
+  --violet-darker: #7541AA;
+  --blue-darker:   #00638F;
   --rose-soft:   #FDD4CE;
   --blue:        #0089C5;
   --blue-soft:   #AFDFF3;
@@ -699,7 +706,7 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .field-error {
   font-size: 12px;
-  color: var(--rose);
+  color: var(--rose-darker);
   background: var(--rose-soft);
   border-radius: var(--r-2);
   padding: var(--s-2);
@@ -721,9 +728,9 @@ input, select, textarea { font: inherit; color: inherit; }
 /* Green text on green reads only as lime-darker on lime-pale (4.8:1); the
    soft tint moves to the border. */
 .badge-lime { background: var(--lime-pale); color: var(--lime-darker); box-shadow: inset 0 0 0 1px var(--lime-soft); }
-.badge-orange { background: var(--orange-soft); color: var(--orange); }
-.badge-violet { background: var(--violet-soft); color: var(--violet); }
-.badge-red { background: var(--rose-soft); color: var(--rose); }
+.badge-orange { background: var(--orange-soft); color: var(--orange-darker); }
+.badge-violet { background: var(--violet-soft); color: var(--violet-darker); }
+.badge-red { background: var(--rose-soft); color: var(--rose-darker); }
 
 /* Avatar compact (initiales) */
 .avatar-sm {
@@ -740,8 +747,8 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .btn-link:hover { color: var(--lime-darker); }
 .badge-green { background: var(--lime-pale); color: var(--lime-darker); box-shadow: inset 0 0 0 1px var(--lime-soft); }
-.badge-rose { background: var(--rose-soft); color: var(--rose); }
-.badge-blue { background: var(--blue-soft); color: var(--blue); }
+.badge-rose { background: var(--rose-soft); color: var(--rose-darker); }
+.badge-blue { background: var(--blue-soft); color: var(--blue-darker); }
 .badge-dot::before {
   content: '';
   width: 6px; height: 6px;
@@ -1034,7 +1041,7 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .login-error {
   background: #FDF3F3;
-  color: #FB563B;
+  color: var(--rose-darker);
   border-radius: var(--r-2);
   padding: 8px 12px;
   font-size: 13px;
@@ -1489,7 +1496,7 @@ input, select, textarea { font: inherit; color: inherit; }
   background: var(--paper);
 }
 .btn-square.danger:hover {
-  color: #FB563B;
+  color: var(--rose-darker);
   border-color: #FB563B;
   background: #FDF3F3;
 }
@@ -2162,7 +2169,7 @@ input, select, textarea { font: inherit; color: inherit; }
   padding: 7px 8px;
   border-radius: var(--r-1);
   background: var(--sec-infra-pale);
-  color: var(--orange);
+  color: var(--orange-darker);
   font-size: 11.5px;
   font-weight: 600;
 }
