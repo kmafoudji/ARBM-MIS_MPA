@@ -5,6 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
+import ProjectBanner from "../components/ProjectBanner.jsx";
 import { fmtNum, fmtPct } from "../utils.js";
 
 function stripHtml(html) {
@@ -154,6 +155,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
 
   return (
     <div className="view">
+      <ProjectBanner projectId={projectId} />
 
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="view-header">
@@ -167,7 +169,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
               {indicator.name}
             </h1>
             <p className="view-lead" style={{ marginTop: 4 }}>
-              {project.name} · {project.official_reference_number} · Generated {genDate}
+              Generated {genDate}
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "flex-start", marginTop: 4 }}>
