@@ -16,9 +16,9 @@ function fmt(n) {
 const STAGE_PHASE = {
   LS001: "pre_approval",   LS002: "pre_approval",   // Concept Note, Pipeline Taskforce Review
   LS003: "pre_approval",   LS004: "pre_approval",   // Pipeline Taskforce Selection, Preparation/LLF
-  LS005: "approval_gate",  LS006: "approval_gate",  // TRC clearance, IC endorsed
+  LS005: "pre_approval",   LS006: "pre_approval",   // TRC clearance, IC endorsed
   LS007: "pre_approval",   LS008: "pre_approval",   // IsDB AWP, Preparations
-  LS009: "implementation", LS010: "approval_gate",  // Appraisal, BED Approved
+  LS009: "implementation", LS010: "pre_approval",   // Appraisal, BED Approved
   LS011: "implementation", LS012: "implementation", // Signature, Effective
   LS013: "implementation", LS014: "implementation", // Implementing, Mid-Term Review
   LS015: "closure",        LS016: "closure",        // Substantially Complete, Closed
@@ -26,7 +26,6 @@ const STAGE_PHASE = {
 };
 const PHASE_META = {
   pre_approval:  { label: "Pre-Approval",  color: "var(--subtle)" },
-  approval_gate: { label: "Approval Gate", color: "var(--orange)" },
   implementation:{ label: "Implementation",color: "var(--lime)" },
   closure:       { label: "Closure",       color: "var(--violet)" },
   exception:     { label: "Exception",     color: "var(--rose)" },

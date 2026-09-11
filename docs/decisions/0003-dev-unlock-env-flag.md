@@ -4,7 +4,7 @@
 
 The project detail page freezes several configuration tabs once a project
 passes the approval gates, gates the Logframe tab on Theory of Change nodes,
-and requires a second approver at lifecycle gates. Those rules encode real
+and requires a justification on lifecycle rollbacks. Those rules encode real
 policy, but none of them is enforced by the API while `RBAC_ENFORCED` is off,
 and they make imported projects — most of which sit past the gates — impossible
 to edit or walk through in a development environment.
@@ -12,7 +12,7 @@ to edit or walk through in a development environment.
 ## Decision
 
 - Both switches in `frontend/src/pages/ProjectDetail.jsx` — `DEV_UNLOCK_ALL`
-  (tab locks) and `DEV_SKIP_DUAL_APPROVAL` — read
+  (tab locks) and `DEV_SKIP_ROLLBACK_JUSTIFICATION` — read
   `import.meta.env.VITE_DEV_UNLOCK_ALL === "true"`.
 - The committed default is **off**: `main` carries the real behaviour.
 - A development machine turns it on in the untracked compose override

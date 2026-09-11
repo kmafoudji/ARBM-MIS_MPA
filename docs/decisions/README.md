@@ -17,6 +17,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0009](0009-basemap-served-from-postgis-via-martin.md) | The basemap is Natural Earth in PostGIS, served by Martin from an explicit source list |
 | [0010](0010-toc-sheet-loaded-when-complete.md) | The import loads a Theory of Change only when the tree is complete; fan-in becomes cross-pathways |
 | [0011](0011-imported-indicators-are-project-specific.md) | An indicator the import creates is project-specific and dies with its project |
+| [0012](0012-lifecycle-gates-hidden-from-interface.md) | Approval gates are hidden from the interface; the backend rules stay dormant |
 
 ## Pending
 
@@ -35,5 +36,8 @@ Questions with no decision yet. Each becomes a numbered file when decided.
   legacy PADs); what suspended projects show.
 - Project deletion is physical and open to every writer — soft delete and the
   role allowed to delete.
+- Which lifecycle stages are approval gates under the September 2026 list,
+  whether a gate binds entering or also leaving, and who co-approves — the
+  open questions of 0012.
 - Frontend routing on Azure Container Apps; the production images.
 - The remaining ARBM-MES → ARBM-MIS rename in identifiers and cloud resources.

@@ -280,7 +280,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="layers" size={15} style={{ marginRight: 6 }} />Strategic Alignment</h2>
-              <div className="card-sub">Classification SF-2 — required at BED Approved gate</div>
+              <div className="card-sub">Classification SF-2 — required before BED Approved</div>
             </div>
             <span className="badge">Optional now</span>
           </div>

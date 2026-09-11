@@ -32,12 +32,12 @@ const STAGE_BADGE = {
   LS002: "badge",                 // Pipeline Taskforce Review
   LS003: "badge badge-violet",    // Pipeline Taskforce Selection
   LS004: "badge badge-violet",    // Preparation/LLF
-  LS005: "badge badge-orange",    // TRC clearance
-  LS006: "badge badge-orange",    // IC endorsed
+  LS005: "badge badge-blue",      // TRC clearance
+  LS006: "badge badge-blue",      // IC endorsed
   LS007: "badge badge-blue",      // IsDB Annual Work Plan (AWP)
   LS008: "badge badge-blue",      // Preparations
   LS009: "badge badge-blue",      // Appraisal
-  LS010: "badge badge-orange",    // BED Approved
+  LS010: "badge badge-blue",      // BED Approved
   LS011: "badge badge-blue",      // Signature
   LS012: "badge badge-lime",      // Effective
   LS013: "badge badge-lime",      // Implementing
@@ -68,7 +68,7 @@ const STAGE_TOAST = {
     type: "success",
     title: "TRC Clearance",
     message: "The Technical Review Committee has cleared the project.",
-    bullets: ["Verify that all classification fields are complete.", "The IC endorsement gate will require a second approver."],
+    bullets: ["Verify that all classification fields are complete."],
   },
   LS006: {
     type: "success",
@@ -209,12 +209,11 @@ export const PROJECT_MODULES = [
 const DEV_UNLOCK_ALL = import.meta.env.VITE_DEV_UNLOCK_ALL === "true";
 
 // Same spirit as DEV_UNLOCK_ALL, and driven by the same variable: the
-// backend only demands a second approver at the gates when RBAC_ENFORCED is
-// on (services.transition_stage), and it is off in development. The form
-// still made the field mandatory, which blocked walking a project through
-// its stages for testing. Without the variable the client-side requirement
-// stands.
-const DEV_SKIP_DUAL_APPROVAL = DEV_UNLOCK_ALL;
+// backend only demands a justification on rollbacks when RBAC_ENFORCED is
+// on (services.transition_stage), and it is off in development. Without the
+// variable the client-side requirement stands. (The second-approver field
+// is gone from the form with the gates, ADR 0012.)
+const DEV_SKIP_ROLLBACK_JUSTIFICATION = DEV_UNLOCK_ALL;
 
 // Ordered checklist of the 16 nominal stages: reached stages carry the
 // date of the (latest) transition into them and a document marker; the
@@ -282,11 +281,9 @@ function LifecyclePhaseList({ project, transitions, stageChoices }) {
   );
 }
 
-// Compact headline of the lifecycle position: "N · Stage · phase → next gate",
-// a 16-segment bar (gates in green, separator before implementation) and a
-// legend. Exception states show the bar dimmed.
-// Gates: TRC clearance, IC endorsed, BED Approved.
-const GATE_STAGES = new Set(["LS005", "LS006", "LS010"]);
+// Compact headline of the lifecycle position: "N · Stage · phase → next",
+// a 16-segment bar (separator before implementation) and a legend. Exception
+// states show the bar dimmed. Approval gates are not shown (ADR 0012).
 const SIGNATURE_INDEX = 11; // index of Effective (LS012) in STAGE_ORDER: implementation starts there
 
 function LifecycleProgress({ project, transitions, stageChoices }) {
@@ -296,7 +293,7 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
   const idx = stageIdx(current);
   const inException = idx === -1;
   const phase = inException ? null : idx >= SIGNATURE_INDEX ? "implementation" : "origination";
-  const nextGate = inException ? null : STAGE_ORDER.slice(idx + 1).find((c) => GATE_STAGES.has(c));
+  const next = inException ? null : STAGE_ORDER[idx + 1];
   const latest = (transitions || []).find((t) => t.to_stage === current);
   const enteredOn = latest
     ? (latest.transition_date || latest.transitioned_at.slice(0, 10))
@@ -321,14 +318,14 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
             <span style={{ color: "var(--rose)" }}>{labelOf(current)}</span>
           ) : (
             <>
-              <span style={{ color: GATE_STAGES.has(current) ? "var(--lime)" : "var(--orange)" }}>
+              <span style={{ color: "var(--orange)" }}>
                 {idx + 1} · {labelOf(current)}
               </span>
               <span style={{ color: "var(--ink-soft)", fontWeight: 500 }}> · {phase}</span>
-              {nextGate && (
-                <span> → next gate: {stageIdx(nextGate) + 1} · {labelOf(nextGate)}</span>
+              {next && (
+                <span> → next: {idx + 2} · {labelOf(next)}</span>
               )}
-              {!nextGate && current === "LS016" && <span> · closed</span>}
+              {!next && current === "LS016" && <span> · closed</span>}
             </>
           )}
         </div>
@@ -348,7 +345,7 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
       <div style={{ display: "flex", alignItems: "center", gap: 4, margin: "12px 0 8px", opacity: inException ? 0.35 : 1 }}>
         {STAGE_ORDER.map((code, i) => {
           const done = i <= idx;
-          const color = !done ? "var(--rule, var(--rule))" : i === idx ? "var(--orange)" : GATE_STAGES.has(code) ? "var(--lime)" : "var(--blue)";
+          const color = !done ? "var(--rule, var(--rule))" : i === idx ? "var(--orange)" : "var(--blue)";
           return (
             <span key={code} style={{ display: "contents" }}>
               {i === SIGNATURE_INDEX && <span style={{ width: 1, height: 16, background: "var(--rule, var(--rule))", margin: "0 4px" }} />}
@@ -360,7 +357,6 @@ function LifecycleProgress({ project, transitions, stageChoices }) {
 
       <div className="text-mono" style={{ display: "flex", gap: 20, fontSize: 10, letterSpacing: 1, color: "var(--ink-soft)", textTransform: "uppercase" }}>
         <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "var(--blue)", marginRight: 6, verticalAlign: "middle" }} />Origination 1–{SIGNATURE_INDEX}</span>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "var(--lime)", marginRight: 6, verticalAlign: "middle" }} />Gate</span>
         <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 99, background: "var(--orange)", marginRight: 6, verticalAlign: "middle" }} />Current</span>
         <span>Implementation {SIGNATURE_INDEX + 1}–{STAGE_ORDER.length}</span>
       </div>
@@ -446,7 +442,7 @@ export function computeTabLocks(project) {
     },
     reporting: {
       locked: !atLeast("LS010"),
-      reason: "Available from BED Approved gate",
+      reason: "Available from BED Approved stage",
       depends: "Lifecycle stage: BED Approved",
     },
   };
@@ -461,7 +457,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     to_stage: "",
     justification: "",
     document_reference: "",
-    dual_authorized_by: "",
   });
   const [showBasicForm, setShowBasicForm] = useState(false);
   const [bForm, setBForm] = useState({ name: "", official_reference_number: "", investment_cycle: "", countryIds: [], leadCountryId: "" });
@@ -494,16 +489,13 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
   const { data: sectors } = useQuery({ queryKey: ["sectors"], queryFn: () => apiFetch("/api/reference/sectors/") });
   const { data: sdgs } = useQuery({ queryKey: ["sdgs"], queryFn: () => apiFetch("/api/reference/sdgs/") });
   const { data: refCountries } = useQuery({ queryKey: ["ref-countries"], queryFn: () => apiFetch("/api/reference/countries/") });
-  const isGate = GATE_STAGES.has(tForm.to_stage);
-  const needsDualAuth = isGate && !DEV_SKIP_DUAL_APPROVAL;
   const toIdx = stageIdx(tForm.to_stage);
   const fromIdx = stageIdx(project?.lifecycle_stage);
   const isBackward = toIdx !== -1 && fromIdx !== -1 && toIdx < fromIdx;
   // POL-1.09: the backend demands a justification on rollbacks only, and
   // only while RBAC_ENFORCED is on (same switch as the second approver).
-  const needsJustification = isBackward && !DEV_SKIP_DUAL_APPROVAL;
+  const needsJustification = isBackward && !DEV_SKIP_ROLLBACK_JUSTIFICATION;
 
-  const { data: users } = useQuery({ queryKey: ["users"], queryFn: () => apiFetch("/api/identity/users/") });
   const { data: envelope } = useQuery({ queryKey: ["envelope", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/envelope/`), staleTime: 30_000 });
   const { data: workspace } = useQuery({ queryKey: ["workspace", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/workspace/`), staleTime: 30_000 });
   const { data: toc } = useQuery({ queryKey: ["toc", projectId], queryFn: () => apiFetch(`/api/projects/${projectId}/toc/`), staleTime: 30_000 });
@@ -520,7 +512,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       queryClient.invalidateQueries({ queryKey: ["workspace", projectId] });
       queryClient.invalidateQueries({ queryKey: ["toc", projectId] });
       setShowForm(false);
-      setTForm({ to_stage: "", transition_date: "", justification: "", document_reference: "", dual_authorized_by: "" });
+      setTForm({ to_stage: "", transition_date: "", justification: "", document_reference: "" });
       const newStage = data?.lifecycle_stage;
       if (newStage && STAGE_TOAST[newStage]) {
         setToast(STAGE_TOAST[newStage]);
@@ -999,7 +991,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="layers" size={15} style={{marginRight:6}} />Classification</h2>
-              <div className="card-sub">SF-2 · required at BED Approved gate</div>
+              <div className="card-sub">SF-2 · required before BED Approved</div>
             </div>
             {!showClassificationForm && canEditClassification && (
               <button className="btn btn-primary btn-sm" onClick={openClassificationForm}>
@@ -1307,7 +1299,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div>
             <h2 className="card-title"><Icon name="git-branch" size={15} style={{marginRight:6}} />Lifecycle</h2>
             <div className="card-sub">
-              Immutable audit trail · forward-only progression, dual authorisation at gates
+              Immutable audit trail · forward-only progression
             </div>
           </div>
           {!showForm && (
@@ -1395,7 +1387,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                mutation.mutate({ ...tForm, transition_date: tForm.transition_date || null, dual_authorized_by: tForm.dual_authorized_by || null });
+                mutation.mutate({ ...tForm, transition_date: tForm.transition_date || null });
               }}
               style={{
                 background: "var(--paper)",
@@ -1432,33 +1424,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     onChange={(e) => setTForm({ ...tForm, transition_date: e.target.value })}
                     required
                   />
-                </div>
-
-                <div className="field">
-                  <label className="field-label" htmlFor="dual">
-                    Second approver {needsDualAuth && <span className="req">*</span>}
-                  </label>
-                  {needsDualAuth && (
-                    <div style={{ fontSize:11, color:"var(--orange)", marginBottom:4, fontWeight:600 }}>
-                      ⚠️ Gate transition — second approver required
-                    </div>
-                  )}
-                  {isGate && DEV_SKIP_DUAL_APPROVAL && (
-                    <div style={{ fontSize:11, color:"var(--muted)", marginBottom:4 }}>
-                      Gate transition — second approver optional while testing
-                    </div>
-                  )}
-                  <Select
-                    id="dual"
-                    placeholder="None"
-                    options={(users || []).map((u) => ({ value: String(u.id), label: u.email }))}
-                    value={tForm.dual_authorized_by}
-                    required={needsDualAuth}
-                    onChange={(v) => setTForm({ ...tForm, dual_authorized_by: v })}
-                  />
-                  <span className="field-help">
-                    Required at the TRC / IC / BED gates and for any rollback.
-                  </span>
                 </div>
               </div>
 
