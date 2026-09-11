@@ -28,8 +28,13 @@ const FALLBACK_COLOR = "#0EB584";
 const POINT_RADIUS = 7;
 const RING_RADIUS = 13;
 
-// The mockup's opening view; the "Reset view" button returns to it.
-const HOME_VIEW = { center: [28, 18], zoom: 2.35 };
+// Opening view, matched to the mockup as it shows on screen: about 15° E,
+// 14° N at zoom 3, measured on a screenshot of both maps side by side. (The
+// mockup's code says centre 28, 18 at zoom 2.35, yet it renders about 0.7
+// zoom levels closer and further west.) The short dashboard map opens one
+// level out so the same region fits. "Reset view" returns here.
+const HOME_VIEW = { center: [15, 14], zoom: 3 };
+const HOME_VIEW_COMPACT = { center: [15, 14], zoom: 2 };
 
 // Colour lenses. Each returns [legend label, colour] for a project, from the
 // project list row and the map point's properties; colours are literal
@@ -245,7 +250,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     const map = new maplibregl.Map({
       container: mapRef.current,
       style: BASEMAP_STYLE,
-      ...HOME_VIEW,
+      ...(compact ? HOME_VIEW_COMPACT : HOME_VIEW),
       attributionControl: false,
     });
     mapInst.current = map;
@@ -271,11 +276,12 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       }
     });
     // The reset button only shows once the view has left the opening one.
+    const home = compact ? HOME_VIEW_COMPACT : HOME_VIEW;
     map.on("moveend", () => {
       const c = map.getCenter();
-      setAtHome(Math.abs(map.getZoom() - HOME_VIEW.zoom) < 0.01
-        && Math.abs(c.lng - HOME_VIEW.center[0]) < 0.01
-        && Math.abs(c.lat - HOME_VIEW.center[1]) < 0.01);
+      setAtHome(Math.abs(map.getZoom() - home.zoom) < 0.01
+        && Math.abs(c.lng - home.center[0]) < 0.01
+        && Math.abs(c.lat - home.center[1]) < 0.01);
     });
     map.on("webglcontextlost", () => setMapReady(false));
     map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
@@ -567,7 +573,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
       {!isLoading && !atHome && (
         <button type="button" className="pmap-reset" title="Back to the opening view"
-          onClick={() => mapInst.current?.flyTo({ ...HOME_VIEW, duration: 900 })}>
+          onClick={() => mapInst.current?.flyTo({ ...(compact ? HOME_VIEW_COMPACT : HOME_VIEW), duration: 900 })}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" />
