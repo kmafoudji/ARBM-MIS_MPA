@@ -160,7 +160,8 @@ export const BASEMAP_STYLE = {
         "text-font": FONT,
         "text-transform": "uppercase",
         "text-letter-spacing": 0.1,
-        "text-size": ["interpolate", ["linear"], ["zoom"], 2, 9, 6, 13],
+        // 1.5 times the first cut (9-13 px), to read like the mockup's labels.
+        "text-size": ["interpolate", ["linear"], ["zoom"], 2, 13.5, 6, 19.5],
         "text-padding": 4,
         "text-max-width": 7,
         "symbol-sort-key": ["get", "scalerank"],
