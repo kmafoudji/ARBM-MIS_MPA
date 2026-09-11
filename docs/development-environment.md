@@ -147,6 +147,17 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml rm -s
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d --build frontend
 ```
 
+Or in one command:
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml \
+  up -d --build --force-recreate --renew-anon-volumes frontend
+```
+
+The symptom when this step is skipped is a Vite overlay reading `Failed to
+resolve import "<the new package>"`: the image has the package, the container
+is still running the previous `node_modules`.
+
 ### After a change to the frontend environment
 
 Vite reads `VITE_*` variables at start-up. A change in the override's
