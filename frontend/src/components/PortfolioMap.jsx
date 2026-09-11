@@ -255,13 +255,16 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     });
     mapInst.current = map;
     // Bottom right as in the mockup; top left on the short dashboard map,
-    // where the card would cover the bottom-right corner.
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), compact ? "top-left" : "bottom-right");
+    // where the card would cover the bottom-right corner. A bottom corner
+    // stacks each new control above the previous ones, so the scale goes in
+    // first to sit under the buttons.
     if (compact) {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
       map.scrollZoom.disable();
     } else {
-      map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
       map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
+      map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
+      map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
     }
     // In compact mode the container is sized by flex layout, which may
     // settle after the map measured itself: follow the container's size.

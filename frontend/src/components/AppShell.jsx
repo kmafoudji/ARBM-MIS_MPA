@@ -50,20 +50,6 @@ function crumbTrail(view) {
   return trail;
 }
 
-const API_PATHS = {
-  "portfolio-overview": "/api/projects",
-  overview: "/api/overview",
-  masterdata: "/api/reference",
-  projects: "/api/projects",
-  "new-project": "/api/projects",
-  "project-detail": "/api/projects/:id",
-  "indicator-catalogue": "/api/results/indicators",
-  portfolio: "/api/results/portfolio",
-  "dq-portfolio": "/api/results/dq-portfolio",
-  pirs:      "/api/projects/:id/logframe/:row/pirs",
-  rbac: "/api/identity/roles",
-};
-
 // Portfolio-sidebar active entry for sub-views that have no entry of their own.
 const NAV_ALIAS = {
   "project-detail": "projects",
@@ -488,7 +474,6 @@ export default function AppShell({
                 </button>
               ))}
             </div>
-            <span className="api-pill">{API_PATHS[view]}</span>
             <span className="env-tag">POC</span>
             <UserMenu user={user} />
           </div>
