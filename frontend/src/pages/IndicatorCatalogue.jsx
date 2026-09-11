@@ -897,7 +897,24 @@ export default function IndicatorCatalogue() {
   const typeValues  = useMemo(() => uniq(tabItems.map((i) => i.indicator_type))
     .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b)), [tabItems]);
   const levelValues = useMemo(() => uniq(tabItems.map((i) => i.chain_level)).sort(), [tabItems]);
-  const subValues   = useMemo(() => uniq(tabItems.map((i) => i.subsector)).sort(), [tabItems]);
+  // Sous-secteurs : trop nombreux pour des chips (18 pour la Santé), d'où un
+  // MultiSelect, groupé par secteur quand l'onglet en couvre plusieurs.
+  const subOptions  = useMemo(() => {
+    const sectorsOf = new Map();
+    for (const i of tabItems) {
+      if (!i.subsector) continue;
+      if (!sectorsOf.has(i.subsector)) sectorsOf.set(i.subsector, new Set());
+      sectorsOf.get(i.subsector).add(i.sector_name || "");
+    }
+    const grouped = uniq(tabItems.map((i) => i.sector_name)).length > 1;
+    return [...sectorsOf.entries()]
+      .map(([sub, sectors]) => ({
+        value: sub,
+        label: sub,
+        group: grouped ? [...sectors].sort().join(" · ") : undefined,
+      }))
+      .sort((a, b) => (a.group || "").localeCompare(b.group || "") || a.label.localeCompare(b.label));
+  }, [tabItems]);
 
   const items = useMemo(() => tabItems.filter((i) =>
     (typeChips.length  === 0 || typeChips.includes(i.indicator_type)) &&
@@ -1033,8 +1050,15 @@ export default function IndicatorCatalogue() {
         <ChipGroup label="Chain level" values={levelValues} selected={levelChips}
           onToggle={toggle(setLevelChips)}
           labelFor={(v) => CHAIN_LEVEL_LABELS[v] || v} />
-        <ChipGroup label="Sub-sector" values={subValues} selected={subChips}
-          onToggle={toggle(setSubChips)} />
+        {subOptions.length >= 2 && (
+          <>
+            <label className="filter-chip-label" htmlFor="cat-subsectors">Sub-sector</label>
+            <div className="filter-multiselect">
+              <MultiSelect id="cat-subsectors" placeholder="All sub-sectors"
+                options={subOptions} value={subChips} onChange={setSubChips} />
+            </div>
+          </>
+        )}
         <span className="text-muted text-sm">{items.length} shown</span>
       </div>
 
