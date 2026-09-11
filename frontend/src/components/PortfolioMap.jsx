@@ -28,13 +28,13 @@ const FALLBACK_COLOR = "#0EB584";
 const POINT_RADIUS = 7;
 const RING_RADIUS = 13;
 
-// Opening view, matched to the mockup as it shows on screen: about 15° E,
-// 14° N at zoom 3, measured on a screenshot of both maps side by side. (The
-// mockup's code says centre 28, 18 at zoom 2.35, yet it renders about 0.7
-// zoom levels closer and further west.) The short dashboard map opens one
-// level out so the same region fits. "Reset view" returns here.
-const HOME_VIEW = { center: [15, 14], zoom: 3 };
-const HOME_VIEW_COMPACT = { center: [15, 14], zoom: 2 };
+// Opening view: zoom 3, matched to the mockup as it shows on screen (its
+// code says zoom 2.35 but it renders about 0.7 levels closer), centred on
+// 29.6° E, 16.7° N — the framing the maintainer set by hand, West Africa to
+// Iran. The short dashboard map opens one level out so the same region fits.
+// "Reset view" returns here.
+const HOME_VIEW = { center: [29.6, 16.7], zoom: 3 };
+const HOME_VIEW_COMPACT = { center: [29.6, 16.7], zoom: 2 };
 
 // Colour lenses. Each returns [legend label, colour] for a project, from the
 // project list row and the map point's properties; colours are literal
