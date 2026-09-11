@@ -49,12 +49,16 @@ dc exec -T backend python manage.py seed_reference_data   # currencies, 10 hubs,
 dc exec -T backend python manage.py seed_sdg_targets      # the 169 SDG targets — idempotent
 dc exec -T backend python manage.py seed_indicators --dry-run
 dc exec -T backend python manage.py seed_indicators       # Agriculture catalogue: Crop (A001.*) and FAP (poultry, fisheries, aquaculture)
+dc exec -T backend python manage.py seed_indicators --sector health   # Health catalogue: names only (H01-OP-01 …), provisional codes
 ```
 
 `seed_indicators` defaults to `--sector agriculture` and reads
-`backend/apps/results/fixtures/indicators_agriculture.json`; `--update`
-refreshes rows that already exist. The Health and Infrastructure catalogues
-have no fixture yet.
+`backend/apps/results/fixtures/indicators_<sector>.json`; `--update`
+refreshes rows that already exist. The Health fixture comes from the draft
+*Health Sector Indicators* handbook of 10 September 2026: 306 indicators with
+name, group (as `subsector`) and output/outcome only, `direction` left
+`neutral` and codes made up by group until the author's numbering and PIRS
+arrive. The Infrastructure catalogue has no fixture yet.
 
 ### 4. Administrative areas (GADM)
 
