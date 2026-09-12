@@ -166,6 +166,16 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   // données venant du cache — la carte restait nue. Le tick les rappelle.
   const [styleTick, setStyleTick] = useState(0);
 
+  // Ce qui est DÉJÀ posé sur la carte.
+  //
+  // Sans ces gardes, le tick ci-dessus fait boucler : reconstruire des couches
+  // laisse `isStyleLoaded()` à faux, l'effet de visibilité abandonne et demande
+  // un rappel, le tick monte, tout se reconstruit — et chaque reconstruction
+  // recadrait la vue, d'où le clignotement et le zoom qui sautait. Un effet qui
+  // n'a rien de neuf à poser ne doit rien toucher.
+  const gadmBuiltRef  = useRef(null);
+  const assetBuiltRef = useRef(null);
+
   const countrySignature = countries.map(c => c.iso2).join(",");
 
   const [sheet, setSheet] = useState(null);
@@ -242,7 +252,14 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
     // Gérer la perte/restauration du contexte WebGL
     map.on("webglcontextlost", () => setMapReady(false));
     map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
-    return () => { map.remove(); mapInst.current = null; setMapReady(false); };
+    return () => {
+      map.remove();
+      mapInst.current = null;
+      // La carte disparaît avec ses couches : ce qui était posé ne l'est plus.
+      gadmBuiltRef.current = null;
+      assetBuiltRef.current = null;
+      setMapReady(false);
+    };
   }, []);
 
   // Couches projet
@@ -250,6 +267,10 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
     const map = mapInst.current;
     if (!map || !mapReady || !geojson?.features?.length) return;
     if (!map.isStyleLoaded()) return retryWhenStyleReady(map, setStyleTick);
+    // react-query garde la même référence tant que la donnée ne change pas :
+    // l'identité suffit à dire « déjà posé ».
+    if (gadmBuiltRef.current === geojson) return;
+    gadmBuiltRef.current = geojson;
 
     const features   = geojson.features;
     const countries0 = features.filter(f => f.properties.level === 0);
@@ -419,6 +440,8 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
     const map = mapInst.current;
     if (!map || !mapReady) return;
     if (!map.isStyleLoaded()) return retryWhenStyleReady(map, setStyleTick);
+    if (assetBuiltRef.current === assetSignature) return;
+    assetBuiltRef.current = assetSignature;
 
     const style = map.getStyle() || {};
     (style.layers || []).forEach(l => {
