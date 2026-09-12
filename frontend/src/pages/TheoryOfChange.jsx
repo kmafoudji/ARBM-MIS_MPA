@@ -818,7 +818,7 @@ export default function TheoryOfChange({ projectId, onBack, embedded = false, ca
         <div className="notice notice-warn" style={{ marginBottom: "var(--s-3)", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name="lock" size={14} style={{ flexShrink: 0 }} />
           <span>
-            <strong>Theory of Change is locked.</strong> The project has reached Effective stage (SF-10).
+            <strong>Theory of Change is locked.</strong> The project has reached Effective stage.
             Structural changes are disabled to preserve the results framework integrity.
           </span>
         </div>

@@ -350,7 +350,7 @@ function ActivityForm({ subComponentId, outputNodes, users = [], onSave, onCance
       {/* ── Results Link ── */}
       <div style={{ ...SECTION, borderColor: outputNodes.length > 0 ? "var(--lime-soft)" : "var(--rule)", background: outputNodes.length > 0 ? "var(--lime-pale)" : "var(--surface)" }}>
         <div style={{ ...SECTION_TITLE, color: outputNodes.length > 0 ? "var(--lime)" : "var(--subtle)" }}>
-          Results Link — ToC Output (SF-2)
+          Results link — Theory of Change output
         </div>
         {outputNodes.length === 0 ? (
           <div style={{ fontSize: 12, color: "var(--subtle)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -510,7 +510,7 @@ function DelayForm({ activity, onSave, onCancel }) {
   async function handleSave() {
     setErr(null);
     if (!form.revised_end) { setErr("New end date is required."); return; }
-    if (!form.justification.trim()) { setErr("Justification is mandatory (RG-7.2)."); return; }
+    if (!form.justification.trim()) { setErr("A justification is required to record a delay."); return; }
     try { await onSave(form); }
     catch (e) {
       const d = e?.detail;
@@ -571,7 +571,7 @@ function DelayForm({ activity, onSave, onCancel }) {
 
       {/* Delay category */}
       <div style={fieldStyle}>
-        <label style={labelStyle}>Delay Category * <span style={{ color: "var(--subtle)", fontWeight: 400, fontSize: 11 }}>(RG-7.2 standardized taxonomy)</span></label>
+        <label style={labelStyle}>Delay Category * <span style={{ color: "var(--subtle)", fontWeight: 400, fontSize: 11 }}>(pick from the fund’s standard list)</span></label>
         <Select required value={form.delay_category} onChange={v => set("delay_category", v)} options={DELAY_CATEGORIES} />
       </div>
 
@@ -589,7 +589,7 @@ function DelayForm({ activity, onSave, onCancel }) {
         <input type="checkbox" checked={form.cascade_applied} onChange={e => set("cascade_applied", e.target.checked)} />
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--orange)" }}>Apply cascade to successor activities</div>
-          <div style={{ fontSize: 11, color: "var(--orange)" }}>Automatically shift dependent activities by the same delay (RG-7.3)</div>
+          <div style={{ fontSize: 11, color: "var(--orange)" }}>Automatically shift dependent activities by the same delay</div>
         </div>
       </label>
 
@@ -724,7 +724,7 @@ function ActivityDetailPanel({ projectId, activity, outputNodes, onClose, onRefr
 
             {activity.output_node_detail && (
               <div style={{ background: "var(--lime-pale)", border: "1px solid var(--lime-soft)", borderRadius: 8, padding: "10px 14px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--lime)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Linked Output (ToC — SF-2)</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--lime)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Linked Theory of Change output</div>
                 <div style={{ fontSize: 13, color: "var(--lime-darker)", fontWeight: 500 }}>{activity.output_node_detail.code} · {stripHtml(activity.output_node_detail.statement)?.substring(0, 80)}</div>
               </div>
             )}
@@ -1096,7 +1096,7 @@ export default function Workplan({ projectId, canEdit = true }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Workplan — Components & Activities</h3>
-          <p style={{ fontSize: 12, color: "var(--subtle)", margin: "4px 0 0" }}>Component → Sub-Component → Activity · ToC links (SF-2) · Milestones & Delay tracking</p>
+          <p style={{ fontSize: 12, color: "var(--subtle)", margin: "4px 0 0" }}>Component → Sub-Component → Activity · Theory of Change links · Milestones & Delay tracking</p>
         </div>
         {canEdit && (
           <button className="btn btn-primary" onClick={() => setModal(true)}>

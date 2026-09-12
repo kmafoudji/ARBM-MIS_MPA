@@ -112,8 +112,8 @@ const STAGE_TOAST = {
     bullets: [
       "Theory of Change is now locked — no further structural edits.",
       "Reporting schedule has been auto-generated.",
-      "GIS scope inherited by Module 5.",
-      "Results framework (Module 2) is ready for data entry.",
+      "The geographic scope is now available in GIS & Spatial.",
+      "The results framework is ready for data entry.",
     ],
   },
   LS013: {
@@ -1202,7 +1202,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
-            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Module 9</div>
+            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Procurement</div>
           </div>
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEditFinancial} />
@@ -1224,7 +1224,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               Implementing Partners
             </h2>
             <div className="card-sub">
-              SF-3 · Executing agencies · Budget delegation — detail in Module 9
+              SF-3 · Executing agencies · Budget delegation — detail in Procurement
             </div>
           </div>
         </div>
@@ -1582,7 +1582,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div>
             <h2 className="card-title"><Icon name="file-text" size={15} style={{marginRight:6}} />PAD Document</h2>
             <div className="card-sub">
-              SF-1 · Reference document — AI extraction (BRQ-1.14) not yet active
+              SF-1 · Reference document — automatic field extraction not yet active
             </div>
           </div>
         </div>
@@ -1794,7 +1794,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             Workplan — Activity & Milestone Tracking
           </h2>
           <div className="card-subtitle">
-            Component → Sub-Component → Activity · ToC links (SF-2) · Milestones & Delay tracking
+            Component → Sub-Component → Activity · Theory of Change links · Milestones & Delay tracking
           </div>
         </div>
         <div style={{ padding: "16px 20px" }}>

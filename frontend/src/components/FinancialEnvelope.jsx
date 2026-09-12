@@ -193,7 +193,7 @@ export default function FinancialEnvelope({ projectId, canEdit }) {
         <div className="card-header">
           <div>
             <h3 className="card-title">Allocation by Component <span className="badge" style={{ marginLeft: 8 }}>Indicative</span></h3>
-            <div className="card-sub">Works · Consulting · Goods · Training · Operations — detail in Module 9</div>
+            <div className="card-sub">Works · Consulting · Goods · Training · Operations — detail in Procurement</div>
           </div>
           {canEdit && (
             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowAlloc(true)}>
@@ -419,7 +419,7 @@ function AllocModal({ env, total, onClose, onSave, pending }) {
   return (
     <Modal
       title="Allocation by Component"
-      subtitle="Indicative — detail in Module 9"
+      subtitle="Indicative — detail in Procurement"
       onClose={onClose}
       footer={
         <>

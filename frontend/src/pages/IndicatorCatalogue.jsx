@@ -323,7 +323,7 @@ function IndicatorSheet({ detail, canEdit, onEdit }) {
     <>
         <div className="drawer-note row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <span>
-            Institutional codebook (POL-2.01): the definition, the method and the
+            Institutional codebook: the definition, the method and the
             disaggregation are the same for every project — only baselines and
             targets vary.
           </span>

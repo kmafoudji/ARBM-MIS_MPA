@@ -565,7 +565,7 @@ export default function MasterData({ canEdit }) {
               )}
               <div className="notice notice-info">
                 <span>
-                  Per POL-1.07, nothing is permanently deleted.
+                  Nothing is permanently deleted — deactivating is reversible.
                   <strong> {confirming.row.name}</strong> disappears from selection lists
                   for new entries, but stays attached to the data that
                   references it. The operation is reversible at any time.

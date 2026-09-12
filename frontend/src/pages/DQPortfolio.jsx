@@ -372,7 +372,7 @@ export default function DQPortfolio() {
             {
               label: "Accuracy", weight: "20%", color: "var(--subtle)",
               formula: "Evidence verified / Total evidence attached × 100",
-              desc: "Will reflect the rate of verified evidence attachments once SF-10 (Evidence Liaison) is activated. Currently set to 100% as a neutral placeholder.",
+              desc: "Will reflect the rate of verified evidence attachments once the evidence-verification workflow is activated. Currently set to 100% as a neutral placeholder.",
             },
           ].map(dim => (
             <div key={dim.label} style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 10, padding: 14 }}>
