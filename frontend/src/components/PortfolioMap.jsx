@@ -354,6 +354,10 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.getCanvas().style.cursor = "";
       hover.remove();
     });
+    // Une infobulle de survol reste accrochée à sa coordonnée : pendant un
+    // zoom elle glisserait sous le curseur. On la retire, le survol suivant la
+    // ramènera.
+    map.on("movestart", () => hover.remove());
 
     return () => {
       clusterMarkersRef.current.forEach(m => m.remove());
