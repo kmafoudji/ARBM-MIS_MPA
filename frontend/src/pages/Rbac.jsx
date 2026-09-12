@@ -342,7 +342,7 @@ function TabRoles({ currentUser }) {
       <div className="card-header">
         <div>
           <h2 className="card-title">Role catalogue</h2>
-          <div className="card-sub">11 actors — functional permissions by persona (SFD Module 1)</div>
+          <div className="card-sub">11 actors — functional permissions by persona</div>
         </div>
         <span className="badge">{roles.length} roles</span>
       </div>
@@ -653,7 +653,7 @@ function TabAssignments({ currentUser }) {
             )}
           </div>
           <div className="notice notice-info" style={{ marginTop: 8, fontSize: 12 }}>
-            The R26 rule (separation of duties) is enforced automatically — a user cannot hold both entry and validation rights on the same scope.
+            Separation of duties is enforced automatically — a user cannot hold both entry and validation rights on the same scope.
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
             <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>
@@ -699,7 +699,7 @@ export default function Rbac({ currentUser }) {
         <h1 className="view-title">Users &amp; Roles</h1>
         <p className="view-lead">
           Eleven actors across the LLFMU → Regional Hub → PMU → Partners hierarchy.
-          Least-privilege and separation of duties (R26) are enforced on every assignment.
+          Least-privilege and separation of duties are enforced on every assignment.
         </p>
       </div>
 

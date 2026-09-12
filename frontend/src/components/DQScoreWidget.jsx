@@ -28,7 +28,7 @@ const DIMENSIONS = [
   { key: "completeness", label: "Completeness", weight: "30%", icon: "check",          desc: "Periods with approved data" },
   { key: "timeliness",   label: "Timeliness",   weight: "25%", icon: "calendar",       desc: "Submissions before deadline" },
   { key: "consistency",  label: "Consistency",  weight: "25%", icon: "trending-up",    desc: "No anomalous variations > 20%" },
-  { key: "accuracy",     label: "Accuracy",     weight: "20%", icon: "circle-check",   desc: "Evidence verified (SF-10)" },
+  { key: "accuracy",     label: "Accuracy",     weight: "20%", icon: "circle-check",   desc: "Evidence verified" },
 ];
 
 function ScoreBar({ value, color }) {
@@ -184,7 +184,7 @@ function DQScoreDetail({ scores, data }) {
       )}
 
       <div style={{ marginTop: 10, fontSize: 10, color: "var(--subtle)", fontStyle: "italic" }}>
-        Accuracy score will reflect evidence verification once SF-10 is activated.
+        Accuracy will reflect evidence verification once that workflow is activated.
       </div>
     </>
   );
