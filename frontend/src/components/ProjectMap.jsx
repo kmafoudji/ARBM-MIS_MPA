@@ -26,12 +26,19 @@ const HIDDEN_PROPERTIES = new Set([
   "begin", "end", "timestamp", "icon", "snippet",
 ]);
 
+// Une valeur qui ressemble à du balisage n'est pas un attribut : c'est une
+// fiche HTML que l'import n'a pas démontée (couche importée avant que
+// converters.py ne le fasse, ou format inattendu). Elle est échappée de toute
+// façon, mais l'afficher noierait la fiche sous une table illisible.
+const LOOKS_LIKE_MARKUP = /<[a-z!/][^>]*>/i;
+
 function attributeRows(properties) {
   return Object.entries(properties || {})
     .filter(([key, value]) =>
       !key.startsWith("_") &&
       !HIDDEN_PROPERTIES.has(key) &&
-      value !== null && value !== "" && value !== undefined)
+      value !== null && value !== "" && value !== undefined &&
+      !(typeof value === "string" && LOOKS_LIKE_MARKUP.test(value)))
     .map(([key, value]) => [key, String(value)]);
 }
 
