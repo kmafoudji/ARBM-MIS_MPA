@@ -55,11 +55,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         # Suppression physique et irreversible : toutes les tables liees au
         # projet (pays, transitions, cadre logique, resultats, workplan...)
-        # sont en on_delete=CASCADE. Le fichier PAD n'est pas couvert par la
-        # cascade (FileField), on le retire du stockage explicitement.
+        # sont en on_delete=CASCADE. Les FileField ne sont pas couverts par la
+        # cascade : PAD et couches GIS sont retires du stockage explicitement,
+        # sans quoi ils resteraient orphelins sur Blob Storage.
         with transaction.atomic():
             if instance.pad_reference_file:
                 instance.pad_reference_file.delete(save=False)
+            for asset in instance.spatial_assets.all():
+                if asset.original_file:
+                    asset.original_file.delete(save=False)
             instance.delete()
 
     def get_serializer_class(self):

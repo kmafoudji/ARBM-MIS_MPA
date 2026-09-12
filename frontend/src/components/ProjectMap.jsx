@@ -6,9 +6,17 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
+
+// Les libellés des couches GIS viennent de fichiers téléversés : contenu non
+// fiable, injecté ici dans du HTML de popup. On l'échappe.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[ch]));
+}
 
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
@@ -35,6 +43,38 @@ export default function ProjectMap({ projectId, countries = [] }) {
     enabled:  !!projectId,
     staleTime: 5 * 60_000,
   });
+
+  // Couches GIS téléversées (M5). La carte va les chercher elle-même : elles
+  // apparaissent ainsi partout où ProjectMap est monté, sans que l'appelant
+  // ait à les passer.
+  const { data: assetList } = useQuery({
+    queryKey: ["gis-assets", projectId],
+    queryFn:  () => apiFetch(`/api/projects/${projectId}/gis-assets/`),
+    enabled:  !!projectId,
+    staleTime: 60_000,
+  });
+
+  const visibleAssets = (assetList?.results || []).filter(a => a.is_visible_default);
+
+  const assetGeojson = useQueries({
+    queries: visibleAssets.map(a => ({
+      queryKey: ["gis-asset-geojson", a.id],
+      queryFn:  () => apiFetch(`/api/projects/${projectId}/gis-assets/${a.id}/geojson/`),
+      staleTime: 5 * 60_000,
+    })),
+  });
+
+  const assetLayers = visibleAssets
+    .map((asset, i) => ({ asset, geojson: assetGeojson[i]?.data }))
+    .filter(l => l.geojson?.features?.length);
+
+  // Les tableaux ci-dessus changent d'identité à chaque rendu : l'effet est
+  // piloté par une signature stable, et lit les données via la ref.
+  const assetLayersRef = useRef([]);
+  assetLayersRef.current = assetLayers;
+  const assetSignature = assetLayers
+    .map(l => `${l.asset.id}:${l.asset.layer_color}:${l.geojson.features.length}`)
+    .join("|");
 
   // Init carte avec style custom
   useEffect(() => {
@@ -155,15 +195,44 @@ export default function ProjectMap({ projectId, countries = [] }) {
     // Tooltip
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12,
       className: "arbm-popup" });
-    const QUERY_LAYERS = ["proj-admin2-fill","proj-admin1-fill","proj-country-fill",
-                          "gadm-admin1-fill"]
-      .filter(l => map.getLayer(l));
 
-    map.on("mousemove", e => {
-      const feats = map.queryRenderedFeatures(e.point, { layers: QUERY_LAYERS });
+    // Calculé à chaque survol : les couches GIS téléversées apparaissent et
+    // disparaissent indépendamment de cet effet. Elles passent en premier pour
+    // gagner sur le périmètre GADM quand elles se superposent.
+    function queryLayers() {
+      const assetIds = assetLayersRef.current.flatMap(({ asset }) => [
+        `gis-asset-${asset.id}-point`,
+        `gis-asset-${asset.id}-line`,
+        `gis-asset-${asset.id}-fill`,
+      ]);
+      return [...assetIds,
+              "proj-admin2-fill", "proj-admin1-fill", "proj-country-fill",
+              "gadm-admin1-fill"]
+        .filter(l => map.getLayer(l));
+    }
+
+    function onMouseMove(e) {
+      const feats = map.queryRenderedFeatures(e.point, { layers: queryLayers() });
       if (!feats.length) { map.getCanvas().style.cursor = ""; popup.remove(); return; }
       map.getCanvas().style.cursor = "pointer";
-      const p = feats[0].properties || {};
+
+      const hit = feats[0];
+      const p   = hit.properties || {};
+
+      if (hit.layer.id.startsWith("gis-asset-")) {
+        const asset = assetLayersRef.current
+          .find(l => hit.layer.id === `gis-asset-${l.asset.id}-point`
+                  || hit.layer.id === `gis-asset-${l.asset.id}-line`
+                  || hit.layer.id === `gis-asset-${l.asset.id}-fill`)?.asset;
+        popup.setLngLat(e.lngLat).setHTML(
+          `<div style="font-family:-apple-system,sans-serif;padding:8px 12px;min-width:120px">
+            <div style="font-size:13px;font-weight:600;color:#2B2B2B">${escapeHtml(p._label || "—")}</div>
+            <div style="font-size:10px;font-weight:600;color:${escapeHtml(asset?.layer_color || "#E2725B")};margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(asset?.name || "GIS layer")}</div>
+          </div>`
+        ).addTo(map);
+        return;
+      }
+
       const levelLabel = p.level === 0 ? "Country" : p.level === 1 ? "Admin 1" : "Admin 2";
       const color      = p.level === 2 ? "#0089C5" : "#09815F";
       popup.setLngLat(e.lngLat).setHTML(
@@ -172,15 +241,67 @@ export default function ProjectMap({ projectId, countries = [] }) {
           <div style="font-size:10px;font-weight:600;color:${color};margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${levelLabel}</div>
         </div>`
       ).addTo(map);
-    });
-    map.on("mouseleave", () => { map.getCanvas().style.cursor = ""; popup.remove(); });
+    }
+    function onMouseLeave() { map.getCanvas().style.cursor = ""; popup.remove(); }
+
+    map.on("mousemove", onMouseMove);
+    map.on("mouseleave", onMouseLeave);
 
     // Bbox
     if (features.length) {
       const bbox = getBbox(features);
       map.fitBounds(bbox, { padding: 24, maxZoom: 9, duration: 900 });
     }
+
+    // Sans ce retrait, un handler s'ajoutait à chaque exécution de l'effet.
+    return () => {
+      map.off("mousemove", onMouseMove);
+      map.off("mouseleave", onMouseLeave);
+      popup.remove();
+    };
   }, [mapReady, geojson]);
+
+  // Couches GIS téléversées — effet distinct de celui du périmètre GADM, qui
+  // reste inchangé.
+  useEffect(() => {
+    const map = mapInst.current;
+    if (!map || !mapReady || !map.isStyleLoaded()) return;
+
+    const style = map.getStyle() || {};
+    (style.layers || []).forEach(l => {
+      if (l.id.startsWith("gis-asset-") && map.getLayer(l.id)) map.removeLayer(l.id);
+    });
+    Object.keys(style.sources || {}).forEach(id => {
+      if (id.startsWith("gis-asset-") && map.getSource(id)) map.removeSource(id);
+    });
+
+    assetLayersRef.current.forEach(({ asset, geojson: data }) => {
+      const sourceId = `gis-asset-${asset.id}`;
+      const color    = asset.layer_color || "#E2725B";
+      map.addSource(sourceId, { type: "geojson", data });
+
+      // Un même fichier peut porter polygones, lignes et points à la fois :
+      // trois couches filtrées par type plutôt qu'un pari sur la géométrie.
+      map.addLayer({ id: `${sourceId}-fill`, type: "fill", source: sourceId,
+        filter: ["==", ["geometry-type"], "Polygon"],
+        paint: { "fill-color": color, "fill-opacity": 0.25 } }, LABELS_LAYER_ID);
+      map.addLayer({ id: `${sourceId}-line`, type: "line", source: sourceId,
+        filter: ["any", ["==", ["geometry-type"], "Polygon"],
+                        ["==", ["geometry-type"], "LineString"]],
+        paint: { "line-color": color, "line-width": 2, "line-opacity": 0.95 } }, LABELS_LAYER_ID);
+      map.addLayer({ id: `${sourceId}-point`, type: "circle", source: sourceId,
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: { "circle-radius": 5, "circle-color": color,
+                 "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF" } }, LABELS_LAYER_ID);
+    });
+
+    // Le cadrage initial appartient au périmètre GADM ; on ne s'en saisit que
+    // s'il n'y a aucune géométrie GADM à cadrer.
+    if (!geojson?.features?.length && assetLayersRef.current.length) {
+      const all = assetLayersRef.current.flatMap(l => l.geojson.features);
+      if (all.length) map.fitBounds(getBbox(all), { padding: 24, maxZoom: 12, duration: 900 });
+    }
+  }, [mapReady, assetSignature, geojson]);
 
   if (!projectId || !countries.length) return null;
 
@@ -188,9 +309,14 @@ export default function ProjectMap({ projectId, countries = [] }) {
 
   function recenter() {
     const map = mapInst.current;
-    if (!map || !geojson?.features?.length) return;
-    const bbox = getBbox(geojson.features);
-    map.fitBounds(bbox, { padding: 24, maxZoom: 9, duration: 700 });
+    if (!map) return;
+    // Recentrer sur tout ce qui est dessiné : périmètre GADM et couches GIS.
+    const features = [
+      ...(geojson?.features || []),
+      ...assetLayers.flatMap(l => l.geojson.features),
+    ];
+    if (!features.length) return;
+    map.fitBounds(getBbox(features), { padding: 24, maxZoom: 9, duration: 700 });
   }
 
   return (
@@ -300,6 +426,21 @@ export default function ProjectMap({ projectId, countries = [] }) {
             <span style={{ fontSize: 10, color: "#A7A7A7" }}>Admin 2 (district)</span>
           </div>
         </div>
+        {assetLayers.length > 0 && (
+          <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #ECEBE8" }}>
+            <div style={{ fontWeight: 700, fontSize: 10, color: "#A7A7A7",
+              textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>
+              GIS layers
+            </div>
+            {assetLayers.map(({ asset }) => (
+              <div key={asset.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                <span style={{ width: 12, height: 12, borderRadius: 3, flexShrink: 0,
+                  background: asset.layer_color, border: `1.5px solid ${asset.layer_color}` }} />
+                <span style={{ color: "#545454", fontSize: 11 }}>{asset.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Loading */}

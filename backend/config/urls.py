@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/import/asis/", AsisImportView.as_view(), name="import-asis"),
     path("auth/", include("apps.authentication.urls")),
     path("api/", include("apps.project.urls")),
+    path("api/projects/<int:pk>/gis-assets/", include("apps.spatial.urls")),
     path("api/reference/", include("apps.reference.urls")),
     path("api/identity/", include("apps.identity.urls")),
     # Notifications globales (topbar)

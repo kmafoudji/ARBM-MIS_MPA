@@ -5,6 +5,7 @@ import SectorIcon from "../components/SectorIcon";
 import FinancialEnvelope from "../components/FinancialEnvelope";
 import ImplementingPartners from "../components/ImplementingPartners";
 import GeographicScope from "../components/GeographicScope";
+import GisAssets from "../components/GisAssets";
 import ReportingSchedule from "../components/ReportingSchedule";
 import ResultsEntry from "../components/ResultsEntry";
 import TheoryOfChange from "../pages/TheoryOfChange.jsx";
@@ -378,6 +379,7 @@ export const PROJECT_TABS = [
   { key: "results",    label: "Results",          icon: "trending-up", module: "m2" },
   { key: "workplan",   label: "Workplan",         icon: "layout",      module: "m3" },
   { key: "geographic", label: "Geographic Scope", icon: "map-pin",     module: "m5" },
+  { key: "gis-assets", label: "GIS Layers",       icon: "layers",      module: "m5" },
   { key: "documents",  label: "Documents",        icon: "folder",      module: "m8" },
   { key: "settings",   label: "Settings",         icon: "edit",        module: "settings" },
 ];
@@ -1269,6 +1271,27 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
 
 
       </>)}
+      </>)}
+
+
+      {activeTab === "gis-assets" && (<>
+      {TAB_LOCKS["geographic"]?.locked
+        ? <LockedTabPanel tabKey="geographic" />
+        : (
+      <div className="mt-3">
+        <GisAssets
+          projectId={project.id}
+          countries={project.countries_detail?.map((c) => ({
+            iso2: c.iso2,
+            iso3: c.iso3,
+            name: c.name,
+            flag: c.flag,
+            is_lead: c.is_lead,
+          }))}
+          canEdit={canEditGeographic}
+        />
+      </div>
+      )}
       </>)}
 
 

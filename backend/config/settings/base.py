@@ -36,6 +36,9 @@ INSTALLED_APPS = [
     "apps.results",
     "apps.workplan",
     "apps.authentication",
+    # M5 — registre des couches GIS televersees. Nommee `spatial` et non `gis` :
+    # django.contrib.gis occupe deja le label `gis`.
+    "apps.spatial",
 ]
 
 AUTH_USER_MODEL = "identity.AppUser"
