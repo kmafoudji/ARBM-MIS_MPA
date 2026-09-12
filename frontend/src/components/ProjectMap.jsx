@@ -8,10 +8,10 @@ import * as maplibregl from "maplibre-gl";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
+import { ATTRIBUTION, LABELS_LAYER_ID } from "./mapStyle.js";
 import { colorExpression, layerScale } from "./layerColors.js";
 import { startCardDrag } from "./mapCardDrag.js";
-import { createHoverPopup, retryWhenStyleReady } from "./mapCommon.js";
+import { createHoverPopup, retryWhenStyleReady, useMapInstance } from "./mapCommon.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -105,7 +105,6 @@ function getBbox(features) {
 export default function ProjectMap({ projectId, countries = [], height = 380 }) {
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
 
   const { data: geojson, isLoading } = useQuery({
     queryKey: ["project-geojson", projectId],
@@ -142,23 +141,9 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   // piloté par une signature stable, et lit les données via la ref.
   const assetLayersRef = useRef([]);
   assetLayersRef.current = assetLayers;
-  // La fiche d'un point n'est PAS un popup MapLibre.
-  //
-  // Un popup reste accroché à sa coordonnée : MapLibre le repositionne à chaque
-  // image d'un zoom, et rien ne peut l'en empêcher de l'extérieur — compenser
-  // son déplacement image par image revient à courir derrière lui, avec une
-  // image de retard, ce qui se voit. La fiche est donc un simple div, posé une
-  // fois aux pixels du clic dans le cadre de la carte. Le zoom ne la touche
-  // pas ; seule la poignée la déplace.
-  // Les effets qui construisent des couches abandonnent si le style n'est pas
-  // encore chargé. Sans ce compteur ils abandonnaient DÉFINITIVEMENT : aucune
-  // de leurs dépendances ne changeait ensuite, et au retour sur l'onglet — les
-  // données venant du cache — la carte restait nue. Le tick les rappelle.
-  const [styleTick, setStyleTick] = useState(0);
-
   // Ce qui est DÉJÀ posé sur la carte.
   //
-  // Sans ces gardes, le tick ci-dessus fait boucler : reconstruire des couches
+  // Sans ces gardes, le tick de style fait boucler : reconstruire des couches
   // laisse `isStyleLoaded()` à faux, l'effet de visibilité abandonne et demande
   // un rappel, le tick monte, tout se reconstruit — et chaque reconstruction
   // recadrait la vue, d'où le clignotement et le zoom qui sautait. Un effet qui
@@ -168,6 +153,14 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
 
   const countrySignature = countries.map(c => c.iso2).join(",");
 
+  // La fiche d'un point n'est PAS un popup MapLibre.
+  //
+  // Un popup reste accroché à sa coordonnée : MapLibre le repositionne à chaque
+  // image d'un zoom, et rien ne peut l'en empêcher de l'extérieur — compenser
+  // son déplacement image par image revient à courir derrière lui, avec une
+  // image de retard, ce qui se voit. La fiche est donc un simple div, posé une
+  // fois aux pixels du clic dans le cadre de la carte. Le zoom ne la touche
+  // pas ; seule la poignée la déplace.
   const [sheet, setSheet] = useState(null);
   const sheetRef = useRef(null);
 
@@ -229,42 +222,22 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   // Le canevas MapLibre ne suit pas un changement de hauteur tout seul.
   useEffect(() => { mapInst.current?.resize(); }, [height]);
 
-  // Init carte avec style custom
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: mapRef.current,
-      style: BASEMAP_STYLE,
-      center: [20, 10],
-      zoom: 2.5,
-      attributionControl: false,
-    });
-    mapInst.current = map;
-    // Contrôles
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
-    map.addControl(new maplibregl.FullscreenControl(), "top-left");
-    // Attendre que le style ET les sources soient chargés
-    map.on("load", () => {
-      // Vérifier que le style est complètement prêt
-      if (map.isStyleLoaded()) {
-        setMapReady(true);
-      } else {
-        map.once("idle", () => setMapReady(true));
-      }
-    });
-    // Gérer la perte/restauration du contexte WebGL
-    map.on("webglcontextlost", () => setMapReady(false));
-    map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
-    return () => {
-      map.remove();
-      mapInst.current = null;
-      // La carte disparaît avec ses couches : ce qui était posé ne l'est plus.
-      gadmBuiltRef.current = null;
-      assetBuiltRef.current = null;
-      setMapReady(false);
-    };
-  }, []);
+  // Naissance de la carte : mécanique partagée (mapCommon.js), contrôles ici.
+  const { ready: mapReady, styleTick, setStyleTick } = useMapInstance({
+    containerRef: mapRef,
+    mapRef: mapInst,
+    view: { center: [20, 10], zoom: 2.5 },
+    onCreate: (map) => {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
+      map.addControl(new maplibregl.FullscreenControl(), "top-left");
+      return () => {
+        // La carte disparaît avec ses couches : ce qui était posé ne l'est plus.
+        gadmBuiltRef.current = null;
+        assetBuiltRef.current = null;
+      };
+    },
+  });
 
   // Couches projet
   useEffect(() => {

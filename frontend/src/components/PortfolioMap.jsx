@@ -19,9 +19,9 @@ import * as maplibregl from "maplibre-gl";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
+import { ATTRIBUTION } from "./mapStyle.js";
 import { startCardDrag } from "./mapCardDrag.js";
-import { createHoverPopup, retryWhenStyleReady } from "./mapCommon.js";
+import { createHoverPopup, retryWhenStyleReady, useMapInstance } from "./mapCommon.js";
 
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
@@ -219,9 +219,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   // circle layer); the handler is set at map init, the markers later.
   const clusterClickRef = useRef(null);
   const clusterMarkersRef = useRef(new Map());
-  const [mapReady, setMapReady] = useState(false);
-  // Voir retryWhenStyleReady dans mapCommon.js.
-  const [styleTick, setStyleTick] = useState(0);
   // { kind: "project", id, lngLat } or { kind: "group", ids, lngLat }: the
   // card opens next to the marker at lngLat and follows it as the map moves.
   const [selected, setSelected] = useState(null);
@@ -255,121 +252,107 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   }, [compact]);
   useEffect(() => { mapInst.current?.resize(); }, [height]);
 
-  // Map init
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const home = compact ? HOME_VIEW_COMPACT : HOME_VIEW;
-    // Ouverture : la carte descend du globe entier jusqu'à la vue d'accueil,
-    // qui ne change pas. Une animation d'entrée ne s'impose pas à qui a
-    // demandé moins de mouvement : dans ce cas on ouvre directement dessus.
-    const reduceMotion = typeof window !== "undefined"
-      && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    const map = new maplibregl.Map({
-      container: mapRef.current,
-      style: BASEMAP_STYLE,
-      center: home.center,
-      zoom: reduceMotion ? home.zoom : OPENING_ZOOM,
-      attributionControl: false,
-    });
-    mapInst.current = map;
-    // Bottom right as in the mockup; top left on the short dashboard map,
-    // where the card would cover the bottom-right corner. A bottom corner
-    // stacks each new control above the previous ones, so the scale goes in
-    // first to sit under the buttons.
-    if (compact) {
-      map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
-      map.scrollZoom.disable();
-    } else {
-      map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
-      map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
-      map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
-    }
-    // In compact mode the container is sized by flex layout, which may
-    // settle after the map measured itself: follow the container's size.
-    const ro = compact && typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(() => map.resize()) : null;
-    ro?.observe(mapRef.current);
-    map.on("load", () => {
-      if (map.isStyleLoaded()) {
-        setMapReady(true);
-      } else {
-        map.once("idle", () => setMapReady(true));
-      }
+  const home = compact ? HOME_VIEW_COMPACT : HOME_VIEW;
+  // Ouverture : la carte descend du globe entier jusqu'à la vue d'accueil, qui
+  // ne change pas. Une animation d'entrée ne s'impose pas à qui a demandé moins
+  // de mouvement : dans ce cas on ouvre directement dessus.
+  const reduceMotion = typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  // Naissance de la carte : mécanique partagée (mapCommon.js), le reste ici.
+  const { ready: mapReady, styleTick, setStyleTick } = useMapInstance({
+    containerRef: mapRef,
+    mapRef: mapInst,
+    view: { center: home.center, zoom: reduceMotion ? home.zoom : OPENING_ZOOM },
+    deps: [compact],
+    onLoad: (map) => {
       // Descente vers la vue d'accueil, une fois le fond chargé — sans quoi
       // l'animation se jouerait sur un canevas vide.
-      if (!reduceMotion) {
-        map.easeTo({ ...home, duration: OPENING_DURATION });
+      if (!reduceMotion) map.easeTo({ ...home, duration: OPENING_DURATION });
+    },
+    onCreate: (map) => {
+      // Bottom right as in the mockup; top left on the short dashboard map,
+      // where the card would cover the bottom-right corner. A bottom corner
+      // stacks each new control above the previous ones, so the scale goes in
+      // first to sit under the buttons.
+      if (compact) {
+        map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-left");
+        map.scrollZoom.disable();
+      } else {
+        map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }), "bottom-right");
+        map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
+        map.addControl(new maplibregl.FullscreenControl(), "bottom-right");
       }
-    });
-    // The reset button only shows once the view has left the opening one.
-    map.on("moveend", () => {
-      const c = map.getCenter();
-      setAtHome(Math.abs(map.getZoom() - home.zoom) < 0.01
-        && Math.abs(c.lng - home.center[0]) < 0.01
-        && Math.abs(c.lat - home.center[1]) < 0.01);
-    });
-    map.on("webglcontextlost", () => setMapReady(false));
-    map.on("webglcontextrestored", () => map.once("idle", () => setMapReady(true)));
+      // In compact mode the container is sized by flex layout, which may
+      // settle after the map measured itself: follow the container's size.
+      const ro = compact && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => map.resize()) : null;
+      ro?.observe(mapRef.current);
+      // The reset button only shows once the view has left the opening one.
+      map.on("moveend", () => {
+        const c = map.getCenter();
+        setAtHome(Math.abs(map.getZoom() - home.zoom) < 0.01
+          && Math.abs(c.lng - home.center[0]) < 0.01
+          && Math.abs(c.lat - home.center[1]) < 0.01);
+      });
 
-    // MapLibre stringifies feature properties in event payloads: null → "null".
-    const clean = (v) => (v && v !== "null" ? v : null);
-    const { popup: hover, dispose: disposeHover } = createHoverPopup(map);
-    hoverRef.current = hover;
-    const hoverContent = (title, sub) => {
-      const el = document.createElement("div");
-      el.className = "pmap-hover";
-      const b = document.createElement("b");
-      b.textContent = title;
-      el.append(b);
-      if (sub) {
-        const s = document.createElement("span");
-        s.textContent = sub;
-        el.append(s);
-      }
-      return el;
-    };
+      // MapLibre stringifies feature properties in event payloads: null → "null".
+      const clean = (v) => (v && v !== "null" ? v : null);
+      const { popup: hover, dispose: disposeHover } = createHoverPopup(map);
+      hoverRef.current = hover;
+      const hoverContent = (title, sub) => {
+        const el = document.createElement("div");
+        el.className = "pmap-hover";
+        const b = document.createElement("b");
+        b.textContent = title;
+        el.append(b);
+        if (sub) {
+          const s = document.createElement("span");
+          s.textContent = sub;
+          el.append(s);
+        }
+        return el;
+      };
 
-    map.on("click", "proj-points", (e) => {
-      const f = e.features?.[0];
-      if (!f) return;
-      hover.remove();
-      setSelected({ kind: "project", id: Number(f.properties.id), lngLat: f.geometry.coordinates });
-    });
-    // A click on empty map closes the card.
-    map.on("click", (e) => {
-      if (!map.getLayer("proj-points")) return;
-      if (map.queryRenderedFeatures(e.point, { layers: ["proj-points"] }).length === 0) setSelected(null);
-    });
-    clusterClickRef.current = (leaves, lngLat) => {
-      hover.remove();
-      setSelected({ kind: "group", ids: leaves.map((l) => Number(l.properties.id)), lngLat });
-    };
+      map.on("click", "proj-points", (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        hover.remove();
+        setSelected({ kind: "project", id: Number(f.properties.id), lngLat: f.geometry.coordinates });
+      });
+      // A click on empty map closes the card.
+      map.on("click", (e) => {
+        if (!map.getLayer("proj-points")) return;
+        if (map.queryRenderedFeatures(e.point, { layers: ["proj-points"] }).length === 0) setSelected(null);
+      });
+      clusterClickRef.current = (leaves, lngLat) => {
+        hover.remove();
+        setSelected({ kind: "group", ids: leaves.map((l) => Number(l.properties.id)), lngLat });
+      };
 
-    // Hover: identification only — official reference and country, one line.
-    map.on("mousemove", "proj-points", (e) => {
-      map.getCanvas().style.cursor = "pointer";
-      const f = e.features?.[0];
-      if (!f) return;
-      const p = f.properties;
-      hover.setLngLat(f.geometry.coordinates)
-        .setDOMContent(hoverContent(clean(p.official_reference_number) || p.name || "—", clean(p.lead_country_name)))
-        .addTo(map);
-    });
-    map.on("mouseleave", "proj-points", () => {
-      map.getCanvas().style.cursor = "";
-      hover.remove();
-    });
-    return () => {
-      clusterMarkersRef.current.forEach(m => m.remove());
-      clusterMarkersRef.current.clear();
-      disposeHover();
-      hoverRef.current = null;
-      ro?.disconnect();
-      map.remove();
-      mapInst.current = null;
-      setMapReady(false);
-    };
-  }, [compact]);
+      // Hover: identification only — official reference and country, one line.
+      map.on("mousemove", "proj-points", (e) => {
+        map.getCanvas().style.cursor = "pointer";
+        const f = e.features?.[0];
+        if (!f) return;
+        const p = f.properties;
+        hover.setLngLat(f.geometry.coordinates)
+          .setDOMContent(hoverContent(clean(p.official_reference_number) || p.name || "—", clean(p.lead_country_name)))
+          .addTo(map);
+      });
+      map.on("mouseleave", "proj-points", () => {
+        map.getCanvas().style.cursor = "";
+        hover.remove();
+      });
+      return () => {
+        clusterMarkersRef.current.forEach(m => m.remove());
+        clusterMarkersRef.current.clear();
+        disposeHover();
+        hoverRef.current = null;
+        ro?.disconnect();
+      };
+    },
+  });
 
   // Project points — re-filtered whenever the page filters change, each
   // carrying the colour and legend label of the current lens.
