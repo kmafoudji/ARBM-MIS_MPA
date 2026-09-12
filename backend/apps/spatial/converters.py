@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import re
+from html.parser import HTMLParser
 import subprocess
 import tempfile
 import time
@@ -290,6 +291,100 @@ def _convert_layer(datasource, layer, out_path, budget):
         return json.load(handle)
 
 
+# ---------------------------------------------------------------------------
+# Attribute sheets hidden in <description>
+# ---------------------------------------------------------------------------
+#
+# A KML exported from a geodatabase routinely puts the real attributes in the
+# placemark's description, as an HTML table, so that Google Earth shows a sheet
+# when the pin is clicked. The KSADP infrastructure export does exactly that:
+# SN, Feature_Type, LGA, Ward, Ownership and the rest live in a <table> and
+# nowhere else.
+#
+# That HTML is never given to the browser. It comes from an uploaded file, and
+# putting it in the page would be a stored cross-site scripting hole. It is
+# parsed here into ordinary key/value attributes and the markup is dropped:
+# the data becomes queryable, and nothing HTML-shaped survives the import.
+
+MAX_DESCRIPTION_PAIRS = 60
+MAX_ATTRIBUTE_LENGTH = 500
+
+
+class _TablePairs(HTMLParser):
+    """Collect the <td> texts of an HTML table, in document order."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.cells = []
+        self._depth = 0
+        self._current = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("td", "th"):
+            self._depth += 1
+            self._current = []
+
+    def handle_endtag(self, tag):
+        if tag in ("td", "th") and self._depth:
+            self._depth -= 1
+            self.cells.append(" ".join("".join(self._current).split()))
+            self._current = []
+
+    def handle_data(self, data):
+        if self._depth:
+            self._current.append(data)
+
+
+def parse_description(description):
+    """
+    Turn an HTML description into {attribute: value}, or {} when it is not a
+    table of pairs. Cells are taken two at a time: label, then value.
+    """
+    if not description or "<" not in description:
+        return {}
+
+    parser = _TablePairs()
+    try:
+        parser.feed(description)
+        parser.close()
+    except Exception:
+        return {}
+
+    pairs = {}
+    cells = parser.cells
+    for index in range(0, len(cells) - 1, 2):
+        key = cells[index].strip().rstrip(":")
+        value = cells[index + 1].strip()
+        if not key or len(pairs) >= MAX_DESCRIPTION_PAIRS:
+            continue
+        pairs[key[:MAX_ATTRIBUTE_LENGTH]] = value[:MAX_ATTRIBUTE_LENGTH]
+    return pairs
+
+
+def _expand_description(properties):
+    """
+    Replace an HTML description by the attributes it hides.
+
+    A description that is not a table of pairs is left alone — it is a genuine
+    note, and worth keeping as text.
+    """
+    description = properties.get("description")
+    if not isinstance(description, str):
+        return properties
+
+    pairs = parse_description(description)
+    if not pairs:
+        return properties
+
+    expanded = dict(properties)
+    expanded.pop("description", None)
+    for key, value in pairs.items():
+        # Never shadow what the driver already read from the placemark itself.
+        if key not in expanded:
+            expanded[key] = value
+    return expanded
+
+
 def _label_for(properties):
     for key in LABEL_KEYS:
         value = properties.get(key)
@@ -376,6 +471,7 @@ def convert(upload):
                 properties = raw.get("properties") or {}
                 if not isinstance(properties, dict):
                     properties = {}
+                properties = _expand_description(properties)
                 if multi_layer:
                     properties = {**properties, "_layer": layer}
 

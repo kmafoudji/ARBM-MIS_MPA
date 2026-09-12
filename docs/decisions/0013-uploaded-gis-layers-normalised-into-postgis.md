@@ -30,6 +30,18 @@ geometry to anyone who reached the URL.
   the same rule the logo and evidence uploads follow.
 - The layers are a **visual overlay**. They do not feed `ProjectGadmScope` nor
   the geometry derived from it; SF-7 remains the project's geographic scope.
+- A KML exported from a geodatabase hides its attributes in the placemark
+  `<description>`, as an HTML table, so that Google Earth shows a sheet when a
+  pin is clicked. That table is **taken apart at import into ordinary key/value
+  attributes and the markup is dropped**. The data becomes queryable, and no
+  HTML from an uploaded file ever reaches the page — rendering it would be a
+  stored cross-site scripting hole. A description that is not a table of pairs
+  is left alone, as the note it is.
+- The source file's own styling is not reproduced. Each sub-layer (a KML folder
+  is a layer) is drawn in a generated colour instead, because a thematic export
+  routinely gives every type the same icon and near enough the same colour: the
+  KSADP file has one icon for all 31 types, on `maps.google.com` — fetching it
+  would send a map request out of the stack — and 25 of the 31 share a magenta.
 - The original file is kept and can be downloaded, but **only as an attachment
   from an authenticated endpoint**, never as a storage URL. KML and GPX are XML
   and KMZ is a ZIP: `core/uploads.py` sets out why an XML document served from
