@@ -18,6 +18,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0010](0010-toc-sheet-loaded-when-complete.md) | The import loads a Theory of Change only when the tree is complete; fan-in becomes cross-pathways |
 | [0011](0011-imported-indicators-are-project-specific.md) | An indicator the import creates is project-specific and dies with its project |
 | [0012](0012-lifecycle-gates-hidden-from-interface.md) | Approval gates are hidden from the interface; the backend rules stay dormant |
+| [0013](0013-uploaded-gis-layers-normalised-into-postgis.md) | Uploaded GIS layers are normalised into PostGIS and served as GeoJSON behind the API |
 
 ## Pending
 
@@ -36,6 +37,9 @@ Questions with no decision yet. Each becomes a numbered file when decided.
   legacy PADs); what suspended projects show.
 - Project deletion is physical and open to every writer — soft delete and the
   role allowed to delete.
+- `Permission.MODULE_CHOICES` numbers M5 as Validation and cartography as
+  `m7_gis`, against the product's own numbering (M5 = GIS & Spatial) — which
+  side moves, and what re-seeding the matrix costs (0013).
 - Which lifecycle stages are approval gates under the September 2026 list,
   whether a gate binds entering or also leaving, and who co-approves — the
   open questions of 0012.
