@@ -109,7 +109,7 @@ export default function DQPortfolio() {
   return (
     <div className="view">
       <div className="view-header">
-        <div className="view-eyebrow">Module 2 · SF-9 · Data Quality</div>
+        <div className="view-eyebrow">Module 2 · Data Quality</div>
         <h1 className="view-title">Data Quality Scores</h1>
         <p className="view-lead">
           Quality assessment across all indicators · Completeness · Timeliness · Consistency · Accuracy

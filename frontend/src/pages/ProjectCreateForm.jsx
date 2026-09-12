@@ -198,7 +198,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
   return (
     <div className="view" style={{ maxWidth: 860 }}>
       <div className="view-header">
-        <div className="view-eyebrow">Registration Wizard · SF-1</div>
+        <div className="view-eyebrow">Registration Wizard</div>
         <h1 className="view-title">New Project</h1>
         <p className="view-lead">
           Progressive gating — only the fields required at the current lifecycle stage are mandatory.
@@ -280,7 +280,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="layers" size={15} style={{ marginRight: 6 }} />Strategic Alignment</h2>
-              <div className="card-sub">Classification SF-2 — required before BED Approved</div>
+              <div className="card-sub">Classification — required before BED Approved</div>
             </div>
             <span className="badge">Optional now</span>
           </div>

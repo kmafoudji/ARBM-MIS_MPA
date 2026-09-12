@@ -161,7 +161,7 @@ export default function PIRSView({ projectId, rowId, onBack }) {
       <div className="view-header">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
           <div>
-            <div className="view-eyebrow">Module 2 · SF-7 · Performance Indicator Reference Sheet</div>
+            <div className="view-eyebrow">Module 2 · Performance Indicator Reference Sheet</div>
             <h1 className="view-title" style={{ fontSize: 20, margin: "4px 0", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontFamily: "monospace", fontSize: 13, background: "var(--lime-pale)", color: "var(--blue)", padding: "2px 8px", borderRadius: 6 }}>
                 {indicator.code}

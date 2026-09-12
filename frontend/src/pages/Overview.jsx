@@ -231,7 +231,7 @@ export default function Overview({ user, onProjectClick }) {
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="git-branch" size={14} style={{ marginRight: 6 }} />Project Lifecycle</h2>
-              <div className="card-sub">Distribution by phase · SF-4</div>
+              <div className="card-sub">Distribution by phase</div>
             </div>
             <span className="badge">{projects?.length ?? 0} projects</span>
           </div>
