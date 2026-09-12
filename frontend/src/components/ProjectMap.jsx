@@ -5,7 +5,7 @@
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
@@ -179,6 +179,33 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   const countrySignature = countries.map(c => c.iso2).join(",");
 
   const [sheet, setSheet] = useState(null);
+  const sheetRef = useRef(null);
+
+  // Une fiche ouverte sur une chinchette près du bord dépassait du canevas, et
+  // ce qui dépassait en premier était son en-tête : le titre, la poignée et la
+  // croix de fermeture. On la ramène dans le cadre UNE FOIS, à l'ouverture —
+  // c'est un choix de placement, au même titre que l'ancre d'un popup, pas un
+  // déplacement continu : après ça, plus rien ne la bouge que la main.
+  useLayoutEffect(() => {
+    if (!sheet || sheet.placed) return;
+    const card  = sheetRef.current;
+    const frame = mapRef.current;
+    if (!card || !frame) return;
+
+    const box  = card.getBoundingClientRect();
+    const area = frame.getBoundingClientRect();
+    const margin = 8;
+
+    let shiftX = 0;
+    if (box.left < area.left + margin) shiftX = area.left + margin - box.left;
+    else if (box.right > area.right - margin) shiftX = area.right - margin - box.right;
+
+    let shiftY = 0;
+    if (box.top < area.top + margin) shiftY = area.top + margin - box.top;
+    else if (box.bottom > area.bottom - margin) shiftY = area.bottom - margin - box.bottom;
+
+    setSheet(s => s && { ...s, x: s.x + shiftX, y: s.y + shiftY, placed: true });
+  }, [sheet]);
   // Une fiche ouverte gagne sur l'infobulle de survol : sans cela les deux se
   // superposent.
   const sheetOpenRef = useRef(false);
@@ -650,8 +677,11 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
 
       {/* Fiche d'un point — div ordinaire, posé une fois. Voir setSheet. */}
       {sheet && (
-        <div style={{
+        <div ref={sheetRef} style={{
           position: "absolute", zIndex: 11,
+          // Invisible le temps d'une image, pendant que la mise en place la
+          // ramène dans le cadre : sinon on la verrait sauter.
+          visibility: sheet.placed ? "visible" : "hidden",
           left: sheet.x, top: sheet.y,
           transform: "translate(-50%, -100%) translateY(-14px)",
           width: 280, maxWidth: "calc(100% - 24px)",
