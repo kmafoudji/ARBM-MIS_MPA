@@ -381,7 +381,7 @@ export default function Portfolio() {
 
       {/* ── En-tête ─────────────────────────────────────────────────────── */}
       <div className="view-header">
-        <div className="view-eyebrow">Results · SF-4 · Lives &amp; Livelihoods Fund</div>
+        <div className="view-eyebrow">Results · Lives &amp; Livelihoods Fund</div>
         <h1 className="view-title">Portfolio Results</h1>
         <p className="view-lead">
           Aggregated performance across all active LLF2 projects · Approved data only

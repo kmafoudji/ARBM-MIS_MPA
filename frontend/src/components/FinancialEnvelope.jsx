@@ -315,7 +315,7 @@ function SourceModal({ initial, env, donors, currencies, onClose, onSave, pendin
   return (
     <Modal
       title={isEdit ? "Edit financing line" : "Add financing source"}
-      subtitle="SF-6 · LLF2 Financial Envelope"
+      subtitle="LLF2 Financial Envelope"
       onClose={onClose}
       footer={
         <>

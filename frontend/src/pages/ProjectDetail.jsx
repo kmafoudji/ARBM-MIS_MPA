@@ -894,7 +894,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="tag" size={15} style={{marginRight:6}} />Identity &amp; Scope</h2>
-              <div className="card-sub">SF-1 · Basic project identity</div>
+              <div className="card-sub">Basic project identity</div>
             </div>
             {!showBasicForm && canEditBasicIdentity && (
               <button className="btn btn-primary btn-sm" onClick={openBasicForm}>
@@ -995,7 +995,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div className="card-header">
             <div>
               <h2 className="card-title"><Icon name="layers" size={15} style={{marginRight:6}} />Classification</h2>
-              <div className="card-sub">SF-2 · required before BED Approved</div>
+              <div className="card-sub">Required before BED Approved</div>
             </div>
             {!showClassificationForm && canEditClassification && (
               <button className="btn btn-primary btn-sm" onClick={openClassificationForm}>
@@ -1202,7 +1202,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="wallet" size={15} style={{marginRight:6}} />Financial Envelope</h2>
-            <div className="card-sub">SF-6 · LLF2 Blended Finance · Indicative — detail in Procurement</div>
+            <div className="card-sub">LLF2 Blended Finance · Indicative — detail in Procurement</div>
           </div>
         </div>
         <FinancialEnvelope projectId={project.id} canEdit={canEditFinancial} />
@@ -1224,7 +1224,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               Implementing Partners
             </h2>
             <div className="card-sub">
-              SF-3 · Executing agencies · Budget delegation — detail in Procurement
+              Executing agencies · Budget delegation — detail in Procurement
             </div>
           </div>
         </div>
@@ -1249,7 +1249,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               Geographic Scope
             </h2>
             <div className="card-sub">
-              SF-7 · GADM Admin 1/2 · Inherited by M5 (mapping) at Effective stage
+              GADM Admin 1/2 · Inherited by GIS & Spatial at Effective stage
             </div>
           </div>
           <span className="badge text-mono text-xs">
@@ -1582,7 +1582,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           <div>
             <h2 className="card-title"><Icon name="file-text" size={15} style={{marginRight:6}} />PAD Document</h2>
             <div className="card-sub">
-              SF-1 · Reference document — automatic field extraction not yet active
+              Reference document — automatic field extraction not yet active
             </div>
           </div>
         </div>
@@ -1653,7 +1653,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="trending-up" size={15} style={{marginRight:6}} />Reporting</h2>
-            <div className="card-sub">SF-5 · Reporting cycle and schedule</div>
+            <div className="card-sub">Reporting cycle and schedule</div>
           </div>
           {!showReportingForm && canEditReporting && (
             <button className="btn btn-primary btn-sm row" style={{ gap: 6 }} onClick={openReportingForm}>
@@ -1744,7 +1744,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         <div className="card-header">
           <div>
             <h2 className="card-title"><Icon name="calendar" size={15} style={{ marginRight: 6 }} />Reporting Schedule</h2>
-            <div className="card-sub">SF-5 · Auto-generated periods · Submit and approval tracking</div>
+            <div className="card-sub">Auto-generated periods · Submit and approval tracking</div>
           </div>
         </div>
         <ReportingSchedule
