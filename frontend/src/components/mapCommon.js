@@ -8,7 +8,70 @@
  * the control chrome was styled twice with different values. Each rule lives
  * here so there is one place to be right.
  */
+import { useEffect, useState } from "react";
 import * as maplibregl from "maplibre-gl";
+
+import { BASEMAP_STYLE } from "./mapStyle.js";
+
+/**
+ * Create a MapLibre map and say when it is safe to add layers to it.
+ *
+ * The birth of a map was written twice, identically, down to the two-step
+ * readiness dance: `load` fires before the style is necessarily complete, so
+ * what actually guarantees the layers can be added is `idle`. Get that wrong
+ * and the map is silently bare.
+ *
+ * What differs between the two maps — controls, their corners, scroll zoom,
+ * an opening animation, event wiring — stays with each of them:
+ *
+ *   `onCreate(map)` runs once the map exists; whatever it returns is called
+ *   on teardown, before the map is destroyed.
+ *   `onLoad(map)` runs when the basemap has loaded.
+ *   `deps` is the effect's dependency list: `[]` for a map built once,
+ *   `[compact]` for one that is rebuilt when its shape changes.
+ *
+ * Returns `ready` (the gate every layer effect waits on) and the style tick
+ * that `retryWhenStyleReady` below drives.
+ */
+export function useMapInstance({ containerRef, mapRef, view, onCreate, onLoad, deps = [] }) {
+  const [ready, setReady] = useState(false);
+  const [styleTick, setStyleTick] = useState(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: BASEMAP_STYLE,
+      attributionControl: false,
+      ...view,
+    });
+    mapRef.current = map;
+
+    map.on("load", () => {
+      if (map.isStyleLoaded()) setReady(true);
+      else map.once("idle", () => setReady(true));
+      onLoad?.(map);
+    });
+
+    // A lost WebGL context takes the layers with it: not ready again until the
+    // map has settled.
+    map.on("webglcontextlost", () => setReady(false));
+    map.on("webglcontextrestored", () => map.once("idle", () => setReady(true)));
+
+    const teardown = onCreate?.(map);
+
+    return () => {
+      teardown?.();
+      map.remove();
+      mapRef.current = null;
+      setReady(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return { ready, styleTick, setStyleTick };
+}
 
 /**
  * Call an effect again once the map's style is ready.
