@@ -19,6 +19,22 @@ function escapeHtml(value) {
   }[ch]));
 }
 
+// Tuyauterie KML et clés internes : présentes dans les données, sans intérêt
+// dans la fiche. Le reste des attributs vient du fichier et s'affiche tel quel.
+const HIDDEN_PROPERTIES = new Set([
+  "tessellate", "extrude", "visibility", "drawOrder", "altitudeMode",
+  "begin", "end", "timestamp", "icon", "snippet",
+]);
+
+function attributeRows(properties) {
+  return Object.entries(properties || {})
+    .filter(([key, value]) =>
+      !key.startsWith("_") &&
+      !HIDDEN_PROPERTIES.has(key) &&
+      value !== null && value !== "" && value !== undefined)
+    .map(([key, value]) => [key, String(value)]);
+}
+
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   features.forEach(f => {
@@ -73,6 +89,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
   // piloté par une signature stable, et lit les données via la ref.
   const assetLayersRef = useRef([]);
   assetLayersRef.current = assetLayers;
+  // Une fiche ouverte au clic gagne sur l'infobulle de survol : sans cela les
+  // deux popups se superposent.
+  const sheetOpenRef = useRef(false);
   const assetSignature = assetLayers
     .map(l => `${l.asset.id}:${l.asset.layer_color}:${l.geojson.features.length}`)
     .join("|");
@@ -213,6 +232,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
     }
 
     function onMouseMove(e) {
+      if (sheetOpenRef.current) { map.getCanvas().style.cursor = ""; popup.remove(); return; }
       const feats = map.queryRenderedFeatures(e.point, { layers: queryLayers() });
       if (!feats.length) { map.getCanvas().style.cursor = ""; popup.remove(); return; }
       map.getCanvas().style.cursor = "pointer";
@@ -235,6 +255,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
             ${p._layer && asset?.name
               ? `<div style="font-size:10px;color:#A7A7A7;margin-top:2px">${escapeHtml(asset.name)}</div>`
               : ""}
+            <div style="font-size:9px;color:#A7A7A7;margin-top:4px">Click for the full record</div>
           </div>`
         ).addTo(map);
         return;
@@ -304,12 +325,63 @@ export default function ProjectMap({ projectId, countries = [] }) {
                  "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF" } }, LABELS_LAYER_ID);
     });
 
+    // Fiche au clic — comme la bulle de Google Earth sur une chinchette.
+    // Les attributs viennent du fichier téléversé : chaque clé et chaque
+    // valeur est échappée, et rien du HTML d'origine n'arrive jusqu'ici (il
+    // est démonté à l'import, voir apps/spatial/converters.py).
+    const sheet = new maplibregl.Popup({
+      closeButton: true, closeOnClick: false, offset: 12,
+      className: "arbm-popup", maxWidth: "320px",
+    });
+    sheet.on("close", () => { sheetOpenRef.current = false; });
+
+    function assetLayerIds() {
+      return assetLayersRef.current
+        .flatMap(({ asset }) => [`gis-asset-${asset.id}-point`,
+                                 `gis-asset-${asset.id}-line`,
+                                 `gis-asset-${asset.id}-fill`])
+        .filter(id => map.getLayer(id));
+    }
+
+    function onClick(e) {
+      const ids = assetLayerIds();
+      if (!ids.length) return;
+      const feats = map.queryRenderedFeatures(e.point, { layers: ids });
+      if (!feats.length) { sheet.remove(); return; }
+
+      const p = feats[0].properties || {};
+      const rows = attributeRows(p);
+      const title = p._label || "—";
+      const kind  = p._layer || "";
+
+      sheet.setLngLat(e.lngLat).setHTML(
+        `<div style="font-family:-apple-system,sans-serif;padding:10px 12px 8px;max-height:280px;overflow:auto">
+          <div style="font-size:13px;font-weight:600;color:#2B2B2B;padding-right:14px">${escapeHtml(title)}</div>
+          ${kind ? `<div style="font-size:10px;font-weight:600;color:#545454;margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(kind)}</div>` : ""}
+          ${rows.length ? `<dl style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0 0;font-size:11px">
+            ${rows.map(([k, v]) => `
+              <dt style="color:#A7A7A7;white-space:nowrap">${escapeHtml(k.replace(/_/g, " "))}</dt>
+              <dd style="margin:0;color:#2B2B2B;word-break:break-word">${escapeHtml(v)}</dd>`).join("")}
+          </dl>` : `<div style="font-size:11px;color:#A7A7A7;margin-top:8px">No attributes recorded.</div>`}
+        </div>`
+      ).addTo(map);
+      sheetOpenRef.current = true;
+    }
+
+    map.on("click", onClick);
+
     // Le cadrage initial appartient au périmètre GADM ; on ne s'en saisit que
     // s'il n'y a aucune géométrie GADM à cadrer.
     if (!geojson?.features?.length && assetLayersRef.current.length) {
       const all = assetLayersRef.current.flatMap(l => l.geojson.features);
       if (all.length) map.fitBounds(getBbox(all), { padding: 24, maxZoom: 12, duration: 900 });
     }
+
+    return () => {
+      map.off("click", onClick);
+      sheet.remove();
+      sheetOpenRef.current = false;
+    };
   }, [mapReady, assetSignature, geojson]);
 
   if (!projectId || !countries.length) return null;

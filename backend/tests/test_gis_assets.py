@@ -163,6 +163,60 @@ def test_a_kml_organised_in_many_folders_keeps_every_folder(client, project):
 
 
 @pytest.mark.django_db
+def test_an_html_attribute_sheet_becomes_real_attributes(client, project):
+    # A KML exported from a geodatabase hides the attributes in the placemark
+    # description, as an HTML table, so Google Earth shows a sheet on click.
+    # They are extracted into ordinary keys and the markup is dropped: putting
+    # uploaded HTML into the page would be a stored XSS hole.
+    document = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark>'
+        "<name>Kyawa Aggregation Centre</name>"
+        "<description><![CDATA[<table>"
+        "<tr><td><b>LGA</b></td><td>Bagwai</td></tr>"
+        "<tr><td><b>Ownership</b></td><td>KSADP</td></tr>"
+        "<tr><td><b>Note</b></td><td>&lt;script&gt;alert(1)&lt;/script&gt;</td></tr>"
+        "</table>]]></description>"
+        "<Point><coordinates>8.1,11.9,0</coordinates></Point>"
+        "</Placemark></Document></kml>"
+    ).encode()
+
+    upload = SimpleUploadedFile("sheet.kml", document, content_type="application/octet-stream")
+    response = client.post(assets_url(project), {"file": upload}, format="multipart")
+    assert response.status_code == 201, response.content
+
+    feature = SpatialAssetFeature.objects.get(asset_id=response.data["id"])
+    assert feature.properties["LGA"] == "Bagwai"
+    assert feature.properties["Ownership"] == "KSADP"
+    assert "description" not in feature.properties
+    # The escaped script tag survives as text, which is exactly what it is; the
+    # popup escapes it again on the way out.
+    assert feature.properties["Note"] == "<script>alert(1)</script>"
+    assert not any(
+        isinstance(v, str) and "<table" in v for v in feature.properties.values()
+    )
+
+
+@pytest.mark.django_db
+def test_a_plain_text_description_is_kept_as_it_is(client, project):
+    document = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark>'
+        "<name>Field office</name>"
+        "<description>Visited in March, road access poor.</description>"
+        "<Point><coordinates>8.1,11.9,0</coordinates></Point>"
+        "</Placemark></Document></kml>"
+    ).encode()
+
+    upload = SimpleUploadedFile("note.kml", document, content_type="application/octet-stream")
+    response = client.post(assets_url(project), {"file": upload}, format="multipart")
+    assert response.status_code == 201, response.content
+
+    feature = SpatialAssetFeature.objects.get(asset_id=response.data["id"])
+    assert feature.properties["description"] == "Visited in March, road access poor."
+
+
+@pytest.mark.django_db
 def test_a_file_that_is_not_geospatial_is_refused(client, project):
     upload = SimpleUploadedFile(
         "layer.geojson", b"MZ\x90\x00not a geojson", content_type="application/json",

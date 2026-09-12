@@ -1,10 +1,10 @@
 /**
  * GisAssets — M5
  * Registre des couches GIS téléversées d'un projet : import, validation
- * côté serveur, et rendu sur la carte du projet.
+ * côté serveur, et liste dense des couches.
  *
- * La carte passe en premier et le registre se lit dessous, en lignes denses :
- * sur cet écran, l'objet du regard est la carte, pas la liste.
+ * Ce panneau ne monte pas la carte : l'onglet Geographic Scope la monte une
+ * seule fois, au-dessus, et ProjectMap va chercher les couches lui-même.
  *
  * Les couches sont une superposition : elles ne modifient pas le périmètre
  * GADM (SF-7), qui reste la source du périmètre géographique du projet.
@@ -14,7 +14,6 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { apiFetch, apiUpload } from "../api";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
-import ProjectMap from "./ProjectMap.jsx";
 import { layerColor, layerCounts, layerNames } from "./layerColors.js";
 
 // Ce que le serveur sait lire (apps/spatial/converters.py). L'attribut accept
@@ -33,7 +32,7 @@ function formatSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export default function GisAssets({ projectId, countries = [], canEdit = true }) {
+export default function GisAssets({ projectId, canEdit = true }) {
   const qc = useQueryClient();
   const fileRef = useRef();
   const dialog = useDialog();
@@ -117,8 +116,6 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
 
   return (
     <div>
-      <ProjectMap projectId={projectId} countries={countries} />
-
       <div className="card" style={{ marginTop: 12 }}>
         <div className="card-header" style={{ paddingTop: 12, paddingBottom: 12 }}>
           <div>

@@ -10,7 +10,6 @@ import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
 import MultiSelect from "./MultiSelect.jsx";
 import Select from "./Select";
-import ProjectMap from "./ProjectMap.jsx";
 
 export default function GeographicScope({ projectId, countries, canEdit }) {  const qc = useQueryClient();
 
@@ -382,12 +381,9 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
           </button>
         </div>
       )}
-      {/* Carte PostGIS GADM — après le contenu Admin */}
-      {(countries || []).length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <ProjectMap projectId={projectId} countries={countries} />
-        </div>
-      )}
+      {/* La carte n'est plus ici : l'onglet la monte une seule fois, entre ce
+          panneau et le registre des couches GIS, pour qu'un seul écran porte
+          le périmètre GADM, la carte et les couches téléversées. */}
     </div>
   );
 }
