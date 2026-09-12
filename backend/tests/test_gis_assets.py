@@ -13,6 +13,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
+from apps.spatial.converters import parse_description
 from apps.spatial.models import SpatialAsset, SpatialAssetFeature
 from tests.factories import ProjectFactory, UserFactory
 
@@ -195,6 +196,144 @@ def test_an_html_attribute_sheet_becomes_real_attributes(client, project):
     assert not any(
         isinstance(v, str) and "<table" in v for v in feature.properties.values()
     )
+
+
+class TestDescriptionShapes:
+    """
+    Every tool writes the placemark description differently. The shape is
+    recognised, never assumed — and where it is not certain, nothing is
+    invented: confident nonsense is worse than no attributes at all.
+    """
+
+    def test_label_and_value_rows_are_read_as_a_sheet(self):
+        pairs, _ = parse_description(
+            "<table>"
+            "<tr><td><b>LGA</b></td><td>Bagwai</td></tr>"
+            "<tr><td><b>Ward</b></td><td>kiyawa</td></tr>"
+            "</table>"
+        )
+        assert pairs == {"LGA": "Bagwai", "Ward": "kiyawa"}
+
+    def test_a_header_row_over_a_data_row_is_transposed(self):
+        # ArcGIS and QGIS write this shape. Read as label/value pairs it would
+        # yield {LGA: Ward, Bagwai: kiyawa} — the failure this rule exists for.
+        pairs, _ = parse_description(
+            "<table>"
+            "<tr><th>LGA</th><th>Ward</th></tr>"
+            "<tr><td>Bagwai</td><td>kiyawa</td></tr>"
+            "</table>"
+        )
+        assert pairs == {"LGA": "Bagwai", "Ward": "kiyawa"}
+
+    def test_a_wide_header_table_is_transposed(self):
+        pairs, _ = parse_description(
+            "<table>"
+            "<tr><td>SN</td><td>LGA</td><td>Ward</td></tr>"
+            "<tr><td>4</td><td>Bagwai</td><td>kiyawa</td></tr>"
+            "</table>"
+        )
+        assert pairs == {"SN": "4", "LGA": "Bagwai", "Ward": "kiyawa"}
+
+    def test_a_table_of_several_records_yields_no_attributes(self):
+        # Three rows of three columns is a table of records, not one feature's
+        # sheet. Refusing is the only honest answer.
+        pairs, text = parse_description(
+            "<table>"
+            "<tr><td>SN</td><td>LGA</td><td>Ward</td></tr>"
+            "<tr><td>4</td><td>Bagwai</td><td>kiyawa</td></tr>"
+            "<tr><td>5</td><td>Bichi</td><td>Badume</td></tr>"
+            "</table>"
+        )
+        assert pairs == {}
+        assert "Bagwai" in text          # nothing is lost from view
+
+    def test_two_columns_over_several_records_yields_no_attributes(self):
+        # The genuinely ambiguous shape: three rows of two cells. A left column
+        # of bare numbers is data, not field names, so nothing is invented.
+        pairs, text = parse_description(
+            "<table>"
+            "<tr><td>SN</td><td>LGA</td></tr>"
+            "<tr><td>4</td><td>Bagwai</td></tr>"
+            "<tr><td>5</td><td>Bichi</td></tr>"
+            "</table>"
+        )
+        assert pairs == {}
+        assert "Bagwai" in text
+
+    def test_a_repeated_left_column_is_not_a_sheet(self):
+        pairs, _ = parse_description(
+            "<table>"
+            "<tr><td>Status</td><td>open</td></tr>"
+            "<tr><td>Status</td><td>closed</td></tr>"
+            "<tr><td>Status</td><td>open</td></tr>"
+            "</table>"
+        )
+        assert pairs == {}
+
+    def test_a_definition_list_is_read(self):
+        pairs, _ = parse_description(
+            "<dl><dt>LGA</dt><dd>Bagwai</dd><dt>Ward</dt><dd>kiyawa</dd></dl>"
+        )
+        assert pairs == {"LGA": "Bagwai", "Ward": "kiyawa"}
+
+    def test_labelled_lines_are_read(self):
+        pairs, _ = parse_description(
+            "<b>LGA:</b> Bagwai<br/><b>Ward:</b> kiyawa<br/>"
+        )
+        assert pairs == {"LGA": "Bagwai", "Ward": "kiyawa"}
+
+    def test_prose_with_a_colon_is_not_mistaken_for_fields(self):
+        prose = (
+            "Visited in March: the access road was impassable.<br/>"
+            "The store was closed.<br/>"
+            "Follow-up needed before the rains.<br/>"
+        )
+        pairs, text = parse_description(prose)
+        assert pairs == {}
+        assert "impassable" in text
+
+    def test_markup_never_survives(self):
+        for description in (
+            "<table><tr><td>A</td><td><i>b</i></td></tr></table>",
+            "<dl><dt>A</dt><dd>b</dd></dl>",
+            "<p>free text</p>",
+            "<table><tr><td>a</td><td>b</td><td>c</td></tr>"
+            "<tr><td>d</td><td>e</td><td>f</td></tr>"
+            "<tr><td>g</td><td>h</td><td>i</td></tr></table>",
+        ):
+            pairs, text = parse_description(description)
+            assert "<" not in text
+            assert not any("<" in v for v in pairs.values())
+
+    def test_an_empty_or_missing_description_is_harmless(self):
+        assert parse_description("") == ({}, "")
+        assert parse_description(None) == ({}, "")
+
+
+@pytest.mark.django_db
+def test_an_unrecognised_description_survives_as_readable_text(client, project):
+    document = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark>'
+        "<name>Field office</name>"
+        "<description><![CDATA[<table>"
+        "<tr><td>SN</td><td>LGA</td></tr>"
+        "<tr><td>4</td><td>Bagwai</td></tr>"
+        "<tr><td>5</td><td>Bichi</td></tr>"
+        "</table>]]></description>"
+        "<Point><coordinates>8.1,11.9,0</coordinates></Point>"
+        "</Placemark></Document></kml>"
+    ).encode()
+
+    upload = SimpleUploadedFile("odd.kml", document, content_type="application/octet-stream")
+    response = client.post(assets_url(project), {"file": upload}, format="multipart")
+    assert response.status_code == 201, response.content
+
+    feature = SpatialAssetFeature.objects.get(asset_id=response.data["id"])
+    # No invented attributes, but the content is still readable and tag-free.
+    assert "SN" not in feature.properties
+    assert "Bagwai" in feature.properties["description"]
+    assert "<" not in feature.properties["description"]
 
 
 @pytest.mark.django_db
