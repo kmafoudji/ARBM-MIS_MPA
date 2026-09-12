@@ -1275,6 +1275,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
         <div className="mt-3">
           <ProjectMap
             projectId={project.id}
+            height={560}
             countries={project.countries_detail?.map((c) => ({
               iso2: c.iso2,
               iso3: c.iso3,
