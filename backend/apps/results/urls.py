@@ -4,6 +4,7 @@ from .views import (
     DQPortfolioView,
     EvidenceView,
     EvidenceDetailView,
+    FundPerformanceView,
     IndicatorChoicesView,
     IndicatorDetailView,
     IndicatorDisaggregationView,
@@ -41,6 +42,8 @@ indicator_urlpatterns = [
     path("portfolio/",           PortfolioAggregationView.as_view(), name="portfolio-aggregation"),
     # SF-9 : DQ Score portefeuille
     path("dq-portfolio/",        DQPortfolioView.as_view(),          name="dq-portfolio"),
+    # Annex L : indicateurs operationnels Tier III du Fonds
+    path("fund-performance/",    FundPerformanceView.as_view(),      name="fund-performance"),
 ]
 
 # Routes imbriquées sous /api/projects/{pk}/

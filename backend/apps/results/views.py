@@ -2218,3 +2218,27 @@ class ResultsWorkflowView(APIView):
             "notes":       rd.review_notes,
             "updated_at":  rd.updated_at.isoformat(),
         })
+
+
+# ---------------------------------------------------------------------------
+# Tier III — performance du Fonds lui-meme (Annex L)
+# ---------------------------------------------------------------------------
+
+class FundPerformanceView(APIView):
+    """
+    GET /api/results/fund-performance/
+        Les 34 indicateurs operationnels Tier III (Annex L), en cinq sections.
+
+    Aucune saisie : chaque indicateur est soit calcule a partir du dossier
+    partage, soit renvoye `available: false` avec la raison. Le calcul et
+    l'inventaire de ce qui manque vivent dans `fund_performance.py`.
+
+    Perimetre : `Project.objects.in_scope(request)`, donc le hub choisi dans
+    la barre du haut — meme denominateur que les autres vues portefeuille.
+    """
+    permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
+    permission_module  = "m1_config_access"
+
+    def get(self, request):
+        from .fund_performance import build_fund_performance
+        return Response(build_fund_performance(request))

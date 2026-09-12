@@ -2407,3 +2407,63 @@ input, select, textarea { font: inherit; color: inherit; }
 .table-row-link { cursor: pointer; }
 .table-row-link:hover td { background: var(--lime-pale); }
 .table-row-link:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; }
+
+/* ── Fund performance (Annex L, Tier III) ─────────────────────────────────
+   A scorecard where a good half of the tiles have nothing behind them yet.
+   The two states must not look alike: a computed tile carries its figure in
+   the section colour, an untracked one is greyed, dashed and says why. Read
+   at a glance, the dashes are the finding. */
+
+.fund-coverage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  padding: 14px 18px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  margin-bottom: var(--s-3);
+}
+.fund-coverage-figure { display: flex; align-items: baseline; gap: 7px; }
+.fund-coverage-figure b { font-size: 22px; font-weight: 800; line-height: 1; }
+.fund-coverage-figure span { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.fund-coverage-note { margin-left: auto; max-width: 430px; font-size: 11.5px; color: var(--ink-soft); line-height: 1.45; }
+
+.fund-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 10px;
+}
+.fund-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+}
+.fund-tile-code { font-family: var(--font-mono); font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em; color: var(--tile-color, var(--muted)); }
+.fund-tile-name { margin-top: 4px; min-height: 30px; font-size: 11px; font-weight: 600; color: var(--ink-soft); line-height: 1.3; }
+.fund-tile-value { margin-top: 8px; font-size: 22px; font-weight: 800; line-height: 1; color: var(--tile-color, var(--ink)); }
+.fund-tile-value .unit { font-size: 11px; font-weight: 700; color: var(--muted); }
+.fund-tile-note { margin-top: 7px; font-size: 10px; color: var(--subtle); line-height: 1.4; }
+
+/* Nothing measured yet, though the system could measure it: the figure is a
+   dash, not a zero — a zero here would read as a real result. */
+.fund-tile-pending { margin-top: 8px; font-size: 22px; font-weight: 800; line-height: 1; color: var(--rule); }
+
+/* Nothing behind it at all. */
+.fund-tile.off { background: var(--surface-2); border-style: dashed; }
+.fund-tile.off .fund-tile-code { color: var(--subtle); }
+.fund-tile.off .fund-tile-name { color: var(--muted); }
+.fund-tile-untracked {
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--subtle);
+}
+.fund-tile-reason { margin-top: 5px; font-size: 10.5px; color: var(--muted); line-height: 1.4; }
