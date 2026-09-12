@@ -86,6 +86,18 @@ function LegendRow({ on, onToggle, dense = false, children }) {
   );
 }
 
+/**
+ * Rappeler un effet quand le style de la carte sera prêt.
+ *
+ * Renvoie une fonction de nettoyage, donc s'utilise en `return` direct depuis
+ * un effet : `if (!map.isStyleLoaded()) return retryWhenStyleReady(map, tick);`
+ */
+function retryWhenStyleReady(map, bump) {
+  const retry = () => bump(t => t + 1);
+  map.once("idle", retry);
+  return () => map.off("idle", retry);
+}
+
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   features.forEach(f => {
@@ -148,6 +160,14 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   // image de retard, ce qui se voit. La fiche est donc un simple div, posé une
   // fois aux pixels du clic dans le cadre de la carte. Le zoom ne la touche
   // pas ; seule la poignée la déplace.
+  // Les effets qui construisent des couches abandonnent si le style n'est pas
+  // encore chargé. Sans ce compteur ils abandonnaient DÉFINITIVEMENT : aucune
+  // de leurs dépendances ne changeait ensuite, et au retour sur l'onglet — les
+  // données venant du cache — la carte restait nue. Le tick les rappelle.
+  const [styleTick, setStyleTick] = useState(0);
+
+  const countrySignature = countries.map(c => c.iso2).join(",");
+
   const [sheet, setSheet] = useState(null);
   // Une fiche ouverte gagne sur l'infobulle de survol : sans cela les deux se
   // superposent.
@@ -229,7 +249,7 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   useEffect(() => {
     const map = mapInst.current;
     if (!map || !mapReady || !geojson?.features?.length) return;
-    if (!map.isStyleLoaded()) return;
+    if (!map.isStyleLoaded()) return retryWhenStyleReady(map, setStyleTick);
 
     const features   = geojson.features;
     const countries0 = features.filter(f => f.properties.level === 0);
@@ -391,13 +411,14 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
       map.off("movestart", onMouseLeave);
       popup.remove();
     };
-  }, [mapReady, geojson]);
+  }, [mapReady, geojson, styleTick]);
 
   // Couches GIS téléversées — effet distinct de celui du périmètre GADM, qui
   // reste inchangé.
   useEffect(() => {
     const map = mapInst.current;
-    if (!map || !mapReady || !map.isStyleLoaded()) return;
+    if (!map || !mapReady) return;
+    if (!map.isStyleLoaded()) return retryWhenStyleReady(map, setStyleTick);
 
     const style = map.getStyle() || {};
     (style.layers || []).forEach(l => {
@@ -430,18 +451,34 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
                  "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF" } }, LABELS_LAYER_ID);
     });
 
-    // Fiche au clic — comme la bulle de Google Earth sur une chinchette.
-    function assetLayerIds() {
-      return assetLayersRef.current
+    // Le cadrage initial appartient au périmètre GADM ; on ne s'en saisit que
+    // s'il n'y a aucune géométrie GADM à cadrer.
+    if (!geojson?.features?.length && assetLayersRef.current.length) {
+      const all = assetLayersRef.current.flatMap(l => l.geojson.features);
+      if (all.length) map.fitBounds(getBbox(all), { padding: 24, maxZoom: 12, duration: 900 });
+    }
+  }, [mapReady, assetSignature, geojson, styleTick]);
+
+  // Fiche au clic — comme la bulle de Google Earth sur une chinchette.
+  //
+  // Effet à part, qui ne dépend que de la carte. Il vivait au bout de l'effet
+  // ci-dessus, après la construction des couches : quand on revenait sur
+  // l'onglet avec les données déjà en cache, la sortie anticipée
+  // `!isStyleLoaded()` emportait l'écouteur de clic avec elle et plus rien ne
+  // le réenregistrait. Les identifiants de couches se lisent dans la ref, donc
+  // rien n'oblige à le recréer quand les couches changent.
+  useEffect(() => {
+    const map = mapInst.current;
+    if (!map || !mapReady) return;
+
+    function onClick(e) {
+      const ids = assetLayersRef.current
         .flatMap(({ asset }) => [`gis-asset-${asset.id}-point`,
                                  `gis-asset-${asset.id}-line`,
                                  `gis-asset-${asset.id}-fill`])
         .filter(id => map.getLayer(id));
-    }
-
-    function onClick(e) {
-      const ids = assetLayerIds();
       if (!ids.length) return;
+
       const feats = map.queryRenderedFeatures(e.point, { layers: ids });
       if (!feats.length) { setSheet(null); return; }
 
@@ -458,23 +495,16 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
     }
 
     map.on("click", onClick);
-
-    // Le cadrage initial appartient au périmètre GADM ; on ne s'en saisit que
-    // s'il n'y a aucune géométrie GADM à cadrer.
-    if (!geojson?.features?.length && assetLayersRef.current.length) {
-      const all = assetLayersRef.current.flatMap(l => l.geojson.features);
-      if (all.length) map.fitBounds(getBbox(all), { padding: 24, maxZoom: 12, duration: 900 });
-    }
-
     return () => { map.off("click", onClick); };
-  }, [mapReady, assetSignature, geojson]);
+  }, [mapReady]);
 
   // Visibilité commandée par la légende. Effet séparé de ceux qui construisent
   // les couches : éteindre une entrée ne doit pas reconstruire une source de
   // vingt mille points.
   useEffect(() => {
     const map = mapInst.current;
-    if (!map || !mapReady || !map.isStyleLoaded()) return;
+    if (!map || !mapReady) return;
+    if (!map.isStyleLoaded()) return retryWhenStyleReady(map, setStyleTick);
 
     const show = (id, visible) => {
       if (map.getLayer(id)) {
@@ -515,7 +545,9 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
           : GEOMETRY_FILTER[kind]);
       });
     });
-  }, [mapReady, hidden, assetSignature, geojson, countries]);
+    // `countries` est recréé à chaque rendu du parent : on dépend de sa
+    // signature, pas de son identité, sinon cet effet tourne en boucle.
+  }, [mapReady, hidden, assetSignature, geojson, countrySignature, styleTick]);
 
   if (!projectId || !countries.length) return null;
 
