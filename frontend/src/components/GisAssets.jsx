@@ -129,9 +129,12 @@ export default function GisAssets({ projectId, canEdit = true }) {
                 </span>
               )}
             </div>
+            {/* Pas de code de spécification dans une phrase que lit un
+                utilisateur : « SF-7 » ne veut rien dire pour lui. */}
             <div className="card-sub" style={{ fontSize: 11 }}>
               GeoJSON · KML · KMZ · GPX · GeoPackage · zipped shapefile, 10 MB max.
-              Overlay only — the scope stays with SF-7.
+              Drawn over the map. The project's geographic scope stays the GADM
+              areas above — an uploaded layer never changes it.
             </div>
           </div>
           {canEdit && !adding && (
