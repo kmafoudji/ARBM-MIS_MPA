@@ -5,12 +5,11 @@
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
 import { colorExpression, layerScale } from "./layerColors.js";
-import { makeDraggable } from "./draggablePopup.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -141,9 +140,40 @@ export default function ProjectMap({ projectId, countries = [] }) {
   // piloté par une signature stable, et lit les données via la ref.
   const assetLayersRef = useRef([]);
   assetLayersRef.current = assetLayers;
-  // Une fiche ouverte au clic gagne sur l'infobulle de survol : sans cela les
-  // deux popups se superposent.
+  // La fiche d'un point n'est PAS un popup MapLibre.
+  //
+  // Un popup reste accroché à sa coordonnée : MapLibre le repositionne à chaque
+  // image d'un zoom, et rien ne peut l'en empêcher de l'extérieur — compenser
+  // son déplacement image par image revient à courir derrière lui, avec une
+  // image de retard, ce qui se voit. La fiche est donc un simple div, posé une
+  // fois aux pixels du clic dans le cadre de la carte. Le zoom ne la touche
+  // pas ; seule la poignée la déplace.
+  const [sheet, setSheet] = useState(null);
+  // Une fiche ouverte gagne sur l'infobulle de survol : sans cela les deux se
+  // superposent.
   const sheetOpenRef = useRef(false);
+  sheetOpenRef.current = !!sheet;
+
+  // Glissement de la fiche par son en-tête ; le corps reste sélectionnable,
+  // une fiche est faite pour être lue et recopiée.
+  function onSheetPointerDown(event) {
+    if (event.button !== 0) return;
+    const startX = event.clientX - sheet.x;
+    const startY = event.clientY - sheet.y;
+    const node = event.currentTarget;
+    const move = (e) => setSheet(s => s && { ...s, x: e.clientX - startX, y: e.clientY - startY });
+    const up = (e) => {
+      node.releasePointerCapture?.(e.pointerId);
+      node.removeEventListener("pointermove", move);
+      node.removeEventListener("pointerup", up);
+      node.removeEventListener("pointercancel", up);
+    };
+    node.setPointerCapture?.(event.pointerId);
+    node.addEventListener("pointermove", move);
+    node.addEventListener("pointerup", up);
+    node.addEventListener("pointercancel", up);
+    event.preventDefault();
+  }
   const assetSignature = assetLayers
     .map(l => `${l.asset.id}:${l.asset.layer_color}:${l.geojson.features.length}`)
     .join("|");
@@ -340,6 +370,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
 
     map.on("mousemove", onMouseMove);
     map.on("mouseleave", onMouseLeave);
+    // Une infobulle de survol reste accrochée à sa coordonnée : pendant un
+    // zoom elle glisserait sous le curseur. On la retire, le survol suivant la
+    // ramènera.
+    map.on("movestart", onMouseLeave);
 
     // Bbox
     if (features.length) {
@@ -351,6 +385,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
     return () => {
       map.off("mousemove", onMouseMove);
       map.off("mouseleave", onMouseLeave);
+      map.off("movestart", onMouseLeave);
       popup.remove();
     };
   }, [mapReady, geojson]);
@@ -393,18 +428,6 @@ export default function ProjectMap({ projectId, countries = [] }) {
     });
 
     // Fiche au clic — comme la bulle de Google Earth sur une chinchette.
-    // Les attributs viennent du fichier téléversé : chaque clé et chaque
-    // valeur est échappée, et rien du HTML d'origine n'arrive jusqu'ici (il
-    // est démonté à l'import, voir apps/spatial/converters.py).
-    const sheet = new maplibregl.Popup({
-      closeButton: true, closeOnClick: false, offset: 12,
-      className: "arbm-popup", maxWidth: "320px",
-    });
-    sheet.on("close", () => { sheetOpenRef.current = false; });
-    // La fiche s'ouvre sur sa chinchette puis reste où elle est : le zoom ne
-    // l'emporte plus, seule la poignée la déplace. Voir draggablePopup.js.
-    makeDraggable(sheet, ".arbm-sheet-head", map);
-
     function assetLayerIds() {
       return assetLayersRef.current
         .flatMap(({ asset }) => [`gis-asset-${asset.id}-point`,
@@ -417,35 +440,18 @@ export default function ProjectMap({ projectId, countries = [] }) {
       const ids = assetLayerIds();
       if (!ids.length) return;
       const feats = map.queryRenderedFeatures(e.point, { layers: ids });
-      if (!feats.length) { sheet.remove(); return; }
+      if (!feats.length) { setSheet(null); return; }
 
       const p = feats[0].properties || {};
-      const rows = attributeRows(p);
-      const title = p._label || "—";
-      const kind  = p._layer || "";
-
-      // Refermer avant de rouvrir : le contenu est reconstruit, et la poignée
-      // que draggablePopup tient en main doit l'être avec lui.
-      sheet.remove();
-
-      // L'en-tête est la poignée : le corps reste sélectionnable, une fiche
-      // est faite pour être lue et recopiée. Voir draggablePopup.js.
-      sheet.setLngLat(e.lngLat).setHTML(
-        `<div style="font-family:-apple-system,sans-serif">
-          <div class="arbm-sheet-head" style="padding:10px 12px 8px;border-bottom:1px solid #ECEBE8">
-            <div style="font-size:13px;font-weight:600;color:#2B2B2B;padding-right:16px">${escapeHtml(title)}</div>
-            ${kind ? `<div style="font-size:10px;font-weight:600;color:#545454;margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(kind)}</div>` : ""}
-          </div>
-          <div style="padding:8px 12px 10px;max-height:240px;overflow:auto">
-          ${rows.length ? `<dl style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0;font-size:11px">
-            ${rows.map(([k, v]) => `
-              <dt style="color:#A7A7A7;white-space:nowrap">${escapeHtml(k.replace(/_/g, " "))}</dt>
-              <dd style="margin:0;color:#2B2B2B;word-break:break-word">${escapeHtml(v)}</dd>`).join("")}
-          </dl>` : `<div style="font-size:11px;color:#A7A7A7">No attributes recorded.</div>`}
-          </div>
-        </div>`
-      ).addTo(map);
-      sheetOpenRef.current = true;
+      // La fiche est posée une fois, aux pixels du clic, et n'est plus jamais
+      // repositionnée : c'est ce qui la tient immobile pendant un zoom.
+      setSheet({
+        x: e.point.x,
+        y: e.point.y,
+        title: p._label || "—",
+        kind: p._layer || "",
+        rows: attributeRows(p),
+      });
     }
 
     map.on("click", onClick);
@@ -457,11 +463,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
       if (all.length) map.fitBounds(getBbox(all), { padding: 24, maxZoom: 12, duration: 900 });
     }
 
-    return () => {
-      map.off("click", onClick);
-      sheet.remove();
-      sheetOpenRef.current = false;
-    };
+    return () => { map.off("click", onClick); };
   }, [mapReady, assetSignature, geojson]);
 
   // Visibilité commandée par la légende. Effet séparé de ceux qui construisent
@@ -587,6 +589,57 @@ export default function ProjectMap({ projectId, countries = [] }) {
           <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
         </svg>
       </button>
+
+      {/* Fiche d'un point — div ordinaire, posé une fois. Voir setSheet. */}
+      {sheet && (
+        <div style={{
+          position: "absolute", zIndex: 11,
+          left: sheet.x, top: sheet.y,
+          transform: "translate(-50%, -100%) translateY(-14px)",
+          width: 280, maxWidth: "calc(100% - 24px)",
+          background: "#FFFFFF", borderRadius: 10,
+          border: "1px solid #ECEBE8",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          fontFamily: "-apple-system, sans-serif",
+        }}>
+          <div className="arbm-popup-handle" onPointerDown={onSheetPointerDown}
+            style={{ padding: "10px 12px 8px", borderBottom: "1px solid #ECEBE8",
+              position: "relative" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#2B2B2B", paddingRight: 18 }}>
+              {sheet.title}
+            </div>
+            {sheet.kind && (
+              <div style={{ fontSize: 10, fontWeight: 600, color: "#545454", marginTop: 2,
+                textTransform: "uppercase", letterSpacing: ".06em" }}>
+                {sheet.kind}
+              </div>
+            )}
+            <button type="button" onClick={() => setSheet(null)} aria-label="Close"
+              style={{ position: "absolute", top: 6, right: 8, background: "none",
+                border: "none", cursor: "pointer", fontSize: 15, lineHeight: 1,
+                color: "#A7A7A7", padding: 2 }}>×</button>
+          </div>
+          <div style={{ padding: "8px 12px 10px", maxHeight: 240, overflow: "auto" }}>
+            {sheet.rows.length ? (
+              <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr",
+                gap: "2px 10px", margin: 0, fontSize: 11 }}>
+                {sheet.rows.map(([key, value]) => (
+                  <Fragment key={key}>
+                    <dt style={{ color: "#A7A7A7", whiteSpace: "nowrap" }}>
+                      {key.replace(/_/g, " ")}
+                    </dt>
+                    <dd style={{ margin: 0, color: "#2B2B2B", wordBreak: "break-word" }}>
+                      {value}
+                    </dd>
+                  </Fragment>
+                ))}
+              </dl>
+            ) : (
+              <div style={{ fontSize: 11, color: "#A7A7A7" }}>No attributes recorded.</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Légende */}
       <div style={{

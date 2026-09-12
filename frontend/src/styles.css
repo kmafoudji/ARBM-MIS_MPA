@@ -2378,7 +2378,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .arbm-popup .maplibregl-popup-tip { display: none !important; }
 .arbm-popup-hover { pointer-events: none; }
 
-/* Poignée de déplacement d'une fiche (voir components/draggablePopup.js).
+/* Poignée de déplacement d'une fiche (l'en-tête, voir ProjectMap.jsx).
    touch-action coupe le défilement du navigateur pendant le glissement, sans
    quoi un doigt fait défiler la page au lieu de bouger la fiche. */
 .arbm-popup-handle {
