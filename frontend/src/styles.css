@@ -2467,3 +2467,128 @@ input, select, textarea { font: inherit; color: inherit; }
   color: var(--subtle);
 }
 .fund-tile-reason { margin-top: 5px; font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+
+/* ── Fund performance · view switcher, analytics and the executive page ──── */
+
+/* A / B / C. Three cards, not a pill row: each names what it shows, because
+   "Analytics" alone does not say how it differs from a scorecard. */
+.fund-views { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.fund-view-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 178px;
+  padding: 8px 14px;
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  border-radius: var(--r-3);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.fund-view-opt:hover { border-color: var(--green); }
+.fund-view-opt .k {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; flex-shrink: 0;
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  font-size: 11px; font-weight: 800; color: var(--ink-soft);
+}
+.fund-view-opt b { display: block; font-size: 12px; font-weight: 800; color: var(--ink); }
+.fund-view-opt span.d { display: block; font-size: 9.5px; font-weight: 600; color: var(--muted); }
+.fund-view-opt.on { background: var(--ink); border-color: var(--ink); }
+.fund-view-opt.on b { color: #fff; }
+.fund-view-opt.on span.d { color: var(--subtle); }
+.fund-view-opt.on .k { background: var(--green); color: #fff; }
+
+/* ── B · analytics ─────────────────────────────────────────────────────── */
+
+.fund-grid { display: grid; gap: 12px; }
+.fund-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fund-grid.wide-left { grid-template-columns: 2fr 1fr; }
+@media (max-width: 1000px) {
+  .fund-grid.two, .fund-grid.wide-left { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A labelled horizontal bar: the workhorse of this view. */
+.fund-bars { display: flex; flex-direction: column; gap: 7px; }
+.fund-bar-row { display: flex; align-items: center; gap: 10px; font-size: 11.5px; }
+.fund-bar-label { width: 190px; flex-shrink: 0; color: var(--ink-soft); font-weight: 600; line-height: 1.25; }
+.fund-bar-track { flex: 1; height: 20px; min-width: 0; background: var(--surface-2); border-radius: var(--r-2); overflow: hidden; }
+.fund-bar-fill {
+  display: flex; align-items: center;
+  height: 100%; padding-left: 8px;
+  border-radius: var(--r-2);
+  color: #fff; font-size: 10.5px; font-weight: 800;
+  white-space: nowrap;
+  transition: width 0.4s ease;
+}
+.fund-bar-value { width: 74px; flex-shrink: 0; text-align: right; font-weight: 800; color: var(--ink); }
+/* The step that has no figure behind it — dashed track, no fill. */
+.fund-bar-row.off .fund-bar-label { color: var(--muted); }
+.fund-bar-row.off .fund-bar-track { background: transparent; border: 1px dashed var(--rule); }
+.fund-bar-row.off .fund-bar-value { color: var(--subtle); font-weight: 700; }
+.fund-bar-empty { padding-left: 9px; font-size: 10px; font-weight: 700; color: var(--subtle); line-height: 18px; }
+/* The total step: same scale would dwarf the others, so it reads as a rule. */
+.fund-bar-row.total { border-top: 1px dashed var(--rule); padding-top: 7px; margin-top: 2px; }
+.fund-bar-row.total .fund-bar-label { color: var(--ink); font-weight: 800; }
+
+/* Donut, drawn with a conic gradient — no charting library in this app. */
+.fund-donut-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.fund-donut { width: 132px; height: 132px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.fund-donut::after {
+  content: ""; position: absolute; inset: 26px;
+  background: var(--paper); border-radius: 50%;
+}
+.fund-legend { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.fund-legend-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; min-width: 0; }
+.fund-legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.fund-legend-label { flex: 1; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fund-legend-value { font-weight: 800; color: var(--ink); white-space: nowrap; }
+
+/* Key-figure pairs, for the ratios that have no useful chart. */
+.fund-kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fund-kv-cell { background: var(--surface-2); border-radius: var(--r-2); padding: 10px 12px; }
+.fund-kv-cell b { display: block; font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1.1; }
+.fund-kv-cell span { display: block; margin-top: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.fund-kv-cell.off b { color: var(--rule); }
+
+/* SDG tiles keep the UN colour of each goal, which is the one place in this
+   interface where a colour is not ours to choose. */
+.fund-sdgs { display: flex; flex-wrap: wrap; gap: 6px; }
+.fund-sdg {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 6px 10px; border-radius: var(--r-2);
+  color: #fff; font-size: 11px; font-weight: 700;
+}
+.fund-sdg b { font-size: 13px; font-weight: 800; }
+
+/* ── C · executive page ────────────────────────────────────────────────── */
+
+.fund-exec { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1400px) { .fund-exec { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px)  { .fund-exec { grid-template-columns: minmax(0, 1fr); } }
+
+.fund-col { display: flex; flex-direction: column; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-3); overflow: hidden; }
+.fund-col-head { padding: 11px 14px; color: #fff; }
+.fund-col-head b { display: block; font-size: 12.5px; font-weight: 800; line-height: 1.25; }
+.fund-col-head span { font-size: 9.5px; font-weight: 600; opacity: 0.85; }
+.fund-col-hero { padding: 16px 14px 12px; text-align: center; border-bottom: 1px dashed var(--rule); }
+.fund-ring { width: 108px; height: 108px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+.fund-ring-inner { width: 82px; height: 82px; border-radius: 50%; background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fund-ring-inner b { font-size: 20px; font-weight: 800; line-height: 1; color: var(--ink); }
+.fund-ring-inner span { margin-top: 3px; font-size: 8px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.fund-col-hero .hl { margin-top: 9px; font-size: 10.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.3; }
+.fund-mini { display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 11px; border-bottom: 1px solid var(--rule-soft); }
+.fund-mini:last-of-type { border-bottom: none; }
+.fund-mini .code { font-family: var(--font-mono); font-size: 9px; font-weight: 800; color: var(--subtle); flex-shrink: 0; }
+.fund-mini .l { flex: 1; color: var(--ink-soft); line-height: 1.25; min-width: 0; }
+.fund-mini b { font-size: 12px; font-weight: 800; color: var(--ink); white-space: nowrap; }
+.fund-mini.off .l { color: var(--muted); }
+.fund-mini.off b { color: var(--rule); }
+.fund-col-foot { margin-top: auto; padding: 9px 14px; background: var(--surface-2); font-size: 10px; color: var(--muted); line-height: 1.35; }
+.fund-col-blank { padding: 22px 16px; text-align: center; font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+.fund-banner { margin-top: 14px; padding: 12px 18px; background: var(--ink); border-radius: var(--r-3); color: #fff; font-size: 12px; line-height: 1.5; }
+.fund-banner b { color: var(--orange); }

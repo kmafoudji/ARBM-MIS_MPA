@@ -233,3 +233,91 @@ def date_as_dt(day):
     from django.utils import timezone
 
     return timezone.make_aware(datetime.combine(day, time(12, 0)))
+
+
+@pytest.mark.django_db
+class TestBreakdowns:
+    """The distributions the analytics view draws.
+
+    All of them are cross-sectional. There is deliberately no time series in
+    this payload: these figures are never snapshotted, so any quarter-on-quarter
+    line would be invented.
+    """
+
+    def _line(self, project, source, instrument, usd):
+        envelope = ProjectFinancialEnvelopeFactory(project=project)
+        return FinancingSource.objects.create(
+            envelope=envelope, source=source, instrument=instrument,
+            amount=usd, amount_usd=usd, currency=CurrencyFactory(),
+        )
+
+    def test_projects_by_sector_counts_are_integers(self, auth_client):
+        from tests.factories import SectorFactory
+
+        crops = SectorFactory(name="Crops")
+        ProjectFactory(primary_sector=crops)
+        ProjectFactory(primary_sector=crops)
+        ProjectFactory(primary_sector=SectorFactory(name="Health"))
+
+        rows = auth_client.get(URL).data["breakdowns"]["projects_by_sector"]
+        assert [r["label"] for r in rows] == ["Crops", "Health"]   # largest first
+        assert rows[0]["value"] == 2 and isinstance(rows[0]["value"], int)
+        assert rows[0]["share"] == 66.7
+
+    def test_financing_splits_by_instrument_and_source_with_readable_labels(self, auth_client):
+        project = ProjectFactory()
+        self._line(project, "isdb_oc", "loan", 300)
+        self._line(project, "llf", "grant", 100)
+
+        b = auth_client.get(URL).data["breakdowns"]
+        instruments = {r["label"]: r["share"] for r in b["financing_by_instrument"]}
+        sources = {r["label"]: r["share"] for r in b["financing_by_source"]}
+        # The stored codes are isdb_oc / llf / loan / grant; the payload carries
+        # the vocabulary's own labels.
+        assert instruments == {"Loan": 75.0, "Grant": 25.0}
+        assert sources == {"IsDB Ordinary Capital": 75.0, "LLF (multi-donor trust fund)": 25.0}
+
+    def test_sdg_coverage_carries_the_official_colour(self, auth_client):
+        from tests.factories import SdgFactory
+
+        project = ProjectFactory()
+        project.sdgs.set([SdgFactory(number=2), SdgFactory(number=13)])
+
+        rows = auth_client.get(URL).data["breakdowns"]["sdg_coverage"]
+        assert {r["number"] for r in rows} == {2, 13}
+        assert all(r["label"] == f"SDG {r['number']}" for r in rows)
+
+    def test_lifecycle_funnel_keeps_the_two_disbursement_phases_visible(self, auth_client):
+        """A funnel silently missing two of its five steps would misstate the
+        lifecycle: they are present and flagged unavailable."""
+        phases = auth_client.get(URL).data["breakdowns"]["lifecycle_phases"]
+        assert [p["code"] for p in phases] == ["4.1", "4.2", "4.3", "4.4", "4.5"]
+
+        blocked = [p for p in phases if not p["available"]]
+        assert [p["code"] for p in blocked] == ["4.3", "4.4"]
+        assert all("disbursement" in p["reason"].lower() for p in blocked)
+
+    def test_lifecycle_funnel_reports_how_many_projects_each_average_rests_on(self, auth_client):
+        one, two = ProjectFactory(), ProjectFactory()
+        for project in (one, two):
+            ProjectStageTransition.objects.create(
+                project=project, from_stage="LS001", to_stage="LS006",
+                transition_date=date(2024, 1, 1),
+            )
+        ProjectStageTransition.objects.create(
+            project=one, from_stage="LS006", to_stage="LS012",
+            transition_date=date(2024, 7, 1),
+        )
+
+        phases = {p["code"]: p for p in auth_client.get(URL).data["breakdowns"]["lifecycle_phases"]}
+        # Only `one` reached effectiveness: the average must say it rests on one.
+        assert phases["4.2"]["projects"] == 1
+        assert phases["4.5"]["projects"] == 0
+        assert phases["4.5"]["is_total"] is True
+
+    def test_an_empty_portfolio_yields_empty_distributions_not_fake_rows(self, auth_client):
+        b = auth_client.get(URL).data["breakdowns"]
+        assert b["financing_by_sector"] == []
+        assert b["sdg_coverage"] == []
+        # The funnel keeps its five steps: its shape is the message.
+        assert len(b["lifecycle_phases"]) == 5

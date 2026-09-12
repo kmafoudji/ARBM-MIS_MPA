@@ -420,6 +420,141 @@ def _section_comms(projects):
 
 
 # ---------------------------------------------------------------------------
+# Breakdowns — the distributions behind the headline figures
+# ---------------------------------------------------------------------------
+# The analytics view needs shapes the scorecard does not: how the portfolio
+# splits by sector, where the money sits, which SDGs are covered, how long each
+# phase takes. Every one of these is **cross-sectional** — a cut of the current
+# state. None is a time series, and that is not an omission: these figures are
+# never snapshotted, so a quarter-on-quarter line could only be fabricated.
+
+def _distribution(rows, label_key, value_key, fallback="Unclassified"):
+    """Rows as label/value/share, largest first, shares summing over the total.
+
+    A count stays an integer and an amount becomes a float: the interface shows
+    the value as it comes, and "4.0 projects" would be wrong.
+    """
+    total = sum(float(r[value_key] or 0) for r in rows)
+    out = []
+    for row in rows:
+        raw = row[value_key] or 0
+        value = raw if isinstance(raw, int) else float(raw)
+        out.append({
+            "label": row[label_key] or fallback,
+            "value": value,
+            "share": round(float(value) * 100 / total, 1) if total else None,
+        })
+    return sorted(out, key=lambda r: r["value"], reverse=True)
+
+
+def _breakdown_projects_by_sector(projects):
+    rows = (
+        projects.values("primary_sector__name")
+        .annotate(n=Count("pk", distinct=True))
+        .order_by("-n")
+    )
+    return _distribution(list(rows), "primary_sector__name", "n", "No sector")
+
+
+def _breakdown_financing(project_ids):
+    sources = FinancingSource.objects.filter(envelope__project_id__in=project_ids)
+
+    by_sector = list(
+        sources.values("envelope__project__primary_sector__name")
+        .annotate(t=Sum("amount_usd"))
+        .order_by("-t")
+    )
+    by_instrument = list(
+        sources.values("instrument").annotate(t=Sum("amount_usd")).order_by("-t")
+    )
+    by_source = list(
+        sources.values("source").annotate(t=Sum("amount_usd")).order_by("-t")
+    )
+
+    # The stored value is a code; the interface should show the label the
+    # vocabulary defines, not "isdb_oc".
+    instruments = dict(FinancingSource._meta.get_field("instrument").choices)
+    sources_labels = dict(FinancingSource._meta.get_field("source").choices)
+    for row in by_instrument:
+        row["instrument"] = instruments.get(row["instrument"], row["instrument"])
+    for row in by_source:
+        row["source"] = sources_labels.get(row["source"], row["source"])
+
+    return {
+        "financing_by_sector": _distribution(
+            by_sector, "envelope__project__primary_sector__name", "t", "No sector"
+        ),
+        "financing_by_instrument": _distribution(by_instrument, "instrument", "t"),
+        "financing_by_source": _distribution(by_source, "source", "t"),
+    }
+
+
+def _breakdown_sdg_coverage(project_ids):
+    """SDGs carried by at least one project, with the Fund's own colour for each."""
+    rows = (
+        Sdg.objects.filter(projects__pk__in=project_ids)
+        .annotate(n=Count("projects", distinct=True))
+        .order_by("-n", "number")
+        .values("number", "name", "color", "n")
+    )
+    return [
+        {
+            "number": r["number"],
+            "label": f"SDG {r['number']}",
+            "name": r["name"],
+            "color": r["color"] or None,
+            "value": r["n"],
+        }
+        for r in rows
+    ]
+
+
+def _breakdown_lifecycle_phases(project_ids):
+    """The funnel: months per phase, and how many projects each average rests on.
+
+    The two phases anchored on a first disbursement are present and flagged
+    unavailable rather than dropped — the gap between endorsement and
+    implementation is the point of the chart, and a funnel silently missing two
+    of its five steps would misstate the lifecycle it claims to show.
+    """
+    dates = _stage_dates(project_ids)
+    spec = [
+        ("4.1", "Concept Note → IC endorsement", "LS001", STAGE_IC_ENDORSED),
+        ("4.2", "IC endorsement → effectiveness", STAGE_IC_ENDORSED, STAGE_EFFECTIVE),
+        ("4.3", "Effectiveness → first disbursement", None, None),
+        ("4.4", "First disbursement → completion", None, None),
+        ("4.5", "Lifecycle · endorsement → completion", STAGE_IC_ENDORSED, STAGE_CLOSED),
+    ]
+    phases = []
+    for code, label, start, end in spec:
+        if start is None:
+            phases.append({
+                "code": code, "label": label, "available": False,
+                "months": None, "projects": 0,
+                "reason": "No disbursement is recorded in the system.",
+            })
+            continue
+        months, n = _average_gap(dates, start, end)
+        phases.append({
+            "code": code, "label": label, "available": True,
+            "months": months, "projects": n,
+            # 4.5 spans the others; drawing it to the same scale would dwarf them.
+            "is_total": code == "4.5",
+        })
+    return phases
+
+
+def build_breakdowns(projects):
+    project_ids = list(projects.values_list("pk", flat=True))
+    return {
+        "projects_by_sector": _breakdown_projects_by_sector(projects),
+        **_breakdown_financing(project_ids),
+        "sdg_coverage": _breakdown_sdg_coverage(project_ids),
+        "lifecycle_phases": _breakdown_lifecycle_phases(project_ids),
+    }
+
+
+# ---------------------------------------------------------------------------
 
 _BUILDERS = {
     "quality":  _section_quality,
@@ -442,6 +577,7 @@ def build_fund_performance(request):
     all_indicators = [i for s in sections for i in s["indicators"]]
     return {
         "sections": sections,
+        "breakdowns": build_breakdowns(projects),
         "summary": {
             "projects_in_scope": projects.count(),
             "indicators_total": len(all_indicators),
