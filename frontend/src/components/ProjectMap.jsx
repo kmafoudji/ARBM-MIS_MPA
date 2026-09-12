@@ -43,6 +43,50 @@ function attributeRows(properties) {
     .map(([key, value]) => [key, String(value)]);
 }
 
+// Une même source porte points, lignes et polygones : chaque couche filtre son
+// type. Ces filtres sont la base sur laquelle la légende ajoute les siens, donc
+// ils vivent ici plutôt qu'en ligne dans l'effet qui crée les couches.
+const GEOMETRY_FILTER = {
+  fill:  ["==", ["geometry-type"], "Polygon"],
+  line:  ["any", ["==", ["geometry-type"], "Polygon"],
+                 ["==", ["geometry-type"], "LineString"]],
+  point: ["==", ["geometry-type"], "Point"],
+};
+
+// Les couches GADM que chaque entrée de légende commande.
+const GADM_LAYERS = {
+  "gadm:country": ["proj-country-fill", "proj-country-border"],
+  "gadm:admin1":  ["proj-admin1-fill", "proj-admin1-line",
+                   "proj-admin1-active-fill", "proj-admin1-active-line"],
+  "gadm:admin2":  ["proj-admin2-fill", "proj-admin2-line"],
+};
+
+// Un bouton de légende doit ressembler à la ligne qu'il remplaçait : les
+// styles du bouton natif sont neutralisés.
+const LEGEND_BUTTON = {
+  background: "none", border: "none", font: "inherit", textAlign: "left",
+  cursor: "pointer", width: "100%",
+};
+
+/** Une ligne de légende qui allume et éteint sa couche. */
+function LegendRow({ on, onToggle, dense = false, children }) {
+  return (
+    <button type="button" onClick={onToggle} aria-pressed={on}
+      title={on ? "Hide this layer" : "Show this layer"}
+      style={{
+        ...LEGEND_BUTTON,
+        display: "flex", alignItems: "center", gap: dense ? 6 : 7,
+        marginBottom: dense ? 2 : 4, padding: "1px 0",
+        // Éteinte : la ligne pâlit et son libellé se barre, pour qu'un coup
+        // d'œil suffise à voir ce qui manque sur la carte.
+        opacity: on ? 1 : 0.4,
+        textDecoration: on ? "none" : "line-through",
+      }}>
+      {children}
+    </button>
+  );
+}
+
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   features.forEach(f => {
@@ -103,6 +147,20 @@ export default function ProjectMap({ projectId, countries = [] }) {
   const assetSignature = assetLayers
     .map(l => `${l.asset.id}:${l.asset.layer_color}:${l.geojson.features.length}`)
     .join("|");
+
+  // Ce que la légende a éteint. C'est de l'état de vue, pas une préférence :
+  // ce qui s'affiche à l'ouverture reste `is_visible_default`, côté serveur,
+  // réglé depuis le registre sous la carte. Recharger revient à ce défaut.
+  const [hidden, setHidden] = useState(() => new Set());
+  const [openAsset, setOpenAsset] = useState(null);
+
+  function toggle(key) {
+    setHidden(previous => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
 
   // Init carte avec style custom
   useEffect(() => {
@@ -323,14 +381,13 @@ export default function ProjectMap({ projectId, countries = [] }) {
       // Un même fichier peut porter polygones, lignes et points à la fois :
       // trois couches filtrées par type plutôt qu'un pari sur la géométrie.
       map.addLayer({ id: `${sourceId}-fill`, type: "fill", source: sourceId,
-        filter: ["==", ["geometry-type"], "Polygon"],
+        filter: GEOMETRY_FILTER.fill,
         paint: { "fill-color": color, "fill-opacity": 0.25 } }, LABELS_LAYER_ID);
       map.addLayer({ id: `${sourceId}-line`, type: "line", source: sourceId,
-        filter: ["any", ["==", ["geometry-type"], "Polygon"],
-                        ["==", ["geometry-type"], "LineString"]],
+        filter: GEOMETRY_FILTER.line,
         paint: { "line-color": color, "line-width": 2, "line-opacity": 0.95 } }, LABELS_LAYER_ID);
       map.addLayer({ id: `${sourceId}-point`, type: "circle", source: sourceId,
-        filter: ["==", ["geometry-type"], "Point"],
+        filter: GEOMETRY_FILTER.point,
         paint: { "circle-radius": 5, "circle-color": color,
                  "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF" } }, LABELS_LAYER_ID);
     });
@@ -406,6 +463,54 @@ export default function ProjectMap({ projectId, countries = [] }) {
       sheetOpenRef.current = false;
     };
   }, [mapReady, assetSignature, geojson]);
+
+  // Visibilité commandée par la légende. Effet séparé de ceux qui construisent
+  // les couches : éteindre une entrée ne doit pas reconstruire une source de
+  // vingt mille points.
+  useEffect(() => {
+    const map = mapInst.current;
+    if (!map || !mapReady || !map.isStyleLoaded()) return;
+
+    const show = (id, visible) => {
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+      }
+    };
+
+    Object.entries(GADM_LAYERS).forEach(([key, ids]) => {
+      ids.forEach(id => show(id, !hidden.has(key)));
+    });
+
+    // Les pays partagent une seule couche : on les éteint par filtre sur iso2,
+    // pas par visibilité.
+    const hiddenCountries = countries
+      .map(c => c.iso2)
+      .filter(iso2 => hidden.has(`country:${iso2}`));
+    ["proj-country-fill", "proj-country-border"].forEach(id => {
+      if (!map.getLayer(id)) return;
+      map.setFilter(id, hiddenCountries.length
+        ? ["!", ["in", ["get", "iso2"], ["literal", hiddenCountries]]]
+        : null);
+    });
+
+    assetLayersRef.current.forEach(({ asset }) => {
+      const assetHidden = hidden.has(`asset:${asset.id}`);
+      const prefix = `type:${asset.id}:`;
+      const hiddenTypes = [...hidden]
+        .filter(key => key.startsWith(prefix))
+        .map(key => key.slice(prefix.length));
+
+      ["fill", "line", "point"].forEach(kind => {
+        const id = `gis-asset-${asset.id}-${kind}`;
+        if (!map.getLayer(id)) return;
+        show(id, !assetHidden);
+        map.setFilter(id, hiddenTypes.length
+          ? ["all", GEOMETRY_FILTER[kind],
+                    ["!", ["in", ["get", "_layer"], ["literal", hiddenTypes]]]]
+          : GEOMETRY_FILTER[kind]);
+      });
+    });
+  }, [mapReady, hidden, assetSignature, geojson, countries]);
 
   if (!projectId || !countries.length) return null;
 
@@ -491,14 +596,21 @@ export default function ProjectMap({ projectId, countries = [] }) {
         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
         backdropFilter: "blur(4px)",
         border: "1px solid rgba(0,0,0,0.06)",
-        minWidth: 150,
+        minWidth: 150, maxWidth: 240,
+        // Déplier les types d'un fichier peut faire trente entrées : la boîte
+        // défile plutôt que de recouvrir la carte.
+        maxHeight: "calc(100% - 24px)", overflowY: "auto",
       }}>
         <div style={{ fontWeight: 700, fontSize: 11, color: "#545454",
-          textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+          textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
           Geographic scope
         </div>
+        <div style={{ fontSize: 9, color: "#A7A7A7", marginBottom: 8 }}>
+          Click an entry to show or hide it
+        </div>
         {countries.map(c => (
-          <div key={c.iso2} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+          <LegendRow key={c.iso2} on={!hidden.has(`country:${c.iso2}`)}
+            onToggle={() => toggle(`country:${c.iso2}`)}>
             <span style={{ width: 12, height: 12, borderRadius: 3,
               background: "#0EB584", border: "1.5px solid #09815F", flexShrink: 0 }} />
             <span style={{ color: "#545454", fontSize: 12 }}>{c.flag} {c.name}</span>
@@ -506,29 +618,30 @@ export default function ProjectMap({ projectId, countries = [] }) {
               <span style={{ fontSize: 9, fontWeight: 700, color: "#09815F",
                 background: "#EFFFFA", padding: "1px 5px", borderRadius: 99 }}>LEAD</span>
             )}
-          </div>
+          </LegendRow>
         ))}
         {scopeCount > 0 && (
-          <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #ECEBE8",
-            display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ width: 12, height: 12, borderRadius: 3,
-              background: "#0089C5", border: "1.5px solid #0089C5", flexShrink: 0 }} />
-            <span style={{ color: "#545454", fontSize: 11 }}>
-              {scopeCount} intervention zone{scopeCount > 1 ? "s" : ""}
-            </span>
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid #ECEBE8" }}>
+            <LegendRow on={!hidden.has("gadm:admin2")} onToggle={() => toggle("gadm:admin2")}>
+              <span style={{ width: 12, height: 12, borderRadius: 3,
+                background: "#0089C5", border: "1.5px solid #0089C5", flexShrink: 0 }} />
+              <span style={{ color: "#545454", fontSize: 11 }}>
+                {scopeCount} intervention zone{scopeCount > 1 ? "s" : ""}
+              </span>
+            </LegendRow>
           </div>
         )}
         <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #ECEBE8" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+          <LegendRow on={!hidden.has("gadm:admin1")} onToggle={() => toggle("gadm:admin1")}>
             <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3"
               stroke="#09815F" strokeWidth="1.5" strokeDasharray="4,2"/></svg>
             <span style={{ fontSize: 10, color: "#A7A7A7" }}>Admin 1 (region)</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          </LegendRow>
+          <LegendRow on={!hidden.has("gadm:admin2")} onToggle={() => toggle("gadm:admin2")}>
             <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3"
               stroke="#0089C5" strokeWidth="1.5"/></svg>
             <span style={{ fontSize: 10, color: "#A7A7A7" }}>Admin 2 (district)</span>
-          </div>
+          </LegendRow>
         </div>
         {assetLayers.length > 0 && (
           <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #ECEBE8" }}>
@@ -538,24 +651,51 @@ export default function ProjectMap({ projectId, countries = [] }) {
             </div>
             {assetLayers.map(({ asset, geojson: data }) => {
               const scale = layerScale(data, asset.layer_color);
+              const assetOn = !hidden.has(`asset:${asset.id}`);
+              const isOpen  = openAsset === asset.id;
               return (
-                <div key={asset.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                  {/* Une barre de la rampe, pas une pastille : elle dit que la
-                      couche est peinte en tons, du plus nombreux au moins. */}
-                  <span style={{ display: "flex", flexShrink: 0, borderRadius: 3, overflow: "hidden",
-                    width: 12, height: 12, border: "1px solid rgba(0,0,0,0.10)" }}>
-                    {(scale.names.length
-                      ? scale.names.filter((_, i, all) =>
-                          i % Math.max(1, Math.ceil(all.length / 4)) === 0).slice(0, 4)
-                      : [null]
-                    ).map((name, i) => (
-                      <span key={name ?? i} style={{ flex: 1,
-                        background: name ? scale.color.get(name) : asset.layer_color }} />
-                    ))}
-                  </span>
-                  <span style={{ color: "#545454", fontSize: 11 }}>{asset.name}</span>
+                <div key={asset.id}>
+                  <LegendRow on={assetOn} onToggle={() => toggle(`asset:${asset.id}`)}>
+                    {/* Une barre de la rampe, pas une pastille : elle dit que la
+                        couche est peinte en tons, du plus nombreux au moins. */}
+                    <span style={{ display: "flex", flexShrink: 0, borderRadius: 3, overflow: "hidden",
+                      width: 12, height: 12, border: "1px solid rgba(0,0,0,0.10)" }}>
+                      {(scale.names.length
+                        ? scale.names.filter((_, i, all) =>
+                            i % Math.max(1, Math.ceil(all.length / 4)) === 0).slice(0, 4)
+                        : [null]
+                      ).map((name, i) => (
+                        <span key={name ?? i} style={{ flex: 1,
+                          background: name ? scale.color.get(name) : asset.layer_color }} />
+                      ))}
+                    </span>
+                    <span style={{ color: "#545454", fontSize: 11 }}>{asset.name}</span>
+                  </LegendRow>
                   {scale.names.length > 1 && (
-                    <span style={{ fontSize: 9, color: "#A7A7A7" }}>{scale.names.length} types</span>
+                    <button type="button"
+                      onClick={() => setOpenAsset(isOpen ? null : asset.id)}
+                      title={isOpen ? "Hide the types" : "Show each type"}
+                      style={{ ...LEGEND_BUTTON, marginLeft: 19, padding: "1px 0",
+                        fontSize: 9, color: "#A7A7A7" }}>
+                      {scale.names.length} types {isOpen ? "▴" : "▾"}
+                    </button>
+                  )}
+                  {isOpen && (
+                    <div style={{ marginLeft: 19 }}>
+                      {scale.names.map(name => (
+                        <LegendRow key={name} dense
+                          on={assetOn && !hidden.has(`type:${asset.id}:${name}`)}
+                          onToggle={() => toggle(`type:${asset.id}:${name}`)}>
+                          <span style={{ width: 9, height: 9, borderRadius: 2, flexShrink: 0,
+                            background: scale.color.get(name) }} />
+                          <span style={{ fontSize: 10, color: "#545454", whiteSpace: "nowrap",
+                            overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+                          <span style={{ fontSize: 9, color: "#A7A7A7", marginLeft: "auto" }}>
+                            {scale.counts.get(name)}
+                          </span>
+                        </LegendRow>
+                      ))}
+                    </div>
                   )}
                 </div>
               );
