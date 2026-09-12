@@ -100,7 +100,7 @@ function getBbox(features) {
   return [[minLng - 2, minLat - 2], [maxLng + 2, maxLat + 2]];
 }
 
-export default function ProjectMap({ projectId, countries = [] }) {
+export default function ProjectMap({ projectId, countries = [], height = 380 }) {
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
   const [mapReady, setMapReady] = useState(false);
@@ -191,6 +191,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
       return next;
     });
   }
+
+  // Le canevas MapLibre ne suit pas un changement de hauteur tout seul.
+  useEffect(() => { mapInst.current?.resize(); }, [height]);
 
   // Init carte avec style custom
   useEffect(() => {
@@ -766,7 +769,7 @@ export default function ProjectMap({ projectId, countries = [] }) {
         </div>
       )}
 
-      <div ref={mapRef} style={{ height: 380, width: "100%" }} />
+      <div ref={mapRef} style={{ height, width: "100%" }} />
 
       {/* Attribution */}
       <div style={{ position: "absolute", bottom: 6, left: 10, fontSize: 9,

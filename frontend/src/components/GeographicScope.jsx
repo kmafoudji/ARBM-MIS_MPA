@@ -20,6 +20,9 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
   const [isPrimary, setIsPrimary] = useState(false);
   const [notes,     setNotes]     = useState("");
   const [activeTab, setActiveTab] = useState(null); // admin1 name actif
+  // Le détail des zones s'ouvre à la demande : sur cet écran c'est la carte
+  // qu'on vient voir. Ouvrir le formulaire d'ajout déplie forcément.
+  const [expanded,  setExpanded]  = useState(false);
   const dialog = useDialog();
 
   const projectCountryIso3s = (countries || []).map((c) => c.iso3).filter(Boolean);
@@ -67,6 +70,7 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
     setEditScope(null);
     setSelAdmin1(""); setSelAdmin2([]); setIsPrimary(false); setNotes("");
     setOpenFor("add");
+    setExpanded(true);   // éditer suppose de voir ce qu'on édite
   }
 
   function openEdit(s) {
@@ -282,14 +286,47 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
             })}
           </div>
 
+          {/* Replié par défaut : sur cet écran la carte est le sujet, et le
+              détail des districts se consulte à la demande. La barre d'onglets
+              reste visible, elle dit déjà l'essentiel. */}
+          {activeTabData && !expanded && (
+            <button
+              onClick={() => setExpanded(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, width: "100%",
+                padding: "10px 2px", background: "none", border: "none",
+                cursor: "pointer", textAlign: "left", fontSize: 12,
+                color: "var(--text-muted)",
+              }}
+            >
+              <Icon name="chevron-down" size={13} />
+              <span style={{ fontWeight: 600, color: "var(--ink)" }}>
+                {activeTabData.label}
+              </span>
+              {activeTabData.scope?.is_primary && (
+                <span className="badge badge-lime" style={{ fontSize: 10 }}>Primary</span>
+              )}
+              <span>
+                {activeTabData.children.length > 0
+                  ? `${activeTabData.children.length} district${activeTabData.children.length > 1 ? "s" : ""} · ${activeTabData.children.map(c => c.area_name).join(", ")}`
+                  : "No district selected"}
+              </span>
+            </button>
+          )}
+
           {/* Contenu de l'onglet actif */}
-          {activeTabData && (
+          {activeTabData && expanded && (
             <div style={{ padding: "var(--s-3) 0" }}>
               {/* Infos Admin1 */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: activeTabData.children.length > 0 ? 12 : 0 }}>
                 <div style={{
                   display: "flex", alignItems: "center", gap: 8, flex: 1,
                 }}>
+                  <button onClick={() => setExpanded(false)} title="Collapse"
+                    style={{ background: "none", border: "none", cursor: "pointer",
+                      padding: 0, display: "flex", color: "var(--text-muted)" }}>
+                    <Icon name="chevron-up" size={13} />
+                  </button>
                   <Icon name="flag" size={14} style={{ color: "var(--lime-dark, var(--lime))", flexShrink: 0 }} />
                   <span style={{ fontWeight: 600, fontSize: 13 }}>{activeTabData.label}</span>
                   {activeTabData.scope?.is_primary && (
@@ -372,8 +409,9 @@ export default function GeographicScope({ projectId, countries, canEdit }) {  co
       {/* Formulaire d'ajout */}
       {canEdit && openFor === "add" && formJsx}
 
-      {/* Bouton Add zone */}
-      {canEdit && openFor === null && (
+      {/* Bouton Add zone — masqué tant que le panneau est replié : le replier
+          sert à dégager la carte, un bouton d'action isolé le défait. */}
+      {canEdit && openFor === null && (expanded || !scope.length) && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: scope.length > 0 ? "var(--s-3)" : 0 }}>
           <button className="btn btn-primary btn-sm row" style={{ gap: 6 }}
             onClick={openAdd}>
