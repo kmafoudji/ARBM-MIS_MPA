@@ -128,6 +128,41 @@ def test_a_kmz_archive_is_read_without_being_extracted(client, project):
 
 
 @pytest.mark.django_db
+def test_a_kml_organised_in_many_folders_keeps_every_folder(client, project):
+    # GDAL maps one KML folder to one layer, and a thematic export routinely
+    # has dozens: the KSADP infrastructure file has 31, one per infrastructure
+    # type. The folder name is the most useful attribute in such a file, so it
+    # is kept on every feature rather than flattened away.
+    placemarks = "".join(
+        f"<Folder><name>Type {i}</name>"
+        f"<Placemark><name>Site {i}</name>"
+        f"<Point><coordinates>{2 + i * 0.01},48.85,0</coordinates></Point>"
+        f"</Placemark></Folder>"
+        for i in range(31)
+    )
+    document = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
+        f"{placemarks}</Document></kml>"
+    ).encode()
+
+    upload = SimpleUploadedFile(
+        "infrastructure.kml", document, content_type="application/vnd.google-earth.kml+xml",
+    )
+    response = client.post(assets_url(project), {"file": upload}, format="multipart")
+    assert response.status_code == 201, response.content
+
+    asset = SpatialAsset.objects.get(pk=response.data["id"])
+    assert asset.feature_count == 31
+
+    layers = {
+        f.properties.get("_layer")
+        for f in SpatialAssetFeature.objects.filter(asset=asset)
+    }
+    assert layers == {f"Type {i}" for i in range(31)}
+
+
+@pytest.mark.django_db
 def test_a_file_that_is_not_geospatial_is_refused(client, project):
     upload = SimpleUploadedFile(
         "layer.geojson", b"MZ\x90\x00not a geojson", content_type="application/json",

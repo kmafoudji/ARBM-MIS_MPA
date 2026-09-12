@@ -34,6 +34,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 import zipfile
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024        # matches the agreed "small layers" scope
@@ -41,11 +42,18 @@ MAX_ZIP_ENTRIES = 200
 MAX_ZIP_UNCOMPRESSED_BYTES = 100 * 1024 * 1024
 MAX_CONVERTED_BYTES = 64 * 1024 * 1024     # a 10 MB GeoPackage can expand a long way
 MAX_FEATURES = 20_000
-MAX_LAYERS = 20
+
+# A KML folder is a layer, and a thematic export routinely has dozens: the
+# KSADP infrastructure file carries 31, one per infrastructure type, holding
+# 160 placemarks between them. The ceiling is here to stop a pathological file,
+# not to second-guess how a real one is organised.
+MAX_LAYERS = 200
 
 # gunicorn cuts a request at 30 s by default, so the whole pipeline has to fit
-# well inside that. Two subprocess calls per layer, each capped here.
-OGR_TIMEOUT_SECONDS = 20
+# well inside that. Two ceilings, because they fail differently: one layer that
+# will not finish, and many small layers that add up.
+OGR_TIMEOUT_SECONDS = 20        # per ogr2ogr/ogrinfo call
+CONVERSION_BUDGET_SECONDS = 25  # across the whole upload
 
 # Attribute names tried, in order, to give a feature a display label.
 LABEL_KEYS = ("name", "Name", "NAME", "title", "Title", "label", "Label", "id")
@@ -82,20 +90,41 @@ def _hardened_env():
     return env
 
 
-def _run(argv):
+class Budget:
+    """
+    Wall-clock ceiling for one upload, shared by every GDAL call it makes.
+
+    A per-call timeout alone is not enough: a file with two hundred tiny layers
+    would pass every call and still outlast the request.
+    """
+
+    def __init__(self, seconds=CONVERSION_BUDGET_SECONDS):
+        self.deadline = time.monotonic() + seconds
+
+    def remaining(self):
+        left = self.deadline - time.monotonic()
+        if left <= 0:
+            raise ConversionError(_TOO_SLOW)
+        return min(left, OGR_TIMEOUT_SECONDS)
+
+
+_TOO_SLOW = (
+    f"The file took longer than {CONVERSION_BUDGET_SECONDS} seconds to read and "
+    "was rejected. Try a smaller or simpler dataset."
+)
+
+
+def _run(argv, budget):
     """Run a GDAL command, returning stdout. Raises ConversionError on failure."""
     try:
         completed = subprocess.run(
             argv,
             capture_output=True,
-            timeout=OGR_TIMEOUT_SECONDS,
+            timeout=budget.remaining(),
             env=_hardened_env(),
         )
     except subprocess.TimeoutExpired:
-        raise ConversionError(
-            f"The file took longer than {OGR_TIMEOUT_SECONDS} seconds to read and "
-            "was rejected. Try a smaller or simpler layer."
-        )
+        raise ConversionError(_TOO_SLOW)
     except FileNotFoundError:
         # gdal-bin missing from the image: a deployment fault, not a user error.
         raise ConversionError("Geospatial conversion is unavailable on this server.")
@@ -222,8 +251,8 @@ def _datasource(source_format, path):
     return path
 
 
-def _list_layers(datasource):
-    stdout = _run(["ogrinfo", "-json", "-so", datasource])
+def _list_layers(datasource, budget):
+    stdout = _run(["ogrinfo", "-json", "-so", datasource], budget)
     try:
         info = json.loads(stdout.decode("utf-8", errors="replace"))
     except ValueError:
@@ -239,7 +268,7 @@ def _list_layers(datasource):
     return layers
 
 
-def _convert_layer(datasource, layer, out_path):
+def _convert_layer(datasource, layer, out_path, budget):
     _run([
         "ogr2ogr",
         "-f", "GeoJSON",
@@ -249,7 +278,7 @@ def _convert_layer(datasource, layer, out_path):
         "-t_srs", "EPSG:4326",
         "-dim", "XY",           # drop Z/M: the map is two-dimensional
         "-skipfailures",
-    ])
+    ], budget)
     if not os.path.exists(out_path):
         raise ConversionError("The layer produced no output and was rejected.")
     if os.path.getsize(out_path) > MAX_CONVERTED_BYTES:
@@ -313,6 +342,7 @@ def convert(upload):
 
     Raises ConversionError with a user-facing message on any rejection.
     """
+    budget = Budget()
     with tempfile.TemporaryDirectory(prefix="gis-upload-") as workdir:
         path, head, checksum, size = spool(upload, workdir)
 
@@ -330,14 +360,14 @@ def convert(upload):
         os.rename(path, typed_path)
 
         datasource = _datasource(source_format, typed_path)
-        layers = _list_layers(datasource)
+        layers = _list_layers(datasource, budget)
         multi_layer = len(layers) > 1
 
         features = []
         geometry_types = []
         for index, layer in enumerate(layers):
             out_path = os.path.join(workdir, f"layer-{index}.geojson")
-            collection = _convert_layer(datasource, layer, out_path)
+            collection = _convert_layer(datasource, layer, out_path, budget)
 
             for raw in collection.get("features", []):
                 geometry = raw.get("geometry")
