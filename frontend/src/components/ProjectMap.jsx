@@ -10,6 +10,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
 import { colorExpression, layerScale } from "./layerColors.js";
+import { makeDraggable } from "./draggablePopup.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -343,6 +344,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
       className: "arbm-popup", maxWidth: "320px",
     });
     sheet.on("close", () => { sheetOpenRef.current = false; });
+    // Déplaçable : ancrée près d'un bord, une fiche sort du canevas ou couvre
+    // la chinchette qu'elle décrit.
+    makeDraggable(sheet, ".arbm-sheet-head");
 
     function assetLayerIds() {
       return assetLayersRef.current
@@ -363,15 +367,25 @@ export default function ProjectMap({ projectId, countries = [] }) {
       const title = p._label || "—";
       const kind  = p._layer || "";
 
+      // Refermer avant de rouvrir : le contenu est reconstruit, et la poignée
+      // que draggablePopup tient en main doit l'être avec lui.
+      sheet.remove();
+
+      // L'en-tête est la poignée : le corps reste sélectionnable, une fiche
+      // est faite pour être lue et recopiée. Voir draggablePopup.js.
       sheet.setLngLat(e.lngLat).setHTML(
-        `<div style="font-family:-apple-system,sans-serif;padding:10px 12px 8px;max-height:280px;overflow:auto">
-          <div style="font-size:13px;font-weight:600;color:#2B2B2B;padding-right:14px">${escapeHtml(title)}</div>
-          ${kind ? `<div style="font-size:10px;font-weight:600;color:#545454;margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(kind)}</div>` : ""}
-          ${rows.length ? `<dl style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0 0;font-size:11px">
+        `<div style="font-family:-apple-system,sans-serif">
+          <div class="arbm-sheet-head" style="padding:10px 12px 8px;border-bottom:1px solid #ECEBE8">
+            <div style="font-size:13px;font-weight:600;color:#2B2B2B;padding-right:16px">${escapeHtml(title)}</div>
+            ${kind ? `<div style="font-size:10px;font-weight:600;color:#545454;margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(kind)}</div>` : ""}
+          </div>
+          <div style="padding:8px 12px 10px;max-height:240px;overflow:auto">
+          ${rows.length ? `<dl style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0;font-size:11px">
             ${rows.map(([k, v]) => `
               <dt style="color:#A7A7A7;white-space:nowrap">${escapeHtml(k.replace(/_/g, " "))}</dt>
               <dd style="margin:0;color:#2B2B2B;word-break:break-word">${escapeHtml(v)}</dd>`).join("")}
-          </dl>` : `<div style="font-size:11px;color:#A7A7A7;margin-top:8px">No attributes recorded.</div>`}
+          </dl>` : `<div style="font-size:11px;color:#A7A7A7">No attributes recorded.</div>`}
+          </div>
         </div>`
       ).addTo(map);
       sheetOpenRef.current = true;
