@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
 import { startCardDrag } from "./mapCardDrag.js";
+import { createHoverPopup, retryWhenStyleReady } from "./mapCommon.js";
 
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
@@ -219,6 +220,8 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const clusterClickRef = useRef(null);
   const clusterMarkersRef = useRef(new Map());
   const [mapReady, setMapReady] = useState(false);
+  // Voir retryWhenStyleReady dans mapCommon.js.
+  const [styleTick, setStyleTick] = useState(0);
   // { kind: "project", id, lngLat } or { kind: "group", ids, lngLat }: the
   // card opens next to the marker at lngLat and follows it as the map moves.
   const [selected, setSelected] = useState(null);
@@ -310,10 +313,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
     // MapLibre stringifies feature properties in event payloads: null → "null".
     const clean = (v) => (v && v !== "null" ? v : null);
-    const hover = new maplibregl.Popup({
-      offset: 12, className: "arbm-popup arbm-popup-hover",
-      closeButton: false, closeOnClick: false,
-    });
+    const { popup: hover, dispose: disposeHover } = createHoverPopup(map);
     hoverRef.current = hover;
     const hoverContent = (title, sub) => {
       const el = document.createElement("div");
@@ -359,15 +359,10 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.getCanvas().style.cursor = "";
       hover.remove();
     });
-    // Une infobulle de survol reste accrochée à sa coordonnée : pendant un
-    // zoom elle glisserait sous le curseur. On la retire, le survol suivant la
-    // ramènera.
-    map.on("movestart", () => hover.remove());
-
     return () => {
       clusterMarkersRef.current.forEach(m => m.remove());
       clusterMarkersRef.current.clear();
-      hoverRef.current?.remove();
+      disposeHover();
       hoverRef.current = null;
       ro?.disconnect();
       map.remove();
@@ -400,7 +395,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   useEffect(() => {
     const map = mapInst.current;
     if (!map || !mapReady || !geojson) return;
-    if (!map.isStyleLoaded()) return;
+    // Abandonner ici serait définitif — aucune dépendance ne change ensuite et
+    // la carte resterait sans points. Même piège que sur la carte de projet.
+    if (!map.isStyleLoaded()) return retryWhenStyleReady(map, setStyleTick);
 
     ["proj-points", "proj-points-shadow", "proj-points-inner", "proj-points-count"].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
@@ -500,7 +497,12 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       map.off("data", onData);
       map.off("moveend", syncClusters);
     };
-  }, [mapReady, geojson, projects, colourBy]);
+    // `styleTick` rejoue cet effet quand le style devient prêt. Pas de garde
+    // d'idempotence ici, contrairement à la carte de projet : cet effet est le
+    // seul à se servir du compteur, donc rien ne peut le rappeler en boucle —
+    // et il réenregistre ses écouteurs à chaque passage, qu'une sortie
+    // anticipée laisserait justement non enregistrés.
+  }, [mapReady, geojson, projects, colourBy, styleTick]);
 
   // A selection the filters have since removed closes the card.
   const selectedProject = selected?.kind === "project" ? byId.get(selected.id) : null;
