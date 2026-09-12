@@ -3,15 +3,19 @@
  * Registre des couches GIS téléversées d'un projet : import, validation
  * côté serveur, et rendu sur la carte du projet.
  *
+ * La carte passe en premier et le registre se lit dessous, en lignes denses :
+ * sur cet écran, l'objet du regard est la carte, pas la liste.
+ *
  * Les couches sont une superposition : elles ne modifient pas le périmètre
  * GADM (SF-7), qui reste la source du périmètre géographique du projet.
  */
 import { useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiUpload } from "../api";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
 import ProjectMap from "./ProjectMap.jsx";
+import { layerColor, layerCounts, layerNames } from "./layerColors.js";
 
 // Ce que le serveur sait lire (apps/spatial/converters.py). L'attribut accept
 // n'est qu'un confort : la validation se fait sur le contenu, pas l'extension.
@@ -20,12 +24,6 @@ const ACCEPT = ".geojson,.json,.kml,.kmz,.gpx,.gpkg,.zip";
 const FORMAT_LABELS = {
   geojson: "GeoJSON", kml: "KML", kmz: "KMZ",
   gpx: "GPX", gpkg: "GeoPackage", shp_zip: "Shapefile",
-};
-
-const GEOMETRY_ICONS = {
-  Point: "map-pin", MultiPoint: "map-pin",
-  LineString: "git-branch", MultiLineString: "git-branch",
-  Polygon: "layers", MultiPolygon: "layers",
 };
 
 function formatSize(bytes) {
@@ -43,6 +41,7 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
   const [adding, setAdding] = useState(false);
   const [file, setFile] = useState(null);
   const [form, setForm] = useState({ name: "", description: "" });
+  const [expanded, setExpanded] = useState(null);
 
   const qKey = ["gis-assets", projectId];
   const { data, isLoading, isError } = useQuery({
@@ -53,6 +52,22 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
   });
 
   const assets = data?.results || [];
+
+  // Mêmes clés que ProjectMap : react-query sert le cache, aucune requête en
+  // plus. Seules les couches visibles sont chargées — la carte ne demande pas
+  // les autres non plus.
+  const geojsonQueries = useQueries({
+    queries: assets.filter(a => a.is_visible_default).map(a => ({
+      queryKey: ["gis-asset-geojson", a.id],
+      queryFn:  () => apiFetch(`/api/projects/${projectId}/gis-assets/${a.id}/geojson/`),
+      staleTime: 5 * 60_000,
+    })),
+  });
+
+  const geojsonById = new Map();
+  assets.filter(a => a.is_visible_default).forEach((a, i) => {
+    if (geojsonQueries[i]?.data) geojsonById.set(a.id, geojsonQueries[i].data);
+  });
 
   function refresh() {
     qc.invalidateQueries({ queryKey: qKey });
@@ -67,10 +82,7 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
       // apiUpload laisse le navigateur fixer la boundary multipart.
       return apiUpload(`/api/projects/${projectId}/gis-assets/`, fd);
     },
-    onSuccess: () => {
-      refresh();
-      closeForm();
-    },
+    onSuccess: () => { refresh(); closeForm(); },
   });
 
   const patchMutation = useMutation({
@@ -78,12 +90,7 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
       `/api/projects/${projectId}/gis-assets/${assetId}/`,
       { method: "PATCH", body: JSON.stringify(payload) },
     ),
-    onSuccess: (_data, { assetId }) => {
-      refresh();
-      // La géométrie n'a pas bougé, mais la couleur et la visibilité pilotent
-      // le rendu : la carte doit relire la liste.
-      qc.invalidateQueries({ queryKey: ["gis-asset-geojson", assetId] });
-    },
+    onSuccess: refresh,
   });
 
   const deleteMutation = useMutation({
@@ -110,16 +117,24 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
 
   return (
     <div>
-      <div className="card">
-        <div className="card-header">
+      <ProjectMap projectId={projectId} countries={countries} />
+
+      <div className="card" style={{ marginTop: 12 }}>
+        <div className="card-header" style={{ paddingTop: 12, paddingBottom: 12 }}>
           <div>
-            <div className="card-title">
-              <Icon name="layers" size={14} style={{ marginRight: 6, color: "var(--lime)" }} />
+            <div className="card-title" style={{ fontSize: 13 }}>
+              <Icon name="layers" size={13} style={{ marginRight: 6, color: "var(--lime)" }} />
               GIS layers
+              {assets.length > 0 && (
+                <span style={{ marginLeft: 8, fontSize: 10, background: "var(--lime-pale)",
+                  color: "var(--lime-darker)", padding: "1px 7px", borderRadius: 99 }}>
+                  {assets.length}
+                </span>
+              )}
             </div>
-            <div className="card-sub">
-              GeoJSON · KML · KMZ · GPX · GeoPackage · zipped shapefile — 10 MB max.
-              Drawn over the project map; the geographic scope stays with SF-7.
+            <div className="card-sub" style={{ fontSize: 11 }}>
+              GeoJSON · KML · KMZ · GPX · GeoPackage · zipped shapefile, 10 MB max.
+              Overlay only — the scope stays with SF-7.
             </div>
           </div>
           {canEdit && !adding && (
@@ -130,7 +145,7 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
           )}
         </div>
 
-        <div className="card-body">
+        <div className="card-body" style={{ paddingTop: 4 }}>
           {isLoading && <span className="spinner" />}
           {isError && (
             <p style={{ fontSize: 12, color: "var(--rose)", margin: 0 }}>
@@ -143,90 +158,118 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
             </p>
           )}
 
-          {assets.map(asset => (
-            <div key={asset.id} style={{
-              background: "var(--paper)", border: "1px solid var(--rule)",
-              borderRadius: 8, padding: "10px 12px", marginBottom: 8,
-              display: "flex", alignItems: "flex-start", gap: 10,
-            }}>
-              <input
-                type="color"
-                value={asset.layer_color}
-                disabled={!canEdit}
-                title="Layer colour"
-                onChange={e => patchMutation.mutate({
-                  assetId: asset.id, payload: { layer_color: e.target.value },
-                })}
-                style={{ width: 24, height: 24, padding: 0, border: "1px solid var(--rule)",
-                  borderRadius: 6, background: "none", cursor: canEdit ? "pointer" : "default",
-                  flexShrink: 0, marginTop: 1 }}
-              />
+          {assets.map((asset, rowIndex) => {
+            const geojson = geojsonById.get(asset.id);
+            const names   = layerNames(geojson);
+            const counts  = layerCounts(geojson);
+            const isOpen  = expanded === asset.id;
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 12, color: "var(--ink)" }}>
-                  {asset.name}
+            return (
+              <div key={asset.id} style={{
+                borderTop: rowIndex === 0 ? "none" : "1px solid var(--rule)",
+                padding: "7px 0",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  {/* Ruban : les couleurs réellement peintes, pas une pastille
+                      unique qui mentirait sur un fichier à 31 sous-couches. */}
+                  <span style={{ display: "flex", flexShrink: 0, borderRadius: 3,
+                    overflow: "hidden", width: 14, height: 14,
+                    border: "1px solid var(--rule)",
+                    opacity: asset.is_visible_default ? 1 : 0.35 }}>
+                    {(names.length ? names.slice(0, 4) : [null]).map((name, i) => (
+                      <span key={name ?? i} style={{ flex: 1,
+                        background: names.length ? layerColor(i) : asset.layer_color }} />
+                    ))}
+                  </span>
+
+                  <span style={{ fontWeight: 600, fontSize: 12, color: "var(--ink)",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {asset.name}
+                  </span>
+
+                  <span style={{ fontSize: 10, fontWeight: 600, padding: "0 6px",
+                    borderRadius: 99, background: "var(--surface-2, var(--paper))",
+                    color: "var(--muted)", flexShrink: 0 }}>
+                    {FORMAT_LABELS[asset.source_format] || asset.source_format}
+                  </span>
+
+                  <span style={{ fontSize: 10, color: "var(--subtle)", flexShrink: 0 }}>
+                    {asset.feature_count} pt{asset.feature_count === 1 ? "" : "s"}
+                    {names.length > 1 && ` · ${names.length} types`}
+                    {` · ${formatSize(asset.original_size_bytes)}`}
+                  </span>
+
+                  <span style={{ flex: 1 }} />
+
+                  {names.length > 1 && (
+                    <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", fontSize: 10 }}
+                      title={isOpen ? "Hide the types" : "Show the types"}
+                      onClick={() => setExpanded(isOpen ? null : asset.id)}>
+                      <Icon name={isOpen ? "chevron-up" : "chevron-down"} size={12} />
+                    </button>
+                  )}
+                  {asset.download_url && (
+                    <a href={asset.download_url} title={asset.original_filename}
+                      style={{ fontSize: 10, color: "var(--blue)", display: "flex",
+                        alignItems: "center", flexShrink: 0 }}>
+                      <Icon name="download" size={12} />
+                    </a>
+                  )}
+                  {canEdit && (
+                    <>
+                      <input type="color" value={asset.layer_color} title="Layer colour"
+                        onChange={e => patchMutation.mutate({
+                          assetId: asset.id, payload: { layer_color: e.target.value },
+                        })}
+                        style={{ width: 18, height: 18, padding: 0, border: "1px solid var(--rule)",
+                          borderRadius: 4, background: "none", cursor: "pointer", flexShrink: 0 }} />
+                      <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px" }}
+                        title={asset.is_visible_default ? "Hide on the map" : "Show on the map"}
+                        onClick={() => patchMutation.mutate({
+                          assetId: asset.id,
+                          payload: { is_visible_default: !asset.is_visible_default },
+                        })}>
+                        <Icon name={asset.is_visible_default ? "check-circle" : "circle-x"} size={12} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: "2px 6px", color: "var(--rose)" }}
+                        title="Remove layer" onClick={() => remove(asset)}>
+                        <Icon name="trash" size={11} />
+                      </button>
+                    </>
+                  )}
                 </div>
+
                 {asset.description && (
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginLeft: 23, marginTop: 2 }}>
                     {asset.description}
                   </div>
                 )}
-                <div style={{ display: "flex", gap: 8, alignItems: "center",
-                  marginTop: 4, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 7px",
-                    borderRadius: 99, background: "var(--lime-pale)", color: "var(--lime-darker)" }}>
-                    {FORMAT_LABELS[asset.source_format] || asset.source_format}
-                  </span>
-                  <span style={{ fontSize: 10, color: "var(--subtle)" }}>
-                    {asset.feature_count} feature{asset.feature_count === 1 ? "" : "s"}
-                  </span>
-                  {(asset.geometry_types || []).map(type => (
-                    <span key={type} style={{ fontSize: 10, color: "var(--subtle)",
-                      display: "flex", alignItems: "center", gap: 3 }}>
-                      <Icon name={GEOMETRY_ICONS[type] || "layers"} size={10} /> {type}
-                    </span>
-                  ))}
-                  <span style={{ fontSize: 10, color: "var(--subtle)" }}>
-                    {formatSize(asset.original_size_bytes)}
-                  </span>
-                  {asset.uploaded_by_name && (
-                    <span style={{ fontSize: 10, color: "var(--subtle)" }}>
-                      by {asset.uploaded_by_name}
-                    </span>
-                  )}
-                  {asset.download_url && (
-                    <a href={asset.download_url}
-                      style={{ fontSize: 10, color: "var(--blue)", display: "flex",
-                        alignItems: "center", gap: 3 }}>
-                      <Icon name="download" size={10} /> {asset.original_filename}
-                    </a>
-                  )}
-                </div>
-              </div>
 
-              {canEdit && (
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                  <button className="btn btn-ghost btn-sm row" style={{ gap: 4, fontSize: 11 }}
-                    title={asset.is_visible_default ? "Hide on the map" : "Show on the map"}
-                    onClick={() => patchMutation.mutate({
-                      assetId: asset.id,
-                      payload: { is_visible_default: !asset.is_visible_default },
-                    })}>
-                    <Icon name={asset.is_visible_default ? "check-circle" : "circle-x"} size={12} />
-                    {asset.is_visible_default ? "Shown" : "Hidden"}
-                  </button>
-                  <button className="btn btn-ghost btn-sm" style={{ color: "var(--rose)" }}
-                    title="Remove layer" onClick={() => remove(asset)}>
-                    <Icon name="trash" size={11} />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                {isOpen && (
+                  <div style={{ marginLeft: 23, marginTop: 6, display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "2px 12px" }}>
+                    {names.map((name, i) => (
+                      <div key={name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ width: 9, height: 9, borderRadius: 2, flexShrink: 0,
+                          background: layerColor(i) }} />
+                        <span style={{ fontSize: 11, color: "var(--ink-soft, var(--ink))",
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {name}
+                        </span>
+                        <span style={{ fontSize: 10, color: "var(--subtle)", flexShrink: 0 }}>
+                          {counts.get(name)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {adding && (
             <div style={{ background: "var(--lime-pale)", border: "1px solid var(--lime)",
-              borderRadius: 10, padding: 14, marginTop: 8 }}>
+              borderRadius: 10, padding: 14, marginTop: 10 }}>
               <div className="field" style={{ marginBottom: 10 }}>
                 <label className="field-label">File *</label>
                 <input ref={fileRef} type="file" accept={ACCEPT} style={{ display: "none" }}
@@ -244,19 +287,22 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
                 </button>
                 <div className="field-help">
                   The format is checked on the file content, not on its extension.
+                  A KML folder becomes a type, drawn in its own colour.
                 </div>
               </div>
-              <div className="field" style={{ marginBottom: 10 }}>
-                <label className="field-label">Layer name</label>
-                <input className="field-input" placeholder="Intervention sites…"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="field" style={{ marginBottom: 12 }}>
-                <label className="field-label">Description</label>
-                <input className="field-input" placeholder="Source, date, anything worth recording…"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              <div className="grid grid-2" style={{ gap: 10, marginBottom: 12 }}>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label className="field-label">Layer name</label>
+                  <input className="field-input" placeholder="Intervention sites…"
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label className="field-label">Description</label>
+                  <input className="field-input" placeholder="Source, date, anything worth recording…"
+                    value={form.description}
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                </div>
               </div>
               {uploadMutation.isError && (
                 <div className="field-error" style={{ marginBottom: 8 }}>
@@ -275,10 +321,6 @@ export default function GisAssets({ projectId, countries = [], canEdit = true })
             </div>
           )}
         </div>
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <ProjectMap projectId={projectId} countries={countries} />
       </div>
 
       <DialogModal {...dialog.dialogProps} />

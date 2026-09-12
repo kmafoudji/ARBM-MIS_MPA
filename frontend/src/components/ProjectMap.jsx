@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
+import { colorExpression, layerColor, layerNames } from "./layerColors.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -224,10 +225,16 @@ export default function ProjectMap({ projectId, countries = [] }) {
           .find(l => hit.layer.id === `gis-asset-${l.asset.id}-point`
                   || hit.layer.id === `gis-asset-${l.asset.id}-line`
                   || hit.layer.id === `gis-asset-${l.asset.id}-fill`)?.asset;
+        // Le type (le dossier KML) est l'information la plus utile du fichier :
+        // il passe devant le nom de la couche.
+        const kind = p._layer || asset?.name || "GIS layer";
         popup.setLngLat(e.lngLat).setHTML(
-          `<div style="font-family:-apple-system,sans-serif;padding:8px 12px;min-width:120px">
+          `<div style="font-family:-apple-system,sans-serif;padding:8px 12px;min-width:120px;max-width:260px">
             <div style="font-size:13px;font-weight:600;color:#2B2B2B">${escapeHtml(p._label || "—")}</div>
-            <div style="font-size:10px;font-weight:600;color:${escapeHtml(asset?.layer_color || "#E2725B")};margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(asset?.name || "GIS layer")}</div>
+            <div style="font-size:10px;font-weight:600;color:#545454;margin-top:2px;text-transform:uppercase;letter-spacing:.06em">${escapeHtml(kind)}</div>
+            ${p._layer && asset?.name
+              ? `<div style="font-size:10px;color:#A7A7A7;margin-top:2px">${escapeHtml(asset.name)}</div>`
+              : ""}
           </div>`
         ).addTo(map);
         return;
@@ -277,7 +284,9 @@ export default function ProjectMap({ projectId, countries = [] }) {
 
     assetLayersRef.current.forEach(({ asset, geojson: data }) => {
       const sourceId = `gis-asset-${asset.id}`;
-      const color    = asset.layer_color || "#E2725B";
+      // Un fichier à plusieurs sous-couches (un dossier KML = une couche) est
+      // peint par sous-couche ; sinon, la couleur de l'asset.
+      const color = colorExpression(layerNames(data), asset.layer_color || "#E2725B");
       map.addSource(sourceId, { type: "geojson", data });
 
       // Un même fichier peut porter polygones, lignes et points à la fois :
@@ -432,13 +441,26 @@ export default function ProjectMap({ projectId, countries = [] }) {
               textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>
               GIS layers
             </div>
-            {assetLayers.map(({ asset }) => (
-              <div key={asset.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 3, flexShrink: 0,
-                  background: asset.layer_color, border: `1.5px solid ${asset.layer_color}` }} />
-                <span style={{ color: "#545454", fontSize: 11 }}>{asset.name}</span>
-              </div>
-            ))}
+            {assetLayers.map(({ asset, geojson: data }) => {
+              const names = layerNames(data);
+              return (
+                <div key={asset.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                  {/* Plusieurs sous-couches : un ruban des premières couleurs
+                      plutôt qu'une pastille qui mentirait sur ce qui est peint. */}
+                  <span style={{ display: "flex", flexShrink: 0, borderRadius: 3, overflow: "hidden",
+                    width: 12, height: 12, border: "1px solid rgba(0,0,0,0.10)" }}>
+                    {(names.length ? names.slice(0, 4) : [null]).map((name, i) => (
+                      <span key={name ?? i} style={{ flex: 1,
+                        background: names.length ? layerColor(i) : asset.layer_color }} />
+                    ))}
+                  </span>
+                  <span style={{ color: "#545454", fontSize: 11 }}>{asset.name}</span>
+                  {names.length > 1 && (
+                    <span style={{ fontSize: 9, color: "#A7A7A7" }}>{names.length} types</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
