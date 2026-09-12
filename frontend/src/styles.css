@@ -2378,6 +2378,15 @@ input, select, textarea { font: inherit; color: inherit; }
 .arbm-popup .maplibregl-popup-tip { display: none !important; }
 .arbm-popup-hover { pointer-events: none; }
 
+/* Poignée de déplacement d'une fiche (voir components/draggablePopup.js).
+   touch-action coupe le défilement du navigateur pendant le glissement, sans
+   quoi un doigt fait défiler la page au lieu de bouger la fiche. */
+.arbm-popup-handle {
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
 /* Projects (ProjectList, cards view): two scorecards per row, one on
    narrow screens. */
 .project-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
