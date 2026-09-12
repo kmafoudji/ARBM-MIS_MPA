@@ -9,6 +9,7 @@ import ProjectCreateForm from "./pages/ProjectCreateForm.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 import Portfolio from "./pages/Portfolio.jsx";
 import DQPortfolio from "./pages/DQPortfolio.jsx";
+import FundPerformance from "./pages/FundPerformance.jsx";
 import PIRSView from "./pages/PIRSView.jsx";
 import IndicatorCatalogue from "./pages/IndicatorCatalogue.jsx";
 import MasterData from "./pages/MasterData.jsx";
@@ -44,7 +45,7 @@ class ErrorBoundary extends Component {
 // so the project sidebar's back link returns there — not to the dashboard.
 const PORTFOLIO_VIEWS = new Set([
   "portfolio-overview", "overview", "masterdata", "projects", "new-project", "bulk-import",
-  "indicator-catalogue", "portfolio", "dq-portfolio", "rbac",
+  "indicator-catalogue", "portfolio", "dq-portfolio", "fund-performance", "rbac",
 ]);
 
 export default function App() {
@@ -195,6 +196,7 @@ export default function App() {
       {nav === "indicator-catalogue" && <IndicatorCatalogue />}
       {nav === "portfolio" && <Portfolio />}
       {nav === "dq-portfolio" && <DQPortfolio />}
+      {nav === "fund-performance" && <FundPerformance />}
       {nav === "pirs" && selectedRowId && (
         <PIRSView
           projectId={selectedProjectId}

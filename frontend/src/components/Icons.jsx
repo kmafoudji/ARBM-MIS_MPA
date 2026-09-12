@@ -59,6 +59,16 @@ export const IconCatalogue = () => (
 );
 
 /* Logo ARBM-MIS — double losange (variante C) */
+/* Fund performance: the Fund's own trajectory, not a portfolio breakdown —
+   a rising line, where IconPortfolio is a bar chart. */
+export const IconFundPerformance = () => (
+  <svg {...base}>
+    <path d="M4 15.5 L9.5 10 L13 13.5 L20 6.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M15 6.5 H20 V11.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M4 20 H20" strokeLinecap="round" />
+  </svg>
+);
+
 export const IconPortfolio = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1" y="10" width="3" height="7" rx="0.5"/>

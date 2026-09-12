@@ -5,6 +5,7 @@ import {
   LogoFull,
   IconCatalogue,
   IconDashboard,
+  IconFundPerformance,
   IconPortfolioOverview,
   IconPortfolio,
   IconMasterData,
@@ -36,6 +37,7 @@ const CRUMBS = {
   "indicator-catalogue": { label: "Indicator Catalogue", parent: "portfolio-overview" },
   portfolio: { label: "Portfolio Results", parent: "portfolio-overview" },
   "dq-portfolio": { label: "Data Quality", parent: "portfolio-overview" },
+  "fund-performance": { label: "Fund Performance", parent: "portfolio-overview" },
   "bulk-import": { label: "Bulk Import", parent: "projects" },
   pirs:      { label: "PIRS", parent: "project-detail" },
   rbac: { label: "Users & Roles", parent: "portfolio-overview" },
@@ -232,6 +234,7 @@ export default function AppShell({
       items: [
         { key: "portfolio-overview", label: t("nav.portfolio_overview"), Icon: IconPortfolioOverview },
         { key: "overview", label: t("nav.dashboard"), Icon: IconDashboard },
+        { key: "fund-performance", label: t("nav.fund_performance"), Icon: IconFundPerformance },
       ],
     },
     {

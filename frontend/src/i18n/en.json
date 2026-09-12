@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Executive Dashboard",
+    "fund_performance": "Fund Performance",
     "portfolio_overview": "Portfolio Overview",
     "overview": "Overview",
     "masterdata": "Reference Data",
