@@ -5,6 +5,7 @@ import {
   LogoFull,
   IconCatalogue,
   IconDashboard,
+  IconFundPerformance,
   IconPortfolioOverview,
   IconPortfolio,
   IconMasterData,
@@ -233,7 +234,7 @@ export default function AppShell({
       items: [
         { key: "portfolio-overview", label: t("nav.portfolio_overview"), Icon: IconPortfolioOverview },
         { key: "overview", label: t("nav.dashboard"), Icon: IconDashboard },
-        { key: "fund-performance", label: t("nav.fund_performance"), Icon: IconPortfolio },
+        { key: "fund-performance", label: t("nav.fund_performance"), Icon: IconFundPerformance },
       ],
     },
     {
