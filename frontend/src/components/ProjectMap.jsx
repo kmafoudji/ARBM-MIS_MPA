@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
-import { colorExpression, layerColor, layerNames } from "./layerColors.js";
+import { colorExpression, layerScale } from "./layerColors.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -313,8 +313,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
     assetLayersRef.current.forEach(({ asset, geojson: data }) => {
       const sourceId = `gis-asset-${asset.id}`;
       // Un fichier à plusieurs sous-couches (un dossier KML = une couche) est
-      // peint par sous-couche ; sinon, la couleur de l'asset.
-      const color = colorExpression(layerNames(data), asset.layer_color || "#E2725B");
+      // peint en tons d'une seule teinte, du plus foncé (le type le plus
+      // nombreux) au plus clair ; sinon, la couleur de l'asset.
+      const color = colorExpression(layerScale(data, asset.layer_color),
+                                    asset.layer_color || "#0EB584");
       map.addSource(sourceId, { type: "geojson", data });
 
       // Un même fichier peut porter polygones, lignes et points à la fois :
@@ -521,21 +523,25 @@ export default function ProjectMap({ projectId, countries = [] }) {
               GIS layers
             </div>
             {assetLayers.map(({ asset, geojson: data }) => {
-              const names = layerNames(data);
+              const scale = layerScale(data, asset.layer_color);
               return (
                 <div key={asset.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                  {/* Plusieurs sous-couches : un ruban des premières couleurs
-                      plutôt qu'une pastille qui mentirait sur ce qui est peint. */}
+                  {/* Une barre de la rampe, pas une pastille : elle dit que la
+                      couche est peinte en tons, du plus nombreux au moins. */}
                   <span style={{ display: "flex", flexShrink: 0, borderRadius: 3, overflow: "hidden",
                     width: 12, height: 12, border: "1px solid rgba(0,0,0,0.10)" }}>
-                    {(names.length ? names.slice(0, 4) : [null]).map((name, i) => (
+                    {(scale.names.length
+                      ? scale.names.filter((_, i, all) =>
+                          i % Math.max(1, Math.ceil(all.length / 4)) === 0).slice(0, 4)
+                      : [null]
+                    ).map((name, i) => (
                       <span key={name ?? i} style={{ flex: 1,
-                        background: names.length ? layerColor(i) : asset.layer_color }} />
+                        background: name ? scale.color.get(name) : asset.layer_color }} />
                     ))}
                   </span>
                   <span style={{ color: "#545454", fontSize: 11 }}>{asset.name}</span>
-                  {names.length > 1 && (
-                    <span style={{ fontSize: 9, color: "#A7A7A7" }}>{names.length} types</span>
+                  {scale.names.length > 1 && (
+                    <span style={{ fontSize: 9, color: "#A7A7A7" }}>{scale.names.length} types</span>
                   )}
                 </div>
               );

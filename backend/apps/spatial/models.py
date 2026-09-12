@@ -37,9 +37,11 @@ ASSET_STATUS_CHOICES = [
     ("failed", "Failed"),
 ]
 
-# Default overlay colour. Terracotta, deliberately outside the lime/navy pair
-# used by the GADM layers so an uploaded layer never reads as project scope.
-DEFAULT_LAYER_COLOR = "#E2725B"
+# Default overlay colour: Growth Green, the one accent docs/design.md allows by
+# default. It is the hue of the tonal ramp the sub-layers are drawn in, so it
+# has to be a palette colour — an off-palette default would put every uploaded
+# layer outside the design system.
+DEFAULT_LAYER_COLOR = "#0EB584"
 
 
 def gis_asset_upload_path(instance, filename):
