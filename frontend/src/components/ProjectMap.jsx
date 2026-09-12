@@ -11,6 +11,7 @@ import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
 import { colorExpression, layerScale } from "./layerColors.js";
 import { startCardDrag } from "./mapCardDrag.js";
+import { createHoverPopup, retryWhenStyleReady } from "./mapCommon.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -85,18 +86,6 @@ function LegendRow({ on, onToggle, dense = false, children }) {
       {children}
     </button>
   );
-}
-
-/**
- * Rappeler un effet quand le style de la carte sera prêt.
- *
- * Renvoie une fonction de nettoyage, donc s'utilise en `return` direct depuis
- * un effet : `if (!map.isStyleLoaded()) return retryWhenStyleReady(map, tick);`
- */
-function retryWhenStyleReady(map, bump) {
-  const retry = () => bump(t => t + 1);
-  map.once("idle", retry);
-  return () => map.off("idle", retry);
 }
 
 function getBbox(features) {
@@ -367,9 +356,11 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
       }
     }
 
-    // Tooltip
-    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12,
-      className: "arbm-popup" });
+    // Tooltip — se retire dès que la carte bouge (voir mapCommon.js). La
+    // classe `arbm-popup-hover` qu'il reçoit au passage porte
+    // `pointer-events: none` : une infobulle ne doit pas avaler le clic qui
+    // ouvre la fiche.
+    const { popup, dispose: disposeHover } = createHoverPopup(map);
 
     // Calculé à chaque survol : les couches GIS téléversées apparaissent et
     // disparaissent indépendamment de cet effet. Elles passent en premier pour
@@ -429,10 +420,6 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
 
     map.on("mousemove", onMouseMove);
     map.on("mouseleave", onMouseLeave);
-    // Une infobulle de survol reste accrochée à sa coordonnée : pendant un
-    // zoom elle glisserait sous le curseur. On la retire, le survol suivant la
-    // ramènera.
-    map.on("movestart", onMouseLeave);
 
     // Bbox
     if (features.length) {
@@ -444,8 +431,7 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
     return () => {
       map.off("mousemove", onMouseMove);
       map.off("mouseleave", onMouseLeave);
-      map.off("movestart", onMouseLeave);
-      popup.remove();
+      disposeHover();
     };
   }, [mapReady, geojson, styleTick]);
 
@@ -607,39 +593,6 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
     <div style={{ position: "relative", borderRadius: 12, overflow: "hidden",
       border: "1px solid #ECEBE8", marginBottom: 4, }}>
 
-      {/* Style overrides contrôles natifs MapLibre */}
-      <style>{`
-        .maplibregl-ctrl-group {
-          border-radius: 8px !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
-          border: 1px solid #ECEBE8 !important;
-          overflow: hidden;
-        }
-        .maplibregl-ctrl-group button {
-          width: 32px !important; height: 32px !important;
-          background: rgba(255,255,255,0.95) !important;
-          border: none !important;
-          border-bottom: 1px solid #ECEBE8 !important;
-        }
-        .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
-        .maplibregl-ctrl-group button:hover { background: #EFFFFA !important; }
-        .maplibregl-ctrl-group button span { filter: none !important; }
-        .maplibregl-ctrl-scale {
-          background: rgba(255,255,255,0.85) !important;
-          border: 1px solid #ECEBE8 !important;
-          border-radius: 4px !important;
-          font-size: 10px !important;
-          color: #7E7E7E !important;
-          padding: 1px 5px !important;
-        }
-        .arbm-popup .maplibregl-popup-content {
-          border-radius: 10px !important;
-          padding: 0 !important;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-          border: 1px solid #ECEBE8 !important;
-        }
-        .arbm-popup .maplibregl-popup-tip { display: none !important; }
-      `}</style>
 
       {/* Bouton Recenter */}
       <button onClick={recenter}
