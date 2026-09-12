@@ -344,9 +344,10 @@ export default function ProjectMap({ projectId, countries = [] }) {
       className: "arbm-popup", maxWidth: "320px",
     });
     sheet.on("close", () => { sheetOpenRef.current = false; });
-    // Déplaçable : ancrée près d'un bord, une fiche sort du canevas ou couvre
-    // la chinchette qu'elle décrit.
-    makeDraggable(sheet, ".arbm-sheet-head");
+    // Déplaçable, et retenue dans le cadre : ancrée près d'un bord une fiche
+    // sort du canevas, et un dézoom l'emporterait hors de portée avec sa
+    // poignée. Voir draggablePopup.js.
+    makeDraggable(sheet, ".arbm-sheet-head", map);
 
     function assetLayerIds() {
       return assetLayersRef.current
