@@ -35,6 +35,9 @@ const RING_RADIUS = 13;
 // "Reset view" returns here.
 const HOME_VIEW = { center: [29.6, 16.7], zoom: 3 };
 const HOME_VIEW_COMPACT = { center: [29.6, 16.7], zoom: 2 };
+// La carte s'ouvre là, sur le globe entier, puis descend jusqu'à HOME_VIEW.
+const OPENING_ZOOM = 0.4;
+const OPENING_DURATION = 1600;
 
 // Colour lenses. Each returns [legend label, colour] for a project, from the
 // project list row and the map point's properties; colours are literal
@@ -247,10 +250,17 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   // Map init
   useEffect(() => {
     if (!mapRef.current) return;
+    const home = compact ? HOME_VIEW_COMPACT : HOME_VIEW;
+    // Ouverture : la carte descend du globe entier jusqu'à la vue d'accueil,
+    // qui ne change pas. Une animation d'entrée ne s'impose pas à qui a
+    // demandé moins de mouvement : dans ce cas on ouvre directement dessus.
+    const reduceMotion = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     const map = new maplibregl.Map({
       container: mapRef.current,
       style: BASEMAP_STYLE,
-      ...(compact ? HOME_VIEW_COMPACT : HOME_VIEW),
+      center: home.center,
+      zoom: reduceMotion ? home.zoom : OPENING_ZOOM,
       attributionControl: false,
     });
     mapInst.current = map;
@@ -277,9 +287,13 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       } else {
         map.once("idle", () => setMapReady(true));
       }
+      // Descente vers la vue d'accueil, une fois le fond chargé — sans quoi
+      // l'animation se jouerait sur un canevas vide.
+      if (!reduceMotion) {
+        map.easeTo({ ...home, duration: OPENING_DURATION });
+      }
     });
     // The reset button only shows once the view has left the opening one.
-    const home = compact ? HOME_VIEW_COMPACT : HOME_VIEW;
     map.on("moveend", () => {
       const c = map.getCenter();
       setAtHome(Math.abs(map.getZoom() - home.zoom) < 0.01

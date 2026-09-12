@@ -43,11 +43,17 @@ geometry to anyone who reached the URL.
   description survives as plain text with its tags stripped. Read as pairs, a
   header table would yield `{LGA: Ward, Bagwai: kiyawa}`, and attributes that
   are quietly wrong are worse than none.
-- The source file's own styling is not reproduced. Each sub-layer (a KML folder
-  is a layer) is drawn in a generated colour instead, because a thematic export
-  routinely gives every type the same icon and near enough the same colour: the
-  KSADP file has one icon for all 31 types, on `maps.google.com` — fetching it
-  would send a map request out of the stack — and 25 of the 31 share a magenta.
+- The source file's own styling is not reproduced. A thematic export routinely
+  gives every type the same icon and near enough the same colour: the KSADP
+  file has one icon for all 31 types, on `maps.google.com` — fetching it would
+  send a map request out of the stack — and 25 of the 31 share a magenta.
+- Sub-layers are drawn in **tones of one hue, not in a fan of hues**. Thirty-one
+  categories cannot be told apart by colour under any palette, so colour does
+  not carry identity here — the legend and the record popup do. It carries size
+  instead: the tone is the sub-layer's rank by feature count, darkest for the
+  largest. The hue is the asset's own colour, Growth Green by default. This is
+  what `docs/design.md` requires — one accent, the LLF tonal scales, "no colour
+  that means nothing" — and a fan of generated hues broke all three.
 - The original file is kept and can be downloaded, but **only as an attachment
   from an authenticated endpoint**, never as a storage URL. KML and GPX are XML
   and KMZ is a ZIP: `core/uploads.py` sets out why an XML document served from

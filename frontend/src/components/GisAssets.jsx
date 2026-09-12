@@ -14,7 +14,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { apiFetch, apiUpload } from "../api";
 import { useDialog, DialogModal } from "./Dialog.jsx";
 import Icon from "./Icon.jsx";
-import { layerColor, layerCounts, layerNames } from "./layerColors.js";
+import { layerScale } from "./layerColors.js";
 
 // Ce que le serveur sait lire (apps/spatial/converters.py). L'attribut accept
 // n'est qu'un confort : la validation se fait sur le contenu, pas l'extension.
@@ -157,8 +157,8 @@ export default function GisAssets({ projectId, canEdit = true }) {
 
           {assets.map((asset, rowIndex) => {
             const geojson = geojsonById.get(asset.id);
-            const names   = layerNames(geojson);
-            const counts  = layerCounts(geojson);
+            const scale   = layerScale(geojson, asset.layer_color);
+            const names   = scale.names;
             const isOpen  = expanded === asset.id;
 
             return (
@@ -173,9 +173,13 @@ export default function GisAssets({ projectId, canEdit = true }) {
                     overflow: "hidden", width: 14, height: 14,
                     border: "1px solid var(--rule)",
                     opacity: asset.is_visible_default ? 1 : 0.35 }}>
-                    {(names.length ? names.slice(0, 4) : [null]).map((name, i) => (
+                    {(names.length
+                      ? names.filter((_, i, all) =>
+                          i % Math.max(1, Math.ceil(all.length / 4)) === 0).slice(0, 4)
+                      : [null]
+                    ).map((name, i) => (
                       <span key={name ?? i} style={{ flex: 1,
-                        background: names.length ? layerColor(i) : asset.layer_color }} />
+                        background: name ? scale.color.get(name) : asset.layer_color }} />
                     ))}
                   </span>
 
@@ -245,16 +249,16 @@ export default function GisAssets({ projectId, canEdit = true }) {
                 {isOpen && (
                   <div style={{ marginLeft: 23, marginTop: 6, display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "2px 12px" }}>
-                    {names.map((name, i) => (
+                    {names.map((name) => (
                       <div key={name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ width: 9, height: 9, borderRadius: 2, flexShrink: 0,
-                          background: layerColor(i) }} />
+                          background: scale.color.get(name) }} />
                         <span style={{ fontSize: 11, color: "var(--ink-soft, var(--ink))",
                           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {name}
                         </span>
                         <span style={{ fontSize: 10, color: "var(--subtle)", flexShrink: 0 }}>
-                          {counts.get(name)}
+                          {scale.counts.get(name)}
                         </span>
                       </div>
                     ))}
