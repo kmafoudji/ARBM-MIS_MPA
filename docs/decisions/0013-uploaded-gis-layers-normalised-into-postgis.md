@@ -35,8 +35,14 @@ geometry to anyone who reached the URL.
   pin is clicked. That table is **taken apart at import into ordinary key/value
   attributes and the markup is dropped**. The data becomes queryable, and no
   HTML from an uploaded file ever reaches the page — rendering it would be a
-  stored cross-site scripting hole. A description that is not a table of pairs
-  is left alone, as the note it is.
+  stored cross-site scripting hole. There is no single format for that sheet,
+  so the **shape is recognised, never assumed**: label/value rows, a header row
+  over one data row, a definition list, or labelled lines. Where the shape is
+  not certain — a two-column table whose left column reads as data rather than
+  field names, a table of several records — **nothing is invented**; the
+  description survives as plain text with its tags stripped. Read as pairs, a
+  header table would yield `{LGA: Ward, Bagwai: kiyawa}`, and attributes that
+  are quietly wrong are worse than none.
 - The source file's own styling is not reproduced. Each sub-layer (a KML folder
   is a layer) is drawn in a generated colour instead, because a thematic export
   routinely gives every type the same icon and near enough the same colour: the

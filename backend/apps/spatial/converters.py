@@ -305,76 +305,261 @@ def _convert_layer(datasource, layer, out_path, budget):
 # putting it in the page would be a stored cross-site scripting hole. It is
 # parsed here into ordinary key/value attributes and the markup is dropped:
 # the data becomes queryable, and nothing HTML-shaped survives the import.
+#
+# THERE IS NO SINGLE FORMAT. Every tool writes this differently, so the shape
+# is recognised rather than assumed:
+#
+#   label/value rows   <tr><td>LGA</td><td>Bagwai</td></tr>      (KSADP, Google Earth)
+#   header + one row   <tr><th>LGA</th></tr><tr><td>Bagwai</td>  (ArcGIS, QGIS)
+#   definition list    <dl><dt>LGA</dt><dd>Bagwai</dd></dl>
+#   labelled lines     <b>LGA:</b> Bagwai<br>                    (hand-written)
+#
+# Anything else is left as plain text with its tags stripped, so a description
+# is never lost from view. Getting the shape WRONG is worse than not parsing:
+# read as label/value pairs, a header table yields {LGA: Ward, Bagwai: kiyawa},
+# which is confident nonsense. Every rule below therefore refuses when the
+# shape is not certain.
 
 MAX_DESCRIPTION_PAIRS = 60
 MAX_ATTRIBUTE_LENGTH = 500
+MAX_KEY_LENGTH = 80          # beyond this it is prose, not a field name
 
 
-class _TablePairs(HTMLParser):
-    """Collect the <td> texts of an HTML table, in document order."""
+class _DescriptionParser(HTMLParser):
+    """
+    Read a description into the structures the shape rules need: table rows
+    (each a list of cells), definition-list pairs, and the plain text.
+    """
+
+    _CELL_TAGS = ("td", "th")
+    _PAIR_TAGS = ("dt", "dd")
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.cells = []
-        self._depth = 0
-        self._current = []
+        self.rows = []          # [[cell, ...], ...]
+        self.header_flags = []  # per row: did it use <th>?
+        self.definitions = []   # [("dt"|"dd", text), ...]
+        self.text_parts = []
+        self._row = None
+        self._row_has_th = False
+        self._capture = None    # the tag whose text is being collected
+        self._buffer = []
 
+    # -- helpers ------------------------------------------------------------
+    def _flush_cell(self):
+        text = " ".join("".join(self._buffer).split())
+        self._buffer = []
+        return text
+
+    def _close_row(self):
+        if self._row is not None:
+            self.rows.append(self._row)
+            self.header_flags.append(self._row_has_th)
+        self._row = None
+        self._row_has_th = False
+
+    # -- HTMLParser ---------------------------------------------------------
     def handle_starttag(self, tag, attrs):
-        if tag in ("td", "th"):
-            self._depth += 1
-            self._current = []
+        if tag == "tr":
+            self._close_row()
+            self._row = []
+        elif tag in self._CELL_TAGS:
+            if self._row is None:      # a cell outside any <tr>
+                self._row = []
+            if tag == "th":
+                self._row_has_th = True
+            self._capture = tag
+            self._buffer = []
+        elif tag in self._PAIR_TAGS:
+            self._capture = tag
+            self._buffer = []
+        elif tag in ("br", "p", "div", "li"):
+            self.text_parts.append("\n")
 
     def handle_endtag(self, tag):
-        if tag in ("td", "th") and self._depth:
-            self._depth -= 1
-            self.cells.append(" ".join("".join(self._current).split()))
-            self._current = []
+        if tag in self._CELL_TAGS and self._capture == tag:
+            self._row.append(self._flush_cell())
+            self._capture = None
+        elif tag in self._PAIR_TAGS and self._capture == tag:
+            self.definitions.append((tag, self._flush_cell()))
+            self._capture = None
+        elif tag in ("tr", "table"):
+            self._close_row()
+
+    def close(self):
+        super().close()
+        self._close_row()
 
     def handle_data(self, data):
-        if self._depth:
-            self._current.append(data)
+        if self._capture:
+            self._buffer.append(data)
+        self.text_parts.append(data)
+
+    # -- results ------------------------------------------------------------
+    @property
+    def text(self):
+        joined = "".join(self.text_parts)
+        lines = [" ".join(line.split()) for line in joined.splitlines()]
+        return "\n".join(line for line in lines if line).strip()
+
+
+def _clean_key(raw):
+    key = raw.strip().rstrip(":").strip()
+    if not key or len(key) > MAX_KEY_LENGTH:
+        return None
+    return key
+
+
+def _looks_like_labels(labels):
+    """
+    Do these read as field names rather than data?
+
+    The two-column table is the ambiguous one: three rows of two cells are
+    either a sheet of three fields, or a header over two records. Field names
+    are distinct and are not bare numbers; data usually is one or the other.
+    Refusing on doubt costs a plain-text fallback — guessing costs a feature
+    whose attributes are quietly wrong.
+    """
+    cleaned = [label.strip() for label in labels]
+    if not all(cleaned):
+        return False
+    if len(set(cleaned)) != len(cleaned):
+        return False
+    return not any(re.fullmatch(r"[\d.,\-/ ]+", label) for label in cleaned)
+
+
+def _pairs_from_rows(rows, header_flags):
+    """
+    Two shapes, and a refusal.
+
+    Rows of two cells whose left column reads as field names are the
+    label/value sheet. A header row followed by exactly one data row of the
+    same width is the transposed one. Anything else is a table of several
+    records, which cannot become the attributes of a single feature.
+    """
+    rows = [row for row in rows if row]
+    if not rows:
+        return {}
+
+    has_header = bool(header_flags and header_flags[0])
+
+    if all(len(row) == 2 for row in rows):
+        # An explicit header on a two-column table means the transposed shape,
+        # not a sheet: <th>LGA</th><th>Ward</th> over <td>Bagwai</td><td>…</td>.
+        if len(rows) == 2 and has_header:
+            return _zip_pairs(rows[0], rows[1])
+        if _looks_like_labels([row[0] for row in rows]):
+            return _sheet_pairs(rows)
+        # Not field names: a header over one record is the only reading left.
+        if len(rows) == 2:
+            return _zip_pairs(rows[0], rows[1])
+        return {}
+
+    width = len(rows[0])
+    if len(rows) == 2 and len(rows[1]) == width:
+        return _zip_pairs(rows[0], rows[1])
+
+    return {}
+
+
+def _sheet_pairs(rows):
+    pairs = {}
+    for label, value in rows:
+        key = _clean_key(label)
+        if key and len(pairs) < MAX_DESCRIPTION_PAIRS:
+            pairs[key] = value.strip()[:MAX_ATTRIBUTE_LENGTH]
+    return pairs
+
+
+def _zip_pairs(labels, values):
+    pairs = {}
+    for label, value in zip(labels, values):
+        key = _clean_key(label)
+        if key and len(pairs) < MAX_DESCRIPTION_PAIRS:
+            pairs[key] = value.strip()[:MAX_ATTRIBUTE_LENGTH]
+    return pairs
+
+
+def _pairs_from_definitions(definitions):
+    """<dt>label</dt><dd>value</dd>, in that order."""
+    pairs = {}
+    pending = None
+    for tag, text in definitions:
+        if tag == "dt":
+            pending = _clean_key(text)
+        elif pending is not None:
+            if len(pairs) < MAX_DESCRIPTION_PAIRS:
+                pairs[pending] = text.strip()[:MAX_ATTRIBUTE_LENGTH]
+            pending = None
+    return pairs
+
+
+# "LGA: Bagwai" on its own line — the shape left when a description is written
+# by hand with <b> labels and <br> breaks.
+_LABELLED_LINE = re.compile(r"^\s*([^:\n]{1,80}?)\s*:\s*(.+?)\s*$")
+
+
+def _pairs_from_lines(text):
+    pairs = {}
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return {}
+    matched = 0
+    for line in lines:
+        match = _LABELLED_LINE.match(line)
+        if not match:
+            continue
+        key = _clean_key(match.group(1))
+        if key and len(pairs) < MAX_DESCRIPTION_PAIRS:
+            pairs[key] = match.group(2)[:MAX_ATTRIBUTE_LENGTH]
+            matched += 1
+    # Half the lines must look like fields, or this is prose that happens to
+    # contain a colon.
+    return pairs if matched * 2 >= len(lines) else {}
 
 
 def parse_description(description):
     """
-    Turn an HTML description into {attribute: value}, or {} when it is not a
-    table of pairs. Cells are taken two at a time: label, then value.
-    """
-    if not description or "<" not in description:
-        return {}
+    Read a description into (attributes, plain_text).
 
-    parser = _TablePairs()
+    `attributes` is empty when no shape is recognised; `plain_text` is always
+    the description with its markup stripped, so nothing is lost from view.
+    """
+    if not description:
+        return {}, ""
+    if "<" not in description:
+        return _pairs_from_lines(description), description.strip()
+
+    parser = _DescriptionParser()
     try:
         parser.feed(description)
         parser.close()
     except Exception:
-        return {}
+        # A description that will not parse is still worth showing as text.
+        return {}, " ".join(re.sub(r"<[^>]*>", " ", description).split())
 
-    pairs = {}
-    cells = parser.cells
-    for index in range(0, len(cells) - 1, 2):
-        key = cells[index].strip().rstrip(":")
-        value = cells[index + 1].strip()
-        if not key or len(pairs) >= MAX_DESCRIPTION_PAIRS:
-            continue
-        pairs[key[:MAX_ATTRIBUTE_LENGTH]] = value[:MAX_ATTRIBUTE_LENGTH]
-    return pairs
+    text = parser.text
+    pairs = (
+        _pairs_from_rows(parser.rows, parser.header_flags)
+        or _pairs_from_definitions(parser.definitions)
+        or _pairs_from_lines(text)
+    )
+    return pairs, text
 
 
 def _expand_description(properties):
     """
     Replace an HTML description by the attributes it hides.
 
-    A description that is not a table of pairs is left alone — it is a genuine
-    note, and worth keeping as text.
+    When no shape is recognised the description survives as plain text: the
+    markup goes either way, so a description the rules do not understand is
+    still readable instead of being hidden as unrenderable HTML.
     """
     description = properties.get("description")
-    if not isinstance(description, str):
+    if not isinstance(description, str) or not description.strip():
         return properties
 
-    pairs = parse_description(description)
-    if not pairs:
-        return properties
+    pairs, text = parse_description(description)
 
     expanded = dict(properties)
     expanded.pop("description", None)
@@ -382,6 +567,9 @@ def _expand_description(properties):
         # Never shadow what the driver already read from the placemark itself.
         if key not in expanded:
             expanded[key] = value
+
+    if not pairs and text:
+        expanded["description"] = text[:MAX_ATTRIBUTE_LENGTH * 4]
     return expanded
 
 
