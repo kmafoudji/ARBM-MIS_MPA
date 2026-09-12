@@ -43,6 +43,24 @@ function attributeRows(properties) {
     .map(([key, value]) => [key, String(value)]);
 }
 
+// Une même source porte points, lignes et polygones : chaque couche filtre son
+// type. Ces filtres sont la base sur laquelle la légende ajoute les siens, donc
+// ils vivent ici plutôt qu'en ligne dans l'effet qui crée les couches.
+const GEOMETRY_FILTER = {
+  fill:  ["==", ["geometry-type"], "Polygon"],
+  line:  ["any", ["==", ["geometry-type"], "Polygon"],
+                 ["==", ["geometry-type"], "LineString"]],
+  point: ["==", ["geometry-type"], "Point"],
+};
+
+// Les couches GADM que chaque entrée de légende commande.
+const GADM_LAYERS = {
+  "gadm:country": ["proj-country-fill", "proj-country-border"],
+  "gadm:admin1":  ["proj-admin1-fill", "proj-admin1-line",
+                   "proj-admin1-active-fill", "proj-admin1-active-line"],
+  "gadm:admin2":  ["proj-admin2-fill", "proj-admin2-line"],
+};
+
 function getBbox(features) {
   let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90;
   features.forEach(f => {
@@ -323,14 +341,13 @@ export default function ProjectMap({ projectId, countries = [] }) {
       // Un même fichier peut porter polygones, lignes et points à la fois :
       // trois couches filtrées par type plutôt qu'un pari sur la géométrie.
       map.addLayer({ id: `${sourceId}-fill`, type: "fill", source: sourceId,
-        filter: ["==", ["geometry-type"], "Polygon"],
+        filter: GEOMETRY_FILTER.fill,
         paint: { "fill-color": color, "fill-opacity": 0.25 } }, LABELS_LAYER_ID);
       map.addLayer({ id: `${sourceId}-line`, type: "line", source: sourceId,
-        filter: ["any", ["==", ["geometry-type"], "Polygon"],
-                        ["==", ["geometry-type"], "LineString"]],
+        filter: GEOMETRY_FILTER.line,
         paint: { "line-color": color, "line-width": 2, "line-opacity": 0.95 } }, LABELS_LAYER_ID);
       map.addLayer({ id: `${sourceId}-point`, type: "circle", source: sourceId,
-        filter: ["==", ["geometry-type"], "Point"],
+        filter: GEOMETRY_FILTER.point,
         paint: { "circle-radius": 5, "circle-color": color,
                  "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF" } }, LABELS_LAYER_ID);
     });
