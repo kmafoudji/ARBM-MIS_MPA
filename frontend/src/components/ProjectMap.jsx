@@ -10,6 +10,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
 import { colorExpression, layerScale } from "./layerColors.js";
+import { startCardDrag } from "./mapCardDrag.js";
 
 // Les libellés des couches GIS viennent de fichiers téléversés : contenu non
 // fiable, injecté ici dans du HTML de popup. On l'échappe.
@@ -212,24 +213,11 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
   sheetOpenRef.current = !!sheet;
 
   // Glissement de la fiche par son en-tête ; le corps reste sélectionnable,
-  // une fiche est faite pour être lue et recopiée.
+  // une fiche est faite pour être lue et recopiée. La mécanique est partagée
+  // avec la carte du portefeuille (mapCardDrag.js) : les deux copies avaient
+  // divergé et la croix de fermeture y avait laissé sa peau.
   function onSheetPointerDown(event) {
-    if (event.button !== 0) return;
-    const startX = event.clientX - sheet.x;
-    const startY = event.clientY - sheet.y;
-    const node = event.currentTarget;
-    const move = (e) => setSheet(s => s && { ...s, x: e.clientX - startX, y: e.clientY - startY });
-    const up = (e) => {
-      node.releasePointerCapture?.(e.pointerId);
-      node.removeEventListener("pointermove", move);
-      node.removeEventListener("pointerup", up);
-      node.removeEventListener("pointercancel", up);
-    };
-    node.setPointerCapture?.(event.pointerId);
-    node.addEventListener("pointermove", move);
-    node.addEventListener("pointerup", up);
-    node.addEventListener("pointercancel", up);
-    event.preventDefault();
+    startCardDrag(event, sheet, pos => setSheet(s => s && { ...s, ...pos }));
   }
   const assetSignature = assetLayers
     .map(l => `${l.asset.id}:${l.asset.layer_color}:${l.geojson.features.length}`)

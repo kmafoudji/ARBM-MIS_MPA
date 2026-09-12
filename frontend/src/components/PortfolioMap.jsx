@@ -20,6 +20,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE } from "./mapStyle.js";
+import { startCardDrag } from "./mapCardDrag.js";
 
 // --lime design token; CSS variables cannot reach the WebGL canvas
 const FALLBACK_COLOR = "#0EB584";
@@ -537,27 +538,10 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     return () => ro?.disconnect();
   }, [cardOpen, placeCard]);
 
-  // Glissement de la fiche par son en-tête.
+  // Glissement de la fiche par son en-tête — mécanique partagée avec la carte
+  // de projet (mapCardDrag.js).
   function onCardPointerDown(event) {
-    if (event.button !== 0 || event.target.closest(".map-card-close")) return;
-    const startX = event.clientX - (cardPos?.x ?? 0);
-    const startY = event.clientY - (cardPos?.y ?? 0);
-    const node = event.currentTarget;
-    const move = (e) => {
-      setCardMoved(true);
-      setCardPos({ x: e.clientX - startX, y: e.clientY - startY });
-    };
-    const up = (e) => {
-      node.releasePointerCapture?.(e.pointerId);
-      node.removeEventListener("pointermove", move);
-      node.removeEventListener("pointerup", up);
-      node.removeEventListener("pointercancel", up);
-    };
-    node.setPointerCapture?.(event.pointerId);
-    node.addEventListener("pointermove", move);
-    node.addEventListener("pointerup", up);
-    node.addEventListener("pointercancel", up);
-    event.preventDefault();
+    startCardDrag(event, cardPos, pos => { setCardMoved(true); setCardPos(pos); });
   }
 
   function zoomTo(id) {
