@@ -5,7 +5,7 @@
  */
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { ATTRIBUTION, BASEMAP_STYLE, LABELS_LAYER_ID } from "./mapStyle.js";
@@ -677,53 +677,29 @@ export default function ProjectMap({ projectId, countries = [], height = 380 }) 
 
       {/* Fiche d'un point — div ordinaire, posé une fois. Voir setSheet. */}
       {sheet && (
-        <div ref={sheetRef} style={{
-          position: "absolute", zIndex: 11,
+        <div ref={sheetRef} className="map-card" style={{
+          zIndex: 11,
           // Invisible le temps d'une image, pendant que la mise en place la
           // ramène dans le cadre : sinon on la verrait sauter.
           visibility: sheet.placed ? "visible" : "hidden",
           left: sheet.x, top: sheet.y,
           transform: "translate(-50%, -100%) translateY(-14px)",
-          width: 280, maxWidth: "calc(100% - 24px)",
-          background: "#FFFFFF", borderRadius: 10,
-          border: "1px solid #ECEBE8",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-          fontFamily: "-apple-system, sans-serif",
+          width: 300,
         }}>
-          <div className="arbm-popup-handle" onPointerDown={onSheetPointerDown}
-            style={{ padding: "10px 12px 8px", borderBottom: "1px solid #ECEBE8",
-              position: "relative" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#2B2B2B", paddingRight: 18 }}>
-              {sheet.title}
-            </div>
-            {sheet.kind && (
-              <div style={{ fontSize: 10, fontWeight: 600, color: "#545454", marginTop: 2,
-                textTransform: "uppercase", letterSpacing: ".06em" }}>
-                {sheet.kind}
-              </div>
-            )}
-            <button type="button" onClick={() => setSheet(null)} aria-label="Close"
-              style={{ position: "absolute", top: 6, right: 8, background: "none",
-                border: "none", cursor: "pointer", fontSize: 15, lineHeight: 1,
-                color: "#A7A7A7", padding: 2 }}>×</button>
+          <div className="map-card-head map-card-head--grab" onPointerDown={onSheetPointerDown}>
+            <button type="button" className="map-card-close" onClick={() => setSheet(null)}
+              aria-label="Close">×</button>
+            {sheet.kind && <div className="map-card-code">{sheet.kind}</div>}
+            <div className="map-card-name">{sheet.title}</div>
           </div>
-          <div style={{ padding: "8px 12px 10px", maxHeight: 240, overflow: "auto" }}>
-            {sheet.rows.length ? (
-              <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr",
-                gap: "2px 10px", margin: 0, fontSize: 11 }}>
-                {sheet.rows.map(([key, value]) => (
-                  <Fragment key={key}>
-                    <dt style={{ color: "#A7A7A7", whiteSpace: "nowrap" }}>
-                      {key.replace(/_/g, " ")}
-                    </dt>
-                    <dd style={{ margin: 0, color: "#2B2B2B", wordBreak: "break-word" }}>
-                      {value}
-                    </dd>
-                  </Fragment>
-                ))}
-              </dl>
-            ) : (
-              <div style={{ fontSize: 11, color: "#A7A7A7" }}>No attributes recorded.</div>
+          <div className="map-card-body">
+            {sheet.rows.length ? sheet.rows.map(([key, value]) => (
+              <div key={key} className="map-card-row map-card-row--wrap">
+                <span className="map-card-row-k">{key.replace(/_/g, " ")}</span>
+                <span className="map-card-row-v">{value}</span>
+              </div>
+            )) : (
+              <div className="text-muted text-sm">No attributes recorded.</div>
             )}
           </div>
         </div>

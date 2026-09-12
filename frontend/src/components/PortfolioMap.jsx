@@ -117,7 +117,7 @@ function clusterElement(leaves) {
   return el;
 }
 
-function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
+function ProjectCard({ project, point, onOpen, onZoom, onClose, onGrab }) {
   const country = (project.lead_country_name || "").toUpperCase();
   const chips = [project.lifecycle_stage_display, project.primary_sector_name, project.hub_name].filter(Boolean);
   const millions = toMillions(project.envelope_total);
@@ -127,51 +127,51 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
   const rag = point?.properties.indicator_rag;
   return (
     <>
-      <div className="pmap-card-head">
-        <button type="button" className="pmap-card-close" onClick={onClose} aria-label="Close">×</button>
-        <div className="pmap-card-code">
+      <div className="map-card-head map-card-head--grab" onPointerDown={onGrab}>
+        <button type="button" className="map-card-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="map-card-code">
           {[project.official_reference_number, country].filter(Boolean).join(" · ")}
         </div>
-        <div className="pmap-card-name">{project.name}</div>
+        <div className="map-card-name">{project.name}</div>
         {chips.length > 0 && (
-          <div className="pmap-card-chips">
-            {chips.map((c) => <span key={c} className="pmap-card-chip">{c}</span>)}
+          <div className="map-card-chips">
+            {chips.map((c) => <span key={c} className="map-card-chip">{c}</span>)}
           </div>
         )}
       </div>
-      <div className="pmap-card-body">
-        <div className="pmap-row">
-          <span className="pmap-row-k">Commitment</span>
-          <span className="pmap-row-v">{millions ? `US$ ${formatCommitment(millions)}` : "—"}</span>
+      <div className="map-card-body">
+        <div className="map-card-row">
+          <span className="map-card-row-k">Commitment</span>
+          <span className="map-card-row-v">{millions ? `US$ ${formatCommitment(millions)}` : "—"}</span>
         </div>
         {pillar && pillar !== project.primary_sector_name && (
-          <div className="pmap-row">
-            <span className="pmap-row-k">Pillar</span>
-            <span className="pmap-row-v">{pillar}</span>
+          <div className="map-card-row">
+            <span className="map-card-row-k">Pillar</span>
+            <span className="map-card-row-v">{pillar}</span>
           </div>
         )}
         {project.country_names?.length > 0 && (
-          <div className="pmap-row">
-            <span className="pmap-row-k">{project.country_names.length > 1 ? "Countries" : "Country"}</span>
-            <span className="pmap-row-v">{project.country_names.join(", ")}</span>
+          <div className="map-card-row">
+            <span className="map-card-row-k">{project.country_names.length > 1 ? "Countries" : "Country"}</span>
+            <span className="map-card-row-v">{project.country_names.join(", ")}</span>
           </div>
         )}
-        <div className="pmap-row">
-          <span className="pmap-row-k">Physical progress</span>
+        <div className="map-card-row">
+          <span className="map-card-row-k">Physical progress</span>
           {progress != null && <span className="pmap-track"><i style={{ width: `${Math.min(progress, 100)}%` }} /></span>}
-          <span className="pmap-row-v">{progress != null ? `${progress}%` : "No workplan"}</span>
+          <span className="map-card-row-v">{progress != null ? `${progress}%` : "No workplan"}</span>
         </div>
-        <div className="pmap-row">
-          <span className="pmap-row-k">Indicators</span>
+        <div className="map-card-row">
+          <span className="map-card-row-k">Indicators</span>
           {performance != null && (
             <span className="pmap-track">
               <i style={{ width: `${Math.min(performance, 100)}%`, background: PERFORMANCE[rag]?.[1] }} />
             </span>
           )}
-          <span className="pmap-row-v">{performance != null ? `${performance}% of target` : "No value against a target"}</span>
+          <span className="map-card-row-v">{performance != null ? `${performance}% of target` : "No value against a target"}</span>
         </div>
       </div>
-      <div className="pmap-card-foot">
+      <div className="map-card-foot">
         <button type="button" className="pmap-btn pmap-btn-primary" onClick={onOpen}>Open project →</button>
         {point?.properties.bbox && (
           <button type="button" className="pmap-btn" onClick={onZoom}>Zoom to area</button>
@@ -181,16 +181,16 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose }) {
   );
 }
 
-function GroupCard({ projects, colorOf, onPick, onClose }) {
+function GroupCard({ projects, colorOf, onPick, onClose, onGrab }) {
   const country = (projects[0]?.lead_country_name || "").toUpperCase();
   return (
     <>
-      <div className="pmap-card-head">
-        <button type="button" className="pmap-card-close" onClick={onClose} aria-label="Close">×</button>
-        <div className="pmap-card-code">{[`${projects.length} projects`, country].filter(Boolean).join(" · ")}</div>
-        <div className="pmap-card-name">Projects at this location</div>
+      <div className="map-card-head map-card-head--grab" onPointerDown={onGrab}>
+        <button type="button" className="map-card-close" onClick={onClose} aria-label="Close">×</button>
+        <div className="map-card-code">{[`${projects.length} projects`, country].filter(Boolean).join(" · ")}</div>
+        <div className="map-card-name">Projects at this location</div>
       </div>
-      <div className="pmap-card-body">
+      <div className="map-card-body">
         {projects.map((p) => (
           <button key={p.id} type="button" className="pmap-group-row" onClick={() => onPick(p.id)}>
             <span className="pmap-dot" style={{ background: colorOf(p.id) || FALLBACK_COLOR }} />
@@ -223,6 +223,10 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const [selected, setSelected] = useState(null);
   const cardRef = useRef(null);
   const [cardPos, setCardPos] = useState(null);
+  // Une fois déplacée à la main, la fiche ne se replace plus toute seule.
+  const [cardMoved, setCardMoved] = useState(false);
+  const cardMovedRef = useRef(false);
+  cardMovedRef.current = cardMoved;
   const [height, setHeight] = useState(560);
   const [atHome, setAtHome] = useState(true);
 
@@ -520,13 +524,41 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   }, [selected]);
   useLayoutEffect(() => {
     const map = mapInst.current;
-    if (!cardOpen || !map) { setCardPos(null); return; }
+    if (!cardOpen || !map) { setCardPos(null); setCardMoved(false); return; }
+    // Placée une fois, à l'ouverture, et plus jamais suivie : un zoom la
+    // traînait sous le curseur alors qu'on lisait dedans. Seule la poignée la
+    // déplace ensuite. Le ResizeObserver reste tant qu'on n'y a pas touché :
+    // la hauteur de la fiche dépend de son contenu, qui arrive après.
     placeCard();
-    map.on("move", placeCard);
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(placeCard) : null;
+    const ro = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => { if (!cardMovedRef.current) placeCard(); })
+      : null;
     if (cardRef.current) ro?.observe(cardRef.current);
-    return () => { map.off("move", placeCard); ro?.disconnect(); };
+    return () => ro?.disconnect();
   }, [cardOpen, placeCard]);
+
+  // Glissement de la fiche par son en-tête.
+  function onCardPointerDown(event) {
+    if (event.button !== 0 || event.target.closest(".map-card-close")) return;
+    const startX = event.clientX - (cardPos?.x ?? 0);
+    const startY = event.clientY - (cardPos?.y ?? 0);
+    const node = event.currentTarget;
+    const move = (e) => {
+      setCardMoved(true);
+      setCardPos({ x: e.clientX - startX, y: e.clientY - startY });
+    };
+    const up = (e) => {
+      node.releasePointerCapture?.(e.pointerId);
+      node.removeEventListener("pointermove", move);
+      node.removeEventListener("pointerup", up);
+      node.removeEventListener("pointercancel", up);
+    };
+    node.setPointerCapture?.(event.pointerId);
+    node.addEventListener("pointermove", move);
+    node.addEventListener("pointerup", up);
+    node.addEventListener("pointercancel", up);
+    event.preventDefault();
+  }
 
   function zoomTo(id) {
     const bbox = pointById.get(id)?.properties.bbox;
@@ -571,7 +603,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       )}
 
       {cardOpen && (
-        <div ref={cardRef} className="pmap-card"
+        <div ref={cardRef} className="map-card"
           style={{ left: cardPos?.x ?? 0, top: cardPos?.y ?? 0, visibility: cardPos ? "visible" : "hidden" }}>
           {selectedProject ? (
             <ProjectCard
@@ -580,6 +612,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
               onOpen={() => onProjectClick?.(selectedProject.id)}
               onZoom={() => zoomTo(selectedProject.id)}
               onClose={() => setSelected(null)}
+              onGrab={onCardPointerDown}
             />
           ) : (
             <GroupCard
@@ -587,6 +620,7 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
               colorOf={(id) => pointById.get(id)?.properties.lens_color}
               onPick={(id) => setSelected({ kind: "project", id, lngLat: selected.lngLat })}
               onClose={() => setSelected(null)}
+              onGrab={onCardPointerDown}
             />
           )}
         </div>

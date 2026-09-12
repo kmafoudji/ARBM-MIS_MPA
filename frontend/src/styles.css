@@ -2304,30 +2304,41 @@ input, select, textarea { font: inherit; color: inherit; }
 .pmap-hover b { font-size: 12px; font-weight: 700; color: var(--ink); }
 .pmap-hover span { font-size: 11px; color: var(--muted); }
 
-.pmap-card {
+/* Fiche posée sur une carte : en-tête charcoal, corps blanc. Partagée par les
+   deux cartes — le portefeuille (un projet) et le projet (un point d'une
+   couche GIS) — pour qu'un même objet se lise pareil des deux côtés. */
+.map-card {
   position: absolute; z-index: 6; width: 325px; max-width: calc(100% - 16px);
   max-height: calc(100% - 28px); overflow-y: auto;
   background: var(--paper); border: 1px solid var(--ground); border-radius: 13px;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.14);
 }
-.pmap-card-head { background: var(--sidebar); color: #fff; padding: 13px 16px; position: relative; }
-.pmap-card-close {
+.map-card-head { background: var(--sidebar); color: #fff; padding: 13px 16px; position: relative; }
+/* L'en-tête est la poignée : le corps reste sélectionnable, une fiche est
+   faite pour être lue et recopiée. touch-action coupe le défilement du
+   navigateur pendant le glissement. */
+.map-card-head--grab { cursor: move; touch-action: none; user-select: none; }
+.map-card-close {
   position: absolute; right: 10px; top: 8px; background: transparent; border: none;
   color: var(--subtle); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px;
 }
-.pmap-card-close:hover { color: #fff; }
-.pmap-card-code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; font-weight: 800; color: var(--green); letter-spacing: 0.6px; padding-right: 20px; }
-.pmap-card-name { font-size: 13.5px; font-weight: 800; margin-top: 3px; line-height: 1.3; padding-right: 18px; }
-.pmap-card-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-.pmap-card-chip { font-size: 9.5px; font-weight: 700; border-radius: 12px; padding: 2px 8px; background: #3d3d3d; color: #e6e6e3; }
-.pmap-card-body { padding: 10px 16px; }
-.pmap-row { display: flex; align-items: baseline; gap: 9px; font-size: 11.5px; padding: 6px 0; border-bottom: 1px dashed var(--rule); }
-.pmap-row:last-child { border-bottom: none; }
-.pmap-row-k { width: 96px; flex-shrink: 0; color: var(--muted); font-weight: 600; }
-.pmap-row-v { font-weight: 700; color: var(--ink); min-width: 0; white-space: nowrap; }
+.map-card-close:hover { color: #fff; }
+.map-card-code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; font-weight: 800; color: var(--green); letter-spacing: 0.6px; padding-right: 20px; }
+.map-card-name { font-size: 13.5px; font-weight: 800; margin-top: 3px; line-height: 1.3; padding-right: 18px; }
+.map-card-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.map-card-chip { font-size: 9.5px; font-weight: 700; border-radius: 12px; padding: 2px 8px; background: #3d3d3d; color: #e6e6e3; }
+.map-card-body { padding: 10px 16px; }
+.map-card-row { display: flex; align-items: baseline; gap: 9px; font-size: 11.5px; padding: 6px 0; border-bottom: 1px dashed var(--rule); }
+.map-card-row:last-child { border-bottom: none; }
+.map-card-row-k { width: 96px; flex-shrink: 0; color: var(--muted); font-weight: 600; }
+.map-card-row-v { font-weight: 700; color: var(--ink); min-width: 0; white-space: nowrap; }
+/* Les attributs d'un fichier GIS sont du texte libre : ils passent à la ligne
+   là où les valeurs du portefeuille tiennent sur une. */
+.map-card-row--wrap .map-card-row-v { white-space: normal; word-break: break-word; }
+.map-card-row--wrap .map-card-row-k { width: 104px; }
 .pmap-track { flex: 1; min-width: 40px; height: 6px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
 .pmap-track i { display: block; height: 100%; border-radius: 5px; background: var(--lime); }
-.pmap-card-foot { display: flex; gap: 8px; padding: 0 16px 14px; }
+.map-card-foot { display: flex; gap: 8px; padding: 0 16px 14px; }
 .pmap-btn {
   flex: 1; border-radius: 8px; padding: 8px 13px; font: inherit; font-weight: 700; font-size: 12px; cursor: pointer;
   background: var(--paper); border: 1.3px solid var(--rule); color: var(--ink);
