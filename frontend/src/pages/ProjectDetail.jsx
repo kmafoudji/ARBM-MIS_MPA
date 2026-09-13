@@ -14,6 +14,12 @@ import Logframe from "../pages/Logframe.jsx";
 import Workplan from "../pages/Workplan.jsx";
 import Toast from "../components/Toast";
 import ProjectBanner from "../components/ProjectBanner.jsx";
+import {
+  CockpitStrip,
+  ExecutionRow,
+  StartupChain,
+  SummaryCards,
+} from "../components/ProjectCockpit.jsx";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
@@ -863,6 +869,10 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
       {GLOBAL_BANNER}
 
       {activeTab === "overview" && (<>
+      {/* ── The cockpit: five read-only tiles, then the start-up chain.
+           Both read one aggregation endpoint; neither owns any data ── */}
+      <CockpitStrip projectId={projectId} />
+
       {/* ── Setup progress, one line — the sections themselves live in the
            project sidebar, so the old per-section grid is gone ── */}
       {(() => {
@@ -888,6 +898,8 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           </div>
         );
       })()}
+
+      <StartupChain projectId={projectId} />
 
       <div className="grid grid-2 mb-3">
         <div className="card card-flush">
@@ -1138,6 +1150,11 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
           </div>
         </div>
       </div>
+
+      {/* ── Where the project stands, then one summary card per module that
+           has something to say. Each links to the screen that owns it ── */}
+      <ExecutionRow projectId={projectId} />
+      <SummaryCards projectId={projectId} onOpenTab={onTabChange} locks={TAB_LOCKS} />
 
       </>)}
 
