@@ -5,6 +5,7 @@ from apps.results.urls import project_urlpatterns as results_project_urls
 from apps.workplan.urls import workplan_project_urlpatterns
 from apps.results.views import TheoryOfChangeView, ToCNodeDetailView, ToCNodeListView
 
+from .overview import ProjectOverviewSummaryView
 from .views import (
     ComponentAllocationView,
     ProjectBasicUpdateView,
@@ -47,6 +48,8 @@ urlpatterns = [
          FinancingSourceDetailView.as_view(), name="project-envelope-source-detail"),
     path("projects/<int:pk>/envelope/allocations/",
          ComponentAllocationView.as_view(), name="project-envelope-allocations"),
+    path("projects/<int:pk>/overview-summary/",
+         ProjectOverviewSummaryView.as_view(), name="project-overview-summary"),
     path("projects/<int:pk>/pad/", ProjectPadView.as_view(), name="project-pad"),
     path("projects/<int:pk>/reporting-config/",
          ProjectReportingConfigView.as_view(), name="project-reporting-config"),
