@@ -2592,3 +2592,149 @@ input, select, textarea { font: inherit; color: inherit; }
 
 .fund-banner { margin-top: 14px; padding: 12px 18px; background: var(--ink); border-radius: var(--r-3); color: #fff; font-size: 12px; line-height: 1.5; }
 .fund-banner b { color: var(--orange); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Project overview cockpit (components/ProjectCockpit.jsx)
+   Read-only figures at the head of the Overview. Every fill names an
+   attribute of the data: the status hues for delivery against the clock,
+   the DQ dimension hues, and a dashed surface for anything the schema
+   cannot answer — the same "Not tracked" device as the Tier III dashboard.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.ov-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: var(--s-4); }
+@media (max-width: 1100px) { .ov-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px)  { .ov-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.ov-tile { display: flex; flex-direction: column; }
+.ov-tile-value { font-size: 22px; }
+/* The top rule of .kpi takes the tone of the tile, so the colour says why
+   the tile is worth looking at rather than decorating every tile alike. */
+.ov-tone-warn::before { background: var(--orange); }
+.ov-tone-bad::before  { background: var(--rose); }
+
+.ov-tile.off { background: var(--surface-2); border-style: dashed; }
+.ov-tile.off::before { background: var(--rule); }
+.ov-untracked {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.ov-reason { margin-top: 4px; font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+
+/* ── Start-up chain ──────────────────────────────────────────────────── */
+
+.ov-chain {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+}
+.ov-chain-head { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; }
+.ov-chain-title { font-size: 12px; font-weight: 700; color: var(--ink); }
+.ov-chain-sub { font-size: 11px; color: var(--muted); }
+.ov-chain-track { display: flex; align-items: flex-end; margin-top: var(--s-3); }
+.ov-chain-cell { display: flex; align-items: flex-end; flex: 1; min-width: 0; }
+.ov-chain-cell:last-child { flex: 0 0 auto; }
+.ov-chain-step { display: flex; flex-direction: column; white-space: nowrap; }
+.ov-chain-label { font-size: 11px; font-weight: 700; color: var(--ink); }
+.ov-chain-date { font-size: 10.5px; color: var(--muted); }
+.ov-chain-step.off .ov-chain-label,
+.ov-chain-step.off .ov-chain-date { color: var(--subtle); }
+.ov-chain-gap {
+  flex: 1;
+  min-width: 24px;
+  margin: 0 var(--s-2) 5px;
+  padding-bottom: 3px;
+  border-bottom: 1px dashed var(--rule);
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .ov-chain-track { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+  .ov-chain-cell { flex-direction: column; align-items: flex-start; width: 100%; }
+  .ov-chain-gap { border-bottom: none; border-left: 1px dashed var(--rule); margin: 0 0 0 var(--s-2); padding: 2px 0 2px var(--s-2); text-align: left; }
+}
+
+.ov-note { margin: var(--s-2) 0 0; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+
+/* ── Execution row ───────────────────────────────────────────────────── */
+
+.ov-section-head { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2); }
+.ov-eyebrow {
+  background: var(--sidebar);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-1);
+}
+.ov-section-title { font-family: var(--font-display); font-size: 15px; font-weight: 800; color: var(--ink); margin: 0; }
+
+.ov-exec {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 1.4fr;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+@media (max-width: 1100px) { .ov-exec { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px)  { .ov-exec { grid-template-columns: 1fr; } }
+
+.ov-meter { height: 5px; border-radius: 3px; background: var(--rule); overflow: hidden; margin-top: var(--s-2); }
+.ov-meter-fill { height: 100%; border-radius: 3px; }
+
+.ov-narrative {
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--orange);
+  border-radius: var(--r-3);
+  padding: var(--s-3) var(--s-4);
+}
+.ov-narrative-title { margin: 0 0 5px; font-size: 12px; font-weight: 800; color: var(--ink); }
+.ov-narrative-text { margin: 0; font-size: 11px; color: var(--ink-soft); line-height: 1.5; }
+.ov-narrative-caveat { margin-top: 7px; color: var(--muted); }
+
+/* ── Summary cards ───────────────────────────────────────────────────── */
+
+.ov-summaries { margin-bottom: var(--s-4); }
+.ov-summary { display: flex; flex-direction: column; }
+.ov-summary .card-title { margin-bottom: var(--s-2); }
+.ov-summary-text { margin: 0 0 var(--s-2); font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+.ov-empty { margin: 0 0 var(--s-2); font-size: 12px; color: var(--muted); }
+.ov-flag { color: var(--rose-darker); font-weight: 700; }
+
+.ov-seg { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: var(--s-2); background: var(--rule); }
+.ov-seg span { display: block; }
+.ov-legend { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); font-size: 11px; color: var(--ink-soft); margin-bottom: var(--s-2); }
+.ov-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+
+.ov-list { border-top: 1px solid var(--rule); padding-top: var(--s-2); margin-bottom: var(--s-2); }
+.ov-list-label { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.ov-list-row { display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11.5px; color: var(--ink-soft); margin-bottom: 3px; }
+
+.ov-dim { margin-bottom: var(--s-2); }
+.ov-dim-head { display: flex; justify-content: space-between; gap: var(--s-2); font-size: 11px; color: var(--ink-soft); }
+.ov-dim-head b { color: var(--ink); }
+
+.ov-view-link {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: var(--s-2) 0 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--lime-darker);
+}
+.ov-view-link:hover { text-decoration: underline; }
+.ov-view-link.off { color: var(--subtle); font-weight: 600; cursor: default; }
+.ov-view-link.off:hover { text-decoration: none; }
