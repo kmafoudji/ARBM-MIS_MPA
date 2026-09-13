@@ -119,7 +119,7 @@ function clusterElement(leaves) {
   return el;
 }
 
-function ProjectCard({ project, point, onOpen, onZoom, onClose, onGrab }) {
+function ProjectCard({ project, point, onOpen, onClose, onGrab }) {
   const country = (project.lead_country_name || "").toUpperCase();
   const chips = [project.lifecycle_stage_display, project.primary_sector_name, project.hub_name].filter(Boolean);
   const millions = toMillions(project.envelope_total);
@@ -174,10 +174,10 @@ function ProjectCard({ project, point, onOpen, onZoom, onClose, onGrab }) {
         </div>
       </div>
       <div className="map-card-foot">
+        {/* "Zoom to area" withheld for now (developer, 13 Sep). The point's
+            bbox still travels in the payload, so restoring the button is
+            reverting this commit. */}
         <button type="button" className="pmap-btn pmap-btn-primary" onClick={onOpen}>Open project →</button>
-        {point?.properties.bbox && (
-          <button type="button" className="pmap-btn" onClick={onZoom}>Zoom to area</button>
-        )}
       </div>
     </>
   );
@@ -529,12 +529,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
     startCardDrag(event, cardPos, pos => { setCardMoved(true); setCardPos(pos); });
   }
 
-  function zoomTo(id) {
-    const bbox = pointById.get(id)?.properties.bbox;
-    if (!bbox || !mapInst.current) return;
-    mapInst.current.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 60, maxZoom: 8, duration: 900 });
-  }
-
   return (
     <div ref={wrapRef} className={`pmap${compact ? " pmap-compact" : ""}`}
       style={compact ? { height: 320, display: "flex" } : undefined}>
@@ -579,7 +573,6 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
               project={selectedProject}
               point={pointById.get(selectedProject.id)}
               onOpen={() => onProjectClick?.(selectedProject.id)}
-              onZoom={() => zoomTo(selectedProject.id)}
               onClose={() => setSelected(null)}
               onGrab={onCardPointerDown}
             />
