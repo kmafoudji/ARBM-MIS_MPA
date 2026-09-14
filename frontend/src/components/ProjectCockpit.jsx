@@ -40,7 +40,7 @@ const DELIVERY_BANDS = [
   { within: -Infinity, token: "var(--rose)", label: "well behind the clock" },
 ];
 
-function deliveryBand(progressPct, elapsedPct) {
+export function deliveryBand(progressPct, elapsedPct) {
   if (progressPct == null || elapsedPct == null) return null;
   const gap = progressPct - elapsedPct;
   const band = DELIVERY_BANDS.find((b) => gap >= b.within) ?? DELIVERY_BANDS.at(-1);
