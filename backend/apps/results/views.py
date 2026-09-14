@@ -1064,7 +1064,7 @@ class PortfolioAggregationView(APIView):
             ).distinct()
         if donor_id:
             projects = projects.filter(
-                financial_envelope__sources__donor_id=donor_id
+                financial_envelope__financing_sources__donor_id=donor_id
             ).distinct()
 
         project_ids = list(projects.values_list("id", flat=True))
