@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import RefreshBar from "../components/RefreshBar.jsx";
+import { Bar, Card, Donut, Empty } from "../components/Charts.jsx";
 
 /* Tier III — how the Fund itself is performing, as opposed to the projects in
    it. Annex L lists 34 operational indicators in five sections; none of them
@@ -30,10 +31,6 @@ const SECTION_COLOR = {
   violet: "var(--violet)",
 };
 
-/* Tints for the slices of one donut: the section's hue, then neutrals. Ordered
-   so the largest slice carries the section colour. */
-const SLICE_TINTS = ["var(--ink-soft)", "var(--muted)", "var(--subtle)", "var(--rule)"];
-
 const VIEWS = [
   { key: "a", letter: "A", name: "Scorecard",     hint: "every indicator, one tile" },
   { key: "b", letter: "B", name: "Analytics",     hint: "the splits behind the figures" },
@@ -61,72 +58,6 @@ function byCode(sections) {
 }
 
 /* ── shared pieces ──────────────────────────────────────────────────────── */
-
-function Card({ title, sub, children }) {
-  return (
-    <div className="card">
-      <div className="card-header">
-        <div className="card-title">{title}</div>
-        {sub && <div className="card-sub">{sub}</div>}
-      </div>
-      <div className="card-body">{children}</div>
-    </div>
-  );
-}
-
-function Empty({ children }) {
-  return <div className="fund-col-blank">{children}</div>;
-}
-
-/* One labelled bar. `max` is the scale, so a row can be read against its
-   siblings rather than against its own width. */
-function Bar({ label, value, display, max, color, suffix = "", className = "" }) {
-  const width = max > 0 && value != null ? Math.max(2, (value / max) * 100) : 0;
-  return (
-    <div className={`fund-bar-row ${className}`}>
-      <span className="fund-bar-label">{label}</span>
-      <div className="fund-bar-track">
-        {value == null ? (
-          <span className="fund-bar-empty">not tracked</span>
-        ) : (
-          <div className="fund-bar-fill" style={{ width: `${width}%`, background: color }}>
-            {width > 18 ? display : ""}
-          </div>
-        )}
-      </div>
-      <span className="fund-bar-value">{value == null ? "—" : `${display}${suffix}`}</span>
-    </div>
-  );
-}
-
-/* A donut, drawn as a conic gradient — this app carries no charting library,
-   and the portfolio map already builds its cluster rings the same way. */
-function Donut({ rows, color, format = (v) => v }) {
-  if (!rows.length) return <Empty>Nothing recorded yet.</Empty>;
-
-  const tints = [color, ...SLICE_TINTS];
-  // Each slice starts where the previous ones ended, so the stops accumulate.
-  const stops = rows.reduce((acc, row, i) => {
-    const start = acc.at ? acc.at : 0;
-    const end = start + (row.share || 0);
-    return { at: end, list: [...acc.list, `${tints[i % tints.length]} ${start}% ${end}%`] };
-  }, { at: 0, list: [] }).list;
-
-  return (
-    <div className="fund-donut-wrap">
-      <div className="fund-donut" style={{ background: `conic-gradient(${stops.join(",")})` }} />
-      <div className="fund-legend">
-        {rows.map((row, i) => (
-          <div key={row.label} className="fund-legend-row">
-            <span className="fund-legend-dot" style={{ background: tints[i % tints.length] }} />
-            <span className="fund-legend-label" title={row.label}>{row.label}</span>
-            <span className="fund-legend-value">{format(row.value)} · {row.share}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* A figure and its label, or a dash when the indicator has no source. */
 function Kv({ indicator, label }) {
