@@ -1811,7 +1811,9 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             Workplan — Activity & Milestone Tracking
           </h2>
           <div className="card-subtitle">
-            Component → Sub-Component → Activity · Theory of Change links · Milestones & Delay tracking
+            One activity record, read six ways — the plan, the milestones, the
+            structure, the Gantt, the delays, and the two views whose source the
+            system does not hold.
           </div>
         </div>
         <div style={{ padding: "16px 20px" }}>

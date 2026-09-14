@@ -2844,3 +2844,205 @@ input, select, textarea { font: inherit; color: inherit; }
 .exec-stage-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-weight: 600; }
 .exec-stage-pill i { width: 6px; height: 6px; border-radius: 50%; }
 .exec-flags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Workplan tabs (components/workplan/*)
+   Module 3 read as the client's workplan pack reads it: the same activity
+   record seen as a multi-annual quarter grid, as a milestone chain, and as
+   a delay log. Fills name a property of the record, never a decoration —
+   the current plan is blue, what the baseline alone covered is a neutral
+   band, delivery is green, overdue is coral. A view whose source does not
+   exist keeps its place on the bar and says so, dashed, as the Tier III
+   dashboard and the Overview cockpit already do.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── The tab bar ─────────────────────────────────────────────────────── */
+
+.wp-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--s-3);
+  overflow-x: auto;
+}
+.wp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: none;
+  background: none;
+  border-bottom: 2.5px solid transparent;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.wp-tab:hover { color: var(--ink-soft); }
+.wp-tab.on { color: var(--ink); border-bottom-color: var(--lime); }
+.wp-tab.off { color: var(--subtle); }
+/* The badge names where the view's data comes from, so a reader can tell a
+   built view from a declared gap before clicking it. */
+.wp-src {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border-radius: 9px;
+  padding: 2px 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.wp-tab.on .wp-src { background: var(--lime-pale); color: var(--lime-darker); }
+.wp-tab.off .wp-src { background: var(--surface-2); color: var(--subtle); border: 1px dashed var(--rule); }
+
+/* ── Legend and view header ──────────────────────────────────────────── */
+
+.wp-bar { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; margin-bottom: var(--s-2); }
+.wp-pad {
+  border-radius: var(--r-2);
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--lime-pale);
+  color: var(--lime-darker);
+}
+.wp-pad.blue { background: var(--sec-climate-pale); color: var(--blue-darker); }
+.wp-pad.quiet { background: var(--surface-2); color: var(--muted); }
+.wp-legend { display: flex; gap: var(--s-2); flex-wrap: wrap; font-size: 10.5px; color: var(--ink-soft); margin-left: auto; }
+.wp-legend i { display: inline-block; width: 14px; height: 8px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+
+/* ── Multi-annual quarter grid ───────────────────────────────────────── */
+
+.wp-grid-scroll { overflow-x: auto; }
+.wp-grid { min-width: 720px; }
+.wp-qhead,
+.wp-prow {
+  display: grid;
+  grid-template-columns: minmax(220px, 2.6fr) repeat(var(--wp-cols), minmax(0, 1fr));
+  gap: 2px;
+  align-items: center;
+}
+.wp-qhead {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding: 0 6px 4px;
+}
+.wp-yr { text-align: center; border-bottom: 1.5px solid var(--rule); padding-bottom: 2px; }
+.wp-prow { padding: 5px 6px; border-bottom: 1px solid var(--rule-soft); text-align: left; width: 100%; background: none; border-left: none; border-right: none; border-top: none; }
+.wp-prow:hover { background: var(--lime-pale); }
+.wp-prow-nm { font-size: 11.5px; font-weight: 600; padding-right: 8px; line-height: 1.25; color: var(--ink); }
+.wp-prow-nm span { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--muted); font-weight: 700; }
+
+.wp-q { height: 14px; border-radius: 3px; background: var(--surface-2); position: relative; }
+/* What the frozen baseline covered and the current plan no longer does. */
+.wp-q.base { background: var(--ground); }
+.wp-q.plan { background: var(--sec-climate-bg); }
+.wp-q.done { background: var(--lime); }
+.wp-q.late { background: var(--sec-health); }
+.wp-q.now::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--sec-health);
+}
+
+/* ── Results-chain headers ───────────────────────────────────────────── */
+
+.wp-outcome {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--r-2);
+  padding: 8px 13px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: 12px;
+  font-weight: 800;
+  margin: var(--s-2) 0 6px;
+}
+.wp-outcome .wp-cid { font-family: var(--font-mono); color: var(--lime); font-size: 10.5px; }
+.wp-outcome .wp-meta { margin-left: auto; font-size: 10.5px; color: var(--subtle); font-weight: 600; }
+.wp-outcome.unlinked { background: var(--ink-soft); }
+.wp-outcome.unlinked .wp-cid { color: var(--subtle); }
+
+.wp-output { display: flex; align-items: center; gap: var(--s-1); font-size: 11px; font-weight: 700; color: var(--ink-soft); padding: 6px 6px 4px; flex-wrap: wrap; }
+.wp-output .wp-oid { font-family: var(--font-mono); color: var(--blue-darker); font-size: 10px; }
+.wp-output .wp-ind { margin-left: auto; font-size: 9.5px; font-weight: 800; color: var(--violet-darker); background: var(--sec-women-pale); border-radius: 9px; padding: 2px 8px; }
+.wp-output .wp-ind.off { color: var(--muted); background: var(--surface-2); border: 1px dashed var(--rule); }
+
+.wp-foot { font-size: 9.5px; color: var(--muted); padding: 6px; display: flex; gap: var(--s-3); flex-wrap: wrap; }
+
+/* ── Activities, read as milestone chains ────────────────────────────── */
+
+.wp-act {
+  width: 100%;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 10px 13px;
+  margin-bottom: var(--s-1);
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(160px, 220px) minmax(120px, 1fr) auto;
+  gap: var(--s-3);
+  align-items: center;
+}
+@media (max-width: 1100px) { .wp-act { grid-template-columns: minmax(0, 1fr); } }
+.wp-act:hover { box-shadow: var(--shadow-hover); }
+.wp-act-nm b { font-size: 12.5px; display: block; color: var(--ink); }
+.wp-act-meta { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.wp-act-meta .wp-lk { font-family: var(--font-mono); font-weight: 800; color: var(--violet-darker); }
+
+.wp-mst { display: flex; align-items: center; }
+.wp-mst-n { width: 11px; height: 11px; border-radius: 50%; border: 2.2px solid var(--subtle); background: var(--paper); flex-shrink: 0; }
+.wp-mst-n.achieved { background: var(--lime); border-color: var(--lime); }
+.wp-mst-n.missed { background: var(--sec-health); border-color: var(--sec-health); }
+.wp-mst-n.forecasted { background: var(--sec-climate-pale); border-color: var(--blue); }
+/* A gate milestone is the one that can hold the activity below 100% (RG-5.2),
+   so it is the one shape that differs. */
+.wp-mst-n.gate { border-radius: 2px; transform: rotate(45deg); }
+.wp-mst-l { flex: 1; height: 2px; background: var(--rule); min-width: 6px; }
+.wp-mst-l.done { background: var(--lime); }
+.wp-mst-lab { font-size: 9px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+/* The three values an activity carries, stacked so a shift is visible as a
+   step rather than read off two dates. */
+.wp-tv { position: relative; height: 24px; }
+.wp-tv-base { position: absolute; top: 0; height: 6px; background: var(--subtle); border-radius: 4px; }
+.wp-tv-cur { position: absolute; top: 9px; height: 6px; border: 1.5px solid var(--blue); border-radius: 4px; background: var(--sec-climate-pale); }
+.wp-tv-act { position: absolute; top: 18px; height: 6px; background: var(--lime); border-radius: 4px; }
+.wp-tv-act.late { background: var(--sec-health); }
+.wp-tv-legend { font-size: 9px; color: var(--subtle); margin-top: 2px; }
+
+.wp-act-right { text-align: right; min-width: 120px; }
+.wp-act-pct { font-size: 13px; font-weight: 800; color: var(--ink); margin-top: 4px; }
+.wp-act-ev { font-size: 9.5px; color: var(--muted); }
+
+/* ── A view whose source does not exist ──────────────────────────────── */
+
+.wp-gap {
+  background: var(--surface-2);
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-3);
+  padding: var(--s-4);
+  text-align: center;
+}
+.wp-gap-badge { font-size: 12px; font-weight: 700; color: var(--muted); }
+.wp-gap h4 { font-size: 14px; font-weight: 800; color: var(--ink-soft); margin: var(--s-1) 0 var(--s-0); }
+.wp-gap p { font-size: 11.5px; color: var(--muted); line-height: 1.5; max-width: 620px; margin: 0 auto; }
+.wp-gap ul { list-style: none; padding: 0; margin: var(--s-3) auto 0; max-width: 620px; text-align: left; }
+.wp-gap li { font-size: 11px; color: var(--muted); padding: 5px 0 5px 16px; border-top: 1px solid var(--rule); position: relative; }
+.wp-gap li::before { content: "—"; position: absolute; left: 0; color: var(--subtle); }
+
+/* ── Delay log ───────────────────────────────────────────────────────── */
+
+.wp-delays td { font-size: 11.5px; vertical-align: top; }
+.wp-delays .num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wp-delays .wp-just { max-width: 340px; line-height: 1.4; color: var(--ink-soft); }
+.wp-var-bad { color: var(--rose-darker); font-weight: 700; }
+.wp-var-warn { color: var(--orange-darker); font-weight: 700; }

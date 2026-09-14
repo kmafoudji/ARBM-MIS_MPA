@@ -81,7 +81,7 @@ class WorkplanOutputNodesView(APIView):
         nodes = ToCNode.objects.filter(
             toc__project=project,
             chain_level="output",
-        ).select_related("toc").order_by("code")
+        ).select_related("toc", "parent", "logframe_row__indicator").order_by("code")
         return Response(OutputNodeSerializer(nodes, many=True).data)
 
 
@@ -240,7 +240,10 @@ class ActivityListView(APIView):
             sub_component__component__project=project,
             is_active=True,
         ).select_related(
-            "sub_component__component", "output_node__toc"
+            "sub_component__component", "output_node__toc", "output_node__parent",
+            "output_node__logframe_row__indicator"
+        ).prefetch_related(
+            "milestones"
         ).order_by("sub_component__component__order", "sub_component__order", "order", "code")
 
         # Filtres optionnels
@@ -581,6 +584,35 @@ class DelayLogListView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class WorkplanDelayLogListView(APIView):
+    """
+    GET /api/projects/{pk}/workplan/delays/
+    Journal des retards de tout le projet — lecture seule.
+
+    DelayLogListView ne sert qu'une activité à la fois ; l'onglet Retards a
+    besoin de la vue projet, triée du retard le plus récent au plus ancien.
+    """
+    permission_classes = [IsAuthenticated, ProjectInScope]
+
+    def get(self, request, pk):
+        project = get_project_or_404(pk)
+        qs = DelayLog.objects.filter(
+            activity__sub_component__component__project=project,
+            activity__is_active=True,
+        ).select_related("activity", "approved_by", "recorded_by").order_by(
+            "-revised_end", "-created_at"
+        )
+
+        approval = request.query_params.get("approval_status")
+        if approval:
+            qs = qs.filter(approval_status=approval)
+        category = request.query_params.get("delay_category")
+        if category:
+            qs = qs.filter(delay_category=category)
+
+        return Response(DelayLogSerializer(qs, many=True).data)
+
+
 class DelayLogApprovalView(APIView):
     """
     POST /api/projects/{pk}/workplan/activities/{a_pk}/delays/{d_pk}/approve/
@@ -660,6 +692,8 @@ class WorkplanView(APIView):
         ).prefetch_related(
             "sub_components__activities__milestones",
             "sub_components__activities__output_node__toc",
+            "sub_components__activities__output_node__parent",
+            "sub_components__activities__output_node__logframe_row__indicator",
         ).order_by("order", "code")
         return Response(WorkplanComponentWithChildrenSerializer(components, many=True).data)
 
