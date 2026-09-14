@@ -15,6 +15,10 @@ import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import GanttChart from "../components/GanttChart";
+import MultiAnnualPlan from "../components/workplan/MultiAnnualPlan";
+import ActivityMilestones from "../components/workplan/ActivityMilestones";
+import DelayLogTable from "../components/workplan/DelayLogTable";
+import NotTrackedView from "../components/workplan/NotTrackedView";
 
 // Strip HTML tags for plain text display (e.g. in <option> elements)
 function stripHtml(html) {
@@ -62,6 +66,20 @@ const ACTIVITY_STATUSES = [
   { value: "completed",    label: "Completed" },
   { value: "cancelled",    label: "Cancelled" },
 ];
+
+// SF-6 alert tones. Hoisted out of the render: rebuilding the map on every
+// pass cost a fresh object per alert for a table that never changes.
+const ALERT_COLORS = {
+  escalation_l3:    { bg: "var(--sec-health-pale)", border: "var(--rose-soft)", text: "var(--rose)", icon: "alert-triangle" },
+  escalation_l2:    { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "alert-triangle" },
+  escalation_l1:    { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "alert-triangle" },
+  milestone_missed: { bg: "var(--sec-health-pale)", border: "var(--rose-soft)", text: "var(--rose)", icon: "circle-x" },
+  activity_overdue: { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "clock" },
+  milestone_t0:     { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "clock" },
+  milestone_t7:     { bg: "var(--sec-climate-pale)", border: "var(--blue-soft)", text: "var(--blue)", icon: "info" },
+  milestone_t30:    { bg: "var(--surface)", border: "var(--rule)", text: "var(--muted)", icon: "info" },
+  delay_pending:    { bg: "var(--sec-women-pale)", border: "var(--violet-soft)", text: "var(--violet)", icon: "clock" },
+};
 
 const MILESTONE_CATEGORIES = [
   { value: "contractual",  label: "Contractual" },
@@ -965,12 +983,27 @@ function ComponentBlock({ projectId, component, outputNodes, users, onActivityCl
 
 // ─── Workplan Main Page ───────────────────────────────────────────────────────
 
+/**
+ * The tabs of the client's workplan pack. `src` names where a view's data
+ * comes from, so a built view is told apart from a declared gap on the bar
+ * itself; `off` marks a view whose source the system does not record.
+ */
+const TABS = [
+  { key: "plan",       label: "Multi-annual plan", src: "QUARTERS" },
+  { key: "activities", label: "Activities",        src: "MILESTONES" },
+  { key: "structure",  label: "Structure",         src: "EDIT" },
+  { key: "gantt",      label: "Gantt",             src: "SF-3" },
+  { key: "delays",     label: "Delays",            src: "SF-7" },
+  { key: "awpb",       label: "Annual plan · AWPB", src: "NO SOURCE", off: true },
+  { key: "risks",      label: "Actions & risks",   src: "NO SOURCE", off: true },
+];
+
 export default function Workplan({ projectId, canEdit = true }) {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
   const [toast, setToast] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // "list" | "gantt"
+  const [tab, setTab] = useState("plan");
 
   const { data: components = [], isLoading } = useQuery({
     queryKey: ["workplan", projectId],
@@ -1011,6 +1044,7 @@ export default function Workplan({ projectId, canEdit = true }) {
   function handleRefresh() {
     qc.invalidateQueries(["workplan", projectId]);
     qc.invalidateQueries(["workplan-summary", projectId]);
+    qc.invalidateQueries(["workplan-delays", projectId]);
   }
 
   if (isLoading) {
@@ -1021,6 +1055,8 @@ export default function Workplan({ projectId, canEdit = true }) {
       </div>
     );
   }
+
+  const empty = components.length === 0;
 
   return (
     <div style={{ position: "relative" }}>
@@ -1054,17 +1090,6 @@ export default function Workplan({ projectId, canEdit = true }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {alerts.slice(0, 5).map(alert => {
-              const ALERT_COLORS = {
-                escalation_l3:    { bg: "var(--sec-health-pale)", border: "var(--rose-soft)", text: "var(--rose)", icon: "alert-triangle" },
-                escalation_l2:    { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "alert-triangle" },
-                escalation_l1:    { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "alert-triangle" },
-                milestone_missed: { bg: "var(--sec-health-pale)", border: "var(--rose-soft)", text: "var(--rose)", icon: "circle-x" },
-                activity_overdue: { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "clock" },
-                milestone_t0:     { bg: "var(--sec-infra-pale)", border: "var(--orange-soft)", text: "var(--orange)", icon: "clock" },
-                milestone_t7:     { bg: "var(--sec-climate-pale)", border: "var(--blue-soft)", text: "var(--blue)", icon: "info" },
-                milestone_t30:    { bg: "var(--surface)", border: "var(--rule)", text: "var(--muted)", icon: "info" },
-                delay_pending:    { bg: "var(--sec-women-pale)", border: "var(--violet-soft)", text: "var(--violet)", icon: "clock" },
-              };
               const cfg = ALERT_COLORS[alert.alert_type] || ALERT_COLORS.activity_overdue;
               return (
                 <div key={alert.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px", borderRadius: 8, background: cfg.bg, border: `1px solid ${cfg.border}` }}>
@@ -1092,70 +1117,109 @@ export default function Workplan({ projectId, canEdit = true }) {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Workplan — Components & Activities</h3>
-          <p style={{ fontSize: 12, color: "var(--subtle)", margin: "4px 0 0" }}>Component → Sub-Component → Activity · Theory of Change links · Milestones & Delay tracking</p>
-        </div>
-        {canEdit && (
-          <button className="btn btn-primary" onClick={() => setModal(true)}>
-            <Icon name="plus" size={14} /> Add Component
+      {/* Tab bar — the same record, read six ways */}
+      <div className="wp-tabs">
+        {TABS.map(t => (
+          <button key={t.key} type="button"
+            className={`wp-tab${tab === t.key ? " on" : ""}${t.off ? " off" : ""}`}
+            onClick={() => setTab(t.key)}>
+            {t.label} <span className="wp-src">{t.src}</span>
           </button>
-        )}
-        {/* View toggle */}
-        <div style={{ display: "flex", border: "1px solid var(--rule)", borderRadius: 8, overflow: "hidden", marginLeft: 4 }}>
-          <button onClick={() => setViewMode("list")} style={{
-            padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 6,
-            background: viewMode === "list" ? "var(--ink)" : "var(--paper)",
-            color: viewMode === "list" ? "var(--paper)" : "var(--muted)",
-          }}>
-            <Icon name="list" size={13} /> List
-          </button>
-          <button onClick={() => setViewMode("gantt")} style={{
-            padding: "6px 12px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 6,
-            background: viewMode === "gantt" ? "var(--ink)" : "var(--paper)",
-            color: viewMode === "gantt" ? "var(--paper)" : "var(--muted)",
-            borderLeft: "1px solid var(--rule)",
-          }}>
-            <Icon name="bar-chart-2" size={13} /> Gantt
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* Components — List view */}
-      {viewMode === "list" && (
+      {empty && tab !== "structure" ? (
+        <div className="wp-gap">
+          <div className="wp-gap-badge">Empty workplan</div>
+          <p>
+            This project has no workplan component yet, so there is nothing to read as
+            a plan, a milestone chain or a delay log. Start from the Structure tab.
+          </p>
+        </div>
+      ) : (
         <>
-          {components.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed var(--rule)", borderRadius: 12, color: "var(--subtle)" }}>
-              <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>Empty Workplan</div>
-              <div style={{ fontSize: 13, marginBottom: 16 }}>Start by creating the first component of this project, aligned with the PAD structure.</div>
-              {canEdit && (
-                <button className="btn btn-primary" onClick={() => setModal(true)}>
-                  <Icon name="plus" size={14} /> Create First Component
-                </button>
+          {tab === "plan" && (
+            <MultiAnnualPlan components={components} onActivityClick={setSelectedActivity} />
+          )}
+
+          {tab === "activities" && (
+            <ActivityMilestones components={components} onActivityClick={setSelectedActivity} />
+          )}
+
+          {tab === "structure" && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Components & Activities</h3>
+                  <p style={{ fontSize: 12, color: "var(--subtle)", margin: "4px 0 0" }}>Component → Sub-Component → Activity · Theory of Change links · Milestones & Delay tracking</p>
+                </div>
+                {canEdit && (
+                  <button className="btn btn-primary" onClick={() => setModal(true)}>
+                    <Icon name="plus" size={14} /> Add Component
+                  </button>
+                )}
+              </div>
+
+              {empty ? (
+                <div style={{ textAlign: "center", padding: "48px 24px", border: "2px dashed var(--rule)", borderRadius: 12, color: "var(--subtle)" }}>
+                  <Icon name="layout" size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>Empty Workplan</div>
+                  <div style={{ fontSize: 13, marginBottom: 16 }}>Start by creating the first component of this project, aligned with the PAD structure.</div>
+                  {canEdit && (
+                    <button className="btn btn-primary" onClick={() => setModal(true)}>
+                      <Icon name="plus" size={14} /> Create First Component
+                    </button>
+                  )}
+                </div>
+              ) : (
+                components.map(c => (
+                  <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes} users={users}
+                    onActivityClick={setSelectedActivity} onRefresh={handleRefresh} />
+                ))
               )}
+            </>
+          )}
+
+          {tab === "gantt" && (
+            <div style={{ border: "1px solid var(--rule)", borderRadius: 10, overflow: "hidden", padding: "16px" }}>
+              <GanttChart components={components} onActivityClick={setSelectedActivity} />
             </div>
-          ) : (
-            components.map(c => (
-              <ComponentBlock key={c.id} projectId={projectId} component={c} outputNodes={outputNodes} users={users}
-                onActivityClick={setSelectedActivity} onRefresh={handleRefresh} />
-            ))
+          )}
+
+          {tab === "delays" && <DelayLogTable projectId={projectId} />}
+
+          {tab === "awpb" && (
+            <NotTrackedView
+              title="Annual work plan and budget"
+              reason="The system holds one multi-annual set of dates per activity and two
+                      budget columns on it. An annual plan is a different object: a slice
+                      of the workplan for one year, endorsed and revised on its own, with
+                      the activity phased across months and its cost split by source."
+              missing={[
+                "No plan version or plan type — nothing distinguishes a PAD baseline from an AWPB or a restructuring",
+                "No monthly or quarterly phasing of an activity within a year",
+                "No activity type, physical unit or planned quantity",
+                "No budget line: Activity carries budget_planned and budget_spent, and nothing feeds the latter",
+                "Financing sources are recorded at project level, never per activity",
+              ]}
+            />
+          )}
+
+          {tab === "risks" && (
+            <NotTrackedView
+              title="Management actions and risk register"
+              reason="Delays are recorded with a reason code, and the alert engine escalates
+                      overdue activities, but neither is a risk. There is no register of
+                      agreed actions with an owner and a deadline, and no contract log."
+              missing={[
+                "No action register — an issue, the action agreed on it, its owner, its deadline and its escalation tier have nowhere to live",
+                "No risk register — Project.risk_rating is a single static classification",
+                "No procurement or contract model, so a contract risk log has no subject",
+                "Nothing is snapshotted, so no figure here would have a history to trend",
+              ]}
+            />
           )}
         </>
-      )}
-
-      {/* Gantt view */}
-      {viewMode === "gantt" && (
-        <div style={{ border: "1px solid var(--rule)", borderRadius: 10, overflow: "hidden", padding: "16px" }}>
-          <GanttChart
-            components={components}
-            onActivityClick={setSelectedActivity}
-          />
-        </div>
       )}
 
       {/* Add Component modal */}

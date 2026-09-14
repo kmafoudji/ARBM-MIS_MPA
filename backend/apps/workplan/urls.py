@@ -16,6 +16,7 @@ from .views import (
     WorkplanChoicesView,
     WorkplanComponentDetailView,
     WorkplanComponentListView,
+    WorkplanDelayLogListView,
     WorkplanOutputNodesView,
     WorkplanSubComponentDetailView,
     WorkplanSubComponentListView,
@@ -67,6 +68,8 @@ workplan_project_urlpatterns = [
          MilestoneDetailView.as_view(), name="project-workplan-activity-milestone-detail"),
 
     # SF-7 — DelayLog
+    path("workplan/delays/",
+         WorkplanDelayLogListView.as_view(), name="project-workplan-delays"),
     path("workplan/activities/<int:a_pk>/delays/",
          DelayLogListView.as_view(), name="project-workplan-activity-delays"),
     path("workplan/activities/<int:a_pk>/delays/<int:d_pk>/<str:action>/",

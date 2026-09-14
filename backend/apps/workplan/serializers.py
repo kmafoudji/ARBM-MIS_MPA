@@ -35,9 +35,22 @@ class OutputNodeSerializer(serializers.ModelSerializer):
     """Représentation légère d'un nœud Output M2, pour les dropdowns."""
     toc_id = serializers.IntegerField(source="toc.id", read_only=True)
 
+    # Le parent d'un output est son outcome : l'onglet Plan multiannuel groupe
+    # les activités par cette chaîne de résultats.
+    parent_code        = serializers.CharField(source="parent.code",        read_only=True, default=None)
+    parent_statement   = serializers.CharField(source="parent.statement",   read_only=True, default=None)
+    parent_chain_level = serializers.CharField(source="parent.chain_level", read_only=True, default=None)
+    # L'indicateur que l'output alimente, quand la ligne de cadre logique existe.
+    indicator_code     = serializers.CharField(source="logframe_row.indicator.code", read_only=True, default=None)
+    indicator_name     = serializers.CharField(source="logframe_row.indicator.name", read_only=True, default=None)
+
     class Meta:
         model  = ToCNode
-        fields = ["id", "code", "statement", "chain_level", "toc_id"]
+        fields = [
+            "id", "code", "statement", "chain_level", "toc_id",
+            "parent_code", "parent_statement", "parent_chain_level",
+            "indicator_code", "indicator_name",
+        ]
         read_only_fields = fields
 
 
@@ -96,11 +109,13 @@ class DelayLogSerializer(serializers.ModelSerializer):
         source="get_approval_status_display", read_only=True
     )
     approved_by_name = serializers.SerializerMethodField()
+    activity_code    = serializers.CharField(source="activity.code", read_only=True)
+    activity_name    = serializers.CharField(source="activity.name", read_only=True)
 
     class Meta:
         model  = DelayLog
         fields = [
-            "id", "activity",
+            "id", "activity", "activity_code", "activity_name",
             "previous_end", "revised_end", "variance_days",
             "delay_category", "delay_category_display",
             "delay_subcategory", "delay_subcategory_display",
@@ -152,6 +167,9 @@ class ActivitySerializer(serializers.ModelSerializer):
     is_overdue           = serializers.BooleanField(read_only=True)
     schedule_variance_days = serializers.IntegerField(read_only=True)
     burn_rate            = serializers.FloatField(read_only=True)
+    # Jalons imbriqués : la vue workplan les préchargeait déjà sans les servir,
+    # et le Gantt comme la vue Activités en ont besoin.
+    milestones           = MilestoneSerializer(many=True, read_only=True)
     milestones_count     = serializers.SerializerMethodField()
     pending_delays_count = serializers.SerializerMethodField()
     responsible_user_detail = serializers.SerializerMethodField()
@@ -169,7 +187,7 @@ class ActivitySerializer(serializers.ModelSerializer):
             "output_node", "output_node_detail",
             "budget_planned", "budget_spent",
             "is_overdue", "schedule_variance_days", "burn_rate",
-            "milestones_count", "pending_delays_count",
+            "milestones", "milestones_count", "pending_delays_count",
             "order", "is_active", "created_at", "updated_at",
         ]
         read_only_fields = [
