@@ -5,6 +5,7 @@ from apps.results.urls import project_urlpatterns as results_project_urls
 from apps.workplan.urls import workplan_project_urlpatterns
 from apps.results.views import TheoryOfChangeView, ToCNodeDetailView, ToCNodeListView
 
+from .executive import ExecutiveSummaryView
 from .overview import ProjectOverviewSummaryView
 from .views import (
     ComponentAllocationView,
@@ -36,9 +37,10 @@ router.register("projects", ProjectViewSet, basename="project")
 urlpatterns = [
     # Avant router.urls : la route detail du routeur (projects/<pk>/, regex
     # [^/.]+) capturerait les segments litteraux "stats" (et exigerait une
-    # authentification) et "map".
+    # authentification), "map" et "executive-summary".
     path("projects/stats/", ProjectStatsView.as_view(), name="project-stats"),
     path("projects/map/", ProjectMapPointsView.as_view(), name="project-map-points"),
+    path("projects/executive-summary/", ExecutiveSummaryView.as_view(), name="project-executive-summary"),
 ] + router.urls + [
     path("projects/<int:pk>/envelope/",
          ProjectFinancialEnvelopeView.as_view(), name="project-envelope"),
