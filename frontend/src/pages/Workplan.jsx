@@ -67,6 +67,28 @@ const ACTIVITY_STATUSES = [
   { value: "cancelled",    label: "Cancelled" },
 ];
 
+// The three tones an alert can carry, worst first. A collapsed panel shows
+// this breakdown rather than a bare count: "18 alerts" says nothing about
+// whether any of them needs the coordinator today.
+const ALERT_SEVERITY = [
+  { key: "high",   label: "escalated",  color: "var(--rose)",   types: ["escalation_l3", "escalation_l2", "milestone_missed"] },
+  { key: "medium", label: "overdue",    color: "var(--orange)", types: ["escalation_l1", "activity_overdue", "milestone_t0"] },
+  { key: "low",    label: "upcoming",   color: "var(--muted)",  types: ["milestone_t7", "milestone_t30", "delay_pending"] },
+];
+
+function summariseAlerts(alerts) {
+  const known = ALERT_SEVERITY.flatMap(level => level.types);
+  const levels = ALERT_SEVERITY.map(level => ({
+    ...level,
+    count: alerts.filter(a => level.types.includes(a.alert_type)).length,
+  }));
+  // A type the backend adds later must not vanish from the count: the
+  // breakdown has to add up to the headline figure, always.
+  const other = alerts.filter(a => !known.includes(a.alert_type)).length;
+  if (other) levels.push({ key: "other", label: "other", color: "var(--muted)", count: other });
+  return levels.filter(level => level.count > 0);
+}
+
 // SF-6 alert tones. Hoisted out of the render: rebuilding the map on every
 // pass cost a fresh object per alert for a table that never changes.
 const ALERT_COLORS = {
@@ -1004,6 +1026,9 @@ export default function Workplan({ projectId, canEdit = true }) {
   const [toast, setToast] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [tab, setTab] = useState("plan");
+  // Alerts start collapsed: a project can carry hundreds of them, and the
+  // panel used to push the whole workplan below the fold.
+  const [alertsOpen, setAlertsOpen] = useState(false);
 
   const { data: components = [], isLoading } = useQuery({
     queryKey: ["workplan", projectId],
@@ -1076,19 +1101,38 @@ export default function Workplan({ projectId, canEdit = true }) {
       {/* SF-6 — Alerts panel */}
       {alerts.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Icon name="alert-triangle" size={15} style={{ color: "var(--rose)" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: alertsOpen ? 10 : 0 }}>
+            <button type="button"
+              onClick={() => setAlertsOpen(o => !o)}
+              aria-expanded={alertsOpen}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0,
+                border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper)",
+                padding: "8px 12px", textAlign: "left",
+              }}>
+              <Icon name="alert-triangle" size={15} style={{ color: "var(--rose)", flexShrink: 0 }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--rose)" }}>
                 {alerts.length} Active Alert{alerts.length > 1 ? "s" : ""}
               </span>
-            </div>
-            <button className="btn btn-ghost" style={{ fontSize: 11 }}
+              {/* Collapsed, the breakdown is all the reader gets — make it count. */}
+              <span style={{ display: "flex", gap: 10, fontSize: 11, fontWeight: 600, color: "var(--muted)" }}>
+                {summariseAlerts(alerts).map(level => (
+                  <span key={level.key} style={{ color: level.color }}>
+                    {level.count} {level.label}
+                  </span>
+                ))}
+              </span>
+              <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: "var(--muted)", flexShrink: 0 }}>
+                {alertsOpen ? "Hide" : "Show"}
+                <Icon name={alertsOpen ? "chevron-up" : "chevron-down"} size={13} />
+              </span>
+            </button>
+            <button className="btn btn-ghost" style={{ fontSize: 11, flexShrink: 0 }}
               onClick={() => apiFetch(`/api/projects/${projectId}/workplan/alerts/run/`, { method: "POST" }).then(() => refetchAlerts())}>
               <Icon name="refresh" size={12} /> Refresh alerts
             </button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div hidden={!alertsOpen} style={{ display: alertsOpen ? "flex" : "none", flexDirection: "column", gap: 6 }}>
             {alerts.slice(0, 5).map(alert => {
               const cfg = ALERT_COLORS[alert.alert_type] || ALERT_COLORS.activity_overdue;
               return (
