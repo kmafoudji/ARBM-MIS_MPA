@@ -786,64 +786,57 @@ class ResultsSummaryView(APIView):
     permission_module  = "m1_config_access"
 
     def get(self, request, pk):
-        try:
-            from .models import ResultsData
-            project = get_object_or_404(Project, pk=pk)
-            rows    = LogframeRow.objects.filter(project=project).select_related("indicator")
-            periods = project.reporting_periods.all().order_by("period_number")
+        from .models import ResultsData
+        project = get_object_or_404(Project, pk=pk)
+        rows    = LogframeRow.objects.filter(project=project).select_related("indicator")
+        periods = project.reporting_periods.all().order_by("period_number")
 
-            rd_index = {
-                (rd.logframe_row_id, rd.reporting_period_id): rd
-                for rd in ResultsData.objects.filter(
-                    logframe_row__project=project
-                ).select_related("submitted_by", "approved_by")
-            }
+        rd_index = {
+            (rd.logframe_row_id, rd.reporting_period_id): rd
+            for rd in ResultsData.objects.filter(
+                logframe_row__project=project
+            ).select_related("submitted_by", "approved_by")
+        }
 
-            result = []
-            for row in rows:
-                periods_data = []
-                for p in periods:
-                    rd = rd_index.get((row.id, p.id))
-                    periods_data.append({
-                        "period_id":    p.id,
-                        "period_label": p.label,
-                        "period_end":   str(p.end_date),
-                        "period_status": p.status,
-                        "period_is_late": p.is_late,
-                        "data": {
-                            "id":               rd.id           if rd else None,
-                            "actual_value":     fmt_decimal(rd.actual_value) if rd else None,
-                            "narrative":        rd.narrative    if rd else "",
-                            "rag_status":       rd.rag_status   if rd else None,
-                            "achievement_rate": fmt_decimal(rd.achievement_rate) if rd and rd.achievement_rate else None,
-                            "status":           rd.status       if rd else None,
-                            "approved_at":      rd.approved_at.isoformat() if rd and rd.approved_at else None,
-                        } if rd else None,
-                    })
-                result.append({
-                    "row_id":           row.id,
-                    "indicator_code":   row.indicator.code,
-                    "indicator_name":   row.indicator.name,
-                    "indicator_unit":   row.indicator.unit,
-                    "indicator_direction": row.indicator.direction,
-                    "chain_level":      row.chain_level,
-                    "baseline_value":   fmt_decimal(row.baseline_value) if row.baseline_value else None,
-                    "baseline_year":    row.baseline_year,
-                    "periods":          periods_data,
+        result = []
+        for row in rows:
+            periods_data = []
+            for p in periods:
+                rd = rd_index.get((row.id, p.id))
+                periods_data.append({
+                    "period_id":    p.id,
+                    "period_label": p.label,
+                    "period_end":   str(p.end_date),
+                    "period_status": p.status,
+                    "period_is_late": p.is_late,
+                    "data": {
+                        "id":               rd.id           if rd else None,
+                        "actual_value":     fmt_decimal(rd.actual_value) if rd else None,
+                        "narrative":        rd.narrative    if rd else "",
+                        "rag_status":       rd.rag_status   if rd else None,
+                        "achievement_rate": fmt_decimal(rd.achievement_rate) if rd and rd.achievement_rate else None,
+                        "status":           rd.status       if rd else None,
+                        "approved_at":      rd.approved_at.isoformat() if rd and rd.approved_at else None,
+                    } if rd else None,
                 })
-
-            return Response({
-                "project_id":   pk,
-                "project_code": project.official_reference_number,
-                "rows":         result,
-                "periods":      [{"id": p.id, "label": p.label, "end_date": str(p.end_date), "status": p.status, "is_late": p.is_late} for p in periods],
+            result.append({
+                "row_id":           row.id,
+                "indicator_code":   row.indicator.code,
+                "indicator_name":   row.indicator.name,
+                "indicator_unit":   row.indicator.unit,
+                "indicator_direction": row.indicator.direction,
+                "chain_level":      row.chain_level,
+                "baseline_value":   fmt_decimal(row.baseline_value) if row.baseline_value else None,
+                "baseline_year":    row.baseline_year,
+                "periods":          periods_data,
             })
-        except Exception as exc:
-            import traceback
-            return Response(
-                {"detail": f"{type(exc).__name__}: {exc}", "trace": traceback.format_exc()},
-                status=500,
-            )
+
+        return Response({
+            "project_id":   pk,
+            "project_code": project.official_reference_number,
+            "rows":         result,
+            "periods":      [{"id": p.id, "label": p.label, "end_date": str(p.end_date), "status": p.status, "is_late": p.is_late} for p in periods],
+        })
 
 
 # ---------------------------------------------------------------------------
