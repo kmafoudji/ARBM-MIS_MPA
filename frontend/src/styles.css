@@ -2524,6 +2524,17 @@ input, select, textarea { font: inherit; color: inherit; }
   white-space: nowrap;
   transition: width 0.4s ease;
 }
+.fund-bar-track.fund-stack { display: flex; }
+.fund-stack > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
 .fund-bar-value { width: 74px; flex-shrink: 0; text-align: right; font-weight: 800; color: var(--ink); }
 /* The step that has no figure behind it — dashed track, no fill. */
 .fund-bar-row.off .fund-bar-label { color: var(--muted); }
@@ -2844,6 +2855,114 @@ input, select, textarea { font: inherit; color: inherit; }
 .exec-stage-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-weight: 600; }
 .exec-stage-pill i { width: 6px; height: 6px; border-radius: 50%; }
 .exec-flags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* The tab bar is the workplan's, so the two pages read as one system; only
+   the spacing and the hint beside each label belong to this page. */
+.exec-tabs { margin-top: 14px; }
+.exec-tab-hint { font-size: 9.5px; font-weight: 600; color: var(--subtle); }
+.wp-tab.on .exec-tab-hint { color: var(--muted); }
+.exec-basis { margin: 8px 0 0; }
+
+/* Stat callouts — the deck's dark boxes, above the status tab. */
+.exec-callouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1000px) { .exec-callouts { grid-template-columns: minmax(0, 1fr); } }
+.exec-co {
+  position: relative;
+  padding: 14px 16px 14px 20px;
+  background: var(--ink);
+  border-radius: var(--r-3);
+  overflow: hidden;
+}
+.exec-co::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--lime); }
+.exec-co-label { font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lime-soft); }
+.exec-co-value { margin-top: 5px; font-size: 18px; font-weight: 800; line-height: 1.25; color: #fff; }
+.exec-co-sub { margin-top: 5px; font-size: 11px; color: var(--rule); line-height: 1.4; }
+.exec-co.off { background: var(--surface-2); border: 1px dashed var(--rule); }
+.exec-co.off::before { background: var(--rule); }
+.exec-co.off .exec-co-label { color: var(--muted); }
+.exec-co.off .exec-co-value { color: var(--subtle); font-size: 15px; }
+.exec-co.off .exec-co-sub { color: var(--muted); }
+
+/* The milestone strip: one step per milestone, the stages it covers written
+   underneath so the deck's reading and the record's cannot drift apart. */
+.exec-ms { display: flex; gap: 4px; }
+.exec-ms-step {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding-top: 4px;
+}
+.exec-ms-step::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  right: -50%;
+  height: 2px;
+  background: var(--rule);
+}
+.exec-ms-step:last-child::before { display: none; }
+.exec-ms-dot {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+}
+.exec-ms-label { margin-top: 6px; font-size: 9.5px; font-weight: 700; color: var(--ink); line-height: 1.25; }
+.exec-ms-stages { margin-top: 2px; font-family: var(--font-mono); font-size: 8px; font-weight: 700; color: var(--subtle); overflow-wrap: anywhere; }
+.exec-ms-count {
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 1px 8px;
+  background: var(--surface-2);
+  color: var(--subtle);
+}
+.exec-ms-count.on { background: var(--lime-pale); color: var(--lime-darker); }
+
+/* Projects grouped under the milestone they last reached. */
+.exec-grp { margin-bottom: 10px; }
+.exec-grp:last-child { margin-bottom: 0; }
+.exec-grp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--r-2);
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+}
+.exec-grp-head span { margin-left: auto; font-weight: 700; opacity: 0.9; }
+.exec-pj {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-bottom: 1px dashed var(--rule-soft);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.exec-pj:last-child { border-bottom: none; }
+.exec-pj:hover, .exec-pj:focus-visible { background: var(--surface-2); }
+.exec-pj:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; }
+.exec-pj-name { flex: 1; min-width: 0; }
+.exec-pj-name b { display: block; color: var(--ink); }
+.exec-pj-name span { display: block; font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exec-pj-sector { font-size: 9.5px; font-weight: 800; white-space: nowrap; }
+.exec-pj-amt { font-family: var(--font-mono); font-size: 11px; font-weight: 800; color: var(--ink); white-space: nowrap; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    Workplan tabs (components/workplan/*)

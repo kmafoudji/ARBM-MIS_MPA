@@ -4,29 +4,30 @@ import { apiFetch } from "../api";
 import Flag from "../components/Flag.jsx";
 import Select from "../components/Select.jsx";
 import RefreshBar from "../components/RefreshBar.jsx";
-import { Bar, Card, Donut, Empty } from "../components/Charts.jsx";
+import { Bar, Card, Donut, Empty, StackedBar } from "../components/Charts.jsx";
 import { deliveryBand } from "../components/ProjectCockpit.jsx";
 
-/* Executive dashboard — the portfolio as leadership reads it.
+/* Executive dashboard — the portfolio overview as the committee reads it.
 
-   Built from the LLF executive-portfolio mockup, which lays the same record
-   out three ways:
-     A · monthly update, live   the pages of the monthly operations update
-     B · portfolio analytics    what the Power BI portfolio page draws
-     C · management cockpit     execution, speed and what needs attention
+   The deck presents the same record three ways and the page keeps that order:
+     Distribution          where the money sits: year, sector, source, size
+     Status                what is running, how fast, and what needs a word
+     Pipeline & approvals  the seven milestones, and what is waiting on whom
 
    Every figure comes from one endpoint, /api/projects/executive-summary/,
-   computed live inside the user's scope and the hub chosen in the topbar.
-   The mockup draws a good deal the system does not record — disbursement,
-   contracts, procurement, regions, grant-eligibility tiers, country
-   suspensions. Those cards are kept and say "Not tracked" with the reason,
-   as on the Tier III page: a dashboard that shows 0% where it means "we do
-   not record this" is worse than one that says so. */
+   computed live inside the user's scope, the hub chosen in the topbar and the
+   fund chosen below the title.
 
-const VIEWS = [
-  { key: "a", letter: "A", name: "Monthly update, live", hint: "the report's pages, always current" },
-  { key: "b", letter: "B", name: "Portfolio analytics",  hint: "where the commitments sit" },
-  { key: "c", letter: "C", name: "Management cockpit",   hint: "execution, speed, attention" },
+   The deck draws a good deal the system does not record — disbursement,
+   regions, grant-eligibility tiers, expected board-approval dates, the change
+   since the previous committee. Those panels are kept and say "Not tracked"
+   with the reason, as on the Tier III page: a dashboard that shows 0% where it
+   means "we do not record this" is worse than one that says so. */
+
+const TABS = [
+  { key: "distribution", label: "Distribution", hint: "where the money sits" },
+  { key: "status",       label: "Status",       hint: "what is running, and how fast" },
+  { key: "pipeline",     label: "Pipeline & approvals", hint: "the seven milestones" },
 ];
 
 const CYCLE_FILTERS = [
@@ -45,7 +46,21 @@ const PHASE_COLOR = {
   exception:      "var(--rose)",
 };
 
+/* The deck's milestones take their colour from the phase they sit in, so the
+   strip and the lifecycle columns read as one picture. */
+const MILESTONE_PHASE = {
+  m0: "pre_approval", m1: "pre_approval", m2: "pre_approval", m3: "pre_approval",
+  m4: "implementation", m5: "implementation", m6: "implementation",
+  m7: "closure", exception: "exception",
+};
+
+/* The same phases as solid fills carrying white text: the accent green only
+   reaches contrast in its darker step (docs/design.md). */
+const PHASE_FILL = { ...PHASE_COLOR, implementation: "var(--lime-darker)", pre_approval: "var(--ink-soft)" };
+
 const CYCLE_COLOR = { LLF1: "var(--ink)", LLF2: "var(--lime)", none: "var(--subtle)" };
+
+const SOURCE_COLORS = ["var(--violet)", "var(--blue)", "var(--ink-soft)", "var(--orange)", "var(--subtle)"];
 
 const RESULT_BANDS = [
   { key: "on_track",  label: "On track",          color: "var(--green)" },
@@ -91,7 +106,7 @@ function UntrackedKpi({ label, reason }) {
   );
 }
 
-/* A card the mockup draws and the record cannot fill. */
+/* A card the deck draws and the record cannot fill. */
 function UntrackedCard({ title, sub, reason }) {
   return (
     <div className="card exec-untracked">
@@ -103,6 +118,17 @@ function UntrackedCard({ title, sub, reason }) {
         <div className="ov-untracked">Not tracked</div>
         <div className="ov-reason">{reason}</div>
       </div>
+    </div>
+  );
+}
+
+/* One of the deck's dark stat boxes. `reason` turns it into a declared gap. */
+function Callout({ label, value, sub, reason }) {
+  return (
+    <div className={`exec-co${reason ? " off" : ""}`}>
+      <div className="exec-co-label">{label}</div>
+      <div className="exec-co-value">{reason ? "Not tracked" : value}</div>
+      <div className="exec-co-sub">{reason || sub}</div>
     </div>
   );
 }
@@ -152,154 +178,76 @@ function Footnote({ children }) {
   return <p className="exec-src">{children}</p>;
 }
 
-/* ── A · monthly update, live ───────────────────────────────────────────── */
+/* ── 1 · distribution ───────────────────────────────────────────────────── */
 
-function MonthlyView({ data }) {
-  const { headline: h, breakdowns: b, lifecycle, projects } = data;
-  const cycles = Object.fromEntries(h.projects_by_cycle.map((c) => [c.label, c]));
-  const llf2 = projects.filter((p) => p.cycle === "LLF2");
-  const llf2Funded = llf2.filter((p) => p.committed_usd != null);
-  const pipelineYears = b.by_pipeline_year;
+function DistributionTab({ data, onProjectClick }) {
+  const { headline: h, breakdowns: b } = data;
+  const maxOf = (rows) => Math.max(1, ...rows.map((r) => r.value || 0));
+  const years = b.by_pipeline_year;
+  const funded = h.projects - h.projects_without_financing;
 
   return (
     <>
-      <div className="grid exec-kpis">
-        <Kpi
-          label="Portfolio size"
-          value={fmtUsd(h.portfolio_usd)}
-          sub={h.projects_by_cycle.filter((c) => c.value != null).map((c) => `${c.label} ${fmtUsd(c.value)}`).join(" · ") || "no financing recorded"}
-        />
-        <Kpi
-          label="Projects"
-          value={h.projects}
-          sub={h.projects_by_cycle.map((c) => `${c.count} ${c.label}`).join(" · ")}
-        />
-        <Kpi label="Countries" value={h.countries} sub={`${h.hubs} hub${h.hubs === 1 ? "" : "s"}`} />
-        <Kpi
-          label="Grant resources"
-          value={fmtUsd(h.grant_usd)}
-          sub={h.grant_share_pct == null ? "no financing recorded" : `${h.grant_share_pct}% of commitments${h.ocr_per_grant ? ` · OCR ${h.ocr_per_grant}× grant` : ""}`}
-        />
-        <UntrackedKpi label="Disbursed" reason={h.disbursed_unavailable} />
-        <Kpi label="SDGs addressed" value={h.sdgs} sub="carried by at least one project" />
-      </div>
-
-      {h.projects_without_financing > 0 && (
-        <div className="notice notice-info exec-notice">
-          {h.projects_without_financing} project{h.projects_without_financing === 1 ? " carries" : "s carry"} no
-          financing line: counted as projects, left out of every amount rather than shown as zero.
-        </div>
-      )}
-
       <div className="grid grid-4 exec-row">
         <Card title="By pipeline year" sub="US$ · year of IC endorsement">
-          {pipelineYears.unavailable ? (
-            <Empty>{pipelineYears.unavailable}</Empty>
-          ) : (
-            <Donut rows={pipelineYears.rows} colors={["var(--lime)", "var(--blue)", "var(--violet)", "var(--orange)", "var(--rose)", "var(--ink-soft)"]} format={fmtUsd} />
+          {years.unavailable ? <Empty>{years.unavailable}</Empty> : (
+            <Donut rows={years.rows} colors={["var(--lime)", "var(--blue)", "var(--violet)", "var(--orange)", "var(--rose)", "var(--ink-soft)"]} format={fmtUsd} />
           )}
-          {pipelineYears.projects_without_year > 0 && (
-            <div className="ov-reason">{pipelineYears.projects_without_year} project(s) have no dated endorsement.</div>
+          {years.projects_without_year > 0 && (
+            <div className="ov-reason">{years.projects_without_year} project(s) have no dated endorsement.</div>
           )}
         </Card>
         <Card title="By sector" sub="US$ · primary sector">
           <Donut rows={b.by_sector} colors={["var(--lime)"]} format={fmtUsd} />
         </Card>
-        <UntrackedCard title="By region" sub="US$" reason={b.by_region.unavailable} />
-        <Card title="By financing source" sub="US$ · commitments">
-          <Donut rows={b.by_source} color="var(--violet)" format={fmtUsd} />
-          <div className="ov-reason">Grant-eligibility tiers: {b.by_grant_tier.unavailable.toLowerCase()}</div>
-        </Card>
+        <UntrackedCard title="By region" sub="US$ · region of the lead country" reason={b.by_region.unavailable} />
+        <UntrackedCard title="By grant eligibility" sub="US$ · concessionality tier" reason={b.by_grant_tier.unavailable} />
       </div>
 
-      <div className="grid grid-3 exec-row">
-        <Card title="Projects by stage" sub="lifecycle, split by fund">
-          <StageColumns buckets={lifecycle} stacked />
-          <Legend items={[
-            { label: `LLF1 · ${cycles.LLF1?.count ?? 0}`, color: CYCLE_COLOR.LLF1 },
-            { label: `LLF2 · ${cycles.LLF2?.count ?? 0}`, color: CYCLE_COLOR.LLF2 },
-            ...(cycles["No cycle"] ? [{ label: `No cycle · ${cycles["No cycle"].count}`, color: CYCLE_COLOR.none }] : []),
-          ]} />
+      <div className="fund-grid wide-left exec-row">
+        <Card title="Financing mix" sub="US$ · commitments by source, then by instrument">
+          <div className="fund-bars">
+            <StackedBar
+              label="By source"
+              segments={b.by_source.map((r, i) => ({ label: r.label, value: r.value, color: SOURCE_COLORS[i % SOURCE_COLORS.length] }))}
+              format={fmtUsd}
+            />
+            <StackedBar
+              label="By instrument"
+              segments={b.by_instrument.map((r, i) => ({ label: r.label, value: r.value, color: SOURCE_COLORS[i % SOURCE_COLORS.length] }))}
+              format={fmtUsd}
+            />
+          </div>
+          <Legend items={b.by_source.map((r, i) => ({ label: `${r.label} · ${fmtUsd(r.value)}`, color: SOURCE_COLORS[i % SOURCE_COLORS.length] }))} />
+          <div className="ov-reason">
+            Grant resources {fmtUsd(h.grant_usd)}
+            {h.grant_share_pct == null ? "" : ` · ${h.grant_share_pct}% of commitments`}
+            {h.ocr_per_grant ? ` · IsDB ordinary capital raises ${h.ocr_per_grant}× the grant` : ""}.
+          </div>
         </Card>
-        <UntrackedCard title="Disbursement by pipeline year" sub="disbursed vs remaining" reason={b.disbursement.unavailable} />
-        <Card title="LLF2 · stage of the pipeline" sub={`${llf2.length} project${llf2.length === 1 ? "" : "s"}`}>
-          {llf2.length === 0
-            ? <Empty>No LLF2 project in this selection.</Empty>
-            : <StageColumns buckets={lifecycle.filter((bk) => bk.key !== "exception")} count={(bk) => bk.by_cycle.LLF2} />}
-        </Card>
-      </div>
-
-      {llf2.length > 0 && (
-        <Card
-          className="exec-row"
-          title="LLF2 · investments and geographic coverage"
-          sub={`${llf2.length} project${llf2.length === 1 ? "" : "s"} · ${new Set(llf2.flatMap((p) => p.countries)).size} countries · US$ ${fmtUsd(llf2Funded.reduce((s, p) => s + p.committed_usd, 0))}`}
-        >
-          <div className="exec-countries">
-            {llf2.map((p) => (
-              <div key={p.id} className="exec-country">
-                <div className="exec-country-head">
-                  <Flag iso2={p.lead_iso2} size={16} title={p.lead_country} />
-                  <b>{p.lead_country || "No lead country"}</b>
-                </div>
-                <div className="exec-country-amt">{p.committed_usd == null ? "—" : `USD ${fmtUsd(p.committed_usd)}`}</div>
-                <div className="exec-country-name" title={p.name}>{p.code} · {p.name}</div>
+        <Card title="Average project" sub="size and count, per fund">
+          <div className="fund-kv">
+            {h.projects_by_cycle.map((c) => (
+              <div key={c.label} className={`fund-kv-cell${c.value == null ? " off" : ""}`}>
+                <b>{c.value == null || !c.count ? "—" : `≈ ${fmtUsd(c.value / c.count)}`}</b>
+                <span>{c.label} · {c.count} project{c.count === 1 ? "" : "s"}</span>
               </div>
             ))}
-            {llf2Funded.length > 0 && (
-              <div className="exec-country avg">
-                <b>Average LLF2 project</b>
-                <div className="exec-country-amt">≈ USD {fmtUsd(llf2Funded.reduce((s, p) => s + p.committed_usd, 0) / llf2Funded.length)}</div>
-                <div className="exec-country-name">over the {llf2Funded.length} with financing recorded</div>
-              </div>
-            )}
+            <div className="fund-kv-cell">
+              <b>{funded > 0 ? `≈ ${fmtUsd(h.portfolio_usd / funded)}` : "—"}</b>
+              <span>All funds · {funded} with financing</span>
+            </div>
+            <div className="fund-kv-cell">
+              <b>{h.countries}</b>
+              <span>countries · {h.hubs} hub{h.hubs === 1 ? "" : "s"}</span>
+            </div>
           </div>
-        </Card>
-      )}
-
-      <Footnote>
-        The pages of the monthly operations update, rendered from the shared record instead of assembled in
-        slides. Amounts are commitments; nothing here is a disbursement.
-      </Footnote>
-    </>
-  );
-}
-
-/* ── B · portfolio analytics ────────────────────────────────────────────── */
-
-function AnalyticsView({ data, onProjectClick }) {
-  const { headline: h, breakdowns: b } = data;
-  const maxOf = (rows) => Math.max(1, ...rows.map((r) => r.value || 0));
-
-  return (
-    <>
-      <div className="grid exec-kpis">
-        <Kpi label="Commitments" value={fmtUsd(h.portfolio_usd)} sub="sum of financing lines" />
-        <Kpi label="Grants" value={fmtUsd(h.grant_usd)} sub={h.grant_share_pct == null ? "—" : `${h.grant_share_pct}% of commitments`} meter={h.grant_share_pct} meterColor="var(--violet)" />
-        <Kpi label="Projects" value={h.projects} sub={`${h.projects_without_financing} without financing`} />
-        <Kpi label="Countries" value={h.countries} />
-        <Kpi label="Regional hubs" value={h.hubs} sub="with a project in scope" />
-        <UntrackedKpi label="Disbursed" reason={h.disbursed_unavailable} />
-      </div>
-
-      <div className="fund-grid two exec-row">
-        <Card title="Commitments by sector" sub="US$ · share of the total">
-          <div className="fund-bars">
-            {b.by_sector.map((r) => (
-              <Bar key={r.label} label={`${r.label} · ${r.count}`} value={r.value} display={fmtUsd(r.value)}
-                max={maxOf(b.by_sector)} suffix={r.share == null ? "" : ` · ${r.share}%`}
-                color={r.color || "var(--lime)"} untracked="no financing recorded" />
-            ))}
-          </div>
-        </Card>
-        <Card title="Commitments by hub" sub="US$ · the project's hub, else its lead country's">
-          <div className="fund-bars">
-            {b.by_hub.map((r) => (
-              <Bar key={r.label} label={`${r.label} · ${r.count}`} value={r.value} display={fmtUsd(r.value)}
-                max={maxOf(b.by_hub)} suffix={r.share == null ? "" : ` · ${r.share}%`}
-                color="var(--blue)" untracked="no financing recorded" />
-            ))}
-          </div>
+          {h.projects_without_financing > 0 && (
+            <div className="ov-reason">
+              {h.projects_without_financing} project{h.projects_without_financing === 1 ? " carries" : "s carry"} no
+              financing line: counted as projects, left out of every average rather than shown as zero.
+            </div>
+          )}
         </Card>
       </div>
 
@@ -319,32 +267,34 @@ function AnalyticsView({ data, onProjectClick }) {
             </div>
           )}
         </Card>
-        <Card title="Financing by instrument" sub="US$ · commitments">
-          <Donut rows={b.by_instrument} color="var(--orange)" format={fmtUsd} />
-        </Card>
-      </div>
-
-      <div className="grid grid-4 exec-row">
-        <Card title="Budget by type of work" sub="US$ · indicative component allocations">
-          {b.by_work_type.length === 0
-            ? <Empty>No component allocation has been recorded.</Empty>
-            : <Donut rows={b.by_work_type} color="var(--lime)" format={fmtUsd} />}
-        </Card>
-        <UntrackedCard title="Contracts signed by year" sub="number · by status" reason={b.contracts.unavailable} />
-        <UntrackedCard title="Contract risk profile" sub="by hub" reason={b.contracts.unavailable} />
-        <UntrackedCard title="Procurement method mix" sub="share of packages" reason={b.procurement.unavailable} />
+        <div className="grid" style={{ gap: 12, alignContent: "start" }}>
+          <Card title="Commitments by hub" sub="US$ · the project's hub, else its lead country's">
+            <div className="fund-bars">
+              {b.by_hub.map((r) => (
+                <Bar key={r.label} label={`${r.label} · ${r.count}`} value={r.value} display={fmtUsd(r.value)}
+                  max={maxOf(b.by_hub)} suffix={r.share == null ? "" : ` · ${r.share}%`}
+                  color="var(--blue)" untracked="no financing recorded" />
+              ))}
+            </div>
+          </Card>
+          <Card title="Budget by type of work" sub="US$ · indicative component allocations">
+            {b.by_work_type.length === 0
+              ? <Empty>No component allocation has been recorded.</Empty>
+              : <Donut rows={b.by_work_type} color="var(--lime)" format={fmtUsd} />}
+          </Card>
+        </div>
       </div>
 
       <Footnote>
-        The content of the Power BI portfolio page, on commitments. Its disbursed-versus-undisbursed splits need
-        a record of disbursements, and its contract and procurement panels a procurement module — neither exists
-        yet. Filters are the bar above and the hub in the topbar, not the charts.
+        Amounts are commitments as recorded on each financing line, never a disbursement. The deck's regional and
+        concessionality splits need fields the schema does not carry; its contract and procurement panels need a
+        procurement module — {b.contracts.unavailable.toLowerCase()}
       </Footnote>
     </>
   );
 }
 
-/* ── C · management cockpit ─────────────────────────────────────────────── */
+/* ── 2 · status ─────────────────────────────────────────────────────────── */
 
 const ATTENTION = {
   overdue_reporting: { icon: "⏰", tone: "rose",   title: (i) => `${i.count} overdue reporting period${i.count === 1 ? "" : "s"}`, sub: (i) => i.count ? `${i.projects} project${i.projects === 1 ? "" : "s"}${i.detail ? ` · ${i.detail}` : ""}` : "none" },
@@ -381,14 +331,32 @@ function Verdict({ execution, watchlist }) {
   );
 }
 
-function CockpitView({ data, onProjectClick }) {
-  const { execution: x, lifecycle, startup_chain: chain, results, attention, watchlist } = data;
-  const gapMax = Math.max(1, ...chain.gaps.map((g) => g.months || 0));
-  const cohortMax = Math.max(1, ...chain.signature_to_effective_by_year.map((c) => c.months));
+function StatusTab({ data, onProjectClick }) {
+  const { headline: h, breakdowns: b, lifecycle, execution: x, results, attention, watchlist } = data;
+  const implementing = lifecycle
+    .filter((bk) => bk.phase === "implementation")
+    .reduce((sum, bk) => sum + bk.count, 0);
+  const closed = lifecycle.filter((bk) => bk.phase === "closure").reduce((sum, bk) => sum + bk.count, 0);
+  const cycles = Object.fromEntries(h.projects_by_cycle.map((c) => [c.label, c]));
+  const funded = h.projects - h.projects_without_financing;
 
   return (
     <>
-      <div className="ov-exec">
+      <div className="exec-callouts exec-row">
+        <Callout
+          label="Portfolio"
+          value={`${h.projects} project${h.projects === 1 ? "" : "s"} in ${h.countries} countr${h.countries === 1 ? "y" : "ies"}`}
+          sub={`${implementing} past effectiveness · ${closed} completing or closed`}
+        />
+        <Callout
+          label="Average size"
+          value={funded > 0 ? `≈ US$ ${fmtUsd(h.portfolio_usd / funded)} per project` : "—"}
+          sub={`US$ ${fmtUsd(h.portfolio_usd)} across ${funded} project${funded === 1 ? "" : "s"} with financing`}
+        />
+        <Callout label="Disbursement" reason={h.disbursed_unavailable} />
+      </div>
+
+      <div className="ov-exec exec-row">
         {x.time_elapsed_pct == null
           ? <UntrackedKpi label="Time elapsed" reason={x.time_unavailable} />
           : <Kpi label="Time elapsed" value={fmtPct(x.time_elapsed_pct)} sub={`of implementation periods · ${x.time_projects} active project${x.time_projects === 1 ? "" : "s"}`} meter={x.time_elapsed_pct} meterColor="var(--muted)" />}
@@ -399,50 +367,23 @@ function CockpitView({ data, onProjectClick }) {
         <Verdict execution={x} watchlist={watchlist} />
       </div>
 
-      <div className="grid grid-3 exec-row">
-        <Card title="Portfolio by lifecycle stage" sub={`${data.headline.projects} projects · stages grouped as the monthly update shows them`}>
-          <StageColumns buckets={lifecycle} />
+      <div className="fund-grid wide-left exec-row">
+        <Card title="Project status" sub={`${h.projects} projects by lifecycle stage, split by fund`}>
+          <StageColumns buckets={lifecycle} stacked />
           <Legend items={[
-            { label: "Pre-approval", color: PHASE_COLOR.pre_approval },
-            { label: "Implementation", color: PHASE_COLOR.implementation },
-            { label: "Closure", color: PHASE_COLOR.closure },
-            { label: "Exception", color: PHASE_COLOR.exception },
+            { label: `LLF1 · ${cycles.LLF1?.count ?? 0}`, color: CYCLE_COLOR.LLF1 },
+            { label: `LLF2 · ${cycles.LLF2?.count ?? 0}`, color: CYCLE_COLOR.LLF2 },
+            ...(cycles["No cycle"] ? [{ label: `No cycle · ${cycles["No cycle"].count}`, color: CYCLE_COLOR.none }] : []),
           ]} />
         </Card>
+        <UntrackedCard
+          title="Disbursement by pipeline year and sector"
+          sub="disbursed vs remaining · US$"
+          reason={b.disbursement.unavailable}
+        />
+      </div>
 
-        <Card title="Speed · start-up chain" sub="average months per phase · from dated stage changes">
-          <div className="fund-bars">
-            {chain.gaps.map((g, i) => (
-              <Bar
-                key={i}
-                label={`${chain.steps[i].label} → ${chain.steps[i + 1].label}`}
-                value={g.months}
-                display={g.months == null ? "—" : String(g.months)}
-                max={gapMax}
-                suffix=" mo"
-                color="var(--blue)"
-                className={g.unavailable ? "off" : ""}
-                untracked={g.unavailable ? "not tracked" : "no dated pair yet"}
-              />
-            ))}
-          </div>
-          <div className="ov-reason">
-            {chain.gaps.some((g) => g.projects)
-              ? `Each average rests on the projects that recorded both dates (up to ${Math.max(...chain.gaps.map((g) => g.projects))}).`
-              : "No project has recorded two dated stage changes of the chain yet."}
-          </div>
-          {chain.signature_to_effective_by_year.length > 0 && (
-            <div className="ov-list" style={{ marginTop: 10 }}>
-              <div className="ov-list-label">Signature → effectiveness, by year of signature</div>
-              <div className="fund-bars">
-                {chain.signature_to_effective_by_year.map((c) => (
-                  <Bar key={c.year} label={`${c.year} · ${c.projects}`} value={c.months} display={String(c.months)} max={cohortMax} suffix=" mo" color="var(--rose)" />
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-
+      <div className="exec-split exec-row">
         <Card title="Results status" sub="latest approved value of each logframe indicator">
           {results.unavailable ? <Empty>{results.unavailable}</Empty> : (
             <>
@@ -475,9 +416,7 @@ function CockpitView({ data, onProjectClick }) {
             </>
           )}
         </Card>
-      </div>
 
-      <div className="exec-split exec-row">
         <Card title="Needs attention" sub="fund-level actions">
           {attention.map((item) => {
             const spec = ATTENTION[item.key];
@@ -493,54 +432,178 @@ function CockpitView({ data, onProjectClick }) {
             );
           })}
         </Card>
+      </div>
 
-        <Card title="Watchlist · projects to talk about this month" sub="active and suspended projects, widest gap between time elapsed and physical progress first">
-          {watchlist.length === 0 ? <Empty>No active project in this selection.</Empty> : (
-            <div className="table-wrap">
-              <table className="table exec-watch">
-                <thead>
-                  <tr>
-                    <th>Project</th><th>Hub</th><th>Stage</th>
-                    <th className="num">Time</th><th className="num">Physical</th>
-                    <th className="num" title="No disbursement is recorded in the system.">Disb.</th>
-                    <th className="num">DQ</th><th>Flags</th>
+      <Card className="exec-row" title="Watchlist · projects to talk about" sub="active and suspended projects, widest gap between time elapsed and physical progress first">
+        {watchlist.length === 0 ? <Empty>No active project in this selection.</Empty> : (
+          <div className="table-wrap">
+            <table className="table exec-watch">
+              <thead>
+                <tr>
+                  <th>Project</th><th>Hub</th><th>Stage</th>
+                  <th className="num">Time</th><th className="num">Physical</th>
+                  <th className="num" title="No disbursement is recorded in the system.">Disb.</th>
+                  <th className="num">DQ</th><th>Flags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {watchlist.map((w) => (
+                  <tr key={w.id} className="table-row-link" tabIndex={0}
+                    onClick={() => onProjectClick?.(w.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter") onProjectClick?.(w.id); }}>
+                    <td className="exec-watch-project">
+                      <span className="exec-code">{w.code}</span>
+                      <span title={w.name}>{w.name}</span>
+                    </td>
+                    <td>{w.hub || "—"}</td>
+                    <td><span className="exec-stage-pill"><i style={{ background: PHASE_COLOR[w.stage === "LS017" ? "exception" : "implementation"] }} />{w.stage_label}</span></td>
+                    <td className="num">{fmtPct(w.time_elapsed_pct)}</td>
+                    <td className="num">{fmtPct(w.physical_pct)}</td>
+                    <td className="num exec-muted">—</td>
+                    <td className="num">{w.dq_composite == null ? "—" : Math.round(w.dq_composite)}</td>
+                    <td>
+                      <span className="exec-flags">
+                        {w.flags.map((f) => (
+                          <span key={f.label} className={`badge ${f.tone === "bad" ? "badge-rose" : "badge-orange"}`}>{f.label}</span>
+                        ))}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {watchlist.map((w) => (
-                    <tr key={w.id} className="table-row-link" tabIndex={0}
-                      onClick={() => onProjectClick?.(w.id)}
-                      onKeyDown={(e) => { if (e.key === "Enter") onProjectClick?.(w.id); }}>
-                      <td className="exec-watch-project">
-                        <span className="exec-code">{w.code}</span>
-                        <span title={w.name}>{w.name}</span>
-                      </td>
-                      <td>{w.hub || "—"}</td>
-                      <td><span className="exec-stage-pill"><i style={{ background: PHASE_COLOR[w.stage === "LS017" ? "exception" : "implementation"] }} />{w.stage_label}</span></td>
-                      <td className="num">{fmtPct(w.time_elapsed_pct)}</td>
-                      <td className="num">{fmtPct(w.physical_pct)}</td>
-                      <td className="num exec-muted">—</td>
-                      <td className="num">{w.dq_composite == null ? "—" : Math.round(w.dq_composite)}</td>
-                      <td>
-                        <span className="exec-flags">
-                          {w.flags.map((f) => (
-                            <span key={f.label} className={`badge ${f.tone === "bad" ? "badge-rose" : "badge-orange"}`}>{f.label}</span>
-                          ))}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Footnote>
+        Status counts derive from the stage each project is in; time and physical progress are simple averages over
+        the projects whose clock is running, not weighted by commitment. The deck reads status against disbursement,
+        which no field records.
+      </Footnote>
+    </>
+  );
+}
+
+/* ── 3 · pipeline & approvals ───────────────────────────────────────────── */
+
+/* The deck's milestone strip, with the stages each milestone covers written
+   underneath so the two readings cannot drift apart. */
+function MilestoneStrip({ milestones }) {
+  return (
+    <div className="exec-ms">
+      {milestones.map((m, i) => (
+        <div key={m.key} className="exec-ms-step">
+          <span className="exec-ms-dot" style={{ background: m.count ? PHASE_FILL[MILESTONE_PHASE[m.key]] : "var(--rule)" }}>{i}</span>
+          <span className="exec-ms-label">{m.label}</span>
+          <span className="exec-ms-stages">{m.stages.map((s) => s.code).join(" · ")}</span>
+          <span className={`exec-ms-count${m.count ? " on" : ""}`}>{m.count || "—"}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MilestoneGroups({ milestones, onProjectClick }) {
+  const filled = milestones.filter((m) => m.count);
+  if (filled.length === 0) return <Empty>No project in this selection.</Empty>;
+  return (
+    <>
+      {filled.map((m) => (
+        <div key={m.key} className="exec-grp">
+          <div className="exec-grp-head" style={{ background: PHASE_FILL[MILESTONE_PHASE[m.key]] }}>
+            {m.label}
+            <span>{m.count} · {fmtUsd(m.value)}</span>
+          </div>
+          {m.projects.map((p) => (
+            <div key={p.id} role="button" tabIndex={0} className="exec-pj"
+              onClick={() => onProjectClick?.(p.id)}
+              onKeyDown={(e) => { if (e.key === "Enter") onProjectClick?.(p.id); }}>
+              <Flag iso2={p.lead_iso2} size={16} title={p.lead_country} />
+              <span className="exec-pj-name">
+                <b>{p.lead_country || "No lead country"}</b>
+                <span title={p.name}>{p.code} · {p.name}</span>
+              </span>
+              {p.sector && <span className="exec-pj-sector" style={{ color: p.sector_color || "var(--muted)" }}>{p.sector}</span>}
+              <span className="exec-pj-amt">{p.committed_usd == null ? "—" : fmtUsd(p.committed_usd)}</span>
             </div>
-          )}
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function PipelineTab({ data, onProjectClick }) {
+  const { breakdowns: b, milestones, startup_chain: chain } = data;
+  const sequence = milestones.filter((m) => m.key !== "exception");
+  const exception = milestones.find((m) => m.key === "exception");
+  const gapMax = Math.max(1, ...chain.gaps.map((g) => g.months || 0));
+  const cohortMax = Math.max(1, ...chain.signature_to_effective_by_year.map((c) => c.months));
+
+  return (
+    <>
+      <Card className="exec-row" title="Last milestone reached" sub="the deck's seven milestones, and the lifecycle stages each one covers">
+        <MilestoneStrip milestones={sequence} />
+        {exception && exception.count > 0 && (
+          <div className="ov-reason">
+            {exception.count} project{exception.count === 1 ? " is" : "s are"} off the sequence
+            ({exception.stages.map((s) => s.label).join(" or ").toLowerCase()}) and are counted apart.
+          </div>
+        )}
+      </Card>
+
+      <div className="fund-grid wide-left exec-row">
+        <Card title="Projects by last milestone" sub="click a project to open it">
+          <MilestoneGroups milestones={milestones} onProjectClick={onProjectClick} />
         </Card>
+        <div className="grid" style={{ gap: 12, alignContent: "start" }}>
+          <UntrackedCard
+            title="Expected board approval"
+            sub="IC approval cycle → expected BED cycle"
+            reason={b.expected_bed.unavailable}
+          />
+          <Card title="Speed · start-up chain" sub="average months per phase · from dated stage changes">
+            <div className="fund-bars">
+              {chain.gaps.map((g, i) => (
+                <Bar
+                  key={i}
+                  label={`${chain.steps[i].label} → ${chain.steps[i + 1].label}`}
+                  value={g.months}
+                  display={g.months == null ? "—" : String(g.months)}
+                  max={gapMax}
+                  suffix=" mo"
+                  color="var(--blue)"
+                  className={g.unavailable ? "off" : ""}
+                  untracked={g.unavailable ? "not tracked" : "no dated pair yet"}
+                />
+              ))}
+            </div>
+            <div className="ov-reason">
+              {chain.gaps.some((g) => g.projects)
+                ? `Each average rests on the projects that recorded both dates (up to ${Math.max(...chain.gaps.map((g) => g.projects))}).`
+                : "No project has recorded two dated stage changes of the chain yet."}
+            </div>
+            {chain.signature_to_effective_by_year.length > 0 && (
+              <div className="ov-list" style={{ marginTop: 10 }}>
+                <div className="ov-list-label">Signature → effectiveness, by year of signature</div>
+                <div className="fund-bars">
+                  {chain.signature_to_effective_by_year.map((c) => (
+                    <Bar key={c.year} label={`${c.year} · ${c.projects}`} value={c.months} display={String(c.months)} max={cohortMax} suffix=" mo" color="var(--rose)" />
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
 
-      <div className="fund-banner">
-        <b>What this view adds:</b> the monthly update and Power BI answer "how big and how committed". This one
-        asks "how fast, how well, and where do I look" — and says plainly where the record cannot answer yet.
-      </div>
+      <Footnote>
+        A project sits at the milestone covering the stage it is in — the last one it reached, read from the
+        lifecycle rather than typed in. The approval calendar the deck tabulates needs an expected board-approval
+        date per project, which nothing records: the lifecycle keeps the dates of stages reached, not of stages
+        foreseen.
+      </Footnote>
     </>
   );
 }
@@ -548,7 +611,7 @@ function CockpitView({ data, onProjectClick }) {
 /* ── page ───────────────────────────────────────────────────────────────── */
 
 export default function Overview({ onProjectClick }) {
-  const [view, setView] = useState("a");
+  const [tab, setTab] = useState("distribution");
   const [cycle, setCycle] = useState("");
   const [sector, setSector] = useState("");
 
@@ -580,35 +643,20 @@ export default function Overview({ onProjectClick }) {
     }));
 
   const h = data?.headline;
+  const funded = h ? h.projects - h.projects_without_financing : 0;
 
   return (
     <div className="view">
       <div className="view-header" style={{ marginBottom: 12 }}>
-        <div className="row-between" style={{ alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-          <div>
-            <div className="view-eyebrow">
-              Portfolio scope{h ? ` · ${h.projects} project${h.projects === 1 ? "" : "s"}` : ""}
-            </div>
-            <h1 className="view-title">Executive dashboard</h1>
-            <p className="view-lead">The portfolio as leadership reads it — three ways to lay out the same record.</p>
-          </div>
-          <div className="fund-views">
-            {VIEWS.map((v) => (
-              <button
-                key={v.key}
-                className={`fund-view-opt${view === v.key ? " on" : ""}`}
-                onClick={() => setView(v.key)}
-                aria-pressed={view === v.key}
-              >
-                <span className="k">{v.letter}</span>
-                <span>
-                  <b>{v.name}</b>
-                  <span className="d">{v.hint}</span>
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="view-eyebrow">
+          Portfolio scope{h ? ` · ${h.projects} project${h.projects === 1 ? "" : "s"}` : ""}
+          {data ? ` · as of ${data.as_of}` : ""}
         </div>
+        <h1 className="view-title">Executive dashboard</h1>
+        <p className="view-lead">
+          The portfolio overview as the committee reads it — distribution, status and pipeline, on the record as it
+          stands today.
+        </p>
       </div>
 
       <div className="exec-filterbar">
@@ -644,9 +692,47 @@ export default function Overview({ onProjectClick }) {
       {isLoading && <div className="spinner" />}
       {error && <div className="notice notice-warn">{error.detail || "Could not load the executive dashboard."}</div>}
 
-      {data && view === "a" && <MonthlyView data={data} />}
-      {data && view === "b" && <AnalyticsView data={data} onProjectClick={onProjectClick} />}
-      {data && view === "c" && <CockpitView data={data} onProjectClick={onProjectClick} />}
+      {data && (
+        <>
+          {/* The headline strip stands above the tabs: the same six figures
+              whichever way the portfolio is being read. */}
+          <div className="grid exec-kpis">
+            <Kpi
+              label="Portfolio size"
+              value={fmtUsd(h.portfolio_usd)}
+              sub={h.projects_by_cycle.filter((c) => c.value != null).map((c) => `${c.label} ${fmtUsd(c.value)}`).join(" · ") || "no financing recorded"}
+            />
+            <Kpi label="Projects" value={h.projects} sub={h.projects_by_cycle.map((c) => `${c.count} ${c.label}`).join(" · ")} />
+            <Kpi label="Countries" value={h.countries} sub={`${h.hubs} hub${h.hubs === 1 ? "" : "s"}`} />
+            <Kpi
+              label="Grant resources"
+              value={fmtUsd(h.grant_usd)}
+              sub={h.grant_share_pct == null ? "no financing recorded" : `${h.grant_share_pct}% of commitments${h.ocr_per_grant ? ` · OCR ${h.ocr_per_grant}× grant` : ""}`}
+            />
+            <UntrackedKpi label="Disbursed" reason={h.disbursed_unavailable} />
+            <Kpi
+              label="Average project"
+              value={funded > 0 ? `≈ ${fmtUsd(h.portfolio_usd / funded)}` : "—"}
+              sub={`US$ over the ${funded} project${funded === 1 ? "" : "s"} with financing`}
+            />
+          </div>
+          <div className="ov-reason exec-basis">{data.breakdowns.trc_delta.unavailable}</div>
+
+          <div className="wp-tabs exec-tabs">
+            {TABS.map((t) => (
+              <button key={t.key} type="button"
+                className={`wp-tab${tab === t.key ? " on" : ""}`}
+                onClick={() => setTab(t.key)}>
+                {t.label} <span className="exec-tab-hint">{t.hint}</span>
+              </button>
+            ))}
+          </div>
+
+          {tab === "distribution" && <DistributionTab data={data} onProjectClick={onProjectClick} />}
+          {tab === "status" && <StatusTab data={data} onProjectClick={onProjectClick} />}
+          {tab === "pipeline" && <PipelineTab data={data} onProjectClick={onProjectClick} />}
+        </>
+      )}
     </div>
   );
 }

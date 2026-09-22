@@ -81,3 +81,31 @@ export function Donut({ rows, color, colors, format = (v) => v, center }) {
     </div>
   );
 }
+
+/* A single track split into segments — the deck's financing-mix bar. Each
+   segment carries its own label so the track reads without a legend when it
+   is wide enough; below that width the caller's legend does the work. A
+   segment with no value is left out rather than drawn as a hairline. */
+export function StackedBar({ label, segments, format = (v) => v, note }) {
+  const drawn = segments.filter((s) => s.value);
+  const total = drawn.reduce((sum, s) => sum + s.value, 0);
+  if (!total) return <Empty>Nothing recorded yet.</Empty>;
+
+  return (
+    <div className="fund-bar-row">
+      {label && <span className="fund-bar-label">{label}</span>}
+      <div className="fund-bar-track fund-stack">
+        {drawn.map((s) => {
+          const share = (s.value / total) * 100;
+          return (
+            <span key={s.label} style={{ width: `${share}%`, background: s.color }}
+              title={`${s.label} · ${format(s.value)} · ${Math.round(share)}%`}>
+              {share > 14 ? `${format(s.value)} · ${Math.round(share)}%` : ""}
+            </span>
+          );
+        })}
+      </div>
+      <span className="fund-bar-value">{note ?? format(total)}</span>
+    </div>
+  );
+}
