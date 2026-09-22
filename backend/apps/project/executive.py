@@ -1,10 +1,11 @@
 """Executive portfolio — the Fund's portfolio as leadership reads it.
 
 One endpoint, ``GET /api/projects/executive-summary/``, behind the Executive
-Dashboard. It serves the three views of the LLF executive-portfolio mockup:
-the monthly operations update, the portfolio analytics that the Power BI page
-draws, and the management cockpit. All of it is read-only and computed live
-from the shared record; nothing is stored and nothing is typed in.
+Dashboard. It serves the portfolio overview as the committee reads it —
+distribution, status, pipeline and approvals — together with the execution and
+attention figures that the deck has no slide for. All of it is read-only and
+computed live from the shared record; nothing is stored and nothing is typed
+in.
 
 **Much of the mockup has no source.** The rule is the one set by the Tier III
 dashboard (``apps/results/fund_performance.py``) and the project overview
@@ -21,7 +22,11 @@ as a block holding only ``unavailable``, with the reason — never as a zero.
 - **concessionality tiers are not recorded** — the 35% versus 10–15%
   grant-eligibility split exists only as free text in ``FinancingSource.label``;
 - **nothing records a country suspension** — only a project can be marked
-  Suspended (LS017), and that is what the attention list counts.
+  Suspended (LS017), and that is what the attention list counts;
+- **no date is recorded for a stage not yet reached** — the expected board
+  approval cycle of each pipeline project, which the deck tabulates;
+- **nothing is stored as of a past date** — every figure is current, so none
+  can carry the change since the previous committee.
 
 **Pipeline year** is the year a project was IC-endorsed (LS006), read from the
 dated stage transitions exactly as the Tier III timelines read them. A project
@@ -31,6 +36,11 @@ with no dated endorsement has no pipeline year and is counted apart.
 projects, not weighted by commitment; physical progress is itself a simple
 average of activity progress, since ``Milestone`` carries no weight. The
 payload names the method so the labels cannot drift from the arithmetic.
+
+**Milestones are a reading of stages.** The deck presents seven milestones;
+the record keeps the fifteen nominal stages. ``DECK_MILESTONES`` holds the
+crosswalk, and a project sits at the milestone covering the stage it is in —
+the last one it reached. Nothing is stored twice.
 
 **Lifecycle buckets name stages, not gates.** ``decisions/0012`` keeps approval
 gates out of the interface, so TRC clearance, IC endorsement and board
@@ -69,6 +79,14 @@ NO_GRANT_TIER = (
 NO_COUNTRY_SUSPENSION = (
     "Nothing records a country suspension; only a project can be marked Suspended."
 )
+NO_EXPECTED_BED = (
+    "No expected board-approval date is recorded; the lifecycle keeps the dates "
+    "of stages reached, not of stages foreseen."
+)
+NO_TRC_BASELINE = (
+    "Nothing is stored as of a past date, so no figure can be compared with the "
+    "one presented at the previous committee."
+)
 
 STAGE_LABELS = dict(LIFECYCLE_STAGE_CHOICES)
 
@@ -95,6 +113,25 @@ BUCKET_OF_STAGE = {code: key for key, _l, codes, _p in LIFECYCLE_BUCKETS for cod
 ACTIVE_STAGES = {"LS012", "LS013", "LS014", "LS015"}
 
 STAGE_IC_ENDORSED = "LS006"
+
+# The seven milestones the portfolio overview presents, and the lifecycle
+# stages each one covers. The deck names milestones; the record keeps stages,
+# and the crosswalk lives here so the two cannot drift. A project sits at the
+# milestone its current stage belongs to — the last one it reached.
+DECK_MILESTONES = [
+    ("m0", "Pending IC endorsement",         ["LS001", "LS002", "LS003", "LS004", "LS005"]),
+    ("m1", "IC endorsement",                 ["LS006"]),
+    ("m2", "Preparation / appraisal",        ["LS007", "LS008", "LS009"]),
+    ("m3", "Board approval",                 ["LS010"]),
+    ("m4", "Financing agreement signature",  ["LS011"]),
+    ("m5", "Effectiveness",                  ["LS012"]),
+    ("m6", "Implementing",                   ["LS013", "LS014"]),
+    ("m7", "Complete",                       ["LS015", "LS016"]),
+    # Off the sequence: the deck has no column for these and a project in one
+    # of them has left the chain rather than stopped along it.
+    ("exception", "Suspended or cancelled",  ["LS017", "LS018"]),
+]
+MILESTONE_OF_STAGE = {code: key for key, _l, codes in DECK_MILESTONES for code in codes}
 
 # The start-up chain, IC endorsement to the first money. The last link has no
 # field to read and is reported unavailable.
@@ -360,6 +397,8 @@ def _breakdowns(rows, project_ids):
             key=lambda r: r["value"], reverse=True,
         ),
         "by_region": {"unavailable": NO_REGION},
+        "expected_bed": {"unavailable": NO_EXPECTED_BED},
+        "trc_delta": {"unavailable": NO_TRC_BASELINE},
         "by_grant_tier": {"unavailable": NO_GRANT_TIER},
         "disbursement": {"unavailable": NO_DISBURSEMENT},
         "contracts": {"unavailable": NO_CONTRACTS},
@@ -384,6 +423,37 @@ def _lifecycle(rows):
             },
         })
     return buckets
+
+
+def _milestones(rows):
+    """The portfolio by the deck's seven milestones, each naming its stages.
+
+    Every milestone carries its projects, so the pipeline view can list them
+    without a second request; a project with no financing line keeps a null
+    amount rather than a zero.
+    """
+    milestones = []
+    for key, label, codes in DECK_MILESTONES:
+        members = [r for r in rows if MILESTONE_OF_STAGE.get(r["stage"]) == key]
+        milestones.append({
+            "key": key,
+            "label": label,
+            "stages": [{"code": c, "label": STAGE_LABELS[c]} for c in codes],
+            "count": len(members),
+            "value": _committed(members),
+            "projects": [
+                {
+                    "id": r["id"], "code": r["code"], "name": r["name"],
+                    "cycle": r["cycle"], "stage_label": r["stage_label"],
+                    "sector": r["sector"], "sector_color": r["sector_color"],
+                    "lead_country": r["lead_country"], "lead_iso2": r["lead_iso2"],
+                    "committed_usd": r["committed_usd"],
+                    "pipeline_year": r["pipeline_year"],
+                }
+                for r in members
+            ],
+        })
+    return milestones
 
 
 def _progress_by_project(project_ids):
@@ -639,6 +709,7 @@ def build_executive_summary(request):
         "headline": _headline(rows, project_ids),
         "breakdowns": _breakdowns(rows, project_ids),
         "lifecycle": _lifecycle(rows),
+        "milestones": _milestones(rows),
         "execution": _execution(rows, progress),
         "startup_chain": _startup_chain(rows),
         "results": _results(rows, project_ids),
