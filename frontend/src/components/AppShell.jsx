@@ -59,6 +59,8 @@ const NAV_ALIAS = {
   "pirs":           "projects",
 };
 
+const SIDEBAR_COLLAPSED_KEY = "arbm_sidebar_collapsed";
+
 function initials(user) {
   const source = user?.name || user?.email || "?";
   const parts = source.replace(/@.*/, "").split(/[.\s_-]+/).filter(Boolean);
@@ -199,6 +201,12 @@ export default function AppShell({
   const { t } = useTranslation();
   const [lang, setLang] = useState(i18n.language || "en");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Collapsed sidebar: icons only, the choice kept across sessions. It is a
+  // desktop affordance — below 860px the sidebar is off-canvas and the
+  // burger already gives the room back.
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1",
+  );
   // Project context card: collapsed by default so the sections get the room.
   const [ctxOpen, setCtxOpen] = useState(false);
 
@@ -217,6 +225,13 @@ export default function AppShell({
     queryFn: () => apiFetch("/api/projects/"),
     enabled: inProject,
   });
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, c ? "0" : "1");
+      return !c;
+    });
+  }
 
   function closeSidebar() { setSidebarOpen(false); }
   function openSidebar()  { setSidebarOpen(true); }
@@ -331,13 +346,14 @@ export default function AppShell({
                   onProjectTab(target.key);
                   closeSidebar();
                 }}
-                title={available ? "" : t("nav.not_yet_available")}
+                title={available ? (collapsed ? label : "") : t("nav.not_yet_available")}
+                aria-label={label}
                 disabled={!available}
                 aria-current={isActive ? "page" : undefined}
               >
                 <Icon name={icon} size={14} />
                 <span>{label}</span>
-                {!available && <Icon name="lock" size={11} />}
+                {!available && !collapsed && <Icon name="lock" size={11} />}
               </button>
             );
           };
@@ -374,6 +390,8 @@ export default function AppShell({
               className={`nav-item${activeKey === key ? " active" : ""}`}
               onClick={() => { onNavigate(key); closeSidebar(); }}
               aria-current={activeKey === key ? "page" : undefined}
+              aria-label={label}
+              title={collapsed ? label : undefined}
             >
               <ItemIcon />
               <span>{label}</span>
@@ -388,11 +406,20 @@ export default function AppShell({
   );
 
   return (
-    <div className="app">
+    <div className={`app${collapsed ? " sidebar-collapsed" : ""}`}>
       {/* Overlay mobile */}
       <div className={`sidebar-overlay${sidebarOpen ? " open" : ""}`} onClick={closeSidebar} aria-hidden="true" />
 
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
+        <button
+          className="sidebar-toggle"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? t("nav.expand_menu") : t("nav.collapse_menu")}
+          title={collapsed ? t("nav.expand_menu") : t("nav.collapse_menu")}
+        >
+          <Icon name={collapsed ? "chevron-right" : "chevron-left"} size={13} />
+        </button>
         <div className="brand">
           {/* The logo is the way home: same target as the Portfolio Overview entry. */}
           <button

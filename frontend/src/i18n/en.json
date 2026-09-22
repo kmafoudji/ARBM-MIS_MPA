@@ -24,7 +24,9 @@
     "not_yet_available": "Not yet available",
     "project_sections": "Project",
     "scope_portfolio": "PORTFOLIO",
-    "scope_project": "PROJECT"
+    "scope_project": "PROJECT",
+    "collapse_menu": "Collapse menu",
+    "expand_menu": "Expand menu"
   },
   "common": {
     "loading": "Loading...",

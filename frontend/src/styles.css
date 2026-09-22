@@ -117,7 +117,13 @@ input, select, textarea { font: inherit; color: inherit; }
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.18s ease;
 }
+
+/* Collapsed sidebar: the navigation keeps its place and loses its words.
+   Every entry then carries its label as a native tooltip (AppShell), since
+   the scrolling nav would clip a tooltip of our own. */
+.app.sidebar-collapsed { grid-template-columns: 68px 1fr; }
 
 /* Overlay mobile — caché par défaut sur desktop */
 .sidebar-overlay {
@@ -165,6 +171,31 @@ input, select, textarea { font: inherit; color: inherit; }
   top: 0;
   height: 100vh;
 }
+/* The toggle sits on the edge between the two panes, as a handle. */
+.sidebar-toggle {
+  position: absolute;
+  right: -13px;
+  top: 26px;
+  z-index: 50;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.sidebar-toggle:hover { border-color: var(--subtle); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+@media (max-width: 860px) {
+  /* Off-canvas already: there is nothing to collapse. */
+  .sidebar-toggle { display: none; }
+}
+
 .brand {
   padding: var(--s-4) var(--s-4) var(--s-3);
   display: flex;
@@ -253,6 +284,33 @@ input, select, textarea { font: inherit; color: inherit; }
 .nav-item.active .nav-badge { background: rgba(255,255,255,0.2); color: white; }
 
 .sidebar-footer { padding: var(--s-3); border-top: 1px solid rgba(255,255,255,0.08); }
+
+/* ── Collapsed sidebar ───────────────────────────────────────────────── */
+/* What goes: the words. What stays: the logo, the icons, the active entry
+   and the order of the sections, so the eye keeps its landmarks. Only above
+   the mobile breakpoint: below it the sidebar is a full-width drawer that
+   opens on demand, and a drawer of bare icons would help nobody. */
+@media (min-width: 861px) {
+  .sidebar-collapsed .brand { padding: var(--s-3) 10px; }
+  .sidebar-collapsed .brand-sub-wrap,
+  .sidebar-collapsed .nav-label,
+  .sidebar-collapsed .nav-badge,
+  .sidebar-collapsed .ctx-card,
+  .sidebar-collapsed .nav-item > span,
+  .sidebar-collapsed .sidebar-footer { display: none; }
+  .sidebar-collapsed .nav { padding: var(--s-3) 10px; }
+  .sidebar-collapsed .nav-item {
+    justify-content: center;
+    gap: 0;
+    padding: 10px 0;
+  }
+  /* The section break survives as a rule, since its label cannot. */
+  .sidebar-collapsed .nav > div + div {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: var(--s-1);
+    margin-top: var(--s-1);
+  }
+}
 
 /* Bandeau partenaires — logos des donateurs sur fond blanc (gabarit LLF) */
 .partner-band {
