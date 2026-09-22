@@ -63,6 +63,7 @@ class TestAbsencesAreDeclared:
 
     @pytest.mark.parametrize("block", [
         "by_region", "by_grant_tier", "disbursement", "contracts", "procurement",
+        "expected_bed", "trc_delta",
     ])
     def test_blocks_without_a_source_carry_only_a_reason(self, auth_client, block):
         ProjectFactory()
@@ -171,6 +172,48 @@ class TestLifecycle:
         buckets = {b["key"]: b for b in auth_client.get(URL).data["lifecycle"]}
         assert buckets["appraisal"]["phase"] == "pre_approval"
         assert buckets["board"]["phase"] == "pre_approval"
+
+
+@pytest.mark.django_db
+class TestMilestones:
+    """The deck's seven milestones, read off the stage each project is in."""
+
+    def test_every_stage_belongs_to_exactly_one_milestone(self):
+        from apps.project.models import LIFECYCLE_STAGE_CHOICES
+        from apps.project.executive import DECK_MILESTONES
+
+        covered = [code for _k, _l, codes in DECK_MILESTONES for code in codes]
+        assert sorted(covered) == sorted(code for code, _label in LIFECYCLE_STAGE_CHOICES)
+        assert len(covered) == len(set(covered))
+
+    def test_a_project_sits_at_the_milestone_of_its_stage(self, auth_client):
+        appraised = ProjectFactory(lifecycle_stage="LS009")
+        fund(appraised, 2_000_000)
+        fund(ProjectFactory(lifecycle_stage="LS008"), 1_000_000)
+        ProjectFactory(lifecycle_stage="LS013")
+
+        milestones = {m["key"]: m for m in auth_client.get(URL).data["milestones"]}
+        assert milestones["m2"]["count"] == 2
+        assert milestones["m2"]["value"] == 3_000_000
+        assert milestones["m6"]["count"] == 1
+        assert {p["id"] for p in milestones["m2"]["projects"]} >= {appraised.pk}
+
+    def test_each_milestone_names_the_stages_it_covers(self, auth_client):
+        milestones = {m["key"]: m for m in auth_client.get(URL).data["milestones"]}
+        assert [s["code"] for s in milestones["m3"]["stages"]] == ["LS010"]
+        assert milestones["m3"]["stages"][0]["label"] == "BED Approved"
+
+    def test_an_unfunded_milestone_has_no_amount(self, auth_client):
+        ProjectFactory(lifecycle_stage="LS001")
+        milestones = {m["key"]: m for m in auth_client.get(URL).data["milestones"]}
+        assert milestones["m0"]["count"] == 1
+        assert milestones["m0"]["value"] is None
+
+    def test_suspended_projects_leave_the_chain(self, auth_client):
+        ProjectFactory(lifecycle_stage="LS017")
+        milestones = {m["key"]: m for m in auth_client.get(URL).data["milestones"]}
+        assert milestones["exception"]["count"] == 1
+        assert sum(m["count"] for m in milestones.values() if m["key"] != "exception") == 0
 
 
 @pytest.mark.django_db
