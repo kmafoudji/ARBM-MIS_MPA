@@ -24,7 +24,6 @@ import { useDialog, DialogModal } from "../components/Dialog.jsx";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
 import Select from "../components/Select";
-import { INVESTMENT_CYCLE_CHOICES } from "../choices";
 import { fmtNum, fmtPct, fmtCurrency, sectorOptions } from "../utils.js";
 
 const REPORTING_FREQUENCY_CHOICES = [
@@ -468,7 +467,7 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     document_reference: "",
   });
   const [showBasicForm, setShowBasicForm] = useState(false);
-  const [bForm, setBForm] = useState({ name: "", official_reference_number: "", investment_cycle: "", countryIds: [], leadCountryId: "" });
+  const [bForm, setBForm] = useState({ name: "", official_reference_number: "", countryIds: [], leadCountryId: "" });
   const [showClassificationForm, setShowClassificationForm] = useState(false);
   const [cForm, setCForm] = useState({
     primary_sector: "",
@@ -543,7 +542,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     setBForm({
       name: project.name || "",
       official_reference_number: project.official_reference_number || "",
-      investment_cycle: project.investment_cycle || "",
       countryIds: project.countries_detail?.map(c => String(c.id)) || [],
       leadCountryId: String(project.countries_detail?.find(c => c.is_lead)?.id || ""),
     });
@@ -592,9 +590,11 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
     });
   }
 
-  // ADR 0007: only sectors are selectable, grouped under their pillar.
-  const primarySectorOptions = sectorOptions(sectors, { stringIds: true });
+  // ADR 0007 + 0014: only sectors of the project's classification, never a pillar.
+  const taxonomy = project?.taxonomy;
+  const primarySectorOptions = sectorOptions(sectors, { stringIds: true, taxonomy });
   const contributingSectorChoices = sectorOptions(sectors, {
+    taxonomy,
     exclude: (s) => String(s.id) === String(cForm.primary_sector),
   });
 
@@ -924,7 +924,6 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
               <form onSubmit={e => { e.preventDefault(); basicMutation.mutate({
                 name: bForm.name,
                 official_reference_number: bForm.official_reference_number.trim(),
-                investment_cycle: bForm.investment_cycle || null,
                 country_ids: bForm.countryIds.map(Number),
                 lead_country_id: Number(bForm.leadCountryId || bForm.countryIds[0]),
               }); }}>
@@ -940,10 +939,12 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
                     onChange={e => setBForm({...bForm, official_reference_number: e.target.value})} />
                 </div>
                 <div className="field">
-                  <label className="field-label" htmlFor="investmentCycle">Investment cycle</label>
-                  <Select id="investmentCycle" options={INVESTMENT_CYCLE_CHOICES}
-                    value={bForm.investment_cycle}
-                    onChange={v => setBForm({...bForm, investment_cycle: v})} />
+                  <span className="field-label">Investment cycle</span>
+                  <div className="row" style={{ gap: 6, alignItems: "center" }}>
+                    {project.investment_cycle || "—"}
+                    <Icon name="lock" size={11} style={{ color: "var(--subtle)" }} />
+                  </div>
+                  <span className="field-help">The project type is fixed at creation.</span>
                 </div>
                 <div className="field">
                   <label className="field-label">Countries <span className="req">*</span></label>
@@ -1103,7 +1104,8 @@ export default function ProjectDetail({ projectId, activeTab = "overview", onTab
             ) : (
               <>
               <div className="dl">
-                <Dt term="Pillar">{project.pillar_name || "—"}</Dt>
+                <Dt term="Classification">{project.taxonomy === "isdb" ? "IsDB" : "LLF"}</Dt>
+                {project.taxonomy === "isdb" && <Dt term="Pillar">{project.pillar_name || "—"}</Dt>}
                 <Dt term="Primary Sector">
                   {project.primary_sector_name ? (
                     <span className="row" style={{ gap: 8, alignItems: "center" }}>

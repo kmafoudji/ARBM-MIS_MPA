@@ -56,6 +56,9 @@ const AGENCY_TYPES = [
   ["private", "Private Sector"],
 ];
 
+// Two independent sector classifications (ADR 0014).
+const TAXONOMIES = [["llf", "LLF"], ["isdb", "IsDB"]];
+
 const STATUS_FILTER = {
   key: "is_active",
   label: "Status",
@@ -136,14 +139,16 @@ const TABS = [
     label: "Sectors",
     url: "/api/reference/sectors/",
     singular: "sector",
-    sub: "Piliers LLF2 et themes transversaux",
+    sub: "LLF sectors, and IsDB pillars with their sectors",
     fields: [
       { name: "name", label: "Sector Name", type: "text", required: true },
       { name: "code", label: "Code", type: "text", required: false, help: "Optional — auto-generated from name if left empty." },
+      { name: "taxonomy", label: "Classification", type: "select", required: true, options: TAXONOMIES,
+        help: "LLF sectors are flat; IsDB sectors sit under an IsDB pillar. Fixed once the sector is in use." },
       { name: "icon", label: "Pictogramme", type: "icon-select", options: ICON_OPTIONS },
       { name: "color", label: "Color", type: "color" },
       { name: "parent", label: "Parent Sector", type: "select", optionsKey: "sectors",
-        help: "Leave empty for a top-level sector." },
+        help: "IsDB only: the pillar this sector belongs to. Leave empty for a pillar or an LLF sector." },
     ],
   },
   {
@@ -191,7 +196,7 @@ export default function MasterData({ canEdit }) {
   const optionSources = {
     hubs: (hubs || []).filter((h) => h.is_active).map((h) => [h.id, h.name]),
     countries: (countries || []).filter((c) => c.is_active).map((c) => [c.id, c.name]),
-    sectors: (sectors || []).filter((s) => !s.parent && s.is_active).map((s) => [s.id, s.name]),
+    sectors: (sectors || []).filter((s) => !s.parent && s.is_active && s.taxonomy === "isdb").map((s) => [s.id, s.name]),
   };
 
   const idField = tab.idField || "id";
@@ -355,10 +360,12 @@ export default function MasterData({ canEdit }) {
     },
     sectors: {
       searchKeys: ["name", "code"],
-      filters: [STATUS_FILTER],
+      filters: [{ key: "taxonomy", label: "Classification", options: TAXONOMIES }, STATUS_FILTER],
       columns: [
         { key: "icon", label: "", width: 52, render: (r) => <SectorIcon name={r.icon} color={r.color} /> },
         { key: "name", label: "Sector", sortable: true, render: (r) => <strong style={{ fontWeight: 500 }}>{r.name}</strong> },
+        { key: "taxonomy", label: "Classification", width: 120, sortable: true,
+          render: (r) => <span className="badge">{r.taxonomy === "isdb" ? "IsDB" : "LLF"}</span> },
         { key: "parent_name", label: "Linked to", width: 184, render: (r) => r.parent_name || <span className="text-muted text-xs">First level</span> },
         { key: "usage_count", label: "Projects", width: 78, cellClass: "text-mono text-xs", sortable: true },
         ...statusCol,
