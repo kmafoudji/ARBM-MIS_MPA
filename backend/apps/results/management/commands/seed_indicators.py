@@ -58,17 +58,20 @@ class Command(BaseCommand):
         with open(fixture_path, encoding="utf-8") as f:
             data = json.load(f)
 
-        # Charger les references une seule fois pour eviter N+1
+        # Charger les references une seule fois pour eviter N+1. Le secteur
+        # d'un indicateur est un secteur IsDB (ADR 0014) : les secteurs LLF
+        # portent les memes noms et sont exclus de la recherche.
+        isdb_sectors = Sector.objects.filter(taxonomy="isdb")
         try:
-            sector_obj = Sector.objects.get(name__icontains=sector_name)
+            sector_obj = isdb_sectors.get(name__icontains=sector_name)
         except Sector.DoesNotExist:
             self.stderr.write(self.style.ERROR(
                 f"Secteur '{sector_name}' introuvable dans la base de reference. "
-                f"Secteurs disponibles : {list(Sector.objects.values_list('name', flat=True))}"
+                f"Secteurs disponibles : {list(isdb_sectors.values_list('name', flat=True))}"
             ))
             return
         except Sector.MultipleObjectsReturned:
-            sector_obj = Sector.objects.filter(name__icontains=sector_name).first()
+            sector_obj = isdb_sectors.filter(name__icontains=sector_name).first()
 
         sdg_map = {s.number: s for s in Sdg.objects.all()}
 

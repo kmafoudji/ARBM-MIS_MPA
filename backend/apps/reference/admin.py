@@ -53,7 +53,8 @@ class ImplementingAgencyAdmin(admin.ModelAdmin):
 
 @admin.register(Sector)
 class SectorAdmin(admin.ModelAdmin):
-    list_display = ("sequence", "code", "name", "parent")
+    list_display = ("taxonomy", "sequence", "code", "name", "parent")
+    list_filter = ("taxonomy",)
 
 
 @admin.register(Sdg)
