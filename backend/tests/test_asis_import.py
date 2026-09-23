@@ -56,6 +56,7 @@ HEADERS = {
         "indicator_code", "chain_level", "sector", "name", "definition", "unit",
         "direction", "baseline_value", "baseline_year", "end_target_value",
         "end_target_date", "reporting_frequency", "toc_node_ref (informational)",
+        "llf_sector",
     ],
     "08_logframe_targets": ["indicator_code", "target_date", "target_value", "is_original_pad"],
     "09_components": ["code", "parent_code", "level", "sequence", "name"],
@@ -104,7 +105,7 @@ def base_rows(country_iso3, hub_code, sector_code):
         "07_indicators_logframe": [[
             "REF001-IND-01", "output", sector_code, "Test indicator",
             "Definition", "Hectares", "increase", 0, 2024, 100, "2026-12-31",
-            "annual", "REF001-OUT-1",
+            "annual", "REF001-OUT-1", "",
         ]],
         "08_logframe_targets": [],
         "09_components": [
@@ -1094,4 +1095,60 @@ def test_a_reload_cannot_change_the_project_type(auth_client, rows):
     rows["01_project"][0][CYCLE_COLUMN] = ""
     response = post(auth_client, build_workbook(rows))
     assert not any(e.get("column") == "investment_cycle" for e in response.data["errors"]), \
+        messages(response.data["errors"])
+
+
+INDICATOR_LLF_COLUMN = HEADERS["07_indicators_logframe"].index("llf_sector")
+INDICATOR_SECTOR_COLUMN = HEADERS["07_indicators_logframe"].index("sector")
+
+
+def llf_project_rows(rows):
+    """The base workbook as an LLF1 project in an LLF sector."""
+    SectorFactory(code="LLF_AGRI", taxonomy="llf")
+    rows["01_project"][0][CYCLE_COLUMN] = "LLF1"
+    rows["01_project"][0][SECTOR_COLUMN] = "LLF_AGRI"
+    return rows
+
+
+@pytest.mark.django_db
+def test_a_new_indicator_of_an_llf_project_takes_the_project_llf_sector(auth_client, rows):
+    from apps.results.models import Indicator
+
+    commit_once(auth_client, llf_project_rows(rows))
+    indicator = Indicator.objects.get(code="REF001-IND-01")
+    assert indicator.sector.code == "sector-test"
+    assert indicator.llf_sector.code == "LLF_AGRI"
+
+
+@pytest.mark.django_db
+def test_an_explicit_llf_sector_wins(auth_client, rows):
+    from apps.results.models import Indicator
+
+    SectorFactory(code="LLF_HEALTH", taxonomy="llf")
+    rows = llf_project_rows(rows)
+    rows["07_indicators_logframe"][0][INDICATOR_LLF_COLUMN] = "LLF_HEALTH"
+    commit_once(auth_client, rows)
+    assert Indicator.objects.get(code="REF001-IND-01").llf_sector.code == "LLF_HEALTH"
+
+
+@pytest.mark.django_db
+def test_an_isdb_project_indicator_gets_no_llf_sector(auth_client, rows):
+    from apps.results.models import Indicator
+
+    commit_once(auth_client, rows)
+    assert Indicator.objects.get(code="REF001-IND-01").llf_sector is None
+
+
+@pytest.mark.django_db
+def test_indicator_sectors_are_checked_against_their_taxonomy(auth_client, rows):
+    rows = llf_project_rows(rows)
+    rows["07_indicators_logframe"][0][INDICATOR_SECTOR_COLUMN] = "LLF_AGRI"
+    response = post(auth_client, build_workbook(rows))
+    assert any(e.get("column") == "sector" for e in response.data["errors"]), \
+        messages(response.data["errors"])
+
+    rows["07_indicators_logframe"][0][INDICATOR_SECTOR_COLUMN] = "sector-test"
+    rows["07_indicators_logframe"][0][INDICATOR_LLF_COLUMN] = "sector-test"
+    response = post(auth_client, build_workbook(rows))
+    assert any(e.get("column") == "llf_sector" for e in response.data["errors"]), \
         messages(response.data["errors"])

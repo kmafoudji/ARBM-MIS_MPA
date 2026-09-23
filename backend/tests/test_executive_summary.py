@@ -110,7 +110,7 @@ class TestHeadline:
         ProjectFactory(investment_cycle="LLF2")
         ProjectFactory(investment_cycle=None)
         by_cycle = {c["label"]: c["count"] for c in auth_client.get(URL).data["headline"]["projects_by_cycle"]}
-        assert by_cycle == {"LLF1": 1, "LLF2": 1, "IsDB": 0, "No cycle": 1}
+        assert by_cycle == {"LLF1": 1, "LLF2": 1, "No cycle": 1}
 
     def test_a_project_without_financing_is_counted_not_zeroed(self, auth_client):
         ProjectFactory()
@@ -163,7 +163,7 @@ class TestLifecycle:
         buckets = {b["key"]: b for b in auth_client.get(URL).data["lifecycle"]}
         assert buckets["preparation"]["count"] == 1
         assert buckets["implementing"]["count"] == 2
-        assert buckets["implementing"]["by_cycle"] == {"LLF1": 1, "LLF2": 0, "IsDB": 0, "none": 1}
+        assert buckets["implementing"]["by_cycle"] == {"LLF1": 1, "LLF2": 0, "none": 1}
         labels = " ".join(b["label"] for b in buckets.values()).lower()
         assert "gate" not in labels
 

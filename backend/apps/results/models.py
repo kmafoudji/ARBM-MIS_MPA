@@ -121,7 +121,18 @@ class Indicator(models.Model):
     """
 
     code    = models.CharField(max_length=20, unique=True)
-    sector  = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name="indicators")
+    # Deux classifications independantes (ADR 0014) : tout indicateur a un
+    # secteur IsDB ; seuls ceux qu'utilise le Fonds ont aussi un secteur LLF.
+    sector  = models.ForeignKey(
+        Sector, on_delete=models.PROTECT, related_name="indicators",
+        limit_choices_to={"taxonomy": "isdb"},
+        help_text="IsDB sector (ADR 0014). Required.",
+    )
+    llf_sector = models.ForeignKey(
+        Sector, on_delete=models.PROTECT, related_name="llf_indicators",
+        null=True, blank=True, limit_choices_to={"taxonomy": "llf"},
+        help_text="LLF sector, for the indicators the Fund uses (ADR 0014).",
+    )
     subsector = models.CharField(max_length=150, blank=True)
     name    = models.TextField()
 

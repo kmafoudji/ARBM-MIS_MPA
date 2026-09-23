@@ -23,6 +23,7 @@ from .models import (
 
 class IndicatorListSerializer(serializers.ModelSerializer):
     sector_name            = serializers.CharField(source="sector.name", read_only=True)
+    llf_sector_name        = serializers.CharField(source="llf_sector.name", read_only=True, default=None)
     indicator_type_display = serializers.CharField(source="get_indicator_type_display", read_only=True)
     direction_display      = serializers.CharField(source="get_direction_display", read_only=True)
     aggregation_rule_display = serializers.CharField(
@@ -34,7 +35,7 @@ class IndicatorListSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Indicator
         fields = [
-            "id", "code", "sector", "sector_name", "subsector",
+            "id", "code", "sector", "sector_name", "llf_sector", "llf_sector_name", "subsector",
             "name", "indicator_type", "indicator_type_display",
             "direction", "direction_display", "unit",
             "aggregation_rule", "aggregation_rule_display",
@@ -50,6 +51,7 @@ class IndicatorListSerializer(serializers.ModelSerializer):
 
 class IndicatorDetailSerializer(serializers.ModelSerializer):
     sector_name                = serializers.CharField(source="sector.name", read_only=True)
+    llf_sector_name            = serializers.CharField(source="llf_sector.name", read_only=True, default=None)
     indicator_type_display     = serializers.CharField(source="get_indicator_type_display", read_only=True)
     direction_display          = serializers.CharField(source="get_direction_display", read_only=True)
     reporting_frequency_display = serializers.CharField(
@@ -64,7 +66,7 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Indicator
         fields = [
-            "id", "code", "sector", "sector_name", "subsector",
+            "id", "code", "sector", "sector_name", "llf_sector", "llf_sector_name", "subsector",
             "name", "indicator_type", "indicator_type_display",
             "direction", "direction_display", "definition", "unit",
             "numerator", "denominator", "calculation_method", "formula",

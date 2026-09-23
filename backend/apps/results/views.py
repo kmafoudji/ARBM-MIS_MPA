@@ -13,7 +13,7 @@ from apps.identity.permissions import ReadOnlyOrHasModulePermission
 from core.scope import ProjectInScope, hub_q
 from apps.project.models import Project
 
-from apps.reference.models import Sdg
+from apps.reference.models import Sdg, Sector
 from .models import (
     AGGREGATION_RULE_CHOICES,
     CHAIN_LEVEL_CHOICES,
@@ -67,14 +67,26 @@ class IndicatorListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from apps.reference.filters import (
+            indicator_sector_field, read_project_type, read_sector_id, sector_q,
+        )
+
         qs = (Indicator.objects.filter(is_active=True)
-              .select_related("sector")
+              .select_related("sector", "llf_sector")
               .prefetch_related("related_sdgs"))
-        sector = request.query_params.get("sector")
+        # ADR 0014 : sans ?taxonomy=, tout le catalogue (le selecteur du cadre
+        # logique en a besoin) ; avec, les indicateurs de cette taxonomie, et
+        # ?sector= parle la meme (un pilier IsDB englobe ses secteurs).
+        # ?type= designe deja le type d'indicateur sur cette route.
+        params = request.query_params
+        if params.get("taxonomy"):
+            field = indicator_sector_field(read_project_type(params, name="taxonomy"))
+            qs = qs.filter(**{f"{field}__isnull": False})
+        else:
+            field = "sector"
+        sector = read_sector_id(params)
         if sector:
-            # Un pilier (ADR 0007) englobe ses secteurs.
-            from django.db.models import Q
-            qs = qs.filter(Q(sector_id=sector) | Q(sector__parent_id=sector))
+            qs = qs.filter(sector_q(field, sector))
         indicator_type = request.query_params.get("type")
         if indicator_type:
             qs = qs.filter(indicator_type=indicator_type)
@@ -199,6 +211,26 @@ class IndicatorDetailView(APIView):
                 errors["related_sdg_numbers"] = "Expected a list of SDG numbers."
             elif Sdg.objects.filter(number__in=sdg_numbers).count() != len(set(sdg_numbers)):
                 errors["related_sdg_numbers"] = "Unknown SDG number."
+
+        # Les deux secteurs (ADR 0014) : chacun dans sa taxonomie ; le
+        # secteur IsDB est obligatoire et jamais un pilier, le LLF facultatif.
+        for field, taxonomy, required in (("sector", "isdb", True), ("llf_sector", "llf", False)):
+            if field not in request.data:
+                continue
+            value = request.data.get(field)
+            if value in (None, ""):
+                if required:
+                    errors[field] = "An indicator needs an IsDB sector."
+                else:
+                    data[field] = None
+                continue
+            sector = Sector.objects.filter(pk=value, taxonomy=taxonomy).first() if str(value).isdigit() else None
+            if sector is None:
+                errors[field] = f"Expected a {taxonomy.upper()} sector."
+            elif sector.is_pillar:
+                errors[field] = f"'{sector.name}' is a pillar; choose one of its sectors."
+            else:
+                data[field] = sector
 
         if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1028,9 +1060,13 @@ class PortfolioAggregationView(APIView):
         from apps.project.models import Project, ReportingPeriod
         from .models import ResultsData, LogframeRow
 
+        from apps.reference.filters import read_project_type, read_sector_id, sector_q
+
         # ── Filtres ──────────────────────────────────────────────────────────
+        # ?type= (ADR 0014) : un seul type de projet a la fois, LLF par defaut.
+        project_type = read_project_type(request.query_params)
         hub_id      = request.query_params.get("hub")
-        sector_id   = request.query_params.get("sector")
+        sector_id   = read_sector_id(request.query_params)
         period_id   = request.query_params.get("period")
         chain_level = request.query_params.get("chain_level")
         country_id  = request.query_params.get("country")
@@ -1040,7 +1076,7 @@ class PortfolioAggregationView(APIView):
         # Projets Effective uniquement (workspace actif), dans le perimetre
         # de l'utilisateur (core/scope.py). ?hub= ne peut que restreindre a
         # l'interieur de ce perimetre, jamais l'elargir.
-        projects = Project.objects.in_scope(request).filter(
+        projects = Project.objects.in_scope(request).of_taxonomy(project_type).filter(
             workspace__isnull=False,
         ).select_related("hub", "primary_sector")
 
@@ -1048,9 +1084,7 @@ class PortfolioAggregationView(APIView):
             projects = projects.filter(hub_q((hub_id,))).distinct()
         if sector_id:
             # Un pilier (ADR 0007) englobe ses secteurs.
-            projects = projects.filter(
-                Q(primary_sector_id=sector_id) | Q(primary_sector__parent_id=sector_id)
-            )
+            projects = projects.filter(sector_q("primary_sector", sector_id))
         if country_id:
             projects = projects.filter(
                 project_countries__country_id=country_id
@@ -1250,6 +1284,7 @@ class PortfolioAggregationView(APIView):
             },
             "filters": {
                 "hub":         hub_id,
+                "type":        project_type,
                 "sector":      sector_id,
                 "period":      period_id,
                 "chain_level": chain_level,
@@ -1917,7 +1952,7 @@ class DQPortfolioView(APIView):
     """
     GET /api/results/dq-portfolio/
         DQ Score agrégé sur tout le portefeuille ou filtré par projet.
-        ?project=<id>
+        ?project=<id>, sinon ?type=llf|isdb (LLF par defaut, ADR 0014).
     """
     permission_classes = [IsAuthenticated, ReadOnlyOrHasModulePermission]
     permission_module  = "m1_config_access"
@@ -1926,13 +1961,19 @@ class DQPortfolioView(APIView):
         from .dq_service import compute_dq_score
         from apps.project.models import Project
 
+        from apps.reference.filters import read_project_type
+
         project_id = request.query_params.get("project")
-        # Meme denominateur que le portefeuille : perimetre de l'utilisateur.
+        # Meme denominateur que le portefeuille : perimetre de l'utilisateur,
+        # un seul type de projet a la fois sauf pour un projet donne.
+        projects = Project.objects.in_scope(request)
+        if not project_id:
+            projects = projects.of_taxonomy(read_project_type(request.query_params))
         rows_qs = LogframeRow.objects.select_related(
             "indicator", "project"
         ).filter(
             project__workspace__isnull=False,
-            project__in=Project.objects.in_scope(request),
+            project__in=projects,
         )
 
         if project_id:

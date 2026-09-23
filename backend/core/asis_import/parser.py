@@ -1347,15 +1347,35 @@ def _parse_indicators(context):
             )
             continue
 
+        # ADR 0014: `sector` is the indicator's IsDB sector, always required;
+        # `llf_sector` is its LLF sector, optional.
         sector_key = as_text(values.get("sector"))
-        sector = Sector.objects.filter(code__iexact=sector_key).first() if sector_key else None
+        sector = (
+            Sector.objects.filter(code__iexact=sector_key, taxonomy="isdb").first()
+            if sector_key else None
+        )
         if sector is None:
             context.error(
                 SHEET_INDICATORS, row_number,
-                f"indicator.sector is a required PROTECT FK; unknown sector: {sector_key!r}.",
+                f"indicator.sector is a required IsDB sector; unknown IsDB sector: {sector_key!r}.",
                 column="sector",
             )
             continue
+
+        llf_key = as_text(values.get("llf_sector"))
+        llf_sector = None
+        if llf_key:
+            llf_sector = Sector.objects.filter(code__iexact=llf_key, taxonomy="llf").first()
+            if llf_sector is None:
+                context.error(
+                    SHEET_INDICATORS, row_number,
+                    f"llf_sector: unknown LLF sector {llf_key!r}.", column="llf_sector",
+                )
+                continue
+        else:
+            # A new indicator of an LLF project is the project's own: without
+            # an explicit LLF sector it takes the project's.
+            llf_sector = _llf_project_sector(context)
 
         chain_level = _read_enum(
             context, SHEET_INDICATORS, row_number, values, "chain_level", vocab.CHAIN_LEVELS
@@ -1399,6 +1419,7 @@ def _parse_indicators(context):
             # whatever type the LLFMU gave it (POL-2.01).
             "indicator_type": "project_specific",
             "sector_id": sector.pk,
+            "llf_sector_id": llf_sector.pk if llf_sector else None,
             "definition": definition,
             "unit": unit,
             "direction": direction,
@@ -2735,6 +2756,17 @@ def _report_drift(context):
 # ---------------------------------------------------------------------------
 # Cell readers backed by the plan
 # ---------------------------------------------------------------------------
+
+
+def _llf_project_sector(context):
+    """The primary sector of the project being loaded, if it is an LLF project."""
+    fields = context.project_fields
+    project = context.project
+    cycle = fields.get("investment_cycle") or (project.investment_cycle if project else None)
+    sector = fields.get("primary_sector") or (project.primary_sector if project else None)
+    if taxonomy_for_cycle(cycle) == "llf" and sector is not None and sector.taxonomy == "llf":
+        return sector
+    return None
 
 
 def _read_enum(context, sheet_name, row_number, values, column, allowed):
