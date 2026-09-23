@@ -44,7 +44,7 @@ HEADERS = {
         "primary_sector", "sdgs", "we_category",
         "climate_marker", "risk_rating", "budget_amount", "currency",
         "reporting_frequency", "next_reporting_due", "lifecycle_stage",
-        "start_date", "end_date",
+        "start_date", "end_date", "investment_cycle",
     ],
     "02a_envelope": ["official_reference_number", "notes"],
     "02_financing_source": ["source (enum)", "instrument (enum)", "amount", "currency", "amount_usd", "note"],
@@ -91,7 +91,7 @@ def base_rows(country_iso3, hub_code, sector_code):
         "01_project": [[
             "REF001", PROJECT_NAME, country_iso3, hub_code, sector_code,
             "1; 2; 5", "", "", "tbd", 1000, "USD", "quarterly",
-            "2025-03-31", "LS013", "2025-01-01", "2026-12-31",
+            "2025-03-31", "LS013", "2025-01-01", "2026-12-31", "IsDB",
         ]],
         "02a_envelope": [["REF001", "Envelope note"]],
         "02_financing_source": [
@@ -1044,3 +1044,54 @@ def test_toc_format_defects_are_errors(auth_client, rows):
     assert "REF001-ACT-1 appears more than once" in text
     assert "'impact' is not a value the model accepts" in text
     assert "06_toc_nodes" not in response.data["summary"]
+
+
+# ---------------------------------------------------------------------------
+# Project type and sector taxonomy (ADR 0014)
+# ---------------------------------------------------------------------------
+
+CYCLE_COLUMN = HEADERS["01_project"].index("investment_cycle")
+SECTOR_COLUMN = HEADERS["01_project"].index("primary_sector")
+
+
+@pytest.mark.django_db
+def test_a_new_project_needs_its_type(auth_client, rows):
+    rows["01_project"][0][CYCLE_COLUMN] = ""
+    response = post(auth_client, build_workbook(rows))
+    assert response.status_code == 422, response.data
+    assert any("investment_cycle is required" in e["message"] for e in response.data["errors"]), \
+        messages(response.data["errors"])
+
+
+@pytest.mark.django_db
+def test_the_sector_must_belong_to_the_project_taxonomy(auth_client, rows):
+    """An LLF1 project names an IsDB sector: rejected, with the LLF codes listed."""
+    SectorFactory(code="LLF_AGRI", taxonomy="llf")
+    rows["01_project"][0][CYCLE_COLUMN] = "LLF1"
+    response = post(auth_client, build_workbook(rows))
+    errors = [e["message"] for e in response.data["errors"] if e.get("column") == "primary_sector"]
+    assert errors and "LLF_AGRI" in errors[0], messages(response.data["errors"])
+
+    rows["01_project"][0][SECTOR_COLUMN] = "LLF_AGRI"
+    response = post(auth_client, build_workbook(rows))
+    assert not [e for e in response.data["errors"] if e.get("column") == "primary_sector"], \
+        messages(response.data["errors"])
+
+
+@pytest.mark.django_db
+def test_a_reload_cannot_change_the_project_type(auth_client, rows):
+    from apps.project.models import Project
+
+    commit_once(auth_client, rows)
+    assert Project.objects.get(official_reference_number="REF001").investment_cycle == "IsDB"
+
+    rows["01_project"][0][CYCLE_COLUMN] = "LLF2"
+    response = post(auth_client, build_workbook(rows))
+    assert any("fixed at creation" in e["message"] for e in response.data["errors"]), \
+        messages(response.data["errors"])
+
+    # Leaving the column empty keeps the stored type.
+    rows["01_project"][0][CYCLE_COLUMN] = ""
+    response = post(auth_client, build_workbook(rows))
+    assert not any(e.get("column") == "investment_cycle" for e in response.data["errors"]), \
+        messages(response.data["errors"])
