@@ -17,6 +17,7 @@ from decimal import Decimal, InvalidOperation
 from openpyxl import load_workbook
 
 from apps.project.models import (
+    INVESTMENT_CYCLE_CHOICES,
     LIFECYCLE_ORDER,
     FinancingSource,
     Project,
@@ -25,6 +26,7 @@ from apps.project.models import (
     ProjectImplementingPartner,
     ProjectWorkspace,
     ReportingPeriod,
+    taxonomy_for_cycle,
 )
 from apps.reference.models import (
     Country,
@@ -573,7 +575,7 @@ def parse(file_obj):
 # classification rework retired gender_marker, rio_marker_*, ...) would
 # otherwise lose its values without anyone noticing.
 PROJECT_COLUMNS = frozenset({
-    "official_reference_number", "name", "lead_country_iso3",
+    "official_reference_number", "name", "investment_cycle", "lead_country_iso3",
     "hub_code", "primary_sector", "sdgs", "primary_sdg", "contributing_sdgs",
     "lifecycle_stage", "we_category", "risk_rating", "climate_marker",
     "reporting_frequency", "beneficiary_target_direct", "beneficiary_target_indirect",
@@ -649,6 +651,40 @@ def _parse_project(context):
         else:
             desired["hub"] = hub
 
+    # -- project type (ADR 0014) -------------------------------------------
+    # The cycle is chosen once, when the project is created, and selects the
+    # sector taxonomy. A workbook for an existing project may repeat it but
+    # never change it.
+    cycle_text = as_text(values.get("investment_cycle"))
+    cycles = {code.lower(): code for code, _label in INVESTMENT_CYCLE_CHOICES}
+    cycle = cycles.get(cycle_text.lower()) if cycle_text else None
+    if cycle_text and cycle is None:
+        context.error(
+            SHEET_PROJECT, row_number,
+            f"investment_cycle: {cycle_text!r} is not a project type. Accepted values: "
+            + ", ".join(cycles.values()),
+            column="investment_cycle",
+        )
+    elif context.project is not None:
+        if cycle is not None and cycle != context.project.investment_cycle:
+            context.error(
+                SHEET_PROJECT, row_number,
+                f"investment_cycle: the project is {context.project.investment_cycle or 'untyped'} "
+                f"and its type is fixed at creation; the workbook says {cycle}.",
+                column="investment_cycle",
+            )
+        cycle = context.project.investment_cycle
+    elif cycle is None:
+        context.error(
+            SHEET_PROJECT, row_number,
+            "investment_cycle is required for a new project (LLF1, LLF2 or IsDB): "
+            "it fixes the project type and its sector classification.",
+            column="investment_cycle",
+        )
+    else:
+        desired["investment_cycle"] = cycle
+    taxonomy = taxonomy_for_cycle(cycle)
+
     sector_key = as_text(values.get("primary_sector"))
     if sector_key:
         sector = Sector.objects.filter(code__iexact=sector_key).first()
@@ -656,6 +692,22 @@ def _parse_project(context):
             context.error(
                 SHEET_PROJECT, row_number,
                 f"Unknown primary sector: {sector_key}.", column="primary_sector",
+            )
+        elif sector.taxonomy != taxonomy:
+            valid = Sector.objects.filter(taxonomy=taxonomy, is_active=True, children__isnull=True)
+            context.error(
+                SHEET_PROJECT, row_number,
+                f"primary_sector: {sector.code} belongs to the {sector.taxonomy.upper()} "
+                f"classification, and this {cycle or 'LLF'} project takes "
+                f"{taxonomy.upper()} sectors: "
+                + ", ".join(valid.values_list("code", flat=True).distinct()),
+                column="primary_sector",
+            )
+        elif sector.is_pillar:
+            context.error(
+                SHEET_PROJECT, row_number,
+                f"primary_sector: {sector.code} is a pillar; choose one of its sectors.",
+                column="primary_sector",
             )
         else:
             desired["primary_sector"] = sector

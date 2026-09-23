@@ -12,13 +12,15 @@ au lieu de detruire. Un element desactive reste attache aux donnees qui le
 referencent deja ; il n'est simplement plus proposable pour de nouvelles
 saisies.
 """
+from django.db.models import Q
 from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
 
-from .models import Country, CrossCuttingTheme, Currency, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
+from .models import TAXONOMY_CHOICES, TAXONOMY_ISDB, TAXONOMY_LLF, Country, CrossCuttingTheme, Currency, Donor, ImplementingAgency, RegionalHub, Sdg, Sector
 from .serializers import (
     CurrencySerializer,
     CountrySerializer,
@@ -75,7 +77,8 @@ class SectorViewSet(ReferenceViewSet):
     """
     Taxonomie a deux niveaux (ADR 0007). Filtres optionnels :
     `?level=pillar` (sans parent) / `?level=sector` (avec parent),
-    `?parent=<id>` (les secteurs d'un pilier), `?is_active=true|false`.
+    `?parent=<id>` (les secteurs d'un pilier), `?is_active=true|false`,
+    `?taxonomy=llf|isdb` (ADR 0014).
     Sans filtre : tout, y compris les desactives (l'admin en a besoin).
     """
 
@@ -86,16 +89,22 @@ class SectorViewSet(ReferenceViewSet):
         qs = super().get_queryset()
         params = self.request.query_params
         level = params.get("level")
+        # LLF est plate (ADR 0014) : ses secteurs sont des secteurs, jamais des piliers.
         if level == "pillar":
-            qs = qs.filter(parent__isnull=True)
+            qs = qs.filter(parent__isnull=True, taxonomy=TAXONOMY_ISDB)
         elif level == "sector":
-            qs = qs.filter(parent__isnull=False)
+            qs = qs.filter(Q(parent__isnull=False) | Q(taxonomy=TAXONOMY_LLF))
         parent = params.get("parent")
         if parent:
             qs = qs.filter(parent_id=parent)
         is_active = params.get("is_active")
         if is_active is not None:
             qs = qs.filter(is_active=is_active.lower() in ("1", "true", "yes"))
+        taxonomy = params.get("taxonomy")
+        if taxonomy:
+            if taxonomy not in dict(TAXONOMY_CHOICES):
+                raise ValidationError({"taxonomy": "Expected llf or isdb."})
+            qs = qs.filter(taxonomy=taxonomy)
         return qs
 
 

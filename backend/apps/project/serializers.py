@@ -5,8 +5,10 @@ from apps.identity.models import AppUser
 from apps.reference.models import Country, Sdg, Sector
 
 from .models import (
+    INVESTMENT_CYCLE_CHOICES,
     LIFECYCLE_STAGE_CHOICES,
     Project,
+    taxonomy_for_cycle,
     ProjectImplementingPartner,
     ProjectStageTransition,
 )
@@ -14,7 +16,7 @@ from .services import (
     set_project_countries,
     set_project_sdgs,
     set_project_sectors,
-    validate_sector_is_not_pillar,
+    validate_project_sector,
 )
 
 
@@ -34,20 +36,33 @@ def validate_official_reference_number(value, exclude_pk=None):
 
 
 def _pillar_of(project):
-    """Pilier du secteur primaire (ADR 0007) ; suppose primary_sector charge."""
-    return project.primary_sector.pillar
+    """Pilier du secteur primaire (ADR 0007), None sans secteur ou en LLF (ADR 0014)."""
+    return project.primary_sector.pillar if project.primary_sector_id else None
 
 
-def validate_primary_sector_value(value):
-    """ADR 0007 : le secteur primaire est un secteur, pas un pilier."""
-    try:
-        validate_sector_is_not_pillar(value)
-    except DjangoValidationError as exc:
-        raise serializers.ValidationError(exc.messages)
-    return value
+def validate_sectors_for_taxonomy(taxonomy, primary_sector=None, contributing_sectors=()):
+    """
+    ADR 0007 + 0014 : secteurs (jamais un pilier) de la taxonomie du projet.
+    Renvoie les erreurs par champ, a lever par l'appelant.
+    """
+    errors = {}
+    for field, sectors in (
+        ("primary_sector", [primary_sector] if primary_sector else []),
+        ("contributing_sector_ids", contributing_sectors),
+    ):
+        messages = []
+        for sector in sectors:
+            try:
+                validate_project_sector(sector, taxonomy)
+            except DjangoValidationError as exc:
+                messages.extend(exc.messages)
+        if messages:
+            errors[field] = messages
+    return errors
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
+    taxonomy = serializers.CharField(read_only=True)
     lead_country_name = serializers.SerializerMethodField()
     lead_country_iso2 = serializers.SerializerMethodField()
     country_names = serializers.SerializerMethodField()
@@ -94,7 +109,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             "id", "name", "official_reference_number",
-            "investment_cycle",
+            "investment_cycle", "taxonomy",
             "lead_country_name", "lead_country_iso2", "country_names",
             "primary_sector", "primary_sector_name", "primary_sector_icon",
             "primary_sector_color", "pillar_id", "pillar_name",
@@ -106,10 +121,12 @@ class ProjectListSerializer(serializers.ModelSerializer):
         ]
 
     def get_pillar_id(self, obj):
-        return _pillar_of(obj).id if obj.primary_sector_id else None
+        pillar = _pillar_of(obj)
+        return pillar.id if pillar else None
 
     def get_pillar_name(self, obj):
-        return _pillar_of(obj).name if obj.primary_sector_id else None
+        pillar = _pillar_of(obj)
+        return pillar.name if pillar else None
 
     def get_hub_name(self, obj):
         if obj.hub_id:
@@ -158,6 +175,8 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     official_reference_number = serializers.CharField(
         max_length=50, required=True, allow_blank=False, trim_whitespace=True
     )
+    # Le type de projet se choisit ici et ne change plus (ADR 0014).
+    investment_cycle = serializers.ChoiceField(choices=INVESTMENT_CYCLE_CHOICES)
 
     class Meta:
         model = Project
@@ -173,8 +192,15 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     def validate_official_reference_number(self, value):
         return validate_official_reference_number(value)
 
-    def validate_primary_sector(self, value):
-        return validate_primary_sector_value(value)
+    def validate(self, attrs):
+        errors = validate_sectors_for_taxonomy(
+            taxonomy_for_cycle(attrs["investment_cycle"]),
+            attrs.get("primary_sector"),
+            attrs.get("contributing_sector_ids", []),
+        )
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
 
     def create(self, validated_data):
         country_ids = [c.id for c in validated_data.pop("country_ids")]
@@ -196,6 +222,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
+    taxonomy = serializers.CharField(read_only=True)
     lead_country_name = serializers.SerializerMethodField()
     countries_detail = serializers.SerializerMethodField()
     hub_name = serializers.SerializerMethodField()
@@ -226,10 +253,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     toc_node_count  = serializers.SerializerMethodField()
 
     def get_pillar_id(self, obj):
-        return _pillar_of(obj).id if obj.primary_sector_id else None
+        pillar = _pillar_of(obj)
+        return pillar.id if pillar else None
 
     def get_pillar_name(self, obj):
-        return _pillar_of(obj).name if obj.primary_sector_id else None
+        pillar = _pillar_of(obj)
+        return pillar.name if pillar else None
 
     def get_has_workspace(self, obj):
         return hasattr(obj, "workspace") and obj.workspace is not None
@@ -244,7 +273,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         model = Project
         fields = [
             "id", "name", "official_reference_number",
-            "investment_cycle", "lifecycle_stage", "lifecycle_stage_display",
+            "investment_cycle", "taxonomy", "lifecycle_stage", "lifecycle_stage_display",
             "lead_country_name", "countries_detail",
             "hub_name", "hub_color",
             "primary_sector", "primary_sector_name", "primary_sector_icon", "primary_sector_color",
@@ -341,8 +370,15 @@ class ProjectClassificationUpdateSerializer(serializers.ModelSerializer):
             "we_category", "risk_rating", "climate_marker",
         ]
 
-    def validate_primary_sector(self, value):
-        return validate_primary_sector_value(value)
+    def validate(self, attrs):
+        errors = validate_sectors_for_taxonomy(
+            self.instance.taxonomy,
+            attrs.get("primary_sector"),
+            attrs.get("contributing_sector_ids", []),
+        )
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
 
     def update(self, instance, validated_data):
         contributing_sector_ids = validated_data.pop("contributing_sector_ids", None)

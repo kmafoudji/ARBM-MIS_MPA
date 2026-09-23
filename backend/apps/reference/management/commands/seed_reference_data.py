@@ -181,8 +181,18 @@ AGENCIES = [
     ("care-intl",      "CARE International",                        "ngo",           None),
 ]
 
-# LLF2 sector taxonomy: three pillars and their sub-sectors, numbered as in
-# the LLF2 results framework. Codes are the short LLF2 codes; the numbering
+# Two independent sector taxonomies (ADR 0014). LLF: the Fund's own three
+# flat sectors, from the LLF sector mapping of September 2026; colours are the
+# --sec-health / --sec-agri / --sec-infra design tokens.
+# (code, sequence, name, icon, color)
+LLF_SECTORS = [
+    ("LLF_HEALTH", 1, "Health", "health", "#FB563B"),
+    ("LLF_AGRI", 2, "Agriculture & Food Security", "agriculture", "#0EB584"),
+    ("LLF_SOCINF", 3, "Social Infrastructure", "infrastructure", "#F49D07"),
+]
+
+# IsDB 2026-2030 sector taxonomy (called LLF2 before ADR 0014): three pillars
+# and their sub-sectors, numbered as in the LLF2 results framework. Codes are the short LLF2 codes; the numbering
 # is the `sequence` field, which drives the order without appearing in the name. The former slug sectors
 # (health, agriculture, infrastructure, gender, climate, general_agriculture,
 # sewerage_solid_waste, basic_infrastructure) were deleted from the maintained
@@ -351,10 +361,23 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"Agences d'implementation : {len(AGENCIES)} OK"))
 
+        for code, sequence, name, icon, color in LLF_SECTORS:
+            Sector.objects.update_or_create(
+                code=code,
+                defaults={
+                    "name": name, "sequence": sequence, "parent": None,
+                    "icon": icon, "color": color, "taxonomy": "llf",
+                },
+            )
+        self.stdout.write(self.style.SUCCESS(f"Secteurs LLF : {len(LLF_SECTORS)} OK"))
+
         for code, sequence, name, icon, color in SECTORS:
             sector, _ = Sector.objects.update_or_create(
                 code=code,
-                defaults={"name": name, "sequence": sequence, "parent": None, "icon": icon, "color": color},
+                defaults={
+                    "name": name, "sequence": sequence, "parent": None,
+                    "icon": icon, "color": color, "taxonomy": "isdb",
+                },
             )
             # Complete les secteurs seedes avant l'ajout des champs icone/couleur.
             if not sector.color:
@@ -366,7 +389,10 @@ class Command(BaseCommand):
             parent = Sector.objects.filter(code=parent_code).first()
             sector, _ = Sector.objects.update_or_create(
                 code=code,
-                defaults={"name": name, "sequence": sequence, "parent": parent, "icon": icon, "color": color},
+                defaults={
+                    "name": name, "sequence": sequence, "parent": parent,
+                    "icon": icon, "color": color, "taxonomy": "isdb",
+                },
             )
             if not sector.color:
                 sector.icon, sector.color = icon, color

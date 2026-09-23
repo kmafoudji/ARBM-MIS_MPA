@@ -45,7 +45,7 @@ Order matters: indicators resolve their sector by name, GADM areas attach to
 countries.
 
 ```bash
-dc exec -T backend python manage.py seed_reference_data   # currencies, 10 hubs, 57 countries, 11 LLF2 sectors — idempotent
+dc exec -T backend python manage.py seed_reference_data   # currencies, 10 hubs, 57 countries, 3 LLF + 11 IsDB sectors — idempotent
 dc exec -T backend python manage.py seed_sdg_targets      # the 169 SDG targets — idempotent
 dc exec -T backend python manage.py seed_indicators --dry-run
 dc exec -T backend python manage.py seed_indicators       # Agriculture catalogue: Crop (A001.*) and FAP (poultry, fisheries, aquaculture)
@@ -93,7 +93,10 @@ before the tables existed.
 Projects are loaded through the application: **Projects → Bulk Import**
 takes the 13-sheet AS-IS workbook and produces a change report before and
 after writing. The importer resolves sectors by `Sector.code`, so the sector
-codes in the workbook must exist in the database — see the next section.
+codes in the workbook must exist in the database — see the next section. A new
+project needs `investment_cycle` (LLF1, LLF2 or IsDB), and its sector codes
+must belong to that type's taxonomy
+([decisions/0014](decisions/0014-two-sector-taxonomies-llf-and-isdb.md)).
 
 ## What a fresh environment lacks
 
@@ -107,11 +110,17 @@ migration reproduces. A fresh environment comes up without it.
 | Scope rows deleted by hand for one project (ALB-0001) that the API had accepted outside the project's countries. | database only | Nothing missing; the API still accepts such rows until validated server-side. |
 | Loaded projects (the AS-IS workbooks). | database + the workbooks | Re-import through Bulk Import. |
 
-The sector seed ships the LLF2 taxonomy (three pillars, eight sectors under
-them, [decisions/0007](decisions/0007-sector-taxonomy-pillar-then-sector.md))
-since 5 September 2026, so a fresh environment resolves the AS-IS workbooks'
-sector codes. A project must name a sector, not a pillar. The workbooks written against the earlier slug codes
-(`agriculture`, `basic_infrastructure`) fail on `primary_sector` until recoded.
+The sector seed ships two independent taxonomies
+([decisions/0014](decisions/0014-two-sector-taxonomies-llf-and-isdb.md)): the
+three flat LLF sectors (`LLF_HEALTH`, `LLF_AGRI`, `LLF_SOCINF`) for LLF1/LLF2
+projects, and the IsDB one — three pillars, eight sectors under them,
+[decisions/0007](decisions/0007-sector-taxonomy-pillar-then-sector.md) — for
+IsDB projects. A project must name a sector of its own taxonomy, never a
+pillar. The AS-IS workbooks of the LLF projects were written against the IsDB
+codes (`AGRICU`, `HEALTH`) and without `investment_cycle`: they need the
+column and `LLF_AGRI`/`LLF_HEALTH` before they load into a fresh environment.
+The ones written against the earlier slug codes (`agriculture`,
+`basic_infrastructure`) need the same.
 
 ## Path B — restore a dump
 

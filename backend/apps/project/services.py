@@ -58,14 +58,29 @@ def validate_sector_is_not_pillar(sector):
         )
 
 
+def validate_project_sector(sector, taxonomy):
+    """
+    ADR 0014 : un projet ne prend que des secteurs de sa taxonomie (LLF ou
+    IsDB, fixee par le cycle). ADR 0007 s'applique en plus : jamais un pilier.
+    """
+    if sector is None:
+        return
+    if sector.taxonomy != taxonomy:
+        raise ValidationError(
+            f"'{sector.name}' is not a {taxonomy.upper()} sector; this project "
+            f"takes sectors of the {taxonomy.upper()} classification only."
+        )
+    validate_sector_is_not_pillar(sector)
+
+
 @transaction.atomic
 def set_project_sectors(project, contributing_sector_ids):
     """
     Remplace l'ensemble des secteurs contributifs d'un projet. Contrairement
     aux ODD (ADR 0006), les secteurs gardent un primaire : le portefeuille,
     les rapports et l'admin agregent dessus. Le secteur primaire ne doit
-    pas apparaitre aussi comme contributif, et aucun des deux ne peut etre
-    un pilier (ADR 0007).
+    pas apparaitre aussi comme contributif, aucun des deux ne peut etre
+    un pilier (ADR 0007), et tous sont de la taxonomie du projet (ADR 0014).
     """
     contributing_sector_ids = list(dict.fromkeys(contributing_sector_ids))
     if project.primary_sector_id and project.primary_sector_id in contributing_sector_ids:
@@ -73,7 +88,7 @@ def set_project_sectors(project, contributing_sector_ids):
             "Le secteur primaire ne peut pas aussi etre selectionne comme secteur contributif."
         )
     for sector in Sector.objects.filter(id__in=contributing_sector_ids):
-        validate_sector_is_not_pillar(sector)
+        validate_project_sector(sector, project.taxonomy)
     ProjectSector.objects.filter(project=project).delete()
     ProjectSector.objects.bulk_create(
         [ProjectSector(project=project, sector_id=sid) for sid in contributing_sector_ids]

@@ -21,6 +21,8 @@ from apps.reference.models import (
     Currency,
     Donor,
     RegionalHub,
+    TAXONOMY_ISDB,
+    TAXONOMY_LLF,
     Sdg,
     Sector,
 )
@@ -74,10 +76,19 @@ WE_CATEGORY_CHOICES = [
     ("WE005", "WE005 — NWE"),
 ]
 
+# The cycle is the project type: it is chosen at creation, never changed
+# afterwards, and selects the sector taxonomy (ADR 0014).
 INVESTMENT_CYCLE_CHOICES = [
     ("LLF1", "LLF1"),
     ("LLF2", "LLF2"),
+    ("IsDB", "IsDB"),
 ]
+LLF_CYCLES = ("LLF1", "LLF2")
+
+
+def taxonomy_for_cycle(cycle):
+    """Sector taxonomy of a project type: IsDB for the IsDB cycle, LLF otherwise."""
+    return TAXONOMY_ISDB if cycle == "IsDB" else TAXONOMY_LLF
 
 # Valeurs a definir : une seule option provisoire pour les deux marqueurs.
 RISK_RATING_CHOICES = [
@@ -99,7 +110,8 @@ class Project(models.Model):
     )
     investment_cycle = models.CharField(
         max_length=10, choices=INVESTMENT_CYCLE_CHOICES, null=True, blank=True,
-        help_text="LLF investment cycle the project belongs to (LLF1 or LLF2).",
+        help_text="Project type: LLF1, LLF2 or IsDB. Set at creation and never "
+        "changed; it selects the sector taxonomy (ADR 0014).",
     )
     pad_reference_file = models.FileField(
         upload_to="pad/", null=True, blank=True,
@@ -193,6 +205,11 @@ class Project(models.Model):
 
     class Meta:
         db_table = "project"
+
+    @property
+    def taxonomy(self):
+        """Sector taxonomy the project classifies into (ADR 0014)."""
+        return taxonomy_for_cycle(self.investment_cycle)
 
     @property
     def lead_country(self):

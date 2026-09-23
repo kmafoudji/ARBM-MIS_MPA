@@ -28,6 +28,7 @@ def _payload(**overrides):
         "country_ids": [country.id],
         "lead_country_id": country.id,
         "primary_sector": sector.id,
+        "investment_cycle": "IsDB",
     }
     base.update(overrides)
     return base
@@ -123,12 +124,25 @@ class TestExposure:
 
 @pytest.mark.django_db
 class TestInvestmentCycle:
+    """The cycle is the project type (ADR 0014): required at creation, fixed after."""
 
     def test_create_with_cycle(self, auth_client):
         client, _ = auth_client
-        resp = client.post("/api/projects/", _payload(investment_cycle="LLF2"), format="json")
+        llf = SectorFactory(taxonomy="llf")
+        resp = client.post(
+            "/api/projects/", _payload(investment_cycle="LLF2", primary_sector=llf.id), format="json"
+        )
         assert resp.status_code == 201, resp.data
-        assert Project.objects.get(pk=resp.data["id"]).investment_cycle == "LLF2"
+        project = Project.objects.get(pk=resp.data["id"])
+        assert project.investment_cycle == "LLF2"
+        assert project.taxonomy == "llf"
+        assert client.get(f"/api/projects/{project.id}/").data["taxonomy"] == "llf"
+
+    def test_create_isdb_project(self, auth_client):
+        client, _ = auth_client
+        resp = client.post("/api/projects/", _payload(investment_cycle="IsDB"), format="json")
+        assert resp.status_code == 201, resp.data
+        assert Project.objects.get(pk=resp.data["id"]).taxonomy == "isdb"
 
     def test_create_rejects_unknown_cycle(self, auth_client):
         client, _ = auth_client
@@ -136,27 +150,102 @@ class TestInvestmentCycle:
         assert resp.status_code == 400
         assert "investment_cycle" in resp.data
 
-    def test_cycle_is_optional(self, auth_client):
+    def test_cycle_is_required(self, auth_client):
         client, _ = auth_client
-        resp = client.post("/api/projects/", _payload(), format="json")
-        assert resp.status_code == 201, resp.data
-        assert Project.objects.get(pk=resp.data["id"]).investment_cycle is None
+        payload = _payload()
+        del payload["investment_cycle"]
+        resp = client.post("/api/projects/", payload, format="json")
+        assert resp.status_code == 400
+        assert "investment_cycle" in resp.data
 
-    def test_basic_update_sets_and_clears_cycle(self, auth_client):
+    @pytest.mark.parametrize("value", ["LLF2", "IsDB", ""])
+    def test_basic_update_never_changes_the_cycle(self, auth_client, value):
         client, _ = auth_client
-        project = ProjectFactory(official_reference_number="CIV1008")
-        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": "LLF1"}, format="json")
-        assert resp.status_code == 200
-        assert resp.data["investment_cycle"] == "LLF1"
-        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": ""}, format="json")
+        project = ProjectFactory(official_reference_number="CIV1008", investment_cycle="LLF1")
+        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": value}, format="json")
+        assert resp.status_code == 400
+        assert "fixed at creation" in str(resp.data["investment_cycle"])
+        project.refresh_from_db()
+        assert project.investment_cycle == "LLF1"
+
+    def test_basic_update_accepts_the_unchanged_cycle(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(official_reference_number="CIV1008", investment_cycle="LLF1")
+        resp = client.patch(
+            f"/api/projects/{project.id}/basic/",
+            {"investment_cycle": "LLF1", "name": "Renamed"}, format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["name"] == "Renamed"
+
+    def test_classification_update_ignores_the_cycle(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(investment_cycle="LLF1")
+        resp = client.patch(f"/api/projects/{project.id}/", {"investment_cycle": "IsDB"}, format="json")
         assert resp.status_code == 200
         project.refresh_from_db()
-        assert project.investment_cycle is None
+        assert project.investment_cycle == "LLF1"
 
-    def test_basic_update_rejects_unknown_cycle(self, auth_client):
+
+@pytest.mark.django_db
+class TestSectorTaxonomy:
+    """A project only takes sectors of its own taxonomy (ADR 0014)."""
+
+    def test_create_rejects_a_sector_of_the_other_taxonomy(self, auth_client):
         client, _ = auth_client
-        project = ProjectFactory(official_reference_number="CIV1008")
-        resp = client.patch(f"/api/projects/{project.id}/basic/", {"investment_cycle": "LLF9"}, format="json")
+        isdb = SectorFactory(taxonomy="isdb")
+        resp = client.post(
+            "/api/projects/", _payload(investment_cycle="LLF1", primary_sector=isdb.id), format="json"
+        )
+        assert resp.status_code == 400
+        assert "primary_sector" in resp.data
+
+    def test_create_rejects_a_contributing_sector_of_the_other_taxonomy(self, auth_client):
+        client, _ = auth_client
+        llf = SectorFactory(taxonomy="llf")
+        resp = client.post(
+            "/api/projects/",
+            _payload(investment_cycle="IsDB", contributing_sector_ids=[llf.id]), format="json",
+        )
+        assert resp.status_code == 400
+        assert "contributing_sector_ids" in resp.data
+
+    def test_classification_rejects_a_sector_of_the_other_taxonomy(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(investment_cycle="IsDB")
+        llf = SectorFactory(taxonomy="llf")
+        resp = client.patch(f"/api/projects/{project.id}/", {"primary_sector": llf.id}, format="json")
+        assert resp.status_code == 400
+        resp = client.patch(
+            f"/api/projects/{project.id}/", {"contributing_sector_ids": [llf.id]}, format="json"
+        )
+        assert resp.status_code == 400
+
+    def test_basic_update_rejects_a_sector_of_the_other_taxonomy(self, auth_client):
+        client, _ = auth_client
+        llf = SectorFactory(taxonomy="llf")
+        project = ProjectFactory(investment_cycle="LLF1", primary_sector=llf)
+        isdb = SectorFactory(taxonomy="isdb")
+        resp = client.patch(f"/api/projects/{project.id}/basic/", {"primary_sector": isdb.id}, format="json")
+        assert resp.status_code == 400
+        resp = client.patch(
+            f"/api/projects/{project.id}/basic/", {"contributing_sector_ids": [isdb.id]}, format="json"
+        )
         assert resp.status_code == 400
         project.refresh_from_db()
-        assert project.investment_cycle is None
+        assert project.primary_sector == llf
+
+    def test_basic_update_rejects_a_pillar(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(investment_cycle="IsDB")
+        pillar = SectorFactory(taxonomy="isdb")
+        SectorFactory(taxonomy="isdb", parent=pillar)
+        resp = client.patch(f"/api/projects/{project.id}/basic/", {"primary_sector": pillar.id}, format="json")
+        assert resp.status_code == 400
+
+    def test_llf_project_has_no_pillar(self, auth_client):
+        client, _ = auth_client
+        project = ProjectFactory(investment_cycle="LLF1", primary_sector=SectorFactory(taxonomy="llf"))
+        resp = client.get(f"/api/projects/{project.id}/")
+        assert resp.data["pillar_id"] is None
+        assert resp.data["pillar_name"] is None

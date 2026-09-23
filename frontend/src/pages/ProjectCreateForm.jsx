@@ -5,7 +5,7 @@ import { sectorOptions } from "../utils.js";
 import Icon from "../components/Icon";
 import MultiSelect from "../components/MultiSelect";
 import Select from "../components/Select";
-import { INVESTMENT_CYCLE_CHOICES } from "../choices";
+import { INVESTMENT_CYCLE_CHOICES, taxonomyForCycle } from "../choices";
 
 /* ── Constantes ─────────────────────────────────────────────────────────── */
 const STEPS_OLD = [];
@@ -122,14 +122,29 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
     setF((prev) => ({ ...prev, countryIds: vals, leadCountryId: leadOk ? prev.leadCountryId : vals[0] || "" }));
   }
 
+  // The cycle fixes the sector classification (ADR 0014): changing it to the
+  // other type drops sectors picked from the previous one.
+  function setCycle(cycle) {
+    setF((prev) => {
+      const same = prev.investment_cycle && taxonomyForCycle(prev.investment_cycle) === taxonomyForCycle(cycle);
+      return same
+        ? { ...prev, investment_cycle: cycle }
+        : { ...prev, investment_cycle: cycle, primarySector: "", contributingSectorIds: [] };
+    });
+  }
+
   const selectedCountries         = (countries || []).filter((c) => f.countryIds.includes(c.id));
-  // ADR 0007: only sectors are selectable, grouped under their pillar.
-  const primarySectorOptions      = sectorOptions(sectors, { stringIds: true });
-  const contributingSectorChoices = sectorOptions(sectors, { exclude: (s) => String(s.id) === String(f.primarySector) });
+  // ADR 0007 + 0014: only sectors of the project's classification, never a pillar.
+  const taxonomy                  = f.investment_cycle ? taxonomyForCycle(f.investment_cycle) : null;
+  const primarySectorOptions      = taxonomy ? sectorOptions(sectors, { stringIds: true, taxonomy }) : [];
+  const contributingSectorChoices = taxonomy
+    ? sectorOptions(sectors, { taxonomy, exclude: (s) => String(s.id) === String(f.primarySector) })
+    : [];
 
   /* ── Validation par étape ── */
   function validate(s) {
     if (s === 1) {
+      if (!f.investment_cycle)  return "Investment cycle is required: it fixes the project type.";
       if (!f.name.trim())       return "Project name is required.";
       if (!f.official_reference_number.trim()) return "Official reference number is required.";
       if (!f.countryIds.length) return "At least one country is required.";
@@ -163,7 +178,7 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
       const payload = {
         name: f.name,
         official_reference_number: f.official_reference_number.trim(),
-        investment_cycle: f.investment_cycle || null,
+        investment_cycle: f.investment_cycle,
         country_ids: f.countryIds,
         lead_country_id: Number(f.leadCountryId || f.countryIds[0]),
         primary_sector: f.primarySector ? Number(f.primarySector) : null,
@@ -233,9 +248,14 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
               <span className="field-help">The identifier used everywhere in the system. Must be unique.</span>
             </div>
 
-            <div style={{ maxWidth: 260 }}>
-              <FieldSelect id="investmentCycle" label="Investment cycle" value={f.investment_cycle}
-                onChange={(v) => set("investment_cycle", v)} choices={INVESTMENT_CYCLE_CHOICES} />
+            <div className="field" style={{ maxWidth: 360 }}>
+              <label className="field-label" htmlFor="investmentCycle">Investment cycle <span className="req">*</span></label>
+              <Select id="investmentCycle" options={INVESTMENT_CYCLE_CHOICES} value={f.investment_cycle}
+                onChange={setCycle} required placeholder="Select…" />
+              <span className="field-help">
+                The project type: LLF1 and LLF2 use the LLF sectors, IsDB the IsDB pillars and sectors.
+                It cannot be changed once the project is created.
+              </span>
             </div>
 
             <div className="grid grid-2">
@@ -258,7 +278,9 @@ export default function ProjectCreateForm({ onCreated, onCancel }) {
 
               <div className="field">
                 <label className="field-label" htmlFor="primarySector">Primary sector</label>
-                <Select id="primarySector" name="primarySector" placeholder="Select…"
+                <Select id="primarySector" name="primarySector"
+                  placeholder={taxonomy ? "Select…" : "Choose the investment cycle first"}
+                  disabled={!taxonomy}
                   options={primarySectorOptions}
                   value={f.primarySector} onChange={(v) => set("primarySector", v)} />
               </div>

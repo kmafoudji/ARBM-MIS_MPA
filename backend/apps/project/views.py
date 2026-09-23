@@ -479,19 +479,30 @@ class ProjectBasicUpdateView(APIView):
                 )
             except DRFValidationError as exc:
                 return Response({"official_reference_number": exc.detail}, status=400)
-        if "investment_cycle" in data:
-            from apps.project.models import INVESTMENT_CYCLE_CHOICES
-            cycle = data["investment_cycle"] or None
-            if cycle is not None and cycle not in dict(INVESTMENT_CYCLE_CHOICES):
-                return Response(
-                    {"investment_cycle": [f'"{cycle}" is not a valid choice.']}, status=400
-                )
-            project.investment_cycle = cycle
+        # Le type de projet est fixe a la creation (ADR 0014) : le renvoyer
+        # inchange est tolere, le modifier jamais.
+        if "investment_cycle" in data and (data["investment_cycle"] or None) != project.investment_cycle:
+            return Response(
+                {"investment_cycle": ["The project type is fixed at creation."]}, status=400
+            )
         if "budget_amount" in data:
             project.budget_amount = data["budget_amount"] or None
+
+        # Secteurs : valides avant toute ecriture, dans la taxonomie du projet.
+        from apps.project.serializers import validate_sectors_for_taxonomy
+        from apps.reference.models import Sector
+        primary = None
         if "primary_sector" in data and data["primary_sector"]:
-            from apps.reference.models import Sector
-            project.primary_sector_id = int(data["primary_sector"])
+            primary = Sector.objects.filter(pk=data["primary_sector"]).first()
+            if primary is None:
+                return Response({"primary_sector": ["Unknown sector."]}, status=400)
+        contrib = data.get("contributing_sector_ids")
+        contrib_sectors = list(Sector.objects.filter(pk__in=contrib)) if contrib else []
+        errors = validate_sectors_for_taxonomy(project.taxonomy, primary, contrib_sectors)
+        if errors:
+            return Response(errors, status=400)
+        if primary is not None:
+            project.primary_sector = primary
 
         project.save()
 
@@ -504,7 +515,6 @@ class ProjectBasicUpdateView(APIView):
             set_project_countries(project, [int(c) for c in country_ids], lead)
 
         # Secteurs contributifs
-        contrib = data.get("contributing_sector_ids")
         if contrib is not None:
             from apps.project.services import set_project_sectors
             set_project_sectors(project, [int(s) for s in contrib])
@@ -960,7 +970,7 @@ class ProjectMapPointsView(APIView):
                 # `or None` : une couleur vide casserait le coalesce MapLibre
                 "primary_sector_name":  (p.primary_sector.name or None) if p.primary_sector_id else None,
                 "primary_sector_color": (p.primary_sector.color or None) if p.primary_sector_id else None,
-                "pillar_name":          p.primary_sector.pillar.name if p.primary_sector_id else None,
+                "pillar_name":          p.primary_sector.pillar.name if p.primary_sector_id and p.primary_sector.pillar else None,
                 "lead_country_name":    lead.name if lead else None,
             }
 

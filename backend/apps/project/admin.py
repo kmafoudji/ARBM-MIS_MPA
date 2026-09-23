@@ -31,8 +31,8 @@ class ProjectStageTransitionInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("official_reference_number", "name", "primary_sector", "lifecycle_stage", "created_by")
-    list_filter = ("lifecycle_stage", "primary_sector", "we_category", "risk_rating")
+    list_display = ("official_reference_number", "name", "investment_cycle", "primary_sector", "lifecycle_stage", "created_by")
+    list_filter = ("investment_cycle", "lifecycle_stage", "primary_sector", "we_category", "risk_rating")
     search_fields = ("name", "official_reference_number")
     inlines = [ProjectCountryInline, ProjectSectorInline, ProjectSdgInline, ProjectStageTransitionInline]
     fieldsets = (
@@ -61,6 +61,11 @@ class ProjectAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_at", "updated_at")
     filter_horizontal = ("donors",)
+
+    def get_readonly_fields(self, request, obj=None):
+        # Le type de projet ne change plus apres la creation (ADR 0014).
+        fields = super().get_readonly_fields(request, obj)
+        return (*fields, "investment_cycle") if obj else fields
 
 
 @admin.register(ProjectStageTransition)

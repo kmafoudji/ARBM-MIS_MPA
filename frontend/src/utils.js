@@ -87,10 +87,13 @@ export function parseNum(val) {
  * @param {object} opts
  * @param {function} opts.exclude  (sector) => bool, secteurs a retirer
  * @param {boolean}  opts.stringIds valeurs en String (Select) ou nombre (MultiSelect)
+ * @param {string}   opts.taxonomy  "llf" ou "isdb" : ne garder que cette taxonomie (ADR 0014)
  */
-export function sectorOptions(sectors, { exclude, stringIds = false, activeOnly = true } = {}) {
+export function sectorOptions(sectors, { exclude, stringIds = false, activeOnly = true, taxonomy } = {}) {
   return (sectors || [])
-    .filter((s) => s.parent !== null && s.parent !== undefined)
+    // LLF is flat (ADR 0014): its top-level rows are sectors, not pillars.
+    .filter((s) => (s.parent !== null && s.parent !== undefined) || s.taxonomy === "llf")
+    .filter((s) => !taxonomy || s.taxonomy === taxonomy)
     .filter((s) => !activeOnly || s.is_active !== false)
     .filter((s) => !exclude || !exclude(s))
     .map((s) => ({
@@ -105,7 +108,7 @@ export function sectorOptions(sectors, { exclude, stringIds = false, activeOnly 
  */
 export function pillarOptions(sectors, { stringIds = false } = {}) {
   return (sectors || [])
-    .filter((s) => s.parent === null || s.parent === undefined)
+    .filter((s) => (s.parent === null || s.parent === undefined) && s.taxonomy !== "llf")
     .map((s) => ({ value: stringIds ? String(s.id) : s.id, label: s.name }));
 }
 
@@ -117,7 +120,7 @@ export function pillarOptions(sectors, { stringIds = false } = {}) {
 export function groupSectorOptions(sectors) {
   const list = sectors || [];
   return list
-    .filter((s) => s.parent === null || s.parent === undefined)
+    .filter((s) => (s.parent === null || s.parent === undefined) && s.taxonomy !== "llf")
     .map((p) => [p, list.filter((s) => s.parent === p.id)]);
 }
 

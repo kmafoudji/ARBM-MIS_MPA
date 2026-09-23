@@ -62,6 +62,7 @@ from rest_framework.views import APIView
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
 
 from .models import (
+    INVESTMENT_CYCLE_CHOICES,
     LIFECYCLE_STAGE_CHOICES,
     ComponentAllocation,
     FinancingSource,
@@ -144,7 +145,7 @@ STARTUP_CHAIN = [
 
 ESCALATION_TYPES = ["escalation_l1", "escalation_l2", "escalation_l3"]
 WATCHLIST_SIZE = 10
-CYCLES = ("LLF1", "LLF2")
+CYCLES = tuple(code for code, _label in INVESTMENT_CYCLE_CHOICES)
 
 
 def _pct(part, whole):
@@ -189,7 +190,7 @@ def _filtered_projects(request):
         elif cycle in CYCLES:
             projects = projects.filter(investment_cycle=cycle)
         else:
-            raise ValidationError({"cycle": "Expected LLF1, LLF2 or none."})
+            raise ValidationError({"cycle": f"Expected {', '.join(CYCLES)} or none."})
 
     sector = request.query_params.get("sector")
     if sector:

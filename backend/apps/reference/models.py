@@ -299,8 +299,19 @@ class ImplementingAgency(models.Model):
         return self.name
 
 
+# Two independent sector taxonomies (ADR 0014): the Fund's own three flat
+# sectors, and the IsDB 2026-2030 classification (pillars and sectors,
+# ADR 0007). A project uses the one its investment cycle selects.
+TAXONOMY_LLF = "llf"
+TAXONOMY_ISDB = "isdb"
+TAXONOMY_CHOICES = [
+    (TAXONOMY_LLF, "LLF"),
+    (TAXONOMY_ISDB, "IsDB"),
+]
+
+
 class Sector(models.Model):
-    """Secteurs LLF2 (Sante, Agriculture, Infrastructure), hierarchique."""
+    """Secteurs, en deux taxonomies independantes : LLF (plate) et IsDB (hierarchique)."""
 
     ICON_CHOICES = [
         ("health", "Sante (croix medicale)"),
@@ -315,6 +326,11 @@ class Sector(models.Model):
 
     code = models.SlugField(max_length=30, unique=True)
     name = models.CharField(max_length=150)
+    taxonomy = models.CharField(
+        max_length=10, choices=TAXONOMY_CHOICES, default=TAXONOMY_ISDB,
+        help_text="LLF (three flat sectors) or IsDB (pillars and sectors). "
+        "A project only takes sectors of its own taxonomy (ADR 0014).",
+    )
     sequence = models.PositiveSmallIntegerField(
         default=0,
         help_text="LLF2 numbering (010, 011, ..., 032). Drives the display order; "
@@ -353,11 +369,16 @@ class Sector(models.Model):
     @property
     def is_pillar(self):
         """True for a first-level entry that groups sectors (ADR 0007)."""
-        return self.parent_id is None and self.children.exists()
+        return self.taxonomy == TAXONOMY_ISDB and self.parent_id is None and self.children.exists()
 
     @property
     def pillar(self):
-        """The first-level entry this sector belongs to (itself when top-level)."""
+        """The first-level entry this sector belongs to (itself when top-level).
+
+        None for an LLF sector: that taxonomy has no pillars (ADR 0014).
+        """
+        if self.taxonomy != TAXONOMY_ISDB:
+            return None
         return self.parent if self.parent_id else self
 
 

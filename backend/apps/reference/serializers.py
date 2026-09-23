@@ -145,15 +145,36 @@ class SectorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sector
         fields = [
-            "id", "code", "name", "sequence", "parent", "parent_name",
+            "id", "code", "name", "taxonomy", "sequence", "parent", "parent_name",
             "is_pillar", "pillar_name", "icon", "color",
             "is_active", "usage_count",
         ]
 
+    def validate(self, attrs):
+        # ADR 0014 : LLF est plate ; un secteur IsDB se range sous un pilier IsDB.
+        taxonomy = attrs.get("taxonomy", self.instance.taxonomy if self.instance else "isdb")
+        parent = attrs["parent"] if "parent" in attrs else (self.instance.parent if self.instance else None)
+        if parent is not None:
+            if taxonomy == "llf":
+                raise serializers.ValidationError({"parent": "LLF sectors have no pillar."})
+            if parent.taxonomy != taxonomy:
+                raise serializers.ValidationError(
+                    {"parent": "The pillar must belong to the same classification."}
+                )
+        if self.instance and "taxonomy" in attrs and attrs["taxonomy"] != self.instance.taxonomy:
+            if self.instance.children.exists() or self.get_usage_count(self.instance):
+                raise serializers.ValidationError(
+                    {"taxonomy": "A sector in use or with sectors under it keeps its classification."}
+                )
+        return attrs
+
     def get_is_pillar(self, obj):
-        return obj.parent_id is None
+        # LLF est plate (ADR 0014) : ses secteurs ne sont jamais des piliers.
+        return obj.parent_id is None and obj.taxonomy == "isdb"
 
     def get_pillar_name(self, obj):
+        if obj.taxonomy != "isdb":
+            return None
         return obj.parent.name if obj.parent_id else obj.name
 
     def get_usage_count(self, obj):

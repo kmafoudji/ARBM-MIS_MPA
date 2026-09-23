@@ -19,6 +19,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0011](0011-imported-indicators-are-project-specific.md) | An indicator the import creates is project-specific and dies with its project |
 | [0012](0012-lifecycle-gates-hidden-from-interface.md) | Approval gates are hidden from the interface; the backend rules stay dormant |
 | [0013](0013-uploaded-gis-layers-normalised-into-postgis.md) | Uploaded GIS layers are normalised into PostGIS and served as GeoJSON behind the API |
+| [0014](0014-two-sector-taxonomies-llf-and-isdb.md) | Two independent sector taxonomies, LLF and IsDB; the project type picks one |
 
 ## Pending
 
