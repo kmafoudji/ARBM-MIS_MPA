@@ -1154,10 +1154,23 @@ class PortfolioAggregationView(APIView):
                 rate = None
                 rag  = "na"
 
-            # Ventilation par projet
+            # Ventilation par projet. Avec la règle "sum", une seule ligne par
+            # projet : ses valeurs (périodes, lignes logframe) sont sommées.
+            # Les autres règles gardent une ligne par valeur pour l'instant.
+            if rule == "sum":
+                per_project = {}
+                for rd in rd_list:
+                    proj = rd.logframe_row.project
+                    if proj.id in per_project:
+                        per_project[proj.id][1] += rd.actual_value
+                    else:
+                        per_project[proj.id] = [proj, rd.actual_value]
+                entries = list(per_project.values())
+            else:
+                entries = [[rd.logframe_row.project, rd.actual_value] for rd in rd_list]
+
             breakdown = []
-            for rd in rd_list:
-                proj = rd.logframe_row.project
+            for proj, actual_value in entries:
                 # Cible projet individuelle
                 proj_targets = LogframeTarget.objects.filter(
                     logframe_row__indicator_id=ind_id,
@@ -1165,7 +1178,7 @@ class PortfolioAggregationView(APIView):
                     status__in=["approved", "draft"],
                 )
                 proj_target_sum = float(proj_targets.aggregate(s=Sum("target_value"))["s"] or 0)
-                proj_actual = float(rd.actual_value)
+                proj_actual = float(actual_value)
                 proj_rate = (proj_actual / proj_target_sum * 100) if proj_target_sum > 0 else None
                 proj_rag = (
                     "green" if proj_rate is not None and proj_rate >= 90
@@ -1190,7 +1203,7 @@ class PortfolioAggregationView(APIView):
                     "project_name": proj.name[:60],
                     "hub":          hub_name,
                     "sector":       proj.primary_sector.name if proj.primary_sector else None,
-                    "actual_value": fmt_decimal(rd.actual_value),
+                    "actual_value": fmt_decimal(actual_value),
                     "target_value": fmt_decimal(Decimal(str(proj_target_sum))) if proj_target_sum else None,
                     "achievement_rate": fmt_decimal(Decimal(str(round(proj_rate, 2)))) if proj_rate is not None else None,
                     "rag_status":   proj_rag,
@@ -1207,7 +1220,7 @@ class PortfolioAggregationView(APIView):
                 "target_value":     fmt_decimal(Decimal(str(target_sum))) if target_sum else None,
                 "achievement_rate": fmt_decimal(Decimal(str(round(rate, 2)))) if rate is not None else None,
                 "rag_status":       rag,
-                "projects_count":   len(rd_list),
+                "projects_count":   len(breakdown),
                 "breakdown":        breakdown,
             })
 
