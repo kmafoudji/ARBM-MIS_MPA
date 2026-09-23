@@ -28,11 +28,17 @@ than literal values.
 
 | Sector | Token | Value | Tint |
 |---|---|---|---|
-| Primary healthcare | `--sec-health` | `#FB563B` coral | `--sec-health-bg` |
-| Agriculture | `--sec-agri` | `#0EB584` green | `--sec-agri-bg` |
-| Social infrastructure | `--sec-infra` | `#F49D07` yellow | `--sec-infra-bg` |
+| LLF Health (`LLF_HEALTH`) | `--sec-health` | `#FB563B` coral | `--sec-health-bg` |
+| LLF Agriculture & Food Security (`LLF_AGRI`) | `--sec-agri` | `#0EB584` green | `--sec-agri-bg` |
+| LLF Social Infrastructure (`LLF_SOCINF`) | `--sec-infra` | `#F49D07` yellow | `--sec-infra-bg` |
 | Gender equality | `--sec-women` | `#7E46B8` purple | `--sec-women-bg` |
 | Climate adaptation | `--sec-climate` | `#0089C5` blue | `--sec-climate-bg` |
+
+The first three are the Fund's own sectors
+([decisions/0014](decisions/0014-two-sector-taxonomies-llf-and-isdb.md)); the
+seed stores these values as their `Sector.color`. The IsDB pillars borrow the
+same hues in the indicator catalogue (Human Capital → health, Resilience →
+agri, Infrastructure → climate).
 
 Each sector hue also has a `--sec-*-pale` token holding the L5 step of its
 tonal scale (`#FDF3F3`, `#EFFFFA`, `#FFFAF0`, `#F7F0FF`, `#DBF4FF`), for large

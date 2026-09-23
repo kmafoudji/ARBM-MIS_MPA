@@ -1,5 +1,8 @@
 # 0007 — The sector taxonomy has two levels: a project sits in a sector, under a pillar
 
+> Since [0014](0014-two-sector-taxonomies-llf-and-isdb.md) this taxonomy is the
+> **IsDB** one, used by IsDB projects. LLF projects use the flat LLF taxonomy.
+
 ## Context
 
 The LLF2 results framework classifies interventions in three **pillars**
