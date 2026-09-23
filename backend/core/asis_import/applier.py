@@ -259,6 +259,7 @@ def _apply_indicators(context):
                     code=payload["code"],
                     name=payload["name"],
                     sector_id=payload["sector_id"],
+                    llf_sector_id=payload.get("llf_sector_id"),
                     indicator_type=payload.get("indicator_type", "project_specific"),
                     definition=payload.get("definition", ""),
                     unit=payload.get("unit", ""),

@@ -5,8 +5,9 @@ import Icon from "../components/Icon";
 import Select from "../components/Select";
 import MultiSelect from "../components/MultiSelect";
 import SectorIcon from "../components/SectorIcon";
+import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
 import { useDialog, DialogModal } from "../components/Dialog.jsx";
-import { groupSectorOptions, RESULT_LEVEL_COLOR } from "../utils.js";
+import { groupSectorOptions, RESULT_LEVEL_COLOR, sectorOptions } from "../utils.js";
 
 // Référentiel LLF2 / OCDE DAC — dimensions et catégories standard
 const PRESET_DIMENSIONS = [
@@ -459,6 +460,11 @@ function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
     queryFn: () => apiFetch("/api/results/indicators/choices/"),
   });
 
+  const { data: sectors } = useQuery({
+    queryKey: ["sectors"],
+    queryFn: () => apiFetch("/api/reference/sectors/"),
+  });
+
   const updateMutation = useMutation({
     mutationFn: (payload) =>
       apiFetch(`/api/results/indicators/${indicatorId}/`, {
@@ -501,7 +507,8 @@ function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
           {detail && (
             <div className="drawer-tags">
               <span className="drawer-tag">{typeLabel(detail)}</span>
-              <span className="drawer-tag">{detail.sector_name}</span>
+              <span className="drawer-tag" title="IsDB sector">{detail.sector_name}</span>
+              {detail.llf_sector_name && <span className="drawer-tag" title="LLF sector">LLF · {detail.llf_sector_name}</span>}
               {detail.subsector && <span className="drawer-tag">{detail.subsector}</span>}
               <span className="drawer-tag">{DIRECTION_LABEL[detail.direction]}</span>
               <span className="drawer-tag">v{detail.version || 1}</span>
@@ -536,6 +543,29 @@ function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
                     value={form.indicator_type}
                     onChange={(v) => setForm({ ...form, indicator_type: v })}
                     required
+                  />
+                </div>
+                {/* Deux classifications independantes (ADR 0014) : le secteur
+                    IsDB est obligatoire, le secteur LLF seulement pour les
+                    indicateurs du Fonds. */}
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label className="field-label" htmlFor="ind-sector">IsDB sector</label>
+                  <Select
+                    id="ind-sector"
+                    options={sectorOptions(sectors, { taxonomy: "isdb", stringIds: true, activeOnly: false })}
+                    value={form.sector == null ? "" : String(form.sector)}
+                    onChange={(v) => setForm({ ...form, sector: v ? Number(v) : null })}
+                    required
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label className="field-label" htmlFor="ind-llf-sector">LLF sector</label>
+                  <Select
+                    id="ind-llf-sector"
+                    placeholder="Not an LLF indicator"
+                    options={sectorOptions(sectors, { taxonomy: "llf", stringIds: true, activeOnly: false })}
+                    value={form.llf_sector == null ? "" : String(form.llf_sector)}
+                    onChange={(v) => setForm({ ...form, llf_sector: v ? Number(v) : null })}
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
@@ -711,6 +741,18 @@ const PILLAR_PALE = {
   RES:   "var(--sec-agri-pale)",
 };
 const DEFAULT_SECTOR_TOKEN = "var(--muted)";
+// Les secteurs LLF (ADR 0014) sont les trois teintes sectorielles de
+// docs/design.md, a l'identique de `Sector.color`.
+const LLF_TOKEN = {
+  LLF_HEALTH: "var(--sec-health)",
+  LLF_AGRI:   "var(--sec-agri)",
+  LLF_SOCINF: "var(--sec-infra)",
+};
+const LLF_PALE = {
+  LLF_HEALTH: "var(--sec-health-pale)",
+  LLF_AGRI:   "var(--sec-agri-pale)",
+  LLF_SOCINF: "var(--sec-infra-pale)",
+};
 
 // Ordre d'affichage des sections d'un onglet (BRQ-2.02).
 // `project_specific` ferme la liste : les sections institutionnelles d'abord,
@@ -801,11 +843,21 @@ export default function IndicatorCatalogue() {
   // Plusieurs lignes peuvent rester ouvertes ; le tiroir ne sert qu'a editer.
   const [openIds, setOpenIds] = useState(() => new Set());
   const [editId, setEditId] = useState(null);
+  // Deux classifications (ADR 0014) : LLF lit `llf_sector`, IsDB `sector`.
+  const [projectType, setProjectTypeState] = useProjectType();
+  const sectorField = projectType === "llf" ? "llf_sector" : "sector";
+  function setProjectType(value) {
+    setProjectTypeState(value);
+    setTab(null);
+    setTypeChips([]); setLevelChips([]); setSubChips([]);
+    setOpenIds(new Set());
+  }
 
   const { data: indicators, isLoading } = useQuery({
-    queryKey: ["indicators", search],
+    queryKey: ["indicators", projectType, search],
     queryFn: () => {
       const params = new URLSearchParams();
+      params.set("taxonomy", projectType);
       if (search) params.set("q", search);
       return apiFetch(`/api/results/indicators/?${params}`);
     },
@@ -831,7 +883,19 @@ export default function IndicatorCatalogue() {
   // secteur sans quitter le pilier.
   const tabGroups = useMemo(() => {
     const bySeq = (a, b) => (a.sequence || 0) - (b.sequence || 0) || a.name.localeCompare(b.name);
-    const pillars = groupSectorOptions(sectors)
+    // LLF est plate : une carte par secteur, sans seconde rangee.
+    const llf = (sectors || [])
+      .filter((s) => s.taxonomy === "llf" && s.is_active !== false)
+      .sort(bySeq)
+      .map((sector) => ({
+        id: `l${sector.id}`,
+        pillar: sector,
+        color: LLF_TOKEN[sector.code] || sector.color || DEFAULT_SECTOR_TOKEN,
+        pale: LLF_PALE[sector.code] || "var(--surface)",
+        lead: { key: `s:${sector.id}`, label: sector.name, title: sector.name, sectorIds: [sector.id] },
+        tabs: [],
+      }));
+    const pillars = projectType === "llf" ? llf : groupSectorOptions(sectors)
       .sort((a, b) => bySeq(a[0], b[0]))
       .map(([pillar, children]) => ({
         id: `p${pillar.id}`,
@@ -853,7 +917,7 @@ export default function IndicatorCatalogue() {
       ...pillars,
       { id: "cct", color: "var(--sec-women)", pale: "var(--sec-women-pale)", lead: CCT_TABS[0], tabs: CCT_TABS.slice(1) },
     ];
-  }, [sectors]);
+  }, [sectors, projectType]);
   const pillarGroups = useMemo(() => tabGroups.filter((g) => g.pillar), [tabGroups]);
 
   const sectorColor = useMemo(() => {
@@ -867,7 +931,7 @@ export default function IndicatorCatalogue() {
   const countFor = (t) => {
     if (t.all) return all.length;
     if (t.tags) return all.filter((i) => t.tags.some((tag) => (i.cross_cutting_tags || []).includes(tag))).length;
-    return all.filter((i) => t.sectorIds.includes(i.sector)).length;
+    return all.filter((i) => t.sectorIds.includes(i[sectorField])).length;
   };
 
   // Le catalogue s'ouvre sur "All" : c'est aussi la façon de lever le filtre.
@@ -890,8 +954,8 @@ export default function IndicatorCatalogue() {
     if (activeTab.tags) {
       return all.filter((i) => activeTab.tags.some((t) => (i.cross_cutting_tags || []).includes(t)));
     }
-    return all.filter((i) => activeTab.sectorIds.includes(i.sector));
-  }, [all, activeTab]);
+    return all.filter((i) => activeTab.sectorIds.includes(i[sectorField]));
+  }, [all, activeTab, sectorField]);
 
   const uniq = (list) => [...new Set(list.filter(Boolean))];
   const typeValues  = useMemo(() => uniq(tabItems.map((i) => i.indicator_type))
@@ -975,7 +1039,7 @@ export default function IndicatorCatalogue() {
     <div className="view cat-view">
       <div className="cat-head">
         <div>
-          <div className="view-eyebrow">Module 2 · LLF2</div>
+          <div className="view-eyebrow">Module 2 · {projectType === "llf" ? "LLF" : "IsDB"} classification</div>
           <h1 className="view-title">Indicator Catalogue</h1>
           <p className="view-lead">
             Same definition, method and disaggregation for every project ·{" "}
@@ -990,7 +1054,12 @@ export default function IndicatorCatalogue() {
         </div>
       </div>
 
-      {/* Premiere rangee : une carte par pilier, plus "tout" et le transversal */}
+      <div className="exec-filterbar" style={{ marginBottom: 12 }}>
+        <ProjectTypeFilter value={projectType} onChange={setProjectType} label="Classification" />
+      </div>
+
+      {/* Premiere rangee : une carte par pilier (IsDB) ou par secteur (LLF),
+          plus "tout" et le transversal */}
       <div className="cat-cards">
         {tabGroups.map((g) => {
           const n = countFor(g.lead);
@@ -1001,10 +1070,10 @@ export default function IndicatorCatalogue() {
               style={{ "--tab-color": g.color, "--tab-pale": g.pale }}
               className={`cat-card${on ? " active" : ""}${g.id === "cct" ? " dashed" : ""}`}
               onClick={() => selectTab(g.lead.key)}>
-              <SectorIcon name={GROUP_ICON[code] || "generic"} color={g.color} size={34} />
+              <SectorIcon name={GROUP_ICON[code] || g.pillar?.icon || "generic"} color={g.color} size={34} />
               <span className="cat-card-name">{g.lead.label}</span>
               {g.id === "cct"
-                ? <span className="cat-card-sub">applies across all pillars</span>
+                ? <span className="cat-card-sub">applies across all {projectType === "llf" ? "sectors" : "pillars"}</span>
                 : <span className="cat-card-value">{n}</span>}
               {on && <span className="cat-card-dot" />}
             </button>
@@ -1095,7 +1164,7 @@ export default function IndicatorCatalogue() {
               <div className="ind-list">
                 {group.rows.map((ind) => (
                   <IndicatorRow key={ind.id} ind={ind} sdgName={sdgName} canEdit={canEdit}
-                    color={sectorColor[ind.sector] || DEFAULT_SECTOR_TOKEN}
+                    color={sectorColor[ind[sectorField]] || DEFAULT_SECTOR_TOKEN}
                     expanded={openIds.has(ind.id)}
                     onToggle={() => toggleRow(ind.id)}
                     onEdit={setEditId} />

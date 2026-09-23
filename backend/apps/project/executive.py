@@ -47,8 +47,11 @@ gates out of the interface, so TRC clearance, IC endorsement and board
 approval are pre-approval stages like any other.
 
 Scope: every figure honours ``Project.objects.in_scope(request)`` and, through
-it, the hub chosen in the topbar. ``?cycle=`` (LLF1, LLF2 or ``none``) and
-``?sector=`` (a sector, or a pillar and its sectors) narrow it further.
+it, the hub chosen in the topbar. ``?type=`` (``llf`` by default, or
+``isdb``) keeps one project type (ADR 0014): the sectors, the pillars and the
+cycles are that type's. ``?cycle=`` (LLF1, LLF2 or ``none`` for LLF, IsDB for
+IsDB) and ``?sector=`` (a sector of that taxonomy, or an IsDB pillar and its
+sectors) narrow it further.
 """
 from collections import defaultdict
 
@@ -60,6 +63,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.identity.permissions import ReadOnlyOrHasModulePermission
+from apps.reference.filters import read_project_type, read_sector_id, sector_q
 
 from .models import (
     INVESTMENT_CYCLE_CHOICES,
@@ -180,33 +184,40 @@ def _share_rows(rows):
 # Scope and filters
 # ---------------------------------------------------------------------------
 
-def _filtered_projects(request):
-    projects = Project.objects.in_scope(request)
+def cycles_of_type(project_type):
+    """The cycles of a project type; LLF also counts projects with none."""
+    if project_type == "isdb":
+        return ("IsDB",)
+    return (*(c for c in CYCLES if c != "IsDB"), None)
 
-    cycle = request.query_params.get("cycle")
+
+def _filtered_projects(request):
+    params = request.query_params
+    project_type = read_project_type(params)
+    projects = Project.objects.in_scope(request).of_taxonomy(project_type)
+    cycles = cycles_of_type(project_type)
+
+    cycle = params.get("cycle")
     if cycle:
+        allowed = [c or "none" for c in cycles]
+        if cycle not in allowed:
+            raise ValidationError({"cycle": f"Expected {', '.join(allowed)}."})
         if cycle == "none":
             projects = projects.filter(investment_cycle__isnull=True)
-        elif cycle in CYCLES:
-            projects = projects.filter(investment_cycle=cycle)
         else:
-            raise ValidationError({"cycle": f"Expected {', '.join(CYCLES)} or none."})
+            projects = projects.filter(investment_cycle=cycle)
 
-    sector = request.query_params.get("sector")
+    sector = read_sector_id(params)
     if sector:
-        if not sector.isdigit():
-            raise ValidationError({"sector": "Expected a sector id."})
         # A pillar (ADR 0007) takes its sectors with it.
-        projects = projects.filter(
-            Q(primary_sector_id=sector) | Q(primary_sector__parent_id=sector)
-        )
+        projects = projects.filter(sector_q("primary_sector", sector))
 
     return (
         projects
         .select_related("hub", "primary_sector__parent")
         .prefetch_related("project_countries__country__hub", "stage_transitions")
         .order_by("official_reference_number", "pk")
-    ), {"cycle": cycle or None, "sector": int(sector) if sector else None}
+    ), {"type": project_type, "cycle": cycle or None, "sector": sector}
 
 
 def _hub_name(project):
@@ -252,7 +263,7 @@ def _project_rows(projects, committed, today):
     for p in projects:
         lead = _lead_country(p)
         sector = p.primary_sector
-        pillar = sector.parent if sector and sector.parent_id else sector
+        pillar = sector.pillar if sector else None  # None in LLF (ADR 0014)
         dates = _stage_dates(p)
         endorsed = dates.get(STAGE_IC_ENDORSED)
         rows.append({
@@ -281,7 +292,7 @@ def _project_rows(projects, committed, today):
     return rows
 
 
-def _headline(rows, project_ids):
+def _headline(rows, project_ids, cycles):
     sources = FinancingSource.objects.filter(envelope__project_id__in=project_ids)
     totals = sources.aggregate(
         total=Sum("amount_usd"),
@@ -291,7 +302,7 @@ def _headline(rows, project_ids):
     total, grant, ocr = (_usd(totals[k]) for k in ("total", "grant", "ocr"))
 
     by_cycle = []
-    for key in (*CYCLES, None):
+    for key in cycles:
         members = [r for r in rows if r["cycle"] == key]
         if members or key:
             by_cycle.append({
@@ -340,7 +351,7 @@ def _group_usd(rows, key, color_key=None, fallback="Unclassified"):
     return _share_rows(list(groups.values()))
 
 
-def _breakdowns(rows, project_ids):
+def _breakdowns(rows, project_ids, project_type):
     sources = FinancingSource.objects.filter(envelope__project_id__in=project_ids)
     source_labels = dict(FinancingSource._meta.get_field("source").choices)
     instrument_labels = dict(FinancingSource._meta.get_field("instrument").choices)
@@ -376,7 +387,10 @@ def _breakdowns(rows, project_ids):
 
     return {
         "by_cycle": _group_usd(rows, "cycle", fallback="No cycle"),
-        "by_pillar": _group_usd(rows, "pillar", "pillar_color", "No sector"),
+        # LLF has no pillars (ADR 0014).
+        "by_pillar": (
+            _group_usd(rows, "pillar", "pillar_color", "No sector") if project_type == "isdb" else []
+        ),
         "by_sector": _group_usd(rows, "sector", "sector_color", "No sector"),
         "by_hub": _group_usd(rows, "hub", fallback="No hub"),
         "by_pipeline_year": {
@@ -407,7 +421,7 @@ def _breakdowns(rows, project_ids):
     }
 
 
-def _lifecycle(rows):
+def _lifecycle(rows, cycles):
     buckets = []
     for key, label, codes, phase in LIFECYCLE_BUCKETS:
         members = [r for r in rows if r["bucket"] == key]
@@ -420,7 +434,7 @@ def _lifecycle(rows):
             "value": _committed(members),
             "by_cycle": {
                 (cycle or "none"): sum(1 for r in members if r["cycle"] == cycle)
-                for cycle in (*CYCLES, None)
+                for cycle in cycles
             },
         })
     return buckets
@@ -527,11 +541,16 @@ def _startup_chain(rows):
     return {"steps": steps, "gaps": gaps, "signature_to_effective_by_year": by_year}
 
 
-def _results(rows, project_ids):
-    """RAG of the latest approved value of every logframe row, by pillar."""
+def _results(rows, project_ids, project_type):
+    """RAG of the latest approved value of every logframe row, by pillar.
+
+    By sector for LLF, which has no pillars (ADR 0014); ``group_level`` says
+    which.
+    """
     from apps.results.models import LogframeRow, ResultsData
 
-    pillar_of = {r["id"]: r["pillar"] or "No sector" for r in rows}
+    group_level = "pillar" if project_type == "isdb" else "sector"
+    pillar_of = {r["id"]: r[group_level] or "No sector" for r in rows}
     row_project = dict(
         LogframeRow.objects.filter(project_id__in=project_ids).values_list("pk", "project_id")
     )
@@ -556,7 +575,8 @@ def _results(rows, project_ids):
     return {
         **totals,
         "indicators": len(row_project),
-        "by_pillar": [{"label": label, **counts} for label, counts in sorted(by_pillar.items())],
+        "group_level": group_level,
+        "by_group": [{"label": label, **counts} for label, counts in sorted(by_pillar.items())],
         "unavailable": None if row_project else "No project in scope has a logframe.",
     }
 
@@ -689,6 +709,8 @@ def _watchlist(rows, projects_by_id, progress, project_ids, today):
 
 def build_executive_summary(request):
     projects, filters = _filtered_projects(request)
+    project_type = filters["type"]
+    cycles = cycles_of_type(project_type)
     projects = list(projects)
     project_ids = [p.pk for p in projects]
     today = timezone.now().date()
@@ -707,13 +729,13 @@ def build_executive_summary(request):
     return {
         "as_of": today,
         "filters": filters,
-        "headline": _headline(rows, project_ids),
-        "breakdowns": _breakdowns(rows, project_ids),
-        "lifecycle": _lifecycle(rows),
+        "headline": _headline(rows, project_ids, cycles),
+        "breakdowns": _breakdowns(rows, project_ids, project_type),
+        "lifecycle": _lifecycle(rows, cycles),
         "milestones": _milestones(rows),
         "execution": _execution(rows, progress),
         "startup_chain": _startup_chain(rows),
-        "results": _results(rows, project_ids),
+        "results": _results(rows, project_ids, project_type),
         "attention": _attention(rows, project_ids, today),
         "watchlist": _watchlist(rows, {p.pk: p for p in projects}, progress, project_ids, today),
         "projects": [

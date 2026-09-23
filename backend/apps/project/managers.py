@@ -29,3 +29,9 @@ class ProjectQuerySet(models.QuerySet):
             )
             q |= hub_q(hub_ids)
         return self.filter(q).distinct()
+
+    def of_taxonomy(self, taxonomy):
+        """Projects of one type (ADR 0014): IsDB, or LLF (LLF1, LLF2, untyped)."""
+        if taxonomy == "isdb":
+            return self.filter(investment_cycle="IsDB")
+        return self.exclude(investment_cycle="IsDB")

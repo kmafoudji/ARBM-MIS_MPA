@@ -210,7 +210,7 @@ function GroupCard({ projects, colorOf, onPick, onClose, onGrab }) {
 // `compact` renders a shorter, quieter map for dashboards: no totals strip,
 // no fullscreen or scale control and no scroll-wheel zoom, so the page keeps
 // scrolling.
-export default function PortfolioMap({ projects = [], onProjectClick, compact = false, colourBy = "sector" }) {
+export default function PortfolioMap({ projects = [], onProjectClick, compact = false, colourBy = "sector", projectType = "llf" }) {
   const wrapRef = useRef(null);
   const mapRef  = useRef(null);
   const mapInst = useRef(null);
@@ -232,8 +232,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const [atHome, setAtHome] = useState(true);
 
   const { data: geojson, isLoading } = useQuery({
-    queryKey: ["projects", "map-points"],
-    queryFn:  () => apiFetch("/api/projects/map/"),
+    // One project type at a time (ADR 0014), as the list it draws.
+    queryKey: ["projects", "map-points", projectType],
+    queryFn:  () => apiFetch(`/api/projects/map/?type=${projectType}`),
     staleTime: 5 * 60_000,
   });
 

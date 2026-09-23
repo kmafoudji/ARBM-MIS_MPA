@@ -944,6 +944,8 @@ class ProjectMapPointsView(APIView):
         ResultsData.compute_and_save_rag (vert >= 90, ambre >= 60, rouge
         sinon) ; None sans valeur approuvee ayant une cible.
 
+    ?type=llf|isdb (LLF par defaut) : un seul type de projet (ADR 0014).
+
     PORTEE : comme ProjectViewSet, la visibilite passe par
     Project.objects.in_scope() — un PMU ne voit que ses projets, un hub
     que sa region. (Fixup d'integration : la branche est ecrite contre
@@ -953,8 +955,12 @@ class ProjectMapPointsView(APIView):
 
     def get(self, request):
         from django.db import connection
+        from apps.reference.filters import read_project_type
 
-        projects = Project.objects.in_scope(request).select_related(
+        # Un seul type de projet a la fois (ADR 0014), LLF par defaut.
+        projects = Project.objects.in_scope(request).of_taxonomy(
+            read_project_type(request.query_params)
+        ).select_related(
             "primary_sector__parent"
         ).prefetch_related("project_countries__country")
 

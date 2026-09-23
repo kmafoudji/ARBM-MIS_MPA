@@ -38,7 +38,8 @@ system does not take.
 
 Scope: every count and every sum honours ``Project.objects.in_scope(request)``
 and, through it, the hub chosen in the topbar — the same denominator as every
-other portfolio figure.
+other portfolio figure. ``?type=`` (``llf`` by default, or ``isdb``) keeps one
+project type, so the sector breakdowns speak one taxonomy (ADR 0014).
 """
 from datetime import date
 from decimal import Decimal
@@ -567,7 +568,10 @@ _BUILDERS = {
 
 def build_fund_performance(request):
     """The five Annex L sections, computed within the requester's scope."""
-    projects = Project.objects.in_scope(request)
+    from apps.reference.filters import read_project_type
+
+    project_type = read_project_type(request.query_params)
+    projects = Project.objects.in_scope(request).of_taxonomy(project_type)
 
     sections = []
     for section in SECTIONS:
@@ -576,6 +580,7 @@ def build_fund_performance(request):
 
     all_indicators = [i for s in sections for i in s["indicators"]]
     return {
+        "filters": {"type": project_type},
         "sections": sections,
         "breakdowns": build_breakdowns(projects),
         "summary": {

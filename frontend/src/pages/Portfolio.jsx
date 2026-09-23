@@ -7,6 +7,7 @@ import Select from "../components/Select.jsx";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
+import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
 import { fmtNum, fmtPct } from "../utils.js";
 import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.jsx";
 
@@ -312,9 +313,12 @@ function LevelSection({ level, indicators }) {
   );
 }
 
-/** Pillars with their sectors nested; the filter flattens them into groups. */
-function sectorFilterOptions(sectors) {
-  const pillars = sectors.filter(s => s.parent === null || s.parent === undefined);
+/** The type's sectors (ADR 0014): flat for LLF; for IsDB, pillars with their
+ *  sectors nested, which the filter flattens into groups. */
+function sectorFilterOptions(sectors, type) {
+  const own = sectors.filter(s => s.taxonomy === type && s.is_active !== false);
+  if (type === "llf") return own.map(s => ({ value: String(s.id), label: s.name }));
+  const pillars = own.filter(s => s.parent === null || s.parent === undefined);
   return pillars.map(p => ({
     value: String(p.id),
     label: p.name,
@@ -333,6 +337,12 @@ export default function Portfolio() {
   // No hub filter: the hub is the session scope chosen in the top bar,
   // which already narrows every portfolio figure.
   const [filters, setFilters] = useState({ sector: "", chain_level: "", country: "", donor: "", rag: "" });
+  // One project type at a time (ADR 0014); the sector filter is its taxonomy.
+  const [projectType, setProjectTypeState] = useProjectType();
+  function setProjectType(value) {
+    setProjectTypeState(value);
+    setFilters(f => ({ ...f, sector: "" }));
+  }
 
   function setFilter(key, value) {
     setFilters(f => ({ ...f, [key]: value }));
@@ -343,6 +353,7 @@ export default function Portfolio() {
   const { data: donors   = [] } = useQuery({ queryKey: ["ref","donors"], queryFn: () => apiFetch("/api/reference/donors/") });
 
   const params = new URLSearchParams();
+  params.set("type", projectType);
   if (filters.sector)      params.set("sector",      filters.sector);
   if (filters.chain_level) params.set("chain_level", filters.chain_level);
   if (filters.country)     params.set("country",     filters.country);
@@ -350,7 +361,7 @@ export default function Portfolio() {
   if (filters.rag)         params.set("rag",         filters.rag);
 
   const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["portfolio-aggregation", filters],
+    queryKey: ["portfolio-aggregation", projectType, filters],
     queryFn:  () => apiFetch(`/api/results/portfolio/?${params}`),
     staleTime: 60_000,
     refetchInterval: 5 * 60_000, // Refresh auto toutes les 5 minutes
@@ -384,7 +395,7 @@ export default function Portfolio() {
         <div className="view-eyebrow">Results · Lives &amp; Livelihoods Fund</div>
         <h1 className="view-title">Portfolio Results</h1>
         <p className="view-lead">
-          Aggregated performance across all active LLF2 projects · Approved data only
+          Aggregated performance across the active {projectType === "isdb" ? "IsDB" : "LLF"} projects · Approved data only
         </p>
         <div style={{ marginTop: 8 }}>
           <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
@@ -462,11 +473,13 @@ export default function Portfolio() {
       }}>
         <Icon name="filter" size={14} style={{ color: "var(--subtle)", flexShrink: 0 }} />
 
+        <ProjectTypeFilter value={projectType} onChange={setProjectType} label="" />
+
         {[
           { key: "country",   label: "Country",   options: filteredCountries.map(c => ({ value: String(c.id), label: c.name })) },
           // ADR 0007: the backend expands a pillar to its sectors, so the
           // pillar is itself an option ("All <pillar>") above its sectors.
-          { key: "sector",    label: "Sector",    options: sectorFilterOptions(sectors) },
+          { key: "sector",    label: "Sector",    options: sectorFilterOptions(sectors, projectType) },
           { key: "donor",     label: "Donor",     options: donors.map(d => ({ value: String(d.id), label: d.short_name || d.name })) },
           { key: "chain_level", label: "Level",   options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })) },
           { key: "rag", label: "Status", options: [

@@ -22,6 +22,10 @@ from apps.reference.models import Sdg, Sector
 from apps.results.models import Indicator
 
 
+# Catalogues du Fonds et leur secteur LLF (ADR 0014).
+LLF_SECTOR_OF = {"agriculture": "LLF_AGRI", "health": "LLF_HEALTH"}
+
+
 class Command(BaseCommand):
     help = "Charge les indicateurs du catalogue LLF2 depuis un fichier JSON."
 
@@ -72,6 +76,11 @@ class Command(BaseCommand):
             return
         except Sector.MultipleObjectsReturned:
             sector_obj = isdb_sectors.filter(name__icontains=sector_name).first()
+        # Secteur LLF des catalogues du Fonds (ADR 0014), pose a la creation
+        # seulement : --update ne reecrit pas un choix fait a la main.
+        llf_sector_obj = Sector.objects.filter(
+            taxonomy="llf", code=LLF_SECTOR_OF.get(options["sector"].lower(), "")
+        ).first()
 
         sdg_map = {s.number: s for s in Sdg.objects.all()}
 
@@ -127,7 +136,7 @@ class Command(BaseCommand):
                     ind = existing
                     updated_count += 1
                 else:
-                    ind = Indicator.objects.create(code=code, **defaults)
+                    ind = Indicator.objects.create(code=code, llf_sector=llf_sector_obj, **defaults)
                     created_count += 1
 
                 # ODD lies
