@@ -167,3 +167,14 @@ class TestIndicatorCatalogue:
     def test_patch_refuses_to_clear_the_isdb_sector(self, auth_client, indicators):
         url = f"{INDICATORS}{indicators['both'].pk}/"
         assert auth_client.patch(url, {"sector": None}, format="json").status_code == 400
+
+
+@pytest.mark.django_db
+def test_seed_indicators_gives_new_indicators_their_llf_sector():
+    from django.core.management import call_command
+
+    call_command("seed_reference_data")
+    call_command("seed_indicators", "--sector", "health")
+    health = Indicator.objects.filter(sector__code="HEALTH")
+    assert health.exists()
+    assert set(health.values_list("llf_sector__code", flat=True)) == {"LLF_HEALTH"}
