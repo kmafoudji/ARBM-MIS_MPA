@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Flag from "../components/Flag.jsx";
 import Select from "../components/Select.jsx";
+import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
+import { typeSectorFilterOptions } from "../utils.js";
 import RefreshBar from "../components/RefreshBar.jsx";
 import { Bar, Card, Donut, Empty, StackedBar } from "../components/Charts.jsx";
 import { deliveryBand } from "../components/ProjectCockpit.jsx";
@@ -30,6 +32,7 @@ const TABS = [
   { key: "pipeline",     label: "Pipeline & approvals", hint: "the seven milestones" },
 ];
 
+// The LLF cycles, offered under the LLF type only (ADR 0014): IsDB has one.
 const CYCLE_FILTERS = [
   { value: "",     label: "All" },
   { value: "LLF1", label: "LLF1" },
@@ -58,7 +61,7 @@ const MILESTONE_PHASE = {
    reaches contrast in its darker step (docs/design.md). */
 const PHASE_FILL = { ...PHASE_COLOR, implementation: "var(--lime-darker)", pre_approval: "var(--ink-soft)" };
 
-const CYCLE_COLOR = { LLF1: "var(--ink)", LLF2: "var(--lime)", none: "var(--subtle)" };
+const CYCLE_COLOR = { LLF1: "var(--ink)", LLF2: "var(--lime)", IsDB: "var(--blue)", none: "var(--subtle)" };
 
 const SOURCE_COLORS = ["var(--violet)", "var(--blue)", "var(--ink-soft)", "var(--orange)", "var(--subtle)"];
 
@@ -148,7 +151,7 @@ function StageColumns({ buckets, count = (b) => b.count, stacked = false }) {
               <span className="exec-stage-n">{n || "—"}</span>
               <div className={`exec-stage-bar${n ? "" : " zero"}`} style={{ height: n ? `${height}%` : undefined }}>
                 {stacked && n
-                  ? ["LLF1", "LLF2", "none"].map((cycle) => b.by_cycle[cycle] ? (
+                  ? Object.keys(b.by_cycle).map((cycle) => b.by_cycle[cycle] ? (
                       <span key={cycle} style={{ flex: b.by_cycle[cycle], background: CYCLE_COLOR[cycle] }} />
                     ) : null)
                   : n ? <span style={{ flex: 1, background: PHASE_COLOR[b.phase] }} /> : null}
@@ -261,7 +264,7 @@ function DistributionTab({ data, onProjectClick }) {
                   onKeyDown={(e) => { if (e.key === "Enter") onProjectClick?.(r.id); }}>
                   <Bar label={<><span className="exec-code">{r.code}</span> {r.cycle || ""}</>} value={r.value}
                     display={fmtUsd(r.value)} max={maxOf(b.by_project)}
-                    color={r.cycle === "LLF1" ? "var(--ink)" : "var(--lime-darker)"} />
+                    color={r.cycle === "LLF1" ? "var(--ink)" : r.cycle === "IsDB" ? "var(--blue)" : "var(--lime-darker)"} />
                 </div>
               ))}
             </div>
@@ -337,7 +340,6 @@ function StatusTab({ data, onProjectClick }) {
     .filter((bk) => bk.phase === "implementation")
     .reduce((sum, bk) => sum + bk.count, 0);
   const closed = lifecycle.filter((bk) => bk.phase === "closure").reduce((sum, bk) => sum + bk.count, 0);
-  const cycles = Object.fromEntries(h.projects_by_cycle.map((c) => [c.label, c]));
   const funded = h.projects - h.projects_without_financing;
 
   return (
@@ -370,11 +372,9 @@ function StatusTab({ data, onProjectClick }) {
       <div className="fund-grid wide-left exec-row">
         <Card title="Project status" sub={`${h.projects} projects by lifecycle stage, split by fund`}>
           <StageColumns buckets={lifecycle} stacked />
-          <Legend items={[
-            { label: `LLF1 · ${cycles.LLF1?.count ?? 0}`, color: CYCLE_COLOR.LLF1 },
-            { label: `LLF2 · ${cycles.LLF2?.count ?? 0}`, color: CYCLE_COLOR.LLF2 },
-            ...(cycles["No cycle"] ? [{ label: `No cycle · ${cycles["No cycle"].count}`, color: CYCLE_COLOR.none }] : []),
-          ]} />
+          <Legend items={h.projects_by_cycle
+            .filter((c) => c.key || c.count)
+            .map((c) => ({ label: `${c.label} · ${c.count}`, color: CYCLE_COLOR[c.key || "none"] }))} />
         </Card>
         <UntrackedCard
           title="Disbursement by pipeline year and sector"
@@ -398,8 +398,8 @@ function StatusTab({ data, onProjectClick }) {
                 ))}
               </div>
               <div className="ov-list">
-                <div className="ov-list-label">By pillar</div>
-                {results.by_pillar.map((p) => {
+                <div className="ov-list-label">By {results.group_level}</div>
+                {results.by_group.map((p) => {
                   const total = RESULT_BANDS.reduce((s, band) => s + p[band.key], 0);
                   return (
                     <div key={p.label} className="exec-pillar">
@@ -612,16 +612,25 @@ function PipelineTab({ data, onProjectClick }) {
 
 export default function Overview({ onProjectClick }) {
   const [tab, setTab] = useState("distribution");
+  const [type, setTypeState] = useProjectType();
   const [cycle, setCycle] = useState("");
   const [sector, setSector] = useState("");
 
+  // Cycles and sectors belong to one type: switching type clears them.
+  function setType(value) {
+    setTypeState(value);
+    setCycle("");
+    setSector("");
+  }
+
   const params = new URLSearchParams();
+  params.set("type", type);
   if (cycle) params.set("cycle", cycle);
   if (sector) params.set("sector", sector);
   const query = params.toString();
 
   const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["executive-summary", cycle, sector],
+    queryKey: ["executive-summary", type, cycle, sector],
     queryFn: () => apiFetch(`/api/projects/executive-summary/${query ? `?${query}` : ""}`),
     staleTime: 60_000,
     placeholderData: (previous) => previous,
@@ -631,16 +640,9 @@ export default function Overview({ onProjectClick }) {
     queryFn: () => apiFetch("/api/reference/sectors/"),
   });
 
-  // Pillars first in their group, then their sectors (ADR 0007): choosing a
-  // pillar takes all its sectors.
-  const sectorOptions = (sectors || [])
-    .filter((s) => s.is_active !== false)
-    .sort((a, b) => (a.pillar_name || a.name).localeCompare(b.pillar_name || b.name) || Number(!a.is_pillar) - Number(!b.is_pillar) || a.name.localeCompare(b.name))
-    .map((s) => ({
-      value: s.id,
-      label: s.is_pillar ? `${s.name} · all sectors` : s.name,
-      group: s.is_pillar ? s.name : s.pillar_name || s.parent_name || "Sectors",
-    }));
+  // The type's own taxonomy (ADR 0014); in IsDB a pillar takes all its
+  // sectors (ADR 0007).
+  const sectorOptions = typeSectorFilterOptions(sectors, type);
 
   const h = data?.headline;
   const funded = h ? h.projects - h.projects_without_financing : 0;
@@ -660,15 +662,20 @@ export default function Overview({ onProjectClick }) {
       </div>
 
       <div className="exec-filterbar">
-        <span className="exec-fl">Fund</span>
-        <div className="exec-seg" role="group" aria-label="Investment cycle">
-          {CYCLE_FILTERS.map((c) => (
-            <button key={c.value} type="button" className={cycle === c.value ? "on" : ""}
-              aria-pressed={cycle === c.value} onClick={() => setCycle(c.value)}>
-              {c.label}
-            </button>
-          ))}
-        </div>
+        <ProjectTypeFilter value={type} onChange={setType} />
+        {type === "llf" && (
+          <>
+            <span className="exec-fl">Cycle</span>
+            <div className="exec-seg" role="group" aria-label="Investment cycle">
+              {CYCLE_FILTERS.map((c) => (
+                <button key={c.value} type="button" className={cycle === c.value ? "on" : ""}
+                  aria-pressed={cycle === c.value} onClick={() => setCycle(c.value)}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <span className="exec-fl">Sector</span>
         <Select
           variant="filter"

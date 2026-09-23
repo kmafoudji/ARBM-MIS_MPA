@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import RefreshBar from "../components/RefreshBar.jsx";
+import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
 import { Bar, Card, Donut, Empty } from "../components/Charts.jsx";
 
 /* Tier III — how the Fund itself is performing, as opposed to the projects in
@@ -439,9 +440,11 @@ function ExecutiveView({ sections }) {
 
 export default function FundPerformance() {
   const [view, setView] = useState("a");
+  // One project type at a time (ADR 0014): the sector breakdowns speak its taxonomy.
+  const [projectType, setProjectType] = useProjectType();
   const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["fund-performance"],
-    queryFn: () => apiFetch("/api/results/fund-performance/"),
+    queryKey: ["fund-performance", projectType],
+    queryFn: () => apiFetch(`/api/results/fund-performance/?type=${projectType}`),
     staleTime: 60_000,
   });
 
@@ -480,6 +483,10 @@ export default function FundPerformance() {
         <div style={{ marginTop: 8 }}>
           <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
         </div>
+      </div>
+
+      <div className="exec-filterbar" style={{ marginBottom: 14 }}>
+        <ProjectTypeFilter value={projectType} onChange={setProjectType} />
       </div>
 
       {isLoading && <div className="spinner" />}

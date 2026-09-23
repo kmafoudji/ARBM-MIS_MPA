@@ -10,6 +10,7 @@ import SectorIcon from "../components/SectorIcon.jsx";
 import Icon from "../components/Icon.jsx";
 import RefreshBar, { SkeletonCard, SkeletonRow } from "../components/RefreshBar.jsx";
 import PortfolioMap from "../components/PortfolioMap.jsx";
+import ProjectTypeFilter, { projectIsOfType, useProjectType } from "../components/ProjectTypeFilter.jsx";
 import Select from "../components/Select.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
@@ -246,6 +247,12 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
   const [search,      setSearch]      = useState("");
   const [stageFilter, setStageFilter] = useState("");
   const [sectorFilter,setSectorFilter]= useState("");
+  // One project type at a time (ADR 0014): its sectors are its own taxonomy.
+  const [projectType, setProjectTypeState] = useProjectType();
+  function setProjectType(value) {
+    setProjectTypeState(value);
+    setSectorFilter("");
+  }
   // Map colouring (the mockup's "Colour by"): sector, lifecycle, physical
   // progress or indicator performance.
   const [colourBy,    setColourBy]    = useState("sector");
@@ -257,12 +264,15 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
     refetchInterval: 5 * 60_000,
   });
 
+  const typed = useMemo(() => data.filter(p => projectIsOfType(p, projectType)), [data, projectType]);
+
   // Options dynamiques
   // Pillar → sectors, from the projects themselves (ADR 0007). A filter value
-  // is "pillar:<name>" or "sector:<name>".
+  // is "pillar:<name>" or "sector:<name>". LLF sectors have no pillar: each
+  // is its own group, with no sectors under it.
   const sectorGroups = useMemo(() => {
     const groups = new Map();
-    data.forEach(p => {
+    typed.forEach(p => {
       if (!p.primary_sector_name) return;
       const pillar = p.pillar_name || p.primary_sector_name;
       if (!groups.has(pillar)) groups.set(pillar, new Set());
@@ -270,10 +280,10 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
     });
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
       .map(([pillar, set]) => [pillar, [...set].sort()]);
-  }, [data]);
+  }, [typed]);
 
   // Filtrage
-  const filtered = useMemo(() => data.filter(p => {
+  const filtered = useMemo(() => typed.filter(p => {
     const q = search.toLowerCase();
     if (q && !p.name.toLowerCase().includes(q) && !(p.official_reference_number||"").toLowerCase().includes(q)) return false;
     if (stageFilter) {
@@ -286,7 +296,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
       if (value !== name) return false;
     }
     return true;
-  }), [data, search, stageFilter, sectorFilter]);
+  }), [typed, search, stageFilter, sectorFilter]);
 
   // No hub filter here: the hub is the session scope chosen in the top bar,
   // which already narrows every portfolio figure.
@@ -321,7 +331,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
       {viewMode !== "map" && (isLoading ? (
         <div style={{ marginBottom: 20 }}><SkeletonCard height={72} /></div>
       ) : data.length > 0 && (
-        <KpiBar projects={data} />
+        <KpiBar projects={typed} />
       ))}
 
       {/* ── Filtres ─────────────────────────────────────────────────── */}
@@ -331,6 +341,8 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
         border: "1px solid var(--rule)", borderRadius: 10, marginBottom: 20,
       }}>
         <Icon name="filter" size={13} style={{ color: "var(--subtle)", flexShrink: 0 }} />
+
+        <ProjectTypeFilter value={projectType} onChange={setProjectType} label="" />
 
         {/* Recherche */}
         <input type="text" placeholder="Search by name or reference…"
@@ -352,10 +364,12 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
         {sectorGroups.length > 0 && (
           <Select variant="filter" style={{ width: 210 }} placeholder="All sectors"
             value={sectorFilter} onChange={setSectorFilter}
-            options={sectorGroups.flatMap(([pillar, sectors]) => [
-              { value: `pillar:${pillar}`, label: `All ${pillar}`, group: pillar },
-              ...sectors.map(s => ({ value: `sector:${s}`, label: s, group: pillar })),
-            ])} />
+            options={sectorGroups.flatMap(([pillar, sectors]) => sectors.length === 0
+              ? [{ value: `sector:${pillar}`, label: pillar }]
+              : [
+                { value: `pillar:${pillar}`, label: `All ${pillar}`, group: pillar },
+                ...sectors.map(s => ({ value: `sector:${s}`, label: s, group: pillar })),
+              ])} />
         )}
 
         {/* Map colouring, beside the filters it reads with */}
@@ -391,7 +405,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
             <RefreshBar dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={refetch} />
           )}
           <span style={{ fontSize: 11, color: "var(--subtle)" }}>
-            {filtered.length}{hasFilter ? ` of ${data.length}` : ""} project{filtered.length !== 1 ? "s" : ""}
+            {filtered.length}{hasFilter ? ` of ${typed.length}` : ""} project{filtered.length !== 1 ? "s" : ""}
           </span>
           {/* Toggle view mode */}
           {views.length > 1 && (
@@ -514,7 +528,7 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
 
       {/* ── Carte ───────────────────────────────────────────────────── */}
       {!isLoading && viewMode === "map" && (
-        <PortfolioMap projects={filtered} onProjectClick={onProjectClick} colourBy={colourBy} />
+        <PortfolioMap projects={filtered} onProjectClick={onProjectClick} colourBy={colourBy} projectType={projectType} />
       )}
 
       {/* ── Aucun résultat après filtre ─────────────────────────────── */}

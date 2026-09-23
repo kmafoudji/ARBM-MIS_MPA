@@ -125,6 +125,25 @@ export function groupSectorOptions(sectors) {
 }
 
 /**
+ * typeSectorFilterOptions — Options of a sector *filter* for one project type
+ * (ADR 0014): the flat LLF sectors, or the IsDB pillars ("<pillar> · all
+ * sectors", which the backend expands) followed by their sectors.
+ */
+export function typeSectorFilterOptions(sectors, type, { stringIds = false } = {}) {
+  const id = (s) => (stringIds ? String(s.id) : s.id);
+  const list = (sectors || []).filter((s) => s.taxonomy === type && s.is_active !== false);
+  if (type === "llf") {
+    return list.map((s) => ({ value: id(s), label: s.name }));
+  }
+  return list
+    .filter((s) => s.parent === null || s.parent === undefined)
+    .flatMap((p) => [
+      { value: id(p), label: `${p.name} · all sectors`, group: p.name },
+      ...list.filter((s) => s.parent === p.id).map((s) => ({ value: id(s), label: s.name, group: p.name })),
+    ]);
+}
+
+/**
  * RESULT_LEVEL_COLOR — la couleur d'un niveau de resultat, partout pareille :
  * bandeau de section du catalogue, en-tete de niveau du cadre logique, ToC.
  * Violet impact, vert outcome, bleu output, charbon pour les types de mesure

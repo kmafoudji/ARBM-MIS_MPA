@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import { fmtNum } from "../utils.js";
 import Icon from "../components/Icon";
+import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
 import { DQScoreBadge } from "../components/DQScoreWidget";
 import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.jsx";
 
@@ -60,12 +61,18 @@ export default function DQPortfolio() {
   const [sectorFilter,setSectorFilter]= useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [search,      setSearch]      = useState("");
+  // One project type at a time (ADR 0014); its sectors are its own taxonomy.
+  const [projectType, setProjectTypeState] = useProjectType();
+  function setProjectType(value) {
+    setProjectTypeState(value);
+    setSectorFilter("");
+  }
 
   const [expandedRow, setExpandedRow] = useState(null);
 
   const { data, isLoading, refetch, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["dq-portfolio"],
-    queryFn:  () => apiFetch("/api/results/dq-portfolio/"),
+    queryKey: ["dq-portfolio", projectType],
+    queryFn:  () => apiFetch(`/api/results/dq-portfolio/?type=${projectType}`),
     staleTime: 60_000,
     refetchInterval: 3 * 60_000, // Refresh auto toutes les 3 minutes
   });
@@ -181,6 +188,8 @@ export default function DQPortfolio() {
         border: "1px solid var(--rule)", borderRadius: 10, marginBottom: 20,
       }}>
         <Icon name="filter" size={14} style={{ color: "var(--subtle)", flexShrink: 0 }} />
+
+        <ProjectTypeFilter value={projectType} onChange={setProjectType} label="" />
 
         {/* Recherche */}
         <input
