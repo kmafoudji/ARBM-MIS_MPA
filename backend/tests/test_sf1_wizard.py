@@ -27,6 +27,7 @@ class TestProjectCode:
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
+            "investment_cycle": "IsDB",
         }
         resp = client.post("/api/projects/", payload, format="json")
         assert resp.status_code == 201
@@ -45,6 +46,7 @@ class TestProjectCode:
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
+            "investment_cycle": "IsDB",
         }
         r1 = client.post("/api/projects/", payload, format="json")
         r2 = client.post("/api/projects/", {**payload, "official_reference_number": "REF-2"}, format="json")

@@ -36,6 +36,7 @@ class TestProjectCreate:
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
+            "investment_cycle": "IsDB",
         }
         resp = client.post("/api/projects/", payload, format="json")
         assert resp.status_code == 201
@@ -52,6 +53,7 @@ class TestProjectCreate:
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
+            "investment_cycle": "IsDB",
         }
         resp = client.post("/api/projects/", payload, format="json")
         assert resp.status_code == 201
@@ -70,6 +72,7 @@ class TestProjectCreate:
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
+            "investment_cycle": "IsDB",
         }
         resp = client.post("/api/projects/", payload, format="json")
         assert resp.status_code == 201
@@ -85,6 +88,7 @@ class TestProjectCreate:
             "country_ids": [country.id],
             "lead_country_id": country.id,
             "primary_sector": sector.id,
+            "investment_cycle": "IsDB",
         }
         resp = client.post("/api/projects/", payload, format="json")
         assert resp.status_code == 400
@@ -116,7 +120,7 @@ class TestProjectClassification:
     def test_patch_rejects_pillar_as_primary_sector(self, auth_client):
         """ADR 0007: a project is classified in a sector, never in a pillar."""
         client, user = auth_client
-        project = ProjectFactory()
+        project = ProjectFactory(investment_cycle="IsDB")
         pillar = SectorFactory(name="Resilience")
         leaf = SectorFactory(name="Water & Sanitation", parent=pillar)
         resp = client.patch(f"/api/projects/{project.id}/", {"primary_sector": pillar.id}, format="json")
