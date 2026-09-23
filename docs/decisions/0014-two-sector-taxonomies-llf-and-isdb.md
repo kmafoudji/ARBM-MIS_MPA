@@ -36,6 +36,20 @@ the Fund's LLF1 and LLF2 projects.
   taxonomy, and a code from the other taxonomy is an error that lists the
   valid ones.
 
+- An indicator carries both classifications. `Indicator.sector` is its IsDB
+  sector, required and never a pillar. `Indicator.llf_sector` is its LLF
+  sector, set only for the indicators the Fund uses. Some indicators are
+  IsDB-only; none is LLF-only.
+- The AS-IS import reads an optional `llf_sector` on `07_indicators_logframe`.
+  A new indicator of an LLF project without one takes the project's primary
+  sector.
+- Every view that spans projects shows **one type at a time**: executive
+  dashboard, project list and map, portfolio results, fund performance, data
+  quality, and the indicator catalogue. Their filter bar starts with LLF |
+  IsDB, LLF by default, and their sector filter offers that type's taxonomy.
+  The API takes `?type=llf|isdb` (`?taxonomy=` on the indicator list, where
+  `type` already means the indicator type). There is no global setting.
+
 ## Consequences
 
 - The LLF1 and LLF2 projects that used the IsDB sectors `AGRICU` and `HEALTH`
@@ -48,5 +62,13 @@ the Fund's LLF1 and LLF2 projects.
   sector among IsDB sectors only, since the LLF ones share names with them.
 - The pillar of a project (`pillar_id`, `pillar_name`) is empty for LLF
   projects.
-- Nothing converts between the taxonomies. A view that mixes LLF and IsDB
-  projects has no common sector axis.
+- Nothing converts between the taxonomies, so no view mixes LLF and IsDB
+  projects.
+- The 562 indicators in the catalogue on 23 September 2026 were all in
+  `AGRICU` or `HEALTH`, which map one to one. Migration
+  `results.0016_indicator_llf_sector` gave them `LLF_AGRI` or `LLF_HEALTH`
+  once. Indicators created later get their LLF sector by hand. The mapping
+  slide counts 97 LLF indicators; which of the 562 really belong to the Fund,
+  and the Social Infrastructure ones, is still to be settled.
+- The executive dashboard has no pillars under LLF: its results block groups
+  by sector there (`group_level`), and by pillar under IsDB.

@@ -97,6 +97,9 @@ codes in the workbook must exist in the database — see the next section. A new
 project needs `investment_cycle` (LLF1, LLF2 or IsDB), and its sector codes
 must belong to that type's taxonomy
 ([decisions/0014](decisions/0014-two-sector-taxonomies-llf-and-isdb.md)).
+An indicator's `sector` is always an IsDB code; its optional `llf_sector` is an
+LLF code, and a new indicator of an LLF project without one takes the
+project's sector.
 
 ## What a fresh environment lacks
 
