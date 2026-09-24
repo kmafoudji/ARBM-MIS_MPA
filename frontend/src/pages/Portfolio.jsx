@@ -7,8 +7,8 @@ import Select from "../components/Select.jsx";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Icon from "../components/Icon";
-import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
-import { fmtNum, fmtPct } from "../utils.js";
+import ProjectTypeFilter, { projectIsOfType, useProjectType } from "../components/ProjectTypeFilter.jsx";
+import { fmtNum, fmtPct, usedSectorIds } from "../utils.js";
 import RefreshBar, { SkeletonRow, SkeletonCard } from "../components/RefreshBar.jsx";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
@@ -314,15 +314,16 @@ function LevelSection({ level, indicators }) {
 }
 
 /** The type's sectors (ADR 0014): flat for LLF; for IsDB, pillars with their
- *  sectors nested, which the filter flattens into groups. */
-function sectorFilterOptions(sectors, type) {
+ *  sectors nested, which the filter flattens into groups. A sector outside
+ *  `usedIds` (no project of the type) stays selectable, greyed. */
+function sectorFilterOptions(sectors, type, usedIds) {
+  const option = s => ({ value: String(s.id), label: s.name, muted: !usedIds.has(String(s.id)) });
   const own = sectors.filter(s => s.taxonomy === type && s.is_active !== false);
-  if (type === "llf") return own.map(s => ({ value: String(s.id), label: s.name }));
+  if (type === "llf") return own.map(option);
   const pillars = own.filter(s => s.parent === null || s.parent === undefined);
   return pillars.map(p => ({
-    value: String(p.id),
-    label: p.name,
-    children: sectors.filter(s => s.parent === p.id).map(s => ({ value: String(s.id), label: s.name })),
+    ...option(p),
+    children: sectors.filter(s => s.parent === p.id).map(option),
   }));
 }
 
@@ -349,6 +350,7 @@ export default function Portfolio() {
   }
 
   const { data: sectors  = [] } = useQuery({ queryKey: ["sectors"],  queryFn: () => apiFetch("/api/reference/sectors/") });
+  const { data: projects = [] } = useQuery({ queryKey: ["projects"], queryFn: () => apiFetch("/api/projects/"), staleTime: 60_000 });
   const { data: countries= [] } = useQuery({ queryKey: ["countries"],queryFn: () => apiFetch("/api/reference/countries/") });
   const { data: donors   = [] } = useQuery({ queryKey: ["ref","donors"], queryFn: () => apiFetch("/api/reference/donors/") });
 
@@ -479,7 +481,9 @@ export default function Portfolio() {
           { key: "country",   label: "Country",   options: filteredCountries.map(c => ({ value: String(c.id), label: c.name })) },
           // ADR 0007: the backend expands a pillar to its sectors, so the
           // pillar is itself an option ("All <pillar>") above its sectors.
-          { key: "sector",    label: "Sector",    options: sectorFilterOptions(sectors, projectType) },
+          { key: "sector",    label: "Sector",    options: sectorFilterOptions(
+            sectors, projectType, usedSectorIds(projects.filter(p => projectIsOfType(p, projectType))),
+          ) },
           { key: "donor",     label: "Donor",     options: donors.map(d => ({ value: String(d.id), label: d.short_name || d.name })) },
           { key: "chain_level", label: "Level",   options: CHAIN_LEVELS.map(l => ({ value: l.key, label: l.label })) },
           { key: "rag", label: "Status", options: [
@@ -497,8 +501,8 @@ export default function Portfolio() {
             value={filters[key]}
             onChange={v => setFilter(key, v)}
             options={options.flatMap(o => o.children ? [
-              { value: o.value, label: `All ${o.label}`, group: o.label },
-              ...o.children.map(c => ({ value: c.value, label: c.label, group: o.label })),
+              { value: o.value, label: `All ${o.label}`, group: o.label, muted: o.muted },
+              ...o.children.map(c => ({ value: c.value, label: c.label, group: o.label, muted: c.muted })),
             ] : [o])}
           />
         ))}

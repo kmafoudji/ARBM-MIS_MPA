@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
 import Flag from "../components/Flag.jsx";
 import Select from "../components/Select.jsx";
-import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
-import { typeSectorFilterOptions } from "../utils.js";
+import ProjectTypeFilter, { projectIsOfType, useProjectType } from "../components/ProjectTypeFilter.jsx";
+import { typeSectorFilterOptions, usedSectorIds } from "../utils.js";
 import RefreshBar from "../components/RefreshBar.jsx";
 import { Bar, Card, Donut, Empty, StackedBar } from "../components/Charts.jsx";
 import { deliveryBand } from "../components/ProjectCockpit.jsx";
@@ -640,9 +640,19 @@ export default function Overview({ onProjectClick }) {
     queryFn: () => apiFetch("/api/reference/sectors/"),
   });
 
+  // The project list (same cache as the Projects page) says which sectors
+  // have a project of the type; the others stay selectable, greyed.
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => apiFetch("/api/projects/"),
+    staleTime: 60_000,
+  });
+
   // The type's own taxonomy (ADR 0014); in IsDB a pillar takes all its
   // sectors (ADR 0007).
-  const sectorOptions = typeSectorFilterOptions(sectors, type);
+  const sectorOptions = typeSectorFilterOptions(sectors, type, {
+    usedIds: usedSectorIds((projects || []).filter((p) => projectIsOfType(p, type))),
+  });
 
   const h = data?.headline;
   const funded = h ? h.projects - h.projects_without_financing : 0;
