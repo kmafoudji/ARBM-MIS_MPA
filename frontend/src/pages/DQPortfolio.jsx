@@ -6,7 +6,7 @@ import React, { useState, useMemo } from "react";
 import Select from "../components/Select.jsx";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api";
-import { fmtNum } from "../utils.js";
+import { fmtNum, typeSectorFilterOptions } from "../utils.js";
 import Icon from "../components/Icon";
 import ProjectTypeFilter, { useProjectType } from "../components/ProjectTypeFilter.jsx";
 import { DQScoreBadge } from "../components/DQScoreWidget";
@@ -79,13 +79,19 @@ export default function DQPortfolio() {
 
   const allResults = data?.results || [];
 
+  // Secteurs : toute la taxonomie du type (ADR 0014), qu'un projet l'utilise
+  // ou non ; en IsDB, un pilier englobe ses secteurs (ADR 0007).
+  const { data: sectors } = useQuery({
+    queryKey: ["sectors"],
+    queryFn:  () => apiFetch("/api/reference/sectors/"),
+  });
+  const sectorOptions = typeSectorFilterOptions(sectors, projectType, { stringIds: true });
   // Options de filtre dynamiques depuis les données
-  const sectors = useMemo(() => [...new Set(allResults.map(r => r.sector).filter(Boolean))].sort(), [allResults]);
   const levels  = useMemo(() => [...new Set(allResults.map(r => r.chain_level).filter(Boolean))].sort(), [allResults]);
 
   const filtered = useMemo(() => allResults
     .filter(r => !gradeFilter  || grade(r.composite_score) === gradeFilter)
-    .filter(r => !sectorFilter || r.sector === sectorFilter)
+    .filter(r => !sectorFilter || String(r.sector_id) === sectorFilter || String(r.pillar_id) === sectorFilter)
     .filter(r => !levelFilter  || r.chain_level === levelFilter)
     .filter(r => !search       || r.indicator_name.toLowerCase().includes(search.toLowerCase())
                                || r.indicator_code.toLowerCase().includes(search.toLowerCase())
@@ -204,11 +210,9 @@ export default function DQPortfolio() {
         />
 
         {/* Sector */}
-        {sectors.length > 0 && (
-          <Select variant="filter" style={{ width: 200 }} placeholder="All sectors"
-            value={sectorFilter} onChange={setSectorFilter}
-            options={sectors.map(s => ({ value: s, label: s }))} />
-        )}
+        <Select variant="filter" style={{ width: 200 }} placeholder="All sectors"
+          value={sectorFilter} onChange={(v) => setSectorFilter(v === "" ? "" : String(v))}
+          options={sectorOptions} />
 
         {/* Chain level */}
         {levels.length > 0 && (

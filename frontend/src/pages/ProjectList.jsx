@@ -12,6 +12,7 @@ import RefreshBar, { SkeletonCard, SkeletonRow } from "../components/RefreshBar.
 import PortfolioMap from "../components/PortfolioMap.jsx";
 import ProjectTypeFilter, { projectIsOfType, useProjectType } from "../components/ProjectTypeFilter.jsx";
 import Select from "../components/Select.jsx";
+import { typeSectorFilterOptions } from "../utils.js";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 /* Lifecycle codes (backend LIFECYCLE_STAGE_CHOICES): LS001 Concept Note …
@@ -266,21 +267,14 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
 
   const typed = useMemo(() => data.filter(p => projectIsOfType(p, projectType)), [data, projectType]);
 
-  // Options dynamiques
-  // Pillar → sectors, from the projects themselves (ADR 0007). A filter value
-  // is "pillar:<name>" or "sector:<name>". LLF sectors have no pillar: each
-  // is its own group, with no sectors under it.
-  const sectorGroups = useMemo(() => {
-    const groups = new Map();
-    typed.forEach(p => {
-      if (!p.primary_sector_name) return;
-      const pillar = p.pillar_name || p.primary_sector_name;
-      if (!groups.has(pillar)) groups.set(pillar, new Set());
-      if (p.pillar_name && p.pillar_name !== p.primary_sector_name) groups.get(pillar).add(p.primary_sector_name);
-    });
-    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
-      .map(([pillar, set]) => [pillar, [...set].sort()]);
-  }, [typed]);
+  // The whole taxonomy of the type, whether or not a project uses a sector:
+  // the filter shows what the classification is (ADR 0014). In IsDB a pillar
+  // is itself an option and takes its sectors (ADR 0007).
+  const { data: sectors } = useQuery({
+    queryKey: ["sectors"],
+    queryFn:  () => apiFetch("/api/reference/sectors/"),
+  });
+  const sectorOptions = typeSectorFilterOptions(sectors, projectType, { stringIds: true });
 
   // Filtrage
   const filtered = useMemo(() => typed.filter(p => {
@@ -290,10 +284,8 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
       const sg = stageGroup(p.lifecycle_stage);
       if (sg.key !== stageFilter) return false;
     }
-    if (sectorFilter) {
-      const [kind, name] = [sectorFilter.slice(0, sectorFilter.indexOf(":")), sectorFilter.slice(sectorFilter.indexOf(":") + 1)];
-      const value = kind === "pillar" ? (p.pillar_name || p.primary_sector_name) : p.primary_sector_name;
-      if (value !== name) return false;
+    if (sectorFilter && String(p.primary_sector) !== sectorFilter && String(p.pillar_id) !== sectorFilter) {
+      return false;
     }
     return true;
   }), [typed, search, stageFilter, sectorFilter]);
@@ -360,17 +352,10 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
           value={stageFilter} onChange={setStageFilter}
           options={Object.entries(STAGE_GROUPS).map(([k, g]) => ({ value: k, label: g.label }))} />
 
-        {/* Sector: each pillar is itself an option ("All <pillar>") above its sectors */}
-        {sectorGroups.length > 0 && (
-          <Select variant="filter" style={{ width: 210 }} placeholder="All sectors"
-            value={sectorFilter} onChange={setSectorFilter}
-            options={sectorGroups.flatMap(([pillar, sectors]) => sectors.length === 0
-              ? [{ value: `sector:${pillar}`, label: pillar }]
-              : [
-                { value: `pillar:${pillar}`, label: `All ${pillar}`, group: pillar },
-                ...sectors.map(s => ({ value: `sector:${s}`, label: s, group: pillar })),
-              ])} />
-        )}
+        {/* Sector: the type's taxonomy; an IsDB pillar sits above its sectors */}
+        <Select variant="filter" style={{ width: 210 }} placeholder="All sectors"
+          value={sectorFilter} onChange={(v) => setSectorFilter(v === "" ? "" : String(v))}
+          options={sectorOptions} />
 
         {/* Map colouring, beside the filters it reads with */}
         {viewMode === "map" && (
