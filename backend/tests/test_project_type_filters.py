@@ -178,3 +178,23 @@ def test_seed_indicators_gives_new_indicators_their_llf_sector():
     health = Indicator.objects.filter(sector__code="HEALTH")
     assert health.exists()
     assert set(health.values_list("llf_sector__code", flat=True)) == {"LLF_HEALTH"}
+
+
+@pytest.mark.django_db
+def test_dq_rows_carry_sector_and_pillar_ids(auth_client, portfolio):
+    """The DQ sector filter matches ids: a sector, or an IsDB pillar (ADR 0007)."""
+    from apps.results.models import LogframeRow
+
+    for key in ("llf1", "isdb"):
+        project = portfolio[key]
+        ProjectWorkspace.objects.create(project=project)
+        indicator = Indicator.objects.create(
+            code=f"DQ.{key}", sector=portfolio["wash"], name=key,
+            direction="increase", definition="", unit="Number",
+        )
+        LogframeRow.objects.create(project=project, indicator=indicator, chain_level="output")
+
+    llf = auth_client.get(DQ).data["results"]
+    assert [(r["sector_id"], r["pillar_id"]) for r in llf] == [(portfolio["llf_health"].pk, None)]
+    isdb = auth_client.get(DQ, {"type": "isdb"}).data["results"]
+    assert [(r["sector_id"], r["pillar_id"]) for r in isdb] == [(portfolio["wash"].pk, portfolio["pillar"].pk)]

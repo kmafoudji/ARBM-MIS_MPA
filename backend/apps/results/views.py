@@ -1970,7 +1970,7 @@ class DQPortfolioView(APIView):
         if not project_id:
             projects = projects.of_taxonomy(read_project_type(request.query_params))
         rows_qs = LogframeRow.objects.select_related(
-            "indicator", "project"
+            "indicator", "project__primary_sector__parent"
         ).filter(
             project__workspace__isnull=False,
             project__in=projects,
@@ -2001,6 +2001,12 @@ class DQPortfolioView(APIView):
                 "indicator_name":  row.indicator.name[:60],
                 "hub":             hub_name,
                 "sector":          row.project.primary_sector.name if row.project.primary_sector else None,
+                # Ids for the sector filter; the pillar is None in LLF (ADR 0014).
+                "sector_id":       row.project.primary_sector_id,
+                "pillar_id":       (
+                    row.project.primary_sector.pillar.id
+                    if row.project.primary_sector and row.project.primary_sector.pillar else None
+                ),
                 "chain_level":     row.chain_level,
                 "composite_score": str(scores["composite"]),
                 "completeness":    str(scores["completeness"]),
