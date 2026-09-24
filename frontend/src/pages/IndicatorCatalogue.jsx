@@ -446,7 +446,7 @@ function IndicatorRow({ ind, expanded, onToggle, onEdit, sdgName, color, canEdit
 // Tiroir d'edition : la fiche se lit dans la ligne, le formulaire ici, ou il a
 // la place de deux colonnes.
 // ---------------------------------------------------------------------------
-function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
+function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {}, projectType = "llf" }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(null);
 
@@ -507,8 +507,16 @@ function IndicatorDrawer({ indicatorId, onClose, sdgs = [], sdgName = {} }) {
           {detail && (
             <div className="drawer-tags">
               <span className="drawer-tag">{typeLabel(detail)}</span>
-              <span className="drawer-tag" title="IsDB sector">{detail.sector_name}</span>
-              {detail.llf_sector_name && <span className="drawer-tag" title="LLF sector">LLF · {detail.llf_sector_name}</span>}
+              {/* Le secteur de la classification affichee d'abord (ADR 0014). */}
+              {[
+                { key: "llf", name: detail.llf_sector_name, label: "LLF" },
+                { key: "isdb", name: detail.sector_name, label: "IsDB" },
+              ]
+                .sort((a, b) => Number(b.key === projectType) - Number(a.key === projectType))
+                .filter((t) => t.name)
+                .map((t) => (
+                  <span key={t.key} className="drawer-tag" title={`${t.label} sector`}>{t.label} · {t.name}</span>
+                ))}
               {detail.subsector && <span className="drawer-tag">{detail.subsector}</span>}
               <span className="drawer-tag">{DIRECTION_LABEL[detail.direction]}</span>
               <span className="drawer-tag">v{detail.version || 1}</span>
@@ -962,15 +970,17 @@ export default function IndicatorCatalogue() {
     .sort((a, b) => TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b)), [tabItems]);
   const levelValues = useMemo(() => uniq(tabItems.map((i) => i.chain_level)).sort(), [tabItems]);
   // Sous-secteurs : trop nombreux pour des chips (18 pour la Santé), d'où un
-  // MultiSelect, groupé par secteur quand l'onglet en couvre plusieurs.
+  // MultiSelect, groupé par secteur — de la classification affichée (ADR
+  // 0014) — quand l'onglet en couvre plusieurs.
   const subOptions  = useMemo(() => {
+    const nameOf = (i) => i[`${sectorField}_name`] || "";
     const sectorsOf = new Map();
     for (const i of tabItems) {
       if (!i.subsector) continue;
       if (!sectorsOf.has(i.subsector)) sectorsOf.set(i.subsector, new Set());
-      sectorsOf.get(i.subsector).add(i.sector_name || "");
+      sectorsOf.get(i.subsector).add(nameOf(i));
     }
-    const grouped = uniq(tabItems.map((i) => i.sector_name)).length > 1;
+    const grouped = uniq(tabItems.map(nameOf)).length > 1;
     return [...sectorsOf.entries()]
       .map(([sub, sectors]) => ({
         value: sub,
@@ -978,7 +988,7 @@ export default function IndicatorCatalogue() {
         group: grouped ? [...sectors].sort().join(" · ") : undefined,
       }))
       .sort((a, b) => (a.group || "").localeCompare(b.group || "") || a.label.localeCompare(b.label));
-  }, [tabItems]);
+  }, [tabItems, sectorField]);
 
   const items = useMemo(() => tabItems.filter((i) =>
     (typeChips.length  === 0 || typeChips.includes(i.indicator_type)) &&
@@ -1176,7 +1186,7 @@ export default function IndicatorCatalogue() {
       ))}
 
       {editId && (
-        <IndicatorDrawer indicatorId={editId} sdgs={sdgs || []} sdgName={sdgName}
+        <IndicatorDrawer indicatorId={editId} sdgs={sdgs || []} sdgName={sdgName} projectType={projectType}
           onClose={() => setEditId(null)} />
       )}
     </div>
