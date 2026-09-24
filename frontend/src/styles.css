@@ -1948,6 +1948,8 @@ input, select, textarea { font: inherit; color: inherit; }
 .cat-card.active { border-color: var(--tab-color); border-width: 2px; }
 .cat-card.dashed { border-style: dashed; border-color: var(--tab-color); }
 .cat-card.dashed.active { border-color: var(--tab-color); }
+/* A group with nothing in it keeps its colour, muted — like `.tab.tab-off`. */
+.cat-card.off { opacity: 0.5; }
 .cat-card-name { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.2; }
 .cat-card-value { font-size: 21px; font-weight: 800; color: var(--tab-color); line-height: 1; }
 .cat-card-sub { font-size: 11px; color: var(--tab-color); }
@@ -2337,6 +2339,8 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .pmap-legend-item { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-soft); font-weight: 600; margin-bottom: 5px; }
 .pmap-legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A sector no point uses: same colour, muted. */
+.pmap-legend-item.off { opacity: 0.45; }
 .pmap-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
 .pmap-compact .pmap-legend { left: 10px; bottom: 22px; padding: 8px 10px; min-width: 0; }
 .pmap-compact .pmap-legend h5 { margin-bottom: 4px; }
