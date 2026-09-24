@@ -129,18 +129,34 @@ export function groupSectorOptions(sectors) {
  * (ADR 0014): the flat LLF sectors, or the IsDB pillars ("<pillar> · all
  * sectors", which the backend expands) followed by their sectors.
  */
-export function typeSectorFilterOptions(sectors, type, { stringIds = false } = {}) {
+export function typeSectorFilterOptions(sectors, type, { stringIds = false, usedIds } = {}) {
+  // `usedIds` (a Set of String ids): the sectors and pillars that have data;
+  // the others stay selectable, greyed.
+  const muted = (s) => (usedIds ? { muted: !usedIds.has(String(s.id)) } : {});
   const id = (s) => (stringIds ? String(s.id) : s.id);
   const list = (sectors || []).filter((s) => s.taxonomy === type && s.is_active !== false);
   if (type === "llf") {
-    return list.map((s) => ({ value: id(s), label: s.name }));
+    return list.map((s) => ({ value: id(s), label: s.name, ...muted(s) }));
   }
   return list
     .filter((s) => s.parent === null || s.parent === undefined)
     .flatMap((p) => [
-      { value: id(p), label: `${p.name} · all sectors`, group: p.name },
-      ...list.filter((s) => s.parent === p.id).map((s) => ({ value: id(s), label: s.name, group: p.name })),
+      { value: id(p), label: `${p.name} · all sectors`, group: p.name, ...muted(p) },
+      ...list.filter((s) => s.parent === p.id).map((s) => ({ value: id(s), label: s.name, group: p.name, ...muted(s) })),
     ]);
+}
+
+/**
+ * usedSectorIds — the sectors and pillars (String ids) the given projects sit
+ * in, for greying the empty ones in a sector filter.
+ */
+export function usedSectorIds(projects) {
+  const ids = new Set();
+  for (const p of projects || []) {
+    if (p.primary_sector != null) ids.add(String(p.primary_sector));
+    if (p.pillar_id != null) ids.add(String(p.pillar_id));
+  }
+  return ids;
 }
 
 /**

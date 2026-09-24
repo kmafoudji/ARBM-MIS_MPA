@@ -11,9 +11,11 @@ import Icon from "./Icon";
  * <form> keeps `required` validation and `name` submission for free.
  *
  * Props:
- *   options      [{ value, label, iso2?, disabled?, group? }] — iso2 renders a
- *                Flag; a `group` label renders a non-selectable heading before
- *                the first option of each run of equal groups
+ *   options      [{ value, label, iso2?, disabled?, muted?, group? }] — iso2
+ *                renders a Flag; `muted` greys a row that stays selectable
+ *                (e.g. a sector with no data); a `group` label renders a
+ *                non-selectable heading before the first option of each run
+ *                of equal groups
  *   value        selected value ("" / null / undefined = nothing selected);
  *                compared with String(), returned as the original option value
  *   onChange     (value) => void — "" when cleared
@@ -219,7 +221,7 @@ export default function Select({
                 role="option"
                 aria-selected={isSel}
                 aria-disabled={o.disabled || undefined}
-                className={`multiselect-option${isSel ? " is-selected" : ""}${i === active ? " is-active" : ""}${o.disabled ? " is-disabled" : ""}`}
+                className={`multiselect-option${isSel ? " is-selected" : ""}${i === active ? " is-active" : ""}${o.disabled ? " is-disabled" : ""}${o.muted ? " is-muted" : ""}`}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => choose(o)}
                 onMouseEnter={() => setActive(i)}

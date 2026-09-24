@@ -85,7 +85,11 @@ export default function DQPortfolio() {
     queryKey: ["sectors"],
     queryFn:  () => apiFetch("/api/reference/sectors/"),
   });
-  const sectorOptions = typeSectorFilterOptions(sectors, projectType, { stringIds: true });
+  // Un secteur sans ligne de donnees reste selectionnable, en gris.
+  const sectorOptions = typeSectorFilterOptions(sectors, projectType, {
+    stringIds: true,
+    usedIds: new Set((data?.results || []).flatMap(r => [r.sector_id, r.pillar_id]).filter(v => v != null).map(String)),
+  });
   // Options de filtre dynamiques depuis les données
   const levels  = useMemo(() => [...new Set(allResults.map(r => r.chain_level).filter(Boolean))].sort(), [allResults]);
 

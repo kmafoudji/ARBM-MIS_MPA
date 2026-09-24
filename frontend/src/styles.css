@@ -689,6 +689,8 @@ input, select, textarea { font: inherit; color: inherit; }
 .multiselect-option.is-selected { background: var(--lime-pale); color: var(--lime-darker); }
 .multiselect-option.is-selected.is-active { background: var(--lime-soft); }
 .multiselect-option.is-disabled { color: var(--subtle); cursor: not-allowed; }
+/* Selectable, but with nothing behind it (a sector with no project). */
+.multiselect-option.is-muted { color: var(--subtle); }
 .multiselect-check {
   width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0; color: var(--lime-darker);

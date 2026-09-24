@@ -12,7 +12,7 @@ import RefreshBar, { SkeletonCard, SkeletonRow } from "../components/RefreshBar.
 import PortfolioMap from "../components/PortfolioMap.jsx";
 import ProjectTypeFilter, { projectIsOfType, useProjectType } from "../components/ProjectTypeFilter.jsx";
 import Select from "../components/Select.jsx";
-import { typeSectorFilterOptions } from "../utils.js";
+import { typeSectorFilterOptions, usedSectorIds } from "../utils.js";
 
 /* ── Constantes ──────────────────────────────────────────────────────────── */
 /* Lifecycle codes (backend LIFECYCLE_STAGE_CHOICES): LS001 Concept Note …
@@ -274,7 +274,10 @@ export default function ProjectList({ views = ["cards"], title = "Projects", lea
     queryKey: ["sectors"],
     queryFn:  () => apiFetch("/api/reference/sectors/"),
   });
-  const sectorOptions = typeSectorFilterOptions(sectors, projectType, { stringIds: true });
+  // A sector no project of the type sits in stays selectable, greyed.
+  const sectorOptions = typeSectorFilterOptions(sectors, projectType, {
+    stringIds: true, usedIds: usedSectorIds(typed),
+  });
 
   // Filtrage
   const filtered = useMemo(() => typed.filter(p => {
