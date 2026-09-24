@@ -1078,7 +1078,7 @@ export default function IndicatorCatalogue() {
           return (
             <button key={g.id} title={g.lead.title || g.lead.label}
               style={{ "--tab-color": g.color, "--tab-pale": g.pale }}
-              className={`cat-card${on ? " active" : ""}${g.id === "cct" ? " dashed" : ""}`}
+              className={`cat-card${on ? " active" : ""}${g.id === "cct" ? " dashed" : ""}${n === 0 ? " off" : ""}`}
               onClick={() => selectTab(g.lead.key)}>
               <SectorIcon name={GROUP_ICON[code] || g.pillar?.icon || "generic"} color={g.color} size={34} />
               <span className="cat-card-name">{g.lead.label}</span>

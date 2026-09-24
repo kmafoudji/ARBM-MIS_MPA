@@ -231,6 +231,11 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
   const [height, setHeight] = useState(560);
   const [atHome, setAtHome] = useState(true);
 
+  const { data: sectors } = useQuery({
+    queryKey: ["sectors"],
+    queryFn:  () => apiFetch("/api/reference/sectors/"),
+  });
+
   const { data: geojson, isLoading } = useQuery({
     // One project type at a time (ADR 0014), as the list it draws.
     queryKey: ["projects", "map-points", projectType],
@@ -369,8 +374,23 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
 
   // Legend: the values present among the displayed points, in the point colour
   const rank = (label) => (lens.order ? lens.order.indexOf(label) : -1);
-  const legend = [...new Map(feats.map(f => [f.properties.lens_label, f.properties.lens_color]))]
+  const present = [...new Map(feats.map(f => [f.properties.lens_label, f.properties.lens_color]))]
     .sort((a, b) => (lens.order ? rank(a[0]) - rank(b[0]) : a[0].localeCompare(b[0])));
+  // By sector, the whole taxonomy of the type (ADR 0014) in its own order: a
+  // sector no point uses keeps its colour, muted. IsDB points carry their
+  // sector, so its pillars are not listed.
+  const taxonomySectors = colourBy === "sector"
+    ? (sectors || [])
+      .filter(s => s.taxonomy === projectType && s.is_active !== false && !(s.taxonomy === "isdb" && s.parent == null))
+      .sort((a, b) => (a.sequence || 0) - (b.sequence || 0) || a.name.localeCompare(b.name))
+    : [];
+  const presentNames = new Set(present.map(([name]) => name));
+  const legend = taxonomySectors.length
+    ? [
+      ...taxonomySectors.map(s => [s.name, s.color || FALLBACK_COLOR, !presentNames.has(s.name)]),
+      ...present.filter(([name]) => !taxonomySectors.some(s => s.name === name)),
+    ]
+    : present;
 
   // Totals strip: the projects the page filters let through.
   const committed = projects.reduce((sum, p) => sum + toMillions(p.envelope_total), 0);
@@ -557,8 +577,9 @@ export default function PortfolioMap({ projects = [], onProjectClick, compact = 
       {legend.length > 0 && !isLoading && (
         <div className="pmap-legend">
           <h5>{lens.title}</h5>
-          {legend.map(([name, color]) => (
-            <div key={name} className="pmap-legend-item">
+          {legend.map(([name, color, empty]) => (
+            <div key={name} className={`pmap-legend-item${empty ? " off" : ""}`}
+              title={empty ? "No project in this sector" : undefined}>
               <span className="pmap-dot" style={{ background: color }} />
               <span className="pmap-legend-name">{name}</span>
             </div>
