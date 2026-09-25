@@ -6,7 +6,7 @@ maintainer's business and is kept in their untracked notes, not here.
 
 | Page | What it answers |
 |---|---|
-| [workflow.md](workflow.md) | How a change goes from a branch to the deployed `main`: naming, commits, rebase, `--no-ff` merge, optional pull requests, pushing. |
+| [workflow.md](workflow.md) | How a change goes from a branch to the deployed `main`: naming, commits, rebase, pull requests, review and approval, merge commits, deploying, repository settings. |
 | [development-environment.md](development-environment.md) | The deploy-checkout-plus-worktrees layout, the two `docker compose` rules that fail silently, the three untracked per-machine files, start-up pitfalls, how to run branch code, why there is one stack. |
 | [testing-and-ci.md](testing-and-ci.md) | What the three CI jobs prove, why the test step does not block yet, how to run `pytest` and which management commands have a dry run. |
 | [fresh-environment.md](fresh-environment.md) | Building an environment from an empty database or from a dump, in order, and the state that exists only in the maintained database. |
