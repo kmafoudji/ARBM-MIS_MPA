@@ -5,7 +5,7 @@
 The LLF visual identity spec ([style/design.md](../style/design.md), §3.3) sets page
 titles in Inter Light (300). The stylesheet followed it until 6 September
 2026: a 30px Light title, card titles at 600, labels at 600, most secondary
-text in grey. The POC mockups kept in `.dev-notes/style/mockups/` use the
+text in grey. The POC mockups use the
 same typeface and the same 14px base but put every element that carries
 hierarchy in weight 700–800 and in a semantic colour (green codes, yellow and
 coral figures), on a warm grey ground with white 12px-radius cards. Side by
