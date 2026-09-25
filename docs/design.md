@@ -106,7 +106,7 @@ edges, no bevels. What a card may carry is set out below.
 ## Colour as structure
 
 Adopted 10 September 2026, generalised from the Indicator Catalogue after it
-was rebuilt from the LLF indicator-library mockup (`.dev-notes/style/mockups/`).
+was rebuilt from the LLF indicator-library mockup.
 Colour here is never decoration: each device below states *which* attribute of
 the data it is showing, and takes that attribute's fixed hue.
 

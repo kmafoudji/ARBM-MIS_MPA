@@ -1,6 +1,6 @@
 /**
  * PortfolioMap — portfolio-wide project map, in the style of the LLF
- * portfolio map mockup (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
+ * portfolio map mockup.
  *
  * One circle per project (points from /api/projects/map/), coloured by the
  * lens the page picks — primary sector, lifecycle group, physical progress

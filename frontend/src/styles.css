@@ -4,8 +4,8 @@
    (docs/style/design.md): charcoal + Growth Green, six-color
    accent palette with fixed sector/status mappings, Inter only,
    flat cards, no shadows. Token names (--lime…) predate the remap.
-   Type scale, weights and surfaces follow the POC mockups
-   (.dev-notes/style/mockups/): compact sizes, weights 700-800 for
+   Type scale, weights and surfaces follow the POC mockups:
+   compact sizes, weights 700-800 for
    everything that carries hierarchy, white cards on a warm grey page.
    ============================================================ */
 :root {
@@ -2292,8 +2292,7 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 
 /* ============================================================
-   Portfolio map — LLF portfolio map mockup
-   (.dev-notes/style/mockups/aRBM-MIS_Portfolio_Map_LLF.html).
+   Portfolio map — LLF portfolio map mockup.
    Everything here floats over the map, so it may carry a soft
    shadow of its own (see docs/design.md).
    ============================================================ */
