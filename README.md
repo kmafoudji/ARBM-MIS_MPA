@@ -75,9 +75,10 @@ The models can then be explored at `http://<your-ip>:8000/admin/`.
 
 ## Development workflow
 
-One branch per change in its own worktree, Conventional Commits, `--no-ff`
-merge into `main` from the deploy checkout, push. `main` is what the
-development environment serves. Details: [docs/workflow.md](docs/workflow.md);
+One branch per change, Conventional Commits, a pull request that another
+developer reviews and approves, merged on GitHub with a merge commit. `main` is
+what the development environment serves; the deploy checkout pulls it after
+each merge. Details: [docs/workflow.md](docs/workflow.md);
 what CI verifies: [docs/testing-and-ci.md](docs/testing-and-ci.md); decisions
 in force: [docs/decisions/](docs/decisions/README.md).
 

@@ -7,7 +7,6 @@ consequences in the present tense; the history behind them is not kept here.
 | # | Decision |
 |---|---|
 | [0001](0001-single-repository-main-is-deployed.md) | A single repository; `main` is the deployed branch |
-| [0002](0002-merge-commits-no-pull-requests.md) | Merge commits, no required pull requests, no branch protection |
 | [0003](0003-dev-unlock-env-flag.md) | Development-only UI unlocks are driven by `VITE_DEV_UNLOCK_ALL` |
 | [0004](0004-language-new-code-english.md) | New code is English; existing French files stay French per file |
 | [0005](0005-migrations-must-apply-from-scratch.md) | Migrations must apply from an empty database, and CI proves it |
@@ -20,6 +19,7 @@ consequences in the present tense; the history behind them is not kept here.
 | [0012](0012-lifecycle-gates-hidden-from-interface.md) | Approval gates are hidden from the interface; the backend rules stay dormant |
 | [0013](0013-uploaded-gis-layers-normalised-into-postgis.md) | Uploaded GIS layers are normalised into PostGIS and served as GeoJSON behind the API |
 | [0014](0014-two-sector-taxonomies-llf-and-isdb.md) | Two independent sector taxonomies, LLF and IsDB; the project type picks one |
+| [0015](0015-reviewed-pull-requests.md) | Every change reaches `main` through a reviewed pull request, merged with a merge commit |
 
 ## Pending
 

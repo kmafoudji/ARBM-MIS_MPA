@@ -37,11 +37,12 @@ time. Being inside a worktree changes nothing, so a command run with `exec`
 reads the deploy checkout's files even when you meant the branch's. To run
 branch code, see [Running branch code](#running-branch-code).
 
-### The deploy checkout only receives merges
+### The deploy checkout only follows `origin/main`
 
-Never edit files there, never commit anything but a `git merge` there, never
-`git checkout` another branch there. `git status --short` in the deploy
-checkout is always empty. See [workflow.md](workflow.md#5-merge).
+Never edit files there, never commit there, never `git checkout` another branch
+there. The only git command that changes it is `git pull --ff-only origin main`
+after a pull request is merged. `git status --short` in the deploy checkout is
+always empty. See [workflow.md](workflow.md#8-deploy).
 
 ## Untracked local files
 
@@ -196,7 +197,8 @@ absolute and end in `/backend`.
 supports it, and check that it does ([testing-and-ci.md](testing-and-ci.md#management-commands-and-data)).
 
 For anything a user has to see, there is no intermediate branch: merge into
-`main` ([workflow.md](workflow.md#5-merge)) and revert if it must come out.
+`main` through a reviewed pull request ([workflow.md](workflow.md#7-merge)) and
+revert, through another, if it must come out.
 
 ## Why there is only one stack
 
