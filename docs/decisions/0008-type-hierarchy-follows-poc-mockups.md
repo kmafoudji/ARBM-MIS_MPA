@@ -2,7 +2,7 @@
 
 ## Context
 
-The LLF visual identity spec (`.dev-notes/style/design.md`, §3.3) sets page
+The LLF visual identity spec ([style/design.md](../style/design.md), §3.3) sets page
 titles in Inter Light (300). The stylesheet followed it until 6 September
 2026: a 30px Light title, card titles at 600, labels at 600, most secondary
 text in grey. The POC mockups kept in `.dev-notes/style/mockups/` use the
