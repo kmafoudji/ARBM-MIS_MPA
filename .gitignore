@@ -1,3 +1,6 @@
+# Worktrees et configuration locale de Claude Code (voir docs/workflow.md)
+/.claude/
+
 # Environnement
 .env
 *.env
