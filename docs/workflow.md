@@ -7,7 +7,7 @@ CI. The machine-level detail — worktrees, the deploy checkout, the Docker stac
 ## Principles
 
 1. **One repository.** Source, documentation and history live in this
-   repository. There is no upstream to reintegrate into.
+   repository, `Millennium-Promise-Alliance/ARBM-MIS` on GitHub.
 2. **`main` is deployed.** What is in `main` is what the development environment
    serves. `main` moves only by merging a finished branch.
 3. **One branch per change.** Every change, however small, is made on its own
@@ -120,7 +120,7 @@ creates the merge commit and `main` never diverges from what is served.
 ## Pushing
 
 Pushing `main` after a merge and work branches whenever they have new commits is
-routine: the remote is the project's own repository and the only copy off the
+routine: the remote is the organisation's repository and the only copy off the
 development machine. What warrants a pause: anything with `--force`, and
 deleting a remote branch.
 
