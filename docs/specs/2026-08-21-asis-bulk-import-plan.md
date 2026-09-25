@@ -220,5 +220,5 @@ Steps, in the spec's order:
 5. then SLE1013 — envelope 34,126,000, 15 logframe rows.
 
 **The database is shared and these writes are real.** Steps 2 and 5 will be run only after
-the plan is approved, and what was actually run gets recorded in `.dev-notes/history.md` —
-data loaded from an unmerged branch is exactly the asymmetry `CLAUDE.md` says to call out.
+the plan is approved, and what was actually run gets recorded — data loaded from an unmerged
+branch is state that `git log` cannot show.

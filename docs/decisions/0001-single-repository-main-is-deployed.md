@@ -4,12 +4,12 @@
 
 The project is developed by one maintainer, with one development environment
 that serves the code directly from a git checkout. There is no separate
-integration branch and no external repository to reintegrate into.
+integration branch.
 
 ## Decision
 
-- The repository at `origin` is the single source of truth. Everything —
-  `main`, every work branch, the archive tags — is pushed there.
+- The repository at `origin`, `Millennium-Promise-Alliance/ARBM-MIS`, is the
+  single source of truth. `main` and every work branch are pushed there.
 - `main` is the branch checked out in the deploy checkout and therefore what
   the environment serves. It moves only by merging a finished branch.
 - There is no `develop` or staging branch. A change is either on a work branch
